@@ -1,0 +1,58 @@
+Language: Cpp
+Standard: c++20
+UseTab: Never
+
+IndentWidth: 2
+ContinuationIndentWidth: 2
+
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Left
+AlignOperands: AlignAfterOperator
+AlignTrailingComments: true
+
+AllowShortBlocksOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+
+AlwaysBreakTemplateDeclarations: Yes
+
+BinPackArguments: false
+BinPackParameters: false
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterCaseLabel: false
+    AfterClass: true
+    AfterEnum: false
+    AfterFunction: true
+    AfterNamespace: false
+    AfterStruct: true
+    BeforeElse: false
+    SplitEmptyFunction: false
+    SplitEmptyRecord: false
+    SplitEmptyNamespace: false
+
+BreakBeforeBinaryOperators: NonAssignment
+# BreakBeforeConceptDeclarations: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+
+FixNamespaceComments: true
+
+IndentCaseLabels: false
+
+InsertTrailingCommas: Wrapped
+
+ColumnLimit: 100
+
+SortUsingDeclarations: true
+SortIncludes: true
+
+SpaceAfterTemplateKeyword: false
+SpacesBeforeTrailingComments: 2
+PointerAlignment: Middle
