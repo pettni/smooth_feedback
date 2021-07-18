@@ -45,10 +45,10 @@ namespace smooth::feedback {
  *
  * Use this class for information fusion (without dynamics) by solely using update().
  *
- * @tparam G smooth::LieGroup type.
- * @tparam DiffType smooth::diff::Type method for calculating derivatives.
- * @tparam Stepper boost::numeric::odeint templated stepper type (e.g. euler / runge_kutta4).
- * Defaults to euler.
+ * @tparam G \p smooth::LieGroup type.
+ * @tparam DiffType \p smooth::diff::Type method for calculating derivatives.
+ * @tparam Stepper \p boost::numeric::odeint templated stepper type (\p euler / \p runge_kutta4 / ...).
+ * Defaults to \p euler.
  */
 template<LieGroup G,
   smooth::diff::Type DiffType            = smooth::diff::Type::NUMERICAL,
@@ -59,9 +59,7 @@ public:
   /// Scalar type for computations.
   using Scalar = typename G::Scalar;
   /// Degrees of freedom.
-  static constexpr Eigen::Index Nx = G::SizeAtCompileTime;
-  /// Covariance type.
-  using CovT = Eigen::Matrix<Scalar, G::SizeAtCompileTime, G::SizeAtCompileTime>;
+  using CovT = Eigen::Matrix<Scalar, G::Dof, G::Dof>;
 
   /// Default constructor initializes state and covariance to Identity.
   EKF()
@@ -174,9 +172,9 @@ public:
         .template triangularView<Eigen::Upper>();
 
     // solve for Kalman gain
-    // TODO(pettni) use ldlt after requiring new eigen (Eigen < 3.3.8 has problem with cpp20)
-    const Eigen::Matrix<Scalar, Nx, Ny> K =
-      S.template selfadjointView<Eigen::Upper>().llt().solve(H * P_.transpose()).transpose();
+    // TODO(pettni) use ldlt after requiring new Eigen (Eigen < 3.3.8 has problem with cpp20)
+    const Eigen::Matrix<Scalar, G::Dof, Ny> K =
+      S.template selfadjointView<Eigen::Upper>().llt().solve(H * P_).transpose();
 
     // update estimate
     g_hat_ += K * (y - hval);
