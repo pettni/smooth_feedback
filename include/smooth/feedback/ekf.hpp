@@ -47,36 +47,19 @@ namespace smooth::feedback {
  *
  * @tparam G \p smooth::LieGroup type.
  * @tparam DiffType \p smooth::diff::Type method for calculating derivatives.
- * @tparam Stepper \p boost::numeric::odeint templated stepper type (\p euler / \p runge_kutta4 / ...).
- * Defaults to \p euler.
+ * @tparam Stpr \p boost::numeric::odeint templated stepper type (\p euler / \p runge_kutta4 /
+ * ...). Defaults to \p euler.
  */
 template<LieGroup G,
-  smooth::diff::Type DiffType            = smooth::diff::Type::NUMERICAL,
-  template<typename...> typename Stepper = boost::numeric::odeint::euler>
+  diff::Type DiffType                 = diff::Type::NUMERICAL,
+  template<typename...> typename Stpr = boost::numeric::odeint::euler>
 class EKF
 {
 public:
-  /// Scalar type for computations.
+  //! Scalar type for computations.
   using Scalar = typename G::Scalar;
-  /// Degrees of freedom.
+  //! Degrees of freedom.
   using CovT = Eigen::Matrix<Scalar, G::Dof, G::Dof>;
-
-  /// Default constructor initializes state and covariance to Identity.
-  EKF()
-  {
-    g_hat_.setIdentity();
-    P_.setIdentity();
-  }
-  /// Copy constructor
-  EKF(const EKF &) = default;
-  /// Move constructor
-  EKF(EKF &&) = default;
-  /// Copy assignment
-  EKF & operator=(const EKF &) = default;
-  /// Move assignment
-  EKF & operator=(EKF &&) = default;
-  /// Destructor
-  ~EKF() = default;
 
   /**
    * @brief Reset the state of the EKF.
@@ -93,12 +76,12 @@ public:
   /**
    * @brief Access filter state estimate.
    */
-  G state() const { return g_hat_; }
+  G estimate() const { return g_hat_; }
 
   /**
    * @brief Access filter covariance.
    */
-  CovT cov() const { return P_; }
+  CovT covariance() const { return P_; }
 
   /**
    * @brief Propagate EKF through dynamics \f$\mathrm{d}^r x_t = f(t, x)\f$ with covariance \f$Q\f$.
@@ -120,33 +103,26 @@ public:
   template<typename F, typename QDer>
   void predict(F && f, const Eigen::MatrixBase<QDer> & Q, Scalar tau, std::optional<Scalar> dt = {})
   {
-    Scalar dt_stepper = tau;
-    if (dt.has_value()) { dt_stepper = dt.value(); }
+    const Scalar dt_v = dt.has_value() ? dt.value() : 2 * tau;
 
     const auto cov_ode = [this, &f, &Q](const CovT & cov, CovT & dcov, Scalar t) {
-      const auto [f_val, dr_f] =
-        smooth::diff::dr<DiffType>(std::bind(f, t, std::placeholders::_1), smooth::wrt(g_hat_));
-      const CovT A = -G::ad(f_val) + dr_f;
-      dcov         = (A * cov + cov * A.transpose() + Q).template selfadjointView<Eigen::Upper>();
+      const auto [fv, dr] = diff::dr<DiffType>(std::bind(f, t, std::placeholders::_1), wrt(g_hat_));
+      const CovT A        = -G::ad(fv) + dr;
+      dcov = (A * cov + cov * A.transpose() + Q).template selfadjointView<Eigen::Upper>();
     };
     const auto state_ode = [&f](const G & g, typename G::Tangent & dg, Scalar t) { dg = f(t, g); };
 
-    Scalar t  = 0;
-    bool done = false;
-
-    while (!done) {
-      Scalar dt = dt_stepper;
-      if (t + dt_stepper >= tau) {
-        dt   = tau - t;
-        done = true;
-      }
-
+    Scalar t = 0;
+    while (t + dt_v < tau) {
       // step covariance first since it depends on g_hat_
-      cov_stepper_.do_step(cov_ode, P_, t, dt);
-      state_stepper_.do_step(state_ode, g_hat_, t, dt);
-
-      t += dt;
+      cst_.do_step(cov_ode, P_, t, dt_v);
+      sst_.do_step(state_ode, g_hat_, t, dt_v);
+      t += dt_v;
     }
+
+    // last step up to time t
+    cst_.do_step(cov_ode, P_, t, tau - t);
+    sst_.do_step(state_ode, g_hat_, t, tau - t);
   }
 
   /**
@@ -163,7 +139,7 @@ public:
   template<typename F, typename YDer, typename RDev>
   void update(F && h, const Eigen::MatrixBase<YDer> & y, const Eigen::MatrixBase<RDev> & R)
   {
-    const auto [hval, H] = smooth::diff::dr<DiffType>(h, smooth::wrt(g_hat_));
+    const auto [hval, H] = diff::dr<DiffType>(h, wrt(g_hat_));
 
     static constexpr Eigen::Index Ny = std::decay_t<decltype(hval)>::SizeAtCompileTime;
 
@@ -176,22 +152,19 @@ public:
     const Eigen::Matrix<Scalar, G::Dof, Ny> K =
       S.template selfadjointView<Eigen::Upper>().llt().solve(H * P_).transpose();
 
-    // update estimate
+    // update estimate and covariance
     g_hat_ += K * (y - hval);
-
-    // update covariance
     P_ = ((CovT::Identity() - K * H) * P_).template selfadjointView<Eigen::Upper>();
   }
 
 private:
   // filter estimate and covariance
   G g_hat_ = G::Identity();
-  CovT P_;
+  CovT P_  = CovT::Identity();
 
   // steppers for numerical ODE solutions
-  Stepper<G, Scalar, typename G::Tangent, Scalar, boost::numeric::odeint::vector_space_algebra>
-    state_stepper_{};
-  Stepper<CovT, Scalar, CovT, Scalar, boost::numeric::odeint::vector_space_algebra> cov_stepper_{};
+  Stpr<G, Scalar, typename G::Tangent, Scalar, boost::numeric::odeint::vector_space_algebra> sst_{};
+  Stpr<CovT, Scalar, CovT, Scalar, boost::numeric::odeint::vector_space_algebra> cst_{};
 };
 
 }  // namespace smooth::feedback

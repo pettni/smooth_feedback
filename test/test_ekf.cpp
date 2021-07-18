@@ -28,7 +28,7 @@ template<int Nx, int Ny>
 void test_update_linear()
 {
   for (auto it = 0; it != 10; ++it) {
-    // true state
+    // true estimate
     Eigen::Matrix<double, Nx, 1> x = Eigen::Matrix<double, Nx, 1>::Random();
 
     // initial estimate
@@ -59,8 +59,8 @@ void test_update_linear()
     Eigen::Matrix<double, Nx, 1> x_new  = xhat + K * (H * x + h - (H * xhat + h));
     Eigen::Matrix<double, Nx, Nx> P_new = (Eigen::Matrix<double, Nx, Nx>::Identity() - K * H) * P;
 
-    ASSERT_TRUE(x_new.isApprox(ekf.state().rn(), 1e-6));
-    ASSERT_TRUE(P_new.isApprox(ekf.cov(), 1e-6));
+    ASSERT_TRUE(x_new.isApprox(ekf.estimate().rn(), 1e-6));
+    ASSERT_TRUE(P_new.isApprox(ekf.covariance(), 1e-6));
   }
 }
 
@@ -111,8 +111,8 @@ void test_predict_linear()
     Eigen::Matrix<double, Nx, 1> xhat_new = F * xhat;
     Eigen::Matrix<double, Nx, Nx> P_new   = F * P * F.transpose() + Q * tau;
 
-    ASSERT_TRUE(xhat_new.isApprox(ekf.state().rn(), 1e-3));
-    ASSERT_TRUE(P_new.isApprox(ekf.cov(), 1e-3));
+    ASSERT_TRUE(xhat_new.isApprox(ekf.estimate().rn(), 1e-3));
+    ASSERT_TRUE(P_new.isApprox(ekf.covariance(), 1e-3));
   }
 }
 
@@ -125,7 +125,7 @@ TEST(Ekf, PredictLinear)
 
 TEST(Ekf, PredictTimeCut)
 {
-  // initial state
+  // initial estimate
   Eigen::Matrix<double, 2, 1> xhat = Eigen::Matrix<double, 2, 1>::Random();
   Eigen::Matrix<double, 2, 2> P    = Eigen::Matrix<double, 2, 1>::Random().asDiagonal();
   P.diagonal() += Eigen::Matrix<double, 2, 1>::Constant(1.1);
@@ -143,5 +143,5 @@ TEST(Ekf, PredictTimeCut)
   ekf.predict([&b](double, const auto &) { return b; }, Q, tau, 0.5);
 
   // exact solution
-  ASSERT_TRUE(ekf.state().rn().isApprox(xhat + b * tau));
+  ASSERT_TRUE(ekf.estimate().rn().isApprox(xhat + b * tau));
 }

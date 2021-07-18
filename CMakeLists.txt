@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_EXAMPLES "Build the examples." OFF)
 
+find_package(Boost REQUIRED)
 find_package(smooth REQUIRED)
 
 # ---------------------------------------------------------------------------------------
@@ -23,6 +24,7 @@ INTERFACE
 )
 target_link_libraries(feedback
 INTERFACE
+  Boost::headers
   smooth::smooth
 )
 
