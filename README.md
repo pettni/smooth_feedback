@@ -3,10 +3,22 @@
 Control and estimation on Lie groups
 
 Planned content:
+- Algo
+  - [ ] QP solver (osqp-eigen)
+  ```
+  solve_qp(P, p, l, A, u);  // dense version
+  solve_qp(P, p, l, A, u);  // sparse version
+  ```
 - Control
   - [ ] PD
-  - [ ] MPC
-  - [ ] asif++
+  - [ ] MPC: requires QP
+  ```
+  const auto [P, p, l, A, u] = mpc(ode, xl(.), ul(.), xd(.), ud(.), Q(.), R(.));
+  ```
+  - [ ] asif++: requires QP
+  ```
+  const auto [P, p, l, A, u] = asif(ode, backup, safetyset, opts);
+  ```
 - Estimation:
   - [x] EKF
   - [ ] UKF
