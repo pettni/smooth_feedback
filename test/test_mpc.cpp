@@ -1,5 +1,8 @@
 #include <iostream>
 
+// #include <smooth/compat/autodiff.hpp>
+#include <smooth/compat/ceres.hpp>
+
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 

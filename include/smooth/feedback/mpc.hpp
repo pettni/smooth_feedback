@@ -141,10 +141,10 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
   static constexpr int nx = G::SizeAtCompileTime;
   static constexpr int nu = U::SizeAtCompileTime;
 
-  static constexpr int nX = K * nx;
-  static constexpr int nU = K * nu;
+  static constexpr int nX   = K * nx;
+  static constexpr int nU   = K * nu;
+  static constexpr int nvar = nX + nU;
 
-  static constexpr int nvar   = nX + nU;
   static constexpr int n_eq   = nX;  // equality constraints from dynamics
   static constexpr int n_u_iq = nU;  // input bounds
   static constexpr int n_x_iq = nX;  // state bounds
@@ -167,15 +167,14 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
 
     Eigen::Matrix<double, 1, 1> t_vec(t);
     auto [xl, dxl] = diff::dr([&](const auto & v) { return glin(v(0)); }, wrt(t_vec));
-    U ul           = ulin(t);
+    auto ul        = ulin(t);
 
-    const auto [f1, df_x] = diff::dr(std::bind(f, _1, ul), wrt(xl));
-    const auto [f2, df_u] = diff::dr(std::bind(f, xl, _1), wrt(ul));
+    const auto [flin, df_xu] = diff::dr(f, wrt(xl, ul));
 
     // cltv system \dot x = At x(t) + Bt u(t) + Et
-    const AT At = (-0.5 * G::ad(f1) - 0.5 * G::ad(dxl) + df_x);
-    const BT Bt = df_u;
-    const ET Et = f1 - dxl;
+    const AT At = (-0.5 * G::ad(flin) - 0.5 * G::ad(dxl) + df_xu.template leftCols<nx>());
+    const BT Bt = df_xu.template rightCols<nu>();
+    const ET Et = flin - dxl;
 
     // TIME DISCRETIZATION
 
@@ -184,8 +183,8 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
     const double dt2 = dt * dt;
     const double dt3 = dt2 * dt;
 
-    // dltv system x^+ = Ak x + Bk u + Ek
-    const AT Ak = AT::Identity() + At * dt + At2 * dt2 / 2.;
+    // dltv system x^+ = Ak x + Bk u + Ek by truncated taylor expansion of the matrix exponential
+    const AT Ak = AT::Identity() + At * dt + At2 * dt2 / 2. + At3 * dt3 / 6.;
     const BT Bk = Bt * dt + At * Bt * dt2 / 2. + At2 * Bt * dt3 / 6.;
     const ET Ek = Et * dt + At * Et * dt2 / 2. + At2 * Et * dt3 / 6.;
 
