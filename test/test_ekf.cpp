@@ -27,7 +27,7 @@
 
 #include <unsupported/Eigen/MatrixFunctions>
 
-#include <smooth/compat/ceres.hpp>
+#include <smooth/compat/autodiff.hpp>
 #include <smooth/feedback/ekf.hpp>
 #include <smooth/so3.hpp>
 #include <smooth/tn.hpp>
@@ -38,9 +38,9 @@ TEST(Ekf, NoCrash)
 
   ekf.reset(smooth::SO3d::Identity(), Eigen::Matrix3d::Identity());
 
-  const auto dyn    = [](double, const smooth::SO3d &) { return Eigen::Vector3d::UnitX(); };
+  const auto dyn    = [](double, const auto &) { return Eigen::Vector3d::UnitX(); };
   Eigen::Matrix3d Q = Eigen::Matrix3d::Identity();
-  const auto meas   = [](const smooth::SO3d & g) -> Eigen::Vector3d {
+  const auto meas   = [](const auto & g) {
     return g * Eigen::Vector3d::UnitZ();
   };
 

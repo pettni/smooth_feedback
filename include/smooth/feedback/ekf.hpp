@@ -51,7 +51,7 @@ namespace smooth::feedback {
  * ...). Defaults to \p euler.
  */
 template<LieGroup G,
-  diff::Type DiffType                 = diff::Type::NUMERICAL,
+  diff::Type DiffType                 = diff::Type::DEFAULT,
   template<typename...> typename Stpr = boost::numeric::odeint::euler>
 class EKF
 {
