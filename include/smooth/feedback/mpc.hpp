@@ -1,12 +1,40 @@
-#include <Eigen/Core>
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
-#include <smooth/concepts.hpp>
-#include <smooth/diff.hpp>
+#ifndef SMOOTH__FEEDBACK__MPC_HPP_
+#define SMOOTH__FEEDBACK__MPC_HPP_
 
 /**
  * @file
  * @brief Model-Predictive Control (MPC) on Lie groups.
  */
+
+#include <Eigen/Core>
+
+#include <smooth/concepts.hpp>
+#include <smooth/diff.hpp>
 
 namespace smooth::feedback {
 
@@ -208,6 +236,7 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
   }
 
   // INPUT CONSTRAINTS
+
   ret.A.template block<nU, nU>(n_eq, 0).setIdentity();
   if (pbm.umin) {
     for (auto k = 0u; k < K; ++k) {
@@ -225,6 +254,7 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
   }
 
   // STATE CONSTRAINTS
+
   ret.A.template block<nX, nX>(n_eq + n_u_iq, nU).setIdentity();
   if (pbm.gmin) {
     for (auto k = 1u; k < K; ++k) {
@@ -242,12 +272,14 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
   }
 
   // INPUT COSTS
+
   for (auto k = 0u; k < K; ++k) {
     ret.P.template block<nu, nu>(k * nu, k * nu) = pbm.R * dt;
     ret.q.template segment<nu>(k * nu)           = pbm.R * (ulin(k * dt) - pbm.udes(k * dt));
   }
 
   // STATE COSTS
+
   for (auto k = 1u; k < K; ++k) {
     ret.P.template block<nx, nx>(nU + (k - 1) * nx, nU + (k - 1) * nx) = pbm.Q * dt;
     ret.q.template segment<nx>(nU + (k - 1) * nx) = pbm.Q * (glin(k * dt) - pbm.gdes(k * dt));
@@ -259,3 +291,5 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
 }
 
 }  // namespace smooth::feedback
+
+#endif  // SMOOTH__FEEDBACK__MPC_HPP_
