@@ -36,6 +36,8 @@
 #include <smooth/concepts.hpp>
 #include <smooth/diff.hpp>
 
+#include "qp.hpp"
+
 namespace smooth::feedback {
 
 /**
@@ -96,33 +98,6 @@ struct OptimalControlProblem
   Eigen::Matrix<double, nx, nx> QT = Eigen::Matrix<double, nx, nx>::Identity();
   /// Running input cost
   Eigen::Matrix<double, nu, nu> R = Eigen::Matrix<double, nu, nu>::Identity();
-};
-
-/**
- * @brief Quadratic program definition.
- *
- * The quadratic program is on the form
- * \f[
- * \begin{cases}
- *  \min_{x} & \frac{1}{2} x^T P x + q^T x, \\
- *  \text{s.t.} & l \leq A x \leq u.
- * \end{cases}
- * \f]
- */
-template<Eigen::Index nvar, Eigen::Index ncon>
-struct QuadraticProgram
-{
-  /// Quadratic cost
-  Eigen::Matrix<double, nvar, nvar> P = Eigen::Matrix<double, nvar, nvar>::Zero();
-  /// Linear cost
-  Eigen::Matrix<double, nvar, 1> q = Eigen::Matrix<double, nvar, 1>::Zero();
-
-  /// Inequality matrix
-  Eigen::Matrix<double, ncon, nvar> A = Eigen::Matrix<double, ncon, nvar>::Zero();
-  /// Inequality lower bound
-  Eigen::Matrix<double, ncon, 1> l = Eigen::Matrix<double, ncon, 1>::Zero();
-  /// Inequality upper bound
-  Eigen::Matrix<double, ncon, 1> u = Eigen::Matrix<double, ncon, 1>::Zero();
 };
 
 /**

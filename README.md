@@ -11,10 +11,7 @@ Planned content:
   ```
 - Control
   - [ ] PD
-  - [ ] MPC: requires QP
-  ```
-  const auto [P, p, l, A, u] = mpc(ode, xl(.), ul(.), xd(.), ud(.), Q(.), R(.));
-  ```
+  - [x] MPC: requires QP
   - [ ] asif++: requires QP
   ```
   const auto [P, p, l, A, u] = asif(ode, backup, safetyset, opts);
