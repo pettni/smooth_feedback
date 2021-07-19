@@ -103,9 +103,9 @@ if(BUILD_TESTING)
 
   add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
-  add_executable(test_asif test/test_asif.cpp)
-  target_link_libraries(test_asif PRIVATE feedback GTest::Main  autodiff::autodiff)
-  gtest_discover_tests(test_asif)
+  # add_executable(test_asif test/test_asif.cpp)
+  # target_link_libraries(test_asif PRIVATE feedback GTest::Main autodiff::autodiff)
+  # gtest_discover_tests(test_asif)
 
   add_executable(test_ekf test/test_ekf.cpp)
   target_link_libraries(test_ekf PRIVATE feedback GTest::Main autodiff::autodiff)
@@ -115,8 +115,7 @@ if(BUILD_TESTING)
   target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff)
   gtest_discover_tests(test_mpc)
 
-
   add_executable(test_qp test/test_qp.cpp)
-  target_link_libraries(test_qp PRIVATE feedback GTest::Main )
+  target_link_libraries(test_qp PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_qp)
 endif()
