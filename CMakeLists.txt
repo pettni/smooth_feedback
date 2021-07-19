@@ -101,17 +101,22 @@ if(BUILD_TESTING)
   find_package(autodiff REQUIRED)
   find_package(Ceres REQUIRED)
 
-  # add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+  add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
   add_executable(test_asif test/test_asif.cpp)
-  target_link_libraries(test_asif PRIVATE feedback GTest::Main Ceres::ceres autodiff::autodiff)
+  target_link_libraries(test_asif PRIVATE feedback GTest::Main  autodiff::autodiff)
   gtest_discover_tests(test_asif)
 
   add_executable(test_ekf test/test_ekf.cpp)
-  target_link_libraries(test_ekf PRIVATE feedback GTest::Main Ceres::ceres autodiff::autodiff)
+  target_link_libraries(test_ekf PRIVATE feedback GTest::Main autodiff::autodiff)
   gtest_discover_tests(test_ekf)
 
   add_executable(test_mpc test/test_mpc.cpp)
-  target_link_libraries(test_mpc PRIVATE feedback GTest::Main Ceres::ceres autodiff::autodiff)
+  target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff)
   gtest_discover_tests(test_mpc)
+
+
+  add_executable(test_qp test/test_qp.cpp)
+  target_link_libraries(test_qp PRIVATE feedback GTest::Main )
+  gtest_discover_tests(test_qp)
 endif()
