@@ -147,6 +147,16 @@ struct SolverParams
  * @param pbm problem formulation
  * @param prm solver options
  * @return Problem solution as Solution<Ny, Nx>
+ *
+ * @note dynamic problem sizes (`Ny == -1 || Nx == -1`) are supported
+ *
+ * This is a third-party implementation of the algorithm described in the following paper:
+ * * Stellato, B., Banjac, G., Goulart, P. et al.
+ * **OSQP: an operator splitting solver for quadratic programs.**
+ * *Math. Prog. Comp.* 12, 637–672 (2020).
+ * https://doi.org/10.1007/s12532-020-00179-2
+ *
+ * For the official C implementation, see https://osqp.org/.
  */
 template<Eigen::Index Ny, Eigen::Index Nx>
 Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParams & prm)
@@ -191,14 +201,14 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
     // ADMM ITERATION
 
     Eigen::Matrix<double, Np, 1> h(np);
-    h.template head<Nx>(n) = prm.sigma * x - pbm.q;
-    h.template tail<Ny>(m) = z - y / prm.rho;
+    h.head(n) = prm.sigma * x - pbm.q;
+    h.tail(m) = z - y / prm.rho;
 
     // solve linear system H p = h
     const Eigen::Matrix<double, Np, 1> p = lu.solve(h);
 
-    const RM z_tilde  = z + (p.template tail<Ny>(m) - y) / prm.rho;
-    const RN x_next   = prm.alpha * p.template head<Nx>(n) + (1. - prm.alpha) * x;
+    const RM z_tilde  = z + (p.tail(m) - y) / prm.rho;
+    const RN x_next   = prm.alpha * p.head(n) + (1. - prm.alpha) * x;
     const RM z_interp = prm.alpha * z_tilde + (1. - prm.alpha) * z;
     const RM z_next   = (z_interp + y / prm.rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
     const RM y_next   = y + prm.rho * (z_interp - z_next);

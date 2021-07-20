@@ -27,7 +27,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(QP, Basic)
+TEST(QP, BasicStatic)
 {
   smooth::feedback::QuadraticProgram<2, 2> problem;
   problem.P.setIdentity();
@@ -40,6 +40,48 @@ TEST(QP, Basic)
   auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
   ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), 1e-1));
+}
+
+TEST(QP, BasicDynamic)
+{
+  smooth::feedback::QuadraticProgram<-1, -1> problem;
+  problem.P.setIdentity(2, 2);
+  problem.q.resize(2);
+  problem.q << -4, 0.25;
+
+  problem.A.setIdentity(2, 2);
+  problem.l.resize(2);
+  problem.l << -1, -1;
+  problem.u.resize(2);
+  problem.u << 1, 1;
+
+  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), 1e-1));
+
+  static_assert(decltype(sol.primal)::SizeAtCompileTime == -1);
+  static_assert(decltype(sol.dual)::SizeAtCompileTime == -1);
+}
+
+TEST(QP, BasicPartialDynamic)
+{
+  smooth::feedback::QuadraticProgram<-1, 2> problem;
+  problem.P.setIdentity();
+  problem.q.resize(2);
+  problem.q << -4, 0.25;
+
+  problem.A.setIdentity(2, 2);
+  problem.l.resize(2);
+  problem.l << -1, -1;
+  problem.u.resize(2);
+  problem.u << 1, 1;
+
+  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), 1e-1));
+
+  static_assert(decltype(sol.primal)::SizeAtCompileTime == 2);
+  static_assert(decltype(sol.dual)::SizeAtCompileTime == -1);
 }
 
 TEST(QP, Unconstrained)
