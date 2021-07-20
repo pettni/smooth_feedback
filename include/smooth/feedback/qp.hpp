@@ -42,8 +42,8 @@ namespace smooth::feedback {
 /**
  * @brief Quadratic program definition.
  *
- * @tparam Ny number of constraints
- * @tparam Nx number of variables
+ * @tparam M number of constraints
+ * @tparam N number of variables
  *
  * The quadratic program is on the form
  * \f[
@@ -53,20 +53,20 @@ namespace smooth::feedback {
  * \end{cases}
  * \f]
  */
-template<Eigen::Index Ny, Eigen::Index Nx>
+template<Eigen::Index M, Eigen::Index N>
 struct QuadraticProgram
 {
   /// Quadratic cost
-  Eigen::Matrix<double, Nx, Nx> P;
+  Eigen::Matrix<double, N, N> P;
   /// Linear cost
-  Eigen::Matrix<double, Nx, 1> q;
+  Eigen::Matrix<double, N, 1> q;
 
   /// Inequality matrix
-  Eigen::Matrix<double, Ny, Nx> A;
+  Eigen::Matrix<double, M, N> A;
   /// Inequality lower bound
-  Eigen::Matrix<double, Ny, 1> l;
+  Eigen::Matrix<double, M, 1> l;
   /// Inequality upper bound
-  Eigen::Matrix<double, Ny, 1> u;
+  Eigen::Matrix<double, M, 1> u;
 };
 
 /**
@@ -99,15 +99,15 @@ struct QuadraticProgramSparse
 enum class ExitCode : int { Optimal, PrimalInfeasible, DualInfeasible, MaxIterations, Unknown };
 
 /// Solver solution
-template<Eigen::Index Ny, Eigen::Index Nx>
+template<Eigen::Index M, Eigen::Index N>
 struct Solution
 {
   /// Exit code
   ExitCode code = ExitCode::Unknown;
   /// Primal vector
-  Eigen::Matrix<double, Nx, 1> primal;
+  Eigen::Matrix<double, N, 1> primal;
   /// Dual vector
-  Eigen::Matrix<double, Ny, 1> dual;
+  Eigen::Matrix<double, M, 1> dual;
 };
 
 /**
@@ -141,14 +141,14 @@ struct SolverParams
 /**
  * @brief Solve a quadratic program using the operator splitting approach.
  *
- * @tparam Ny number of constraints
- * @tparam Nx number of variables
+ * @tparam M number of constraints
+ * @tparam N number of variables
  *
  * @param pbm problem formulation
  * @param prm solver options
- * @return Problem solution as Solution<Ny, Nx>
+ * @return Problem solution as Solution<M, N>
  *
- * @note dynamic problem sizes (`Ny == -1 || Nx == -1`) are supported
+ * @note dynamic problem sizes (`M == -1 || N == -1`) are supported
  *
  * This is a third-party implementation of the algorithm described in the following paper:
  * * Stellato, B., Banjac, G., Goulart, P. et al.
@@ -158,18 +158,19 @@ struct SolverParams
  *
  * For the official C implementation, see https://osqp.org/.
  */
-template<Eigen::Index Ny, Eigen::Index Nx>
-Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParams & prm)
+template<Eigen::Index M, Eigen::Index N>
+Solution<M, N> solveQP(const QuadraticProgram<M, N> & pbm, const SolverParams & prm)
 {
   static constexpr auto Inf = Eigen::Infinity;
-  using RN                  = Eigen::Matrix<double, Nx, 1>;
-  using RM                  = Eigen::Matrix<double, Ny, 1>;
 
   // static sizes
-  static constexpr Eigen::Index Np = (Nx == -1 || Ny == -1) ? Eigen::Index(-1) : Nx + Ny;
+  static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
+  using Rn                         = Eigen::Matrix<double, N, 1>;
+  using Rm                         = Eigen::Matrix<double, M, 1>;
+  using Rk                         = Eigen::Matrix<double, K, 1>;
 
   // dynamic sizes
-  const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows(), np = n + m;
+  const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows(), k = n + m;
 
   // check that feasible set is nonempty
   if ((pbm.u - pbm.l).minCoeff() < 0. || pbm.l.maxCoeff() == std::numeric_limits<double>::infinity()
@@ -180,64 +181,65 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
   // TODO problem scaling / conditioning
 
   // matrix factorization
-  Eigen::Matrix<double, Np, Np> H(np, np);
-  H.template topLeftCorner<Nx, Nx>(n, n) = pbm.P;
-  H.template topLeftCorner<Nx, Nx>(n, n) += RN::Constant(n, prm.sigma).asDiagonal();
-  H.template topRightCorner<Nx, Ny>(n, m)    = pbm.A.transpose();
-  H.template bottomLeftCorner<Ny, Nx>(m, n)  = pbm.A;  // TODO ldlt only reads upper triangle
-  H.template bottomRightCorner<Ny, Ny>(m, m) = RM::Constant(m, -1. / prm.rho).asDiagonal();
+  Eigen::Matrix<double, K, K> H(k, k);
+  H.template topLeftCorner<N, N>(n, n) = pbm.P;
+  H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, prm.sigma).asDiagonal();
+  H.template topRightCorner<N, M>(n, m)    = pbm.A.transpose();
+  H.template bottomLeftCorner<M, N>(m, n)  = pbm.A;  // TODO ldlt only reads upper triangle
+  H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, -1. / prm.rho).asDiagonal();
 
   // TODO need ldlt decomposition for indefinite matrices
   Eigen::PartialPivLU<decltype(H)> lu(H);
 
   // initialization
   // TODO what's a good strategy here?
-  RN x = RN::Zero(n);
-  RM z = RM::Zero(m);
-  RM y = RM::Zero(m);
+  Rn x = Rn::Zero(n);
+  Rm z = Rm::Zero(m);
+  Rm y = Rm::Zero(m);
 
   for (auto i = 0u; i != prm.max_iter; ++i) {
 
     // ADMM ITERATION
 
-    Eigen::Matrix<double, Np, 1> h(np);
-    h.head(n) = prm.sigma * x - pbm.q;
-    h.tail(m) = z - y / prm.rho;
-
     // solve linear system H p = h
-    const Eigen::Matrix<double, Np, 1> p = lu.solve(h);
+    const Rk h = (Rk(k) << prm.sigma * x - pbm.q, z - y / prm.rho).finished();
+    const Rk p = lu.solve(h);
 
-    const RM z_tilde  = z + (p.tail(m) - y) / prm.rho;
-    const RN x_next   = prm.alpha * p.head(n) + (1. - prm.alpha) * x;
-    const RM z_interp = prm.alpha * z_tilde + (1. - prm.alpha) * z;
-    const RM z_next   = (z_interp + y / prm.rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
-    const RM y_next   = y + prm.rho * (z_interp - z_next);
+    const Rm z_tilde  = z + (p.tail(m) - y) / prm.rho;
+    const Rn x_next   = prm.alpha * p.head(n) + (1. - prm.alpha) * x;
+    const Rm z_interp = prm.alpha * z_tilde + (1. - prm.alpha) * z;
+    const Rm z_next   = (z_interp + y / prm.rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
+    const Rm y_next   = y + prm.rho * (z_interp - z_next);
 
-    // check stopping criteria
+    // CHECK STOPPING CRITERIA
+
     if (i % prm.stop_check_iter == prm.stop_check_iter - 1) {
-      const RN dx                = x_next - x;
-      const RM dy                = y_next - y;
-      const double r_primal_norm = (pbm.A * x - z).template lpNorm<Inf>();
-      const double r_dual_norm = (pbm.P * x + pbm.q + pbm.A.transpose() * y).template lpNorm<Inf>();
-      const double dx_norm     = dx.template lpNorm<Inf>();
-      const double dy_norm     = dy.template lpNorm<Inf>();
+      const Rn dx                = x_next - x;
+      const Rm dy                = y_next - y;
+      const Rn Px                = pbm.P * x;
+      const Rm Ax                = pbm.A * x;
+      const Rn Aty               = pbm.A.transpose() * y;
+      const double r_primal_norm = (Ax - z).template lpNorm<Inf>();
+      const double r_dual_norm   = (Px + pbm.q + Aty).template lpNorm<Inf>();
+      const double dx_norm       = dx.template lpNorm<Inf>();
+      const double dy_norm       = dy.template lpNorm<Inf>();
 
       // OPTIMALITY
 
       // clang-format off
-      const double eps_primal = prm.eps_abs + prm.eps_rel * std::max(
-        (pbm.A * x).template lpNorm<Inf>(),
+      const double eps_primal = prm.eps_abs + prm.eps_rel * std::max<double>(
+        Ax.template lpNorm<Inf>(),
         z.template lpNorm<Inf>()
       );
-      const double eps_dual = prm.eps_abs + prm.eps_abs * std::max({
-        (pbm.P * x).template lpNorm<Inf>(),
-        (pbm.A.transpose() * y).template lpNorm<Inf>(),
+      const double eps_dual = prm.eps_abs + prm.eps_abs * std::max<double>({
+        Px.template lpNorm<Inf>(),
+        Aty.template lpNorm<Inf>(),
         pbm.q.template lpNorm<Inf>()
       });
       // clang-format on
 
       if (r_primal_norm <= eps_primal && r_dual_norm <= eps_dual) {
-        return {.code = ExitCode::Optimal, .primal = x, .dual = y};
+        return {.code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
       }
 
       // PRIMAL INFEASIBILITY
@@ -269,7 +271,7 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
 
       bool dual_infeasible = ((pbm.P * dx).template lpNorm<Inf>() <= prm.eps_dual_inf * dx_norm)
                           && (pbm.q.dot(dx) <= prm.eps_dual_inf * dx_norm);
-      const RM Adx = pbm.A * dx;
+      const Rm Adx = pbm.A * dx;
       for (auto i = 0u; i != m && dual_infeasible; ++i) {
         if (pbm.u(i) == std::numeric_limits<double>::infinity()) {
           dual_infeasible &= (Adx(i) >= -prm.eps_dual_inf * dx_norm);
@@ -286,7 +288,7 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
     x = x_next, y = y_next, z = z_next;
   }
 
-  return {.code = ExitCode::MaxIterations, .primal = x, .dual = y};
+  return {.code = ExitCode::MaxIterations, .primal = std::move(x), .dual = std::move(y)};
 }
 
 // Solution<-1, -1> solve(const QuadraticProgramSparse &, const SolverParams &) { return {}; }
