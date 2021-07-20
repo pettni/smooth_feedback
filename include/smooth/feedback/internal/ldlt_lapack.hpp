@@ -8,13 +8,13 @@ namespace smooth::feedback::detail {
 template<typename Scalar>
 struct lapack_ldlt_fcn
 {
-  static constexpr auto value = &LAPACKE_ssysvx;
+  static constexpr auto value = &LAPACKE_ssysvx_work;
 };
 
 template<>
 struct lapack_ldlt_fcn<double>
 {
-  static constexpr auto value = &LAPACKE_dsysvx;
+  static constexpr auto value = &LAPACKE_dsysvx_work;
 };
 
 /**
@@ -34,13 +34,14 @@ public:
    */
   template<typename Derived>
   inline LDLTLapack(const Eigen::MatrixBase<Derived> & A)
-      : n_(A.cols()), A_(A), AF_(A.cols(), A.cols()), IPIV_(A.cols())
+      : n_(A.cols()), A_(A), AF_(A.cols(), A.cols()), IPIV_(A.cols()),
+        work_(std::max<lapack_int>({1, 3 * n_, n_ * n_})), iwork_(n_)
   {
     Eigen::Matrix<Scalar, N, 1> b(n_), x(n_);
     b.setZero();
     Scalar rcond, ferr, berr;
 
-    info_ = (*lapack_ldlt_fcn<Scalar>::value)(LAPACK_COL_MAJOR,
+    (*lapack_ldlt_fcn<Scalar>::value)(LAPACK_COL_MAJOR,
       'N',           // FACT: factor incoming matrix
       'U',           // UPLO
       n_,            // N
@@ -56,7 +57,10 @@ public:
       n_,            // LDX
       &rcond,
       &ferr,
-      &berr);
+      &berr,
+      work_.data(),
+      work_.size(),
+      iwork_.data());
   }
 
   /**
@@ -72,37 +76,45 @@ public:
    *
    * @param b right-hand side in \f$ A x = b \f$.
    */
-  inline Eigen::Matrix<Scalar, N, 1> solve(const Eigen::Matrix<Scalar, N, 1> & b) const
+  inline Eigen::Matrix<Scalar, N, 1> solve(const Eigen::Matrix<Scalar, N, 1> & b)
   {
     Eigen::Matrix<Scalar, N, 1> x(n_);
     Scalar rcond, ferr, berr;
 
-    (*lapack_ldlt_fcn<Scalar>::value)(LAPACK_COL_MAJOR,
-      'F',                                     // FACT: factor incoming matrix
-      'U',                                     // UPLO
-      n_,                                      // N
-      1,                                       // NRHS
-      A_.data(),                               // A
-      n_,                                      // LDA
-      const_cast<Scalar *>(AF_.data()),        // AF
-      n_,                                      // LDAF
-      const_cast<lapack_int *>(IPIV_.data()),  // IPIV
-      b.data(),                                // B
-      n_,                                      // LDB
-      x.data(),                                // X
-      n_,                                      // LDX
+    info_ = (*lapack_ldlt_fcn<Scalar>::value)(LAPACK_COL_MAJOR,
+      'F',           // FACT: use existing factorization
+      'U',           // UPLO
+      n_,            // N
+      1,             // NRHS
+      A_.data(),     // A
+      n_,            // LDA
+      AF_.data(),    // AF
+      n_,            // LDAF
+      IPIV_.data(),  // IPIV
+      b.data(),      // B
+      n_,            // LDB
+      x.data(),      // X
+      n_,            // LDX
       &rcond,
       &ferr,
-      &berr);
+      &berr,
+      work_.data(),
+      work_.size(),
+      iwork_.data());
 
     return x;
   }
 
 private:
-  lapack_int n_;
-  Eigen::Matrix<Scalar, N, N> A_, AF_;
+  const lapack_int n_;
+  const Eigen::Matrix<Scalar, N, N> A_;
+  Eigen::Matrix<Scalar, N, N> AF_;
   Eigen::Matrix<lapack_int, N, 1> IPIV_;
   lapack_int info_;
+
+  static constexpr lapack_int LWORK = N == -1 ? -1 : std::max<lapack_int>({1, 3 * N, N * N});
+  Eigen::Matrix<Scalar, LWORK, 1> work_;
+  Eigen::Matrix<lapack_int, N, 1> iwork_;
 };
 
 }  // namespace smooth::feedback::detail
