@@ -85,6 +85,22 @@ TEST(QP, PrimalInfeasibleHard)
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::PrimalInfeasible);
 }
 
+TEST(QP, PrimalInfeasibleInfinity)
+{
+  smooth::feedback::QuadraticProgram<4, 2> problem;
+  problem.P.setIdentity();
+  problem.q << 0.1, 0.1;
+
+  problem.A << 1, 1, -1, -1, 1, 0, 0, 1;
+  problem.l << 0.5, 0.5, -std::numeric_limits<double>::infinity(),
+    -std::numeric_limits<double>::infinity();
+  problem.u << 1, 1, std::numeric_limits<double>::infinity(),
+    std::numeric_limits<double>::infinity();
+
+  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::PrimalInfeasible);
+}
+
 TEST(QP, DualInfeasible)
 {
   smooth::feedback::QuadraticProgram<2, 2> problem;

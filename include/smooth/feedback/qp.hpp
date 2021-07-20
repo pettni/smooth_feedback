@@ -162,9 +162,12 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows(), np = n + m;
 
   // check that feasible set is nonempty
-  if ((pbm.u - pbm.l).minCoeff() < 0.) {
+  if ((pbm.u - pbm.l).minCoeff() < 0. || pbm.l.maxCoeff() == std::numeric_limits<double>::infinity()
+      || pbm.u.minCoeff() == -std::numeric_limits<double>::infinity()) {
     return {.code = ExitCode::PrimalInfeasible, .primal = {}, .dual = {}};
   }
+
+  // TODO problem scaling / conditioning
 
   // matrix factorization
   Eigen::Matrix<double, Np, Np> H(np, np);
@@ -183,7 +186,7 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
   RM z = RM::Zero(m);
   RM y = RM::Zero(m);
 
-  for (auto i = 0u; i < prm.max_iter; ++i) {
+  for (auto i = 0u; i != prm.max_iter; ++i) {
 
     // ADMM ITERATION
 
@@ -194,16 +197,16 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
     // solve linear system H p = h
     const Eigen::Matrix<double, Np, 1> p = lu.solve(h);
 
-    const RM z_tilde = z + (p.template tail<Ny>(m) - y) / prm.rho;
-    const RN x_next  = prm.alpha * p.template head<Nx>(n) + (1. - prm.alpha) * x;
-    const RM z_next =
-      (prm.alpha * z_tilde + (1. - prm.alpha) * z + y / prm.rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
-    const RM y_next = y + prm.rho * (prm.alpha * z_tilde + (1. - prm.alpha) * z - z_next);
+    const RM z_tilde  = z + (p.template tail<Ny>(m) - y) / prm.rho;
+    const RN x_next   = prm.alpha * p.template head<Nx>(n) + (1. - prm.alpha) * x;
+    const RM z_interp = prm.alpha * z_tilde + (1. - prm.alpha) * z;
+    const RM z_next   = (z_interp + y / prm.rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
+    const RM y_next   = y + prm.rho * (z_interp - z_next);
 
     // check stopping criteria
     if (i % prm.stop_check_iter == prm.stop_check_iter - 1) {
-      const RN dx = x_next - x;
-      const RM dy = y_next - y;
+      const RN dx                = x_next - x;
+      const RM dy                = y_next - y;
       const double r_primal_norm = (pbm.A * x - z).template lpNorm<Inf>();
       const double r_dual_norm = (pbm.P * x + pbm.q + pbm.A.transpose() * y).template lpNorm<Inf>();
       const double dx_norm     = dx.template lpNorm<Inf>();
@@ -229,10 +232,26 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
 
       // PRIMAL INFEASIBILITY
 
-      const double At_dy_norm     = (pbm.A.transpose() * dy).template lpNorm<Inf>();
-      const double u_dy_plus_l_dy = pbm.u.dot(dy.cwiseMax(0.)) + pbm.l.dot(dy.cwiseMin(0.));
+      const double At_dy_norm = (pbm.A.transpose() * dy).template lpNorm<Inf>();
+      double u_dyp_plus_l_dyn = 0;
+      for (auto i = 0u; i != m; ++i) {
+        if (pbm.u(i) != std::numeric_limits<double>::infinity()) {
+          u_dyp_plus_l_dyn += pbm.u(i) * std::max<double>(0, dy(i));
+        } else if (dy(i) > prm.eps_primal_inf * dy_norm) {
+          // contributes +inf to sum --> no certificate
+          u_dyp_plus_l_dyn = std::numeric_limits<double>::infinity();
+          break;
+        }
+        if (pbm.l(i) != -std::numeric_limits<double>::infinity()) {
+          u_dyp_plus_l_dyn += pbm.l(i) * std::min<double>(0, dy(i));
+        } else if (dy(i) < -prm.eps_primal_inf * dy_norm) {
+          // contributes +inf to sum --> no certificate
+          u_dyp_plus_l_dyn = std::numeric_limits<double>::infinity();
+          break;
+        }
+      }
 
-      if (std::max(At_dy_norm, u_dy_plus_l_dy) < prm.eps_primal_inf * dy_norm) {
+      if (std::max<double>(At_dy_norm, u_dyp_plus_l_dyn) < prm.eps_primal_inf * dy_norm) {
         return {.code = ExitCode::PrimalInfeasible, .primal = {}, .dual = {}};
       }
 
@@ -241,7 +260,7 @@ Solution<Ny, Nx> solveQP(const QuadraticProgram<Ny, Nx> & pbm, const SolverParam
       bool dual_infeasible = ((pbm.P * dx).template lpNorm<Inf>() <= prm.eps_dual_inf * dx_norm)
                           && (pbm.q.dot(dx) <= prm.eps_dual_inf * dx_norm);
       const RM Adx = pbm.A * dx;
-      for (auto i = 0u; i < m && dual_infeasible; ++i) {
+      for (auto i = 0u; i != m && dual_infeasible; ++i) {
         if (pbm.u(i) == std::numeric_limits<double>::infinity()) {
           dual_infeasible &= (Adx(i) >= -prm.eps_dual_inf * dx_norm);
         } else if (pbm.l(i) == -std::numeric_limits<double>::infinity()) {
