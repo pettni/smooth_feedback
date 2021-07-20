@@ -28,7 +28,7 @@
 #include <gtest/gtest.h>
 
 static constexpr auto inf   = std::numeric_limits<double>::infinity();
-static constexpr double tol = 1e-2;  // TODO decrease this as solver improves
+static constexpr double tol = 1e-4;  // TODO decrease this as solver improves
 static constexpr smooth::feedback::SolverParams prm{};
 
 TEST(QP, BasicStatic)

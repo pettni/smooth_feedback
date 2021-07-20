@@ -35,6 +35,7 @@
 #include <Eigen/LU>
 #include <Eigen/Sparse>
 
+#include <iostream>
 #include <limits>
 
 namespace smooth::feedback {
@@ -137,8 +138,14 @@ struct SolverParams
 
   /// iterations between checking stopping criterion
   uint64_t stop_check_iter = 10;
-};
 
+  // run solution polishing (uses dynamics memory)
+  bool polish = true;
+  // regularization paramter for polishing
+  float delta = 1e-6;
+  // number of iterations to refine polish
+  uint64_t polish_iter = 5;
+};
 /**
  * @brief Solve a quadratic program using the operator splitting approach.
  *
@@ -192,11 +199,10 @@ Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & P, const S
   H.template topLeftCorner<N, N>(n, n) = P.P;
   H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
   H.template topRightCorner<N, M>(n, m)    = P.A.transpose();
-  H.template bottomLeftCorner<M, N>(m, n)  = P.A;  // TODO ldlt only reads upper triangle
   H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
 
   // TODO need ldlt decomposition for indefinite matrices
-  Eigen::PartialPivLU<decltype(H)> lu(H);
+  Eigen::PartialPivLU<decltype(H)> lu(H.template selfadjointView<Eigen::Upper>());
 
   // initialization
   // TODO what's a good strategy here?
@@ -233,6 +239,7 @@ Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & P, const S
 
       if (norm(Ax - z) <= prm.eps_abs + prm.eps_rel * primal_scale
           && norm(Px + P.q + Aty) <= prm.eps_abs + prm.eps_abs * dual_scale) {
+        if (prm.polish) { polishQP<M, N, Scalar>(x, y, P, prm); }
         return {.code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
       }
 
@@ -287,7 +294,74 @@ Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & P, const S
     x = x_next, y = y_next, z = z_next;
   }
 
+  if (prm.polish) { polishQP<M, N, Scalar>(x, y, P, prm); }
   return {.code = ExitCode::MaxIterations, .primal = std::move(x), .dual = std::move(y)};
+}
+
+/**
+ * @brief Polish solution of quadratic program
+ *
+ * @tparam M number of constrains
+ * @tparam N number of variables
+ * @tparam Scalar scalar type for linear algebra
+ *
+ * @param[out] primal primal solution to qp problem
+ * @param[in,out] dual dual solution to qp problem
+ * @param[in] P problem formulation
+ * @param[in] prm solver options
+ */
+template<Eigen::Index M, Eigen::Index N, typename Scalar>
+void polishQP(Eigen::Matrix<Scalar, N, 1> & primal,
+  Eigen::Matrix<Scalar, M, 1> & dual,
+  const QuadraticProgram<M, N, Scalar> & P,
+  const SolverParams & prm)
+{
+
+  const Eigen::Index n = P.A.cols(), m = P.A.rows(), k = n + m;
+  std::vector<Eigen::Index> L_indices, U_indices;
+  for (Eigen::Index idx = 0; idx < dual.rows(); ++idx) {
+    if (dual[idx] < 0) { L_indices.push_back(idx); }
+    if (dual[idx] > 0) { U_indices.push_back(idx); }
+  }
+
+  const Eigen::Index nl = L_indices.size();
+  const Eigen::Index nu = U_indices.size();
+  const Eigen::Index nb = n + nl + nu;
+
+  // eq. 30 system
+  Eigen::Matrix<Scalar, -1, -1> H      = Eigen::Matrix<Scalar, -1, -1>::Zero(nb, nb);
+  H.template topLeftCorner<N, N>(n, n) = P.P;
+  for (auto i = 0u; i != nl; ++i) { H.col(n + i).head(n) = P.A.row(L_indices[i]); }
+  for (auto i = 0u; i != nu; ++i) { H.col(n + nl + i).head(n) = P.A.row(U_indices[i]); }
+
+  Eigen::Matrix<Scalar, -1, -1> H_perturbed = H;
+  H_perturbed.template topLeftCorner<N, N>(n, n) +=
+    prm.delta * Eigen::Matrix<Scalar, -1, -1>::Identity(n, n);
+  H_perturbed.template block(n, n, nl + nu, nl + nu) -=
+    prm.delta * Eigen::Matrix<Scalar, -1, -1>::Identity(nl + nu, nl + nu);
+
+  Eigen::PartialPivLU<decltype(H_perturbed)> lu(
+    H_perturbed.template selfadjointView<Eigen::Upper>());
+
+  const Eigen::Map<Eigen::Matrix<Eigen::Index, -1, 1>> mL_indices(L_indices.data(), nl, 1);
+  const Eigen::Map<Eigen::Matrix<Eigen::Index, -1, 1>> mU_indices(U_indices.data(), nu, 1);
+
+  const Eigen::Matrix<Scalar, -1, 1> h =
+    (Eigen::Matrix<Scalar, -1, 1>(nb) << -P.q, mL_indices.unaryExpr(P.l), mU_indices.unaryExpr(P.u))
+      .finished();
+  Eigen::Matrix<Scalar, -1, 1> t_hat = lu.solve(h);
+
+  // eq. 31
+  Eigen::Matrix<Scalar, -1, 1> match = Eigen::Matrix<Scalar, -1, 1>::Zero(nb);
+  for (auto i = 0u; i != prm.polish_iter; ++i) {
+    match = h - H.template selfadjointView<Eigen::Upper>() * t_hat;
+    t_hat += lu.solve(match);
+  }
+
+  // TODO confirm that the duals corresponding to inactive constraints do not need to update
+  for (Eigen::Index i = 0; i < nl; ++i) { dual[mL_indices(i)] = t_hat(n + i); }
+  for (Eigen::Index i = 0; i < nu; ++i) { dual[mU_indices(i)] = t_hat(n + nl + i); }
+  primal = t_hat.template head<N>(n);
 }
 
 // Solution<-1, -1> solve(const QuadraticProgramSparse &, const SolverParams &) { return {}; }
