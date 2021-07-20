@@ -126,7 +126,7 @@ struct SolverParams
   double eps_abs = 1e-3;
   /// relative threshold for convergence
   double eps_rel = 1e-3;
-  /// threshold primal infeasibility
+  /// threshold for primal infeasibility
   double eps_primal_inf = 1e-4;
   /// threshold for dual infeasibility
   double eps_dual_inf = 1e-4;

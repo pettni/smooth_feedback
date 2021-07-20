@@ -27,6 +27,10 @@
 
 #include <gtest/gtest.h>
 
+static constexpr auto inf   = std::numeric_limits<double>::infinity();
+static constexpr double tol = 1e-2;  // TODO decrease this as solver improves
+static constexpr smooth::feedback::SolverParams prm{};
+
 TEST(QP, BasicStatic)
 {
   smooth::feedback::QuadraticProgram<2, 2> problem;
@@ -37,9 +41,9 @@ TEST(QP, BasicStatic)
   problem.l << -1, -1;
   problem.u << 1, 1;
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
-  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), 1e-1));
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), tol));
 }
 
 TEST(QP, BasicDynamic)
@@ -55,9 +59,9 @@ TEST(QP, BasicDynamic)
   problem.u.resize(2);
   problem.u << 1, 1;
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
-  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), 1e-1));
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), tol));
 
   static_assert(decltype(sol.primal)::SizeAtCompileTime == -1);
   static_assert(decltype(sol.dual)::SizeAtCompileTime == -1);
@@ -76,9 +80,9 @@ TEST(QP, BasicPartialDynamic)
   problem.u.resize(2);
   problem.u << 1, 1;
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
-  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), 1e-1));
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), tol));
 
   static_assert(decltype(sol.primal)::SizeAtCompileTime == 2);
   static_assert(decltype(sol.dual)::SizeAtCompileTime == -1);
@@ -91,12 +95,12 @@ TEST(QP, Unconstrained)
   problem.q << -8, -6, -10;
 
   problem.A.setZero();
-  problem.l.setConstant(-std::numeric_limits<double>::infinity());
-  problem.u.setConstant(std::numeric_limits<double>::infinity());
+  problem.l.setConstant(-inf);
+  problem.u.setConstant(inf);
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
-  ASSERT_TRUE(sol.primal.isApprox(Eigen::Matrix<double, 3, 1>(1, 0, 2), 1e-1));
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Matrix<double, 3, 1>(1, 0, 2), tol));
 }
 
 TEST(QP, PrimalInfeasibleEasy)
@@ -109,7 +113,7 @@ TEST(QP, PrimalInfeasibleEasy)
   problem.l << -1, 1;
   problem.u << 1, -1;
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::PrimalInfeasible);
 }
 
@@ -123,7 +127,7 @@ TEST(QP, PrimalInfeasibleHard)
   problem.l << 0.5, 0.5;
   problem.u << 1, 1;
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::PrimalInfeasible);
 }
 
@@ -134,12 +138,10 @@ TEST(QP, PrimalInfeasibleInfinity)
   problem.q << 0.1, 0.1;
 
   problem.A << 1, 1, -1, -1, 1, 0, 0, 1;
-  problem.l << 0.5, 0.5, -std::numeric_limits<double>::infinity(),
-    -std::numeric_limits<double>::infinity();
-  problem.u << 1, 1, std::numeric_limits<double>::infinity(),
-    std::numeric_limits<double>::infinity();
+  problem.l << 0.5, 0.5, -inf, -inf;
+  problem.u << 1, 1, inf, inf;
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::PrimalInfeasible);
 }
 
@@ -151,9 +153,30 @@ TEST(QP, DualInfeasible)
   problem.q << 1, -1;
 
   problem.A.setIdentity();
-  problem.l << -1, -std::numeric_limits<double>::infinity();
-  problem.u << 1, std::numeric_limits<double>::infinity();
+  problem.l << -1, -inf;
+  problem.u << 1, inf;
 
-  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  auto sol = smooth::feedback::solveQP(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::DualInfeasible);
+}
+
+TEST(QP, PortfolioOptimization)
+{
+  smooth::feedback::QuadraticProgram<5, 3> problem;
+
+  problem.P << 0.018641, 0.00359853, 0.00130976, 0.00359853, 0.00643694, 0.00488727, 0.00130976,
+    0.00488727, 0.0686828;
+  problem.q.setZero();
+
+  problem.A.row(0) << 1, 1, 1;
+  problem.A.row(1) << 0.0260022, 0.00810132, 0.0737159;
+  problem.A.bottomRows(3).setIdentity();
+
+  problem.l << -inf, 50, 0, 0, 0;
+  problem.u << 1000, inf, inf, inf, inf;
+
+  auto sol = smooth::feedback::solveQP(problem, prm);
+  Eigen::Vector3d answer(497.04552984986384, 0.0, 502.9544801594811);
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
+  ASSERT_TRUE(sol.primal.isApprox(answer, tol));
 }
