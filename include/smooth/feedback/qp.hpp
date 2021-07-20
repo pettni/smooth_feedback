@@ -53,20 +53,20 @@ namespace smooth::feedback {
  * \end{cases}
  * \f]
  */
-template<Eigen::Index M, Eigen::Index N>
+template<Eigen::Index M, Eigen::Index N, typename Scalar = double>
 struct QuadraticProgram
 {
   /// Quadratic cost
-  Eigen::Matrix<double, N, N> P;
+  Eigen::Matrix<Scalar, N, N> P;
   /// Linear cost
-  Eigen::Matrix<double, N, 1> q;
+  Eigen::Matrix<Scalar, N, 1> q;
 
   /// Inequality matrix
-  Eigen::Matrix<double, M, N> A;
+  Eigen::Matrix<Scalar, M, N> A;
   /// Inequality lower bound
-  Eigen::Matrix<double, M, 1> l;
+  Eigen::Matrix<Scalar, M, 1> l;
   /// Inequality upper bound
-  Eigen::Matrix<double, M, 1> u;
+  Eigen::Matrix<Scalar, M, 1> u;
 };
 
 /**
@@ -80,34 +80,35 @@ struct QuadraticProgram
  * \end{cases}
  * \f]
  */
+template<typename Scalar = double>
 struct QuadraticProgramSparse
 {
   /// Quadratic cost
-  Eigen::SparseMatrix<double> P;
+  Eigen::SparseMatrix<Scalar> P;
   /// Linear cost
-  Eigen::SparseMatrix<double> q;
+  Eigen::SparseMatrix<Scalar> q;
 
   /// Inequality matrix
-  Eigen::SparseMatrix<double> A;
+  Eigen::SparseMatrix<Scalar> A;
   /// Inequality lower bound
-  Eigen::SparseMatrix<double> l;
+  Eigen::SparseMatrix<Scalar> l;
   /// Inequality upper bound
-  Eigen::SparseMatrix<double> u;
+  Eigen::SparseMatrix<Scalar> u;
 };
 
 /// Solver exit codes
 enum class ExitCode : int { Optimal, PrimalInfeasible, DualInfeasible, MaxIterations, Unknown };
 
 /// Solver solution
-template<Eigen::Index M, Eigen::Index N>
+template<Eigen::Index M, Eigen::Index N, typename Scalar>
 struct Solution
 {
   /// Exit code
   ExitCode code = ExitCode::Unknown;
   /// Primal vector
-  Eigen::Matrix<double, N, 1> primal;
+  Eigen::Matrix<Scalar, N, 1> primal;
   /// Dual vector
-  Eigen::Matrix<double, M, 1> dual;
+  Eigen::Matrix<Scalar, M, 1> dual;
 };
 
 /**
@@ -116,20 +117,20 @@ struct Solution
 struct SolverParams
 {
   /// relaxation parameter
-  double alpha = 1.6;
+  float alpha = 1.6;
   /// first dul step size
-  double rho = 0.1;
+  float rho = 0.1;
   /// second dual step length
-  double sigma = 1e-6;
+  float sigma = 1e-6;
 
   /// absolute threshold for convergence
-  double eps_abs = 1e-3;
+  float eps_abs = 1e-3;
   /// relative threshold for convergence
-  double eps_rel = 1e-3;
+  float eps_rel = 1e-3;
   /// threshold for primal infeasibility
-  double eps_primal_inf = 1e-4;
+  float eps_primal_inf = 1e-4;
   /// threshold for dual infeasibility
-  double eps_dual_inf = 1e-4;
+  float eps_dual_inf = 1e-4;
 
   /// max number of iterations
   uint64_t max_iter = std::numeric_limits<uint64_t>::max();
@@ -144,7 +145,7 @@ struct SolverParams
  * @tparam M number of constraints
  * @tparam N number of variables
  *
- * @param pbm problem formulation
+ * @param P problem formulation
  * @param prm solver options
  * @return Problem solution as Solution<M, N>
  *
@@ -158,36 +159,41 @@ struct SolverParams
  *
  * For the official C implementation, see https://osqp.org/.
  */
-template<Eigen::Index M, Eigen::Index N>
-Solution<M, N> solveQP(const QuadraticProgram<M, N> & pbm, const SolverParams & prm)
+template<Eigen::Index M, Eigen::Index N, typename Scalar>
+Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & P, const SolverParams & prm)
 {
-  static constexpr double inf = std::numeric_limits<double>::infinity();
+  static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
 
-  const auto norm = [](auto && t) -> double { return t.template lpNorm<Eigen::Infinity>(); };
+  const auto norm = [](auto && t) -> Scalar { return t.template lpNorm<Eigen::Infinity>(); };
+
+  // cast parameters to scalar type
+  const Scalar rho   = static_cast<Scalar>(prm.rho);
+  const Scalar alpha = static_cast<Scalar>(prm.alpha);
+  const Scalar sigma = static_cast<Scalar>(prm.sigma);
 
   // static sizes
   static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
-  using Rn                        = Eigen::Matrix<double, N, 1>;
-  using Rm                        = Eigen::Matrix<double, M, 1>;
-  using Rk                        = Eigen::Matrix<double, K, 1>;
+  using Rn                        = Eigen::Matrix<Scalar, N, 1>;
+  using Rm                        = Eigen::Matrix<Scalar, M, 1>;
+  using Rk                        = Eigen::Matrix<Scalar, K, 1>;
 
   // dynamic sizes
-  const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows(), k = n + m;
+  const Eigen::Index n = P.A.cols(), m = P.A.rows(), k = n + m;
 
   // check that feasible set is nonempty
-  if ((pbm.u - pbm.l).minCoeff() < 0. || pbm.l.maxCoeff() == inf || pbm.u.minCoeff() == -inf) {
+  if ((P.u - P.l).minCoeff() < Scalar(0.) || P.l.maxCoeff() == inf || P.u.minCoeff() == -inf) {
     return {.code = ExitCode::PrimalInfeasible, .primal = {}, .dual = {}};
   }
 
   // TODO problem scaling / conditioning
 
   // matrix factorization
-  Eigen::Matrix<double, K, K> H(k, k);
-  H.template topLeftCorner<N, N>(n, n) = pbm.P;
-  H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, prm.sigma).asDiagonal();
-  H.template topRightCorner<N, M>(n, m)    = pbm.A.transpose();
-  H.template bottomLeftCorner<M, N>(m, n)  = pbm.A;  // TODO ldlt only reads upper triangle
-  H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, -1. / prm.rho).asDiagonal();
+  Eigen::Matrix<Scalar, K, K> H(k, k);
+  H.template topLeftCorner<N, N>(n, n) = P.P;
+  H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
+  H.template topRightCorner<N, M>(n, m)    = P.A.transpose();
+  H.template bottomLeftCorner<M, N>(m, n)  = P.A;  // TODO ldlt only reads upper triangle
+  H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
 
   // TODO need ldlt decomposition for indefinite matrices
   Eigen::PartialPivLU<decltype(H)> lu(H);
@@ -203,14 +209,14 @@ Solution<M, N> solveQP(const QuadraticProgram<M, N> & pbm, const SolverParams & 
     // ADMM ITERATION
 
     // solve linear system H p = h
-    const Rk h = (Rk(k) << prm.sigma * x - pbm.q, z - y / prm.rho).finished();
+    const Rk h = (Rk(k) << sigma * x - P.q, z - y / rho).finished();
     const Rk p = lu.solve(h);
 
-    const Rm z_tilde  = z + (p.tail(m) - y) / prm.rho;
-    const Rn x_next   = prm.alpha * p.head(n) + (1. - prm.alpha) * x;
-    const Rm z_interp = prm.alpha * z_tilde + (1. - prm.alpha) * z;
-    const Rm z_next   = (z_interp + y / prm.rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
-    const Rm y_next   = y + prm.rho * (z_interp - z_next);
+    const Rm z_tilde  = z + (p.tail(m) - y) / rho;
+    const Rn x_next   = alpha * p.head(n) + (Scalar(1.) - alpha) * x;
+    const Rm z_interp = alpha * z_tilde + (Scalar(1.) - alpha) * z;
+    const Rm z_next   = (z_interp + y / rho).cwiseMax(P.l).cwiseMin(P.u);
+    const Rm y_next   = y + rho * (z_interp - z_next);
 
     // CHECK STOPPING CRITERIA
 
@@ -218,15 +224,15 @@ Solution<M, N> solveQP(const QuadraticProgram<M, N> & pbm, const SolverParams & 
 
       // OPTIMALITY
 
-      const Rn Px  = pbm.P * x;
-      const Rm Ax  = pbm.A * x;
-      const Rn Aty = pbm.A.transpose() * y;
+      const Rn Px  = P.P * x;
+      const Rm Ax  = P.A * x;
+      const Rn Aty = P.A.transpose() * y;
 
-      const double primal_scale = std::max<double>(norm(Ax), norm(z));
-      const double dual_scale   = std::max<double>({norm(Px), norm(pbm.q), norm(Aty)});
+      const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(z));
+      const Scalar dual_scale   = std::max<Scalar>({norm(Px), norm(P.q), norm(Aty)});
 
       if (norm(Ax - z) <= prm.eps_abs + prm.eps_rel * primal_scale
-          && norm(Px + pbm.q + Aty) <= prm.eps_abs + prm.eps_abs * dual_scale) {
+          && norm(Px + P.q + Aty) <= prm.eps_abs + prm.eps_abs * dual_scale) {
         return {.code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
       }
 
@@ -234,21 +240,21 @@ Solution<M, N> solveQP(const QuadraticProgram<M, N> & pbm, const SolverParams & 
 
       const Rn dx             = x_next - x;
       const Rm dy             = y_next - y;
-      const double dx_norm    = norm(dx);
-      const double dy_norm    = norm(dy);
-      const double At_dy_norm = norm(pbm.A.transpose() * dy);
+      const Scalar dx_norm    = norm(dx);
+      const Scalar dy_norm    = norm(dy);
+      const Scalar At_dy_norm = norm(P.A.transpose() * dy);
 
-      double u_dyp_plus_l_dyn = 0;
+      Scalar u_dyp_plus_l_dyn = Scalar(0);
       for (auto i = 0u; i != m; ++i) {
-        if (pbm.u(i) != inf) {
-          u_dyp_plus_l_dyn += pbm.u(i) * std::max<double>(0, dy(i));
+        if (P.u(i) != inf) {
+          u_dyp_plus_l_dyn += P.u(i) * std::max<Scalar>(Scalar(0), dy(i));
         } else if (dy(i) > prm.eps_primal_inf * dy_norm) {
           // contributes +inf to sum --> no certificate
           u_dyp_plus_l_dyn = inf;
           break;
         }
-        if (pbm.l(i) != -inf) {
-          u_dyp_plus_l_dyn += pbm.l(i) * std::min<double>(0, dy(i));
+        if (P.l(i) != -inf) {
+          u_dyp_plus_l_dyn += P.l(i) * std::min<Scalar>(Scalar(0), dy(i));
         } else if (dy(i) < -prm.eps_primal_inf * dy_norm) {
           // contributes +inf to sum --> no certificate
           u_dyp_plus_l_dyn = inf;
@@ -256,19 +262,19 @@ Solution<M, N> solveQP(const QuadraticProgram<M, N> & pbm, const SolverParams & 
         }
       }
 
-      if (std::max<double>(At_dy_norm, u_dyp_plus_l_dyn) < prm.eps_primal_inf * dy_norm) {
+      if (std::max<Scalar>(At_dy_norm, u_dyp_plus_l_dyn) < prm.eps_primal_inf * dy_norm) {
         return {.code = ExitCode::PrimalInfeasible, .primal = {}, .dual = {}};
       }
 
       // DUAL INFEASIBILITY
 
-      bool dual_infeasible = (norm(pbm.P * dx) <= prm.eps_dual_inf * dx_norm)
-                          && (pbm.q.dot(dx) <= prm.eps_dual_inf * dx_norm);
-      const Rm Adx = pbm.A * dx;
+      bool dual_infeasible = (norm(P.P * dx) <= prm.eps_dual_inf * dx_norm)
+                          && (P.q.dot(dx) <= prm.eps_dual_inf * dx_norm);
+      const Rm Adx = P.A * dx;
       for (auto i = 0u; i != m && dual_infeasible; ++i) {
-        if (pbm.u(i) == inf) {
+        if (P.u(i) == inf) {
           dual_infeasible &= (Adx(i) >= -prm.eps_dual_inf * dx_norm);
-        } else if (pbm.l(i) == -inf) {
+        } else if (P.l(i) == -inf) {
           dual_infeasible &= (Adx(i) <= prm.eps_dual_inf * dx_norm);
         } else {
           dual_infeasible &= std::abs(Adx(i)) < prm.eps_dual_inf * dx_norm;
