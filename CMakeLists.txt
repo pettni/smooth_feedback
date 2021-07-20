@@ -115,6 +115,10 @@ if(BUILD_TESTING)
   target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff)
   gtest_discover_tests(test_mpc)
 
+  add_executable(test_ldlt test/test_ldlt.cpp)
+  target_link_libraries(test_ldlt PRIVATE feedback lapacke GTest::Main)
+  gtest_discover_tests(test_ldlt)
+
   add_executable(test_qp test/test_qp.cpp)
   target_link_libraries(test_qp PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_qp)
