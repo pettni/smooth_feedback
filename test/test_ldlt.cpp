@@ -26,9 +26,10 @@
 #include <gtest/gtest.h>
 
 #include <smooth/feedback/internal/ldlt_lapack.hpp>
+#include <smooth/feedback/internal/ldlt_sparse.hpp>
 
 template<typename Scalar, std::size_t N>
-void basic_test()
+void dense_test()
 {
   for (auto i = 0; i != 10; ++i) {
     Eigen::Matrix<Scalar, N, N> A = Eigen::Matrix<Scalar, N, N>::Random();
@@ -45,12 +46,41 @@ void basic_test()
 
 TEST(Ldlt, Basic)
 {
-  basic_test<float, 3>();
-  basic_test<double, 3>();
+  srand(42);
 
-  basic_test<float, 10>();
-  basic_test<double, 10>();
+  dense_test<float, 3>();
+  dense_test<double, 3>();
 
-  basic_test<float, 100>();
-  basic_test<double, 100>();
+  dense_test<float, 10>();
+  dense_test<double, 10>();
+
+  dense_test<float, 100>();
+  dense_test<double, 100>();
+}
+
+void sparse_test(int size)
+{
+  for (auto i = 0; i != 10; ++i) {
+    Eigen::MatrixXd A_dense = Eigen::MatrixXd::Random(size, size);
+    A_dense.topRightCorner(size/2, size/2).setZero();
+    Eigen::SparseMatrix<double, Eigen::ColMajor, long> A(size, size);
+    A = A_dense.sparseView();
+
+    Eigen::VectorXd b = Eigen::VectorXd::Random(size);
+
+    smooth::feedback::detail::LDLTSparse ldlt(A);
+    auto x = ldlt.solve(b);
+
+    ASSERT_LE(
+      (A.template selfadjointView<Eigen::Upper>() * x - b).template lpNorm<Eigen::Infinity>(),
+      std::sqrt(std::numeric_limits<double>::epsilon()));
+  }
+}
+
+TEST(LdltSparse, Basic)
+{
+  srand(42);
+  sparse_test(3);
+  sparse_test(10);
+  sparse_test(100);
 }

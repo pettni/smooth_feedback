@@ -1,11 +1,10 @@
-
 #include <Eigen/Core>
 
 #include <lapacke.h>
 
 /**
  * @file
- * @brief Wrapper for lapack ldlt routinges
+ * @brief Wrapper for lapack ldlt routines
  */
 
 namespace smooth::feedback::detail {

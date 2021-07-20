@@ -1,0 +1,71 @@
+#include <Eigen/Sparse>
+
+/**
+ * @file
+ * @brief Wrapper for suitesparse ldl routines
+ */
+
+namespace smooth::feedback::detail {
+
+/**
+ * @brief Wrapper for suitesparse ldl_XXX routines for factorizing and solving
+ * sparse symmetric linear systems of equations.
+ */
+class LDLTSparse
+{
+public:
+  /**
+   * @brief Factorize symmetric \f$ A \f$ to enable solving \f$ A x = b \f$.
+   *
+   * \p A is factorized as \f$ A = U D U^T \f$ where \f$ U \f$ is upper triangular
+   * and \f$ D \f$ is block-diagonal.
+   *
+   * @param A sparse symmetric matrix to factorize.
+   *
+   * @note Only the upper triangular part of \f$ A \f$ is accessed.
+   */
+  inline LDLTSparse(const Eigen::SparseMatrix<double> & A)
+  {
+    auto n = A.cols();
+
+    D_.setZero(n);
+    L_.resize(n, n);
+
+    L_.coeffRef(0, 0) = 1;
+    D_(0) = A.coeff(0, 0);
+
+    for (auto k = 1u; k != n; ++k) {
+      Eigen::SparseMatrix<double> b = A.col(k).head(k);
+      Eigen::VectorXd b_dense(b);
+
+      Eigen::VectorXd y = L_.topLeftCorner(k, k).triangularView<Eigen::Lower>().solve(b_dense);
+
+      for (auto i = 0u; i != k; ++i) {
+        L_.coeffRef(k, i) = y(i) / D_(i);
+      }
+      L_.coeffRef(k, k) = 1;
+      D_(k) = A.coeff(k, k) - L_.row(k).head(k-1).dot(y);
+    }
+
+    std::cout << Eigen::MatrixXd(Eigen::MatrixXd(A).template selfadjointView<Eigen::Upper>()) << std::endl;
+    std::cout << Eigen::MatrixXd(L_) << std::endl;
+    std::cout << Eigen::MatrixXd(D_) << std::endl;
+    std::cout << Eigen::MatrixXd(L_ * D_.asDiagonal() * L_.transpose()) << std::endl;
+  }
+  /**
+   * @brief Solve linear symmetric system of equations.
+   *
+   * @param b right-hand side in \f$ A x = b \f$.
+   */
+  inline Eigen::VectorXd solve(const Eigen::VectorXd & b)
+  {
+    Eigen::VectorXd x = b;
+    return x;
+  }
+
+private:
+  Eigen::VectorXd D_;
+  Eigen::SparseMatrix<double> L_;
+};
+
+}  // namespace smooth::feedback::detail
