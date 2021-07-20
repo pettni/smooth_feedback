@@ -23,9 +23,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <iostream>
-
-// #include <smooth/compat/autodiff.hpp>
 #include <smooth/feedback/qp.hpp>
 
 #include <gtest/gtest.h>
@@ -33,18 +30,72 @@
 TEST(QP, Basic)
 {
   smooth::feedback::QuadraticProgram<2, 2> problem;
-  problem.A.setIdentity();
+  problem.P.setIdentity();
   problem.q << -4, 0.25;
 
-  problem.P.setIdentity();
+  problem.A.setIdentity();
   problem.l << -1, -1;
   problem.u << 1, 1;
 
   auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
-
-  std::cout << "Exited w/ code " << static_cast<int>(sol.code) << std::endl;
-  std::cout << "Found solution " << sol.primal.transpose() << std::endl;
-
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
   ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), 1e-1));
+}
+
+TEST(QP, Unconstrained)
+{
+  smooth::feedback::QuadraticProgram<1, 3> problem;
+  problem.P << 4, 2, 2, 2, 4, 2, 2, 2, 4;
+  problem.q << -8, -6, -10;
+
+  problem.A.setZero();
+  problem.l.setConstant(-std::numeric_limits<double>::infinity());
+  problem.u.setConstant(std::numeric_limits<double>::infinity());
+
+  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Matrix<double, 3, 1>(1, 0, 2), 1e-1));
+}
+
+TEST(QP, PrimalInfeasibleEasy)
+{
+  smooth::feedback::QuadraticProgram<2, 2> problem;
+  problem.P.setIdentity();
+  problem.q << 0.1, 0.1;
+
+  problem.A.setIdentity();
+  problem.l << -1, 1;
+  problem.u << 1, -1;
+
+  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::PrimalInfeasible);
+}
+
+TEST(QP, PrimalInfeasibleHard)
+{
+  smooth::feedback::QuadraticProgram<2, 2> problem;
+  problem.P.setIdentity();
+  problem.q << 0.1, 0.1;
+
+  problem.A << 1, 1, -1, -1;
+  problem.l << 0.5, 0.5;
+  problem.u << 1, 1;
+
+  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::PrimalInfeasible);
+}
+
+TEST(QP, DualInfeasible)
+{
+  smooth::feedback::QuadraticProgram<2, 2> problem;
+  problem.P.setZero();
+  problem.P(0, 0) = 1;
+  problem.q << 1, -1;
+
+  problem.A.setIdentity();
+  problem.l << -1, -std::numeric_limits<double>::infinity();
+  problem.u << 1, std::numeric_limits<double>::infinity();
+
+  auto sol = smooth::feedback::solveQP(problem, smooth::feedback::SolverParams{});
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::DualInfeasible);
 }
