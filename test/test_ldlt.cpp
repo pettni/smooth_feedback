@@ -58,29 +58,32 @@ TEST(Ldlt, Basic)
   dense_test<double, 100>();
 }
 
+template<typename Scalar>
 void sparse_test(int size)
 {
   for (auto i = 0; i != 10; ++i) {
-    Eigen::MatrixXd A_dense = Eigen::MatrixXd::Random(size, size);
+    Eigen::Matrix<Scalar, -1, -1> A_dense = Eigen::Matrix<Scalar, -1, -1>::Random(size, size);
     A_dense.topRightCorner(size/2, size/2).setZero();
-    Eigen::SparseMatrix<double, Eigen::ColMajor, long> A(size, size);
+    Eigen::SparseMatrix<Scalar, Eigen::ColMajor, long> A(size, size);
     A = A_dense.sparseView();
 
-    Eigen::VectorXd b = Eigen::VectorXd::Random(size);
+    Eigen::Matrix<Scalar, -1, 1> b = Eigen::Matrix<Scalar, -1, 1>::Random(size);
 
-    smooth::feedback::detail::LDLTSparse ldlt(A);
+    smooth::feedback::detail::LDLTSparse<Scalar> ldlt(A);
     auto x = ldlt.solve(b);
 
     ASSERT_LE(
       (A.template selfadjointView<Eigen::Upper>() * x - b).template lpNorm<Eigen::Infinity>(),
-      std::sqrt(std::numeric_limits<double>::epsilon()));
+      std::sqrt(std::numeric_limits<Scalar>::epsilon()));
   }
 }
 
 TEST(LdltSparse, Basic)
 {
   srand(42);
-  sparse_test(3);
-  sparse_test(10);
-  sparse_test(100);
+  sparse_test<float>(3);
+  sparse_test<double>(3);
+  sparse_test<float>(10);
+  sparse_test<double>(10);
+  sparse_test<double>(100);
 }
