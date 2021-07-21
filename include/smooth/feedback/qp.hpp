@@ -146,6 +146,7 @@ struct SolverParams
   /// regularization parameter for polishing
   float delta = 1e-6;
 };
+
 /**
  * @brief Solve a quadratic program using the operator splitting approach.
  *
@@ -154,6 +155,7 @@ struct SolverParams
  *
  * @param prb problem formulation
  * @param prm solver options
+ * @param hotstart provide initial guess for primal and dual variables
  * @return Problem solution as Solution<M, N>
  *
  * @note dynamic problem sizes (`M == -1 || N == -1`) are supported
@@ -167,7 +169,9 @@ struct SolverParams
  * For the official C implementation, see https://osqp.org/.
  */
 template<Eigen::Index M, Eigen::Index N, typename Scalar>
-Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & prb, const SolverParams & prm)
+Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & prb,
+  const SolverParams & prm,
+  std::optional<std::reference_wrapper<const Solution<M, N, Scalar>>> hotstart = {})
 {
   static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
 
@@ -207,10 +211,20 @@ Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & prb, const
   if (ldlt.info()) { return {.code = ExitCode::Unknown, .primal = {}, .dual = {}}; }
 
   // initialization
-  // TODO what's a good strategy here?
-  Rn x = Rn::Zero(n);
-  Rm z = Rm::Zero(m);
-  Rm y = Rm::Zero(m);
+  Rn x(n);
+  Rm z(m);
+  Rm y(m);
+
+  if (hotstart.has_value()) {
+    x = hotstart.value().get().primal;
+    z = prb.A * x;
+    y = hotstart.value().get().dual;
+  } else {
+    // TODO what's a good choice here?
+    x.setZero();
+    y.setZero();
+    z.setZero();
+  }
 
   for (auto i = 0u; i != prm.max_iter; ++i) {
 
@@ -291,6 +305,8 @@ Solution<M, N, Scalar> solveQP(const QuadraticProgram<M, N, Scalar> & prb, const
       }
 
       if (dual_infeasible) { return {.code = ExitCode::DualInfeasible, .primal = {}, .dual = {}}; }
+
+      // TODO print solver info (if verbose flag)
     }
 
     x = x_next, y = y_next, z = z_next;
@@ -369,6 +385,8 @@ bool polishQP(Eigen::Matrix<Scalar, N, 1> & primal,
   for (Eigen::Index i = 0; i < nl; ++i) { dual(L_indices(i)) = t_hat(n + i); }
   for (Eigen::Index i = 0; i < nu; ++i) { dual(U_indices(i)) = t_hat(n + nl + i); }
 
+  // TODO print polishing info (if verbose flag)
+      
   return true;
 }
 
