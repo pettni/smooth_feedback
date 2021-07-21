@@ -233,25 +233,33 @@ typename detail::qp_traits<Problem>::sol_t solveQP(const Problem & pbm,
   std::conditional_t<is_sparse, Eigen::SparseMatrix<double>, Eigen::Matrix<Scalar, K, K>> H(k, k);
 
   if constexpr (is_sparse) {
-    // TODO preallocate pattern
+    Eigen::SparseMatrix<Scalar> At = pbm.A.transpose();
 
-    for (auto col = 0u; col != n; ++col) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(pbm.P, col); it; ++it) {
+    // preallocate nonzeros
+    Eigen::Matrix<int, -1, 1> nnz(k);
+    for (auto i = 0u; i != n; ++i) { nnz(i) = pbm.P.outerIndexPtr()[i] + 1; }
+    for (auto i = 0u; i != m; ++i) { nnz(n + i) = At.outerIndexPtr()[i] + 1; }
+    H.reserve(nnz);
+
+    for (Eigen::Index col = 0u; col != n; ++col) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(pbm.P, col); it && it.index() <= col;
+           ++it) {
         H.coeffRef(it.index(), col) = it.value();
       }
       H.coeffRef(col, col) += sigma;
     }
 
     for (auto col = 0u; col != m; ++col) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(pbm.A, col); it; ++it) {
-        H.coeffRef(col, n + it.index()) = it.value();
+      for (Eigen::SparseMatrix<double>::InnerIterator it(At, col); it; ++it) {
+        H.coeffRef(it.index(), n + col) = it.value();
       }
       H.coeffRef(n + col, n + col) -= Scalar(1) / rho;
     }
+    H.makeCompressed();
   } else {
     H.template topLeftCorner<N, N>(n, n) = pbm.P;
     H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
-    H.template topRightCorner<N, M>(n, m)  = pbm.A.transpose();
+    H.template topRightCorner<N, M>(n, m)    = pbm.A.transpose();
     H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
   }
 
