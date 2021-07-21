@@ -23,7 +23,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <iostream>
+#include <gtest/gtest.h>
 
 // #include <smooth/compat/autodiff.hpp>
 // #include <smooth/compat/ceres.hpp>
@@ -31,7 +31,6 @@
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 
-#include <gtest/gtest.h>
 
 TEST(Mpc, Basic)
 {

@@ -110,7 +110,7 @@ public:
   /**
    * @brief Solve linear symmetric system of equations.
    *
-   * @param[in, out] in: b right-hand side in \f$ A x = b \f$, out: solution x.
+   * @param[in, out] b in: right-hand side in \f$ A x = b \f$, out: solution x.
    */
   inline void solve_inplace(Eigen::Matrix<Scalar, -1, 1> & b) const
   {

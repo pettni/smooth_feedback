@@ -159,7 +159,7 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
 
   const double dt = pbm.T / static_cast<double>(K);
 
-  QuadraticProgram<nvar, ncon> ret;
+  QuadraticProgram<ncon, nvar> ret;
 
   // DYNAMICS CONSTRAINTS
 

@@ -23,9 +23,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <gtest/gtest.h>
+
 #include <smooth/feedback/qp.hpp>
 
-#include <gtest/gtest.h>
 
 static constexpr auto inf   = std::numeric_limits<double>::infinity();
 static constexpr double tol = 1e-4;  // TODO decrease this as solver improves

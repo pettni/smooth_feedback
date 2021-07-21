@@ -101,7 +101,7 @@ if(BUILD_TESTING)
   find_package(autodiff REQUIRED)
   find_package(Ceres REQUIRED)
 
-  # add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+  add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
   # add_executable(test_asif test/test_asif.cpp)
   # target_link_libraries(test_asif PRIVATE feedback GTest::Main autodiff::autodiff)
@@ -116,14 +116,10 @@ if(BUILD_TESTING)
   gtest_discover_tests(test_mpc)
 
   add_executable(test_ldlt test/test_ldlt.cpp)
-  target_link_libraries(test_ldlt PRIVATE
-    feedback
-    lapacke
-    GTest::Main
-  )
+  target_link_libraries(test_ldlt PRIVATE feedback lapacke GTest::Main)
   gtest_discover_tests(test_ldlt)
 
   add_executable(test_qp test/test_qp.cpp)
-  target_link_libraries(test_qp PRIVATE feedback GTest::Main)
+  target_link_libraries(test_qp PRIVATE feedback lapacke GTest::Main)
   gtest_discover_tests(test_qp)
 endif()

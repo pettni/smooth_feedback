@@ -39,14 +39,14 @@ namespace smooth::feedback::detail {
 
 // \cond
 template<typename Scalar>
-struct lapack_ldlt_fcn
+struct lapack_xsytr
 {
   static constexpr auto factor = &LAPACKE_ssytrf_work;
   static constexpr auto solve  = &LAPACKE_ssytrs_work;
 };
 
 template<>
-struct lapack_ldlt_fcn<double>
+struct lapack_xsytr<double>
 {
   static constexpr auto factor = &LAPACKE_dsytrf_work;
   static constexpr auto solve  = &LAPACKE_dsytrs_work;
@@ -73,18 +73,21 @@ public:
    */
   inline LDLTLapack(Eigen::Matrix<Scalar, N, N> && A) : n_(A.cols()), AF_(std::move(A)), IPIV_(n_)
   {
-    static constexpr lapack_int LWORK = N == -1 ? -1 : 2 * N;
-    Eigen::Matrix<Scalar, LWORK, 1> work(3 * N);
+    static constexpr lapack_int LWORK = N == -1 ? -1 : 3 * N;
+    Eigen::Matrix<Scalar, LWORK, 1> work(3 * n_);
 
-    info_ = (*lapack_ldlt_fcn<Scalar>::factor)(LAPACK_COL_MAJOR,
-      'U',           // UPLO
-      n_,            // N
-      AF_.data(),    // A
-      n_,            // LDA
-      IPIV_.data(),  // IPIV
-      work.data(),
-      work.size());
+    info_ = (*lapack_xsytr<Scalar>::factor)(
+      LAPACK_COL_MAJOR, 'U', n_, AF_.data(), n_, IPIV_.data(), work.data(), work.size());
   }
+
+  /// Default copy constructor
+  LDLTLapack(const LDLTLapack &) = default;
+  /// Default copy assignment
+  LDLTLapack & operator=(const LDLTLapack &) = default;
+  /// Default move constructor
+  LDLTLapack(LDLTLapack &&) = default;
+  /// Default move assignment
+  LDLTLapack & operator=(LDLTLapack &&) = default;
 
   /**
    * @brief Factorize symmetric \f$ A \f$ to enable solving \f$ A x = b \f$.
@@ -118,15 +121,8 @@ public:
    */
   inline void solve_inplace(Eigen::Matrix<Scalar, N, 1> & b)
   {
-    info_ = (*lapack_ldlt_fcn<Scalar>::solve)(LAPACK_COL_MAJOR,
-      'U',           // UPLO
-      n_,            // N
-      1,             // NRHS
-      AF_.data(),    // A
-      n_,            // LDA
-      IPIV_.data(),  // IPIV
-      b.data(),      // B
-      n_);           // LDB
+    info_ = (*lapack_xsytr<Scalar>::solve)(
+      LAPACK_COL_MAJOR, 'U', n_, 1, AF_.data(), n_, IPIV_.data(), b.data(), n_);
   }
 
   /**
@@ -142,7 +138,7 @@ public:
   }
 
 private:
-  const lapack_int n_;
+  lapack_int n_;
   Eigen::Matrix<Scalar, N, N, Eigen::ColMajor> AF_;
   Eigen::Matrix<lapack_int, N, 1> IPIV_;
   lapack_int info_;
