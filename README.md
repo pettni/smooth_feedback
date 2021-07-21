@@ -3,24 +3,27 @@
 Control and estimation on Lie groups
 
 Planned content:
+
 - Algo
-  - [ ] QP solver (osqp-eigen)
-  ```
-  solve_qp(P, p, l, A, u);  // dense version
-  solve_qp(P, p, l, A, u);  // sparse version
-  ```
+  - [/] QP solver
+
 - Control
   - [ ] PD
-  - [x] MPC: requires QP
-  - [ ] asif++: requires QP
-  ```
-  const auto [P, p, l, A, u] = asif(ode, backup, safetyset, opts);
-  ```
+  - [x] MPC -> QP
+  - [/] asif++ -> QP
+
 - Estimation:
   - [x] EKF
-  - [ ] UKF
-  - [ ] EKF with horizon (fixed-lag/fixed-interval smoother?)
+  - [ ] UKF?
+  - [ ] EKF with horizon (fixed-lag/fixed-interval smoother?)?
   - [ ] Pose-graph optimizer (NLE)
+
+## Control
+
+### smooth::feedback::MPC: Model-Predictive Control on Lie groups
+
+* Linearization and time discretization of nonlinear dynamics
+* Templated on problem size
 
 ## Filtering
 
@@ -53,3 +56,19 @@ ekf.update([&landmark](const auto & x) { return x.inverse() * landmark; },  // m
 // access estimate
 std::cout << ekf.estimate() << std::endl;
 ```
+## Optimization
+
+### smooth::feedback::solveQP: Eigen implementation of the operator splitting approach 
+
+* [ ] Dense *and* sparse problems [must implement sparse]
+* [ ] Written in Eigen for vectorization [should verify assembly]
+* [ ] Faster than OSQP [need at least two benchmarks]
+* [x] Templated on Scalar type
+
+## TODOs
+
+- [ ] Sparse QP solver
+- [ ] QP conditioning
+- [ ] QP benchmarking
+- [ ] Sparse MPC
+- [ ] Bound distance from linearization in MPC

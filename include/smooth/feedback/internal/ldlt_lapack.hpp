@@ -58,7 +58,8 @@ struct lapack_xsytr<double>
  * symmetric linear systems of equations.
  */
 template<typename Scalar, Eigen::Index N>
-  requires std::is_same_v<Scalar, float> || std::is_same_v<Scalar, double> class LDLTLapack
+  requires std::is_same_v<Scalar, float> || std::is_same_v<Scalar, double>
+class LDLTLapack
 {
 public:
   /**
@@ -71,13 +72,19 @@ public:
    *
    * @note Only the upper triangular part of \f$ A \f$ is accessed.
    */
-  inline LDLTLapack(Eigen::Matrix<Scalar, N, N> && A) : n_(A.cols()), AF_(std::move(A)), IPIV_(n_)
+  inline LDLTLapack(Eigen::Matrix<Scalar, N, N> && A) : AF_(std::move(A)), IPIV_(AF_.cols())
   {
     static constexpr lapack_int LWORK = N == -1 ? -1 : 3 * N;
-    Eigen::Matrix<Scalar, LWORK, 1> work(3 * n_);
+    Eigen::Matrix<Scalar, LWORK, 1> work(3 * AF_.cols());
 
-    info_ = (*lapack_xsytr<Scalar>::factor)(
-      LAPACK_COL_MAJOR, 'U', n_, AF_.data(), n_, IPIV_.data(), work.data(), work.size());
+    info_ = (*lapack_xsytr<Scalar>::factor)(LAPACK_COL_MAJOR,
+      'U',
+      AF_.cols(),
+      AF_.data(),
+      AF_.rows(),
+      IPIV_.data(),
+      work.data(),
+      work.size());
   }
 
   /// Default copy constructor
@@ -88,6 +95,16 @@ public:
   LDLTLapack(LDLTLapack &&) = default;
   /// Default move assignment
   LDLTLapack & operator=(LDLTLapack &&) = default;
+
+  /**
+   * @brief Factorization status
+   *
+   * @return integer \f$ i \f$
+   *
+   * * 0: successful exit
+   * * \f$ i > 0 \f$: input matrix is singular s.t. \f$ D(i, i) = 0 \f$.
+   */
+  inline int info() const { return info_; }
 
   /**
    * @brief Factorize symmetric \f$ A \f$ to enable solving \f$ A x = b \f$.
@@ -105,24 +122,21 @@ public:
   {}
 
   /**
-   * @brief Factorization status
-   *
-   * @return integer \f$ i \f$
-   *
-   * * 0: successful exit
-   * * \f$ i > 0 \f$: input matrix is singular s.t. \f$ D(i, i) = 0 \f$.
-   */
-  inline lapack_int info() const { return info_; }
-
-  /**
    * @brief Solve linear symmetric system of equations in-place.
    *
    * @param[in, out] b in: right-hand side in \f$ A x = b \f$, out: solution \f$ x \f$
    */
   inline void solve_inplace(Eigen::Matrix<Scalar, N, 1> & b)
   {
-    info_ = (*lapack_xsytr<Scalar>::solve)(
-      LAPACK_COL_MAJOR, 'U', n_, 1, AF_.data(), n_, IPIV_.data(), b.data(), n_);
+    info_ = (*lapack_xsytr<Scalar>::solve)(LAPACK_COL_MAJOR,
+      'U',
+      AF_.cols(),
+      1,
+      AF_.data(),
+      AF_.rows(),
+      IPIV_.data(),
+      b.data(),
+      b.size());
   }
 
   /**
@@ -138,10 +152,9 @@ public:
   }
 
 private:
-  lapack_int n_;
+  lapack_int info_;
   Eigen::Matrix<Scalar, N, N, Eigen::ColMajor> AF_;
   Eigen::Matrix<lapack_int, N, 1> IPIV_;
-  lapack_int info_;
 };
 
 }  // namespace smooth::feedback::detail

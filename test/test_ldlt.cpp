@@ -64,6 +64,8 @@ void sparse_test(int size)
   for (auto i = 0; i != 10; ++i) {
     Eigen::Matrix<Scalar, -1, -1> A_dense = Eigen::Matrix<Scalar, -1, -1>::Random(size, size);
     A_dense.topRightCorner(size/2, size/2).setZero();
+    A_dense = A_dense.template selfadjointView<Eigen::Upper>();
+
     Eigen::SparseMatrix<Scalar, Eigen::ColMajor, long> A(size, size);
     A = A_dense.sparseView();
 

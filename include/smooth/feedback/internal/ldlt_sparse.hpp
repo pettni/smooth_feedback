@@ -59,6 +59,7 @@ public:
 
     L_.resize(n, n);
     L_.setIdentity();
+
     // TODO determine sparsity pattern of L via graph method...
 
     d_inv_.resize(n);
@@ -68,7 +69,7 @@ public:
       info_ = 1;
       return;
     }
-    d_inv_(0) = 1. / A.coeff(0, 0);
+    d_inv_(0) = Scalar(1.) / d_new;
 
     for (auto k = 1u; k != n; ++k) {
       // TODO this copy must be avoided...
@@ -80,7 +81,7 @@ public:
 
       // set L[k, :] = Dinv[:k, :k] * y
       // and calculate d_new = A[k, k] - y' D y
-      double d_new = A.coeff(k, k);
+      Scalar d_new = A.coeff(k, k);
       for (typename Eigen::SparseMatrix<Scalar>::InnerIterator it(y, 0); it; ++it) {
         L_.insert(k, it.index()) = it.value() * d_inv_(it.index());
         d_new -= it.value() * it.value() * d_inv_(it.index());
@@ -90,12 +91,21 @@ public:
         info_ = k + 1;
         return;
       }
-      d_inv_(k) = 1. / d_new;
+      d_inv_(k) = Scalar(1.) / d_new;
     }
 
     L_.makeCompressed();
     info_ = 0;
   }
+
+  /// Default copy constructor
+  LDLTSparse(const LDLTSparse &) = default;
+  /// Default copy assignment
+  LDLTSparse & operator=(const LDLTSparse &) = default;
+  /// Default move constructor
+  LDLTSparse(LDLTSparse &&) = default;
+  /// Default move assignment
+  LDLTSparse & operator=(LDLTSparse &&) = default;
 
   /**
    * @brief Factorization status
@@ -133,9 +143,9 @@ public:
   }
 
 private:
-  Eigen::Matrix<Scalar, -1, 1> d_inv_;
-  Eigen::SparseMatrix<Scalar, Eigen::ColMajor> L_;
   int info_;
+  Eigen::SparseMatrix<Scalar, Eigen::ColMajor> L_;
+  Eigen::Matrix<Scalar, -1, 1> d_inv_;
 };
 
 }  // namespace smooth::feedback::detail
