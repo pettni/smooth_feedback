@@ -35,22 +35,25 @@
 
 namespace smooth::feedback::detail {
 
+template<typename Scalar, int Layout = Eigen::ColMajor>
+using It = typename Eigen::SparseMatrix<Scalar, Layout>::InnerIterator;
+
 /**
  * Compute the nonzero pattern of L in LDL' factorization of A
  */
 template<typename Scalar, int Layout>
-inline Eigen::Matrix<int, -1, 1> ldlt_row_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
+inline auto ldlt_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
 {
-  using It       = typename Eigen::SparseMatrix<Scalar, Layout>::InnerIterator;
   Eigen::Index n = A.cols();
 
   // nnz(k) = # nonzeros in row k of L
   Eigen::Matrix<int, -1, 1> nnz =
     Eigen::Matrix<int, -1, 1>::Ones(n);  // account for ones on diagonal
+  Eigen::Matrix<int, -1, 1> nnz_row =
+    Eigen::Matrix<int, -1, 1>::Ones(n);  // account for ones on diagonal
 
   // elimination tree: tree(i) = min { j : j > i, l_{ji} != 0 }
-  // elimination tree is s.t. a non-zero at A_ki causes fill-in in row k for all tree successors of
-  // i
+  // elimination tree is s.t. a non-zero at A_ki causes fill-in in row k for tree successors of i
   Eigen::Matrix<int, -1, 1> tree(n);
   Eigen::Matrix<int, -1, 1> visited(n);
 
@@ -60,19 +63,19 @@ inline Eigen::Matrix<int, -1, 1> ldlt_row_nnz(const Eigen::SparseMatrix<Scalar, 
     visited(row) = row;  // mark
 
     // traverse non-zeros in corresponding row/column of symmetric A (up to diagonal)
-    for (It it(A, row); it && it.index() < row; ++it) {
-      int col = it.index();
+    for (It<Scalar, Layout> it(A, row); it && it.index() < row; ++it) {
       // traverse elimination tree to determine fill-in from non-zero A_{col, row}
-      for (; visited(col) != row; col = tree(col)) {
+      for (int col = it.index(); visited(col) != row; col = tree(col)) {
         // found new non-zero
         if (tree(col) == -1) { tree(col) = row; }  // first non-zero in this column
-        ++nnz(row);                                // increment count of row non-zeros
+        ++nnz(col);                                // increment count of column non-zeros
+        ++nnz_row(row);                            // increment count of column non-zeros
         visited(col) = row;
       }
     }
   }
 
-  return nnz;
+  return std::make_tuple(nnz, nnz_row, tree);
 }
 
 /**
@@ -96,8 +99,9 @@ public:
   {
     auto n = A.cols();
 
+    const auto [nnz_col, nnz_row, tree] = ldlt_nnz(A);
     L_.resize(n, n);
-    L_.reserve(ldlt_row_nnz(A));
+    L_.reserve(nnz_col);
 
     d_inv_.resize(n);
 
@@ -106,31 +110,51 @@ public:
       info_ = 1;
       return;
     }
-    d_inv_(0) = Scalar(1.) / d_new;
+    d_inv_(0)       = Scalar(1.) / d_new;
     L_.insert(0, 0) = Scalar(1);
 
-    for (auto k = 1u; k != n; ++k) {
-      // TODO this copy must be avoided...
-      Eigen::SparseMatrix<Scalar> Lkk(L_.topLeftCorner(k, k));
+    Eigen::Matrix<int, -1, 1> visited(n);
 
-      // solve (k-1) x (k-1) lower triangular sparse system L[:k, :k] y = A[:k, k]
-      Eigen::SparseMatrix<Scalar, Eigen::ColMajor> y = A.col(k).head(k);
-      Lkk.template triangularView<Eigen::Lower>().solveInPlace(y);
+    for (auto row = 1u; row != n; ++row) {
+      // this solves the triangular sparse system
+      //  L[:k, :k] y = A[:k, k] w.r.t. y
+      Eigen::SparseMatrix<Scalar, Eigen::ColMajor> y(row, 1);
+      y.reserve(nnz_row(row) - 1);
+      visited[row] = row;
 
-      // set L[k, :] = Dinv[:k, :k] * y
-      // and calculate d_new = A[k, k] - y' D y
-      Scalar d_new = A.coeff(k, k);
+      // pass one: insert elements (some zero) to establish y pattern
+      for (It<Scalar> it(A, row); it && it.index() < row; ++it) {
+        y.coeffRef(it.index(), 0) += it.value();  // set y[i] = A(row, i)
+        for (int node = tree(it.index()); visited[node] != row; node = tree(node)) {
+          y.coeffRef(node, 0) += 0.;  // mark as nonzero (inefficient, may not be ordered)
+          visited[node] = row;
+        }
+      }
+
+      // pass two: iterate over columns k of L and perform subtractions y_k -= l_{k, i} y_i
+      // we can loop over y since pattern is established
+      for (It<Scalar> it_y(y, 0); it_y; ++it_y) {
+        It<Scalar> it_l(L_, it_y.index());
+        ++it_l;  // step past one on diagonal
+        for (; it_l && it_l.index() < row; ++it_l) {
+          y.coeffRef(it_l.index(), 0) -= it_y.value() * it_l.value();
+        }
+      }
+
+      // set L[row, :] = Dinv[:row, :row] * y
+      // and calculate d_new = A[row, row] - y' D y
+      Scalar d_new = A.coeff(row, row);
       for (typename Eigen::SparseMatrix<Scalar>::InnerIterator it(y, 0); it; ++it) {
-        L_.insert(k, it.index()) = it.value() * d_inv_(it.index());
+        L_.insert(row, it.index()) = it.value() * d_inv_(it.index());
         d_new -= it.value() * it.value() * d_inv_(it.index());
       }
 
       if (d_new == 0) {
-        info_ = k + 1;
+        info_ = row + 1;
         return;
       }
-      d_inv_(k)       = Scalar(1) / d_new;
-      L_.insert(k, k) = Scalar(1);
+      d_inv_(row)         = Scalar(1) / d_new;
+      L_.insert(row, row) = Scalar(1);
     }
 
     L_.makeCompressed();
@@ -184,7 +208,7 @@ public:
 
 private:
   int info_;
-  Eigen::SparseMatrix<Scalar, Eigen::RowMajor> L_;
+  Eigen::SparseMatrix<Scalar, Eigen::ColMajor> L_;
   Eigen::Matrix<Scalar, -1, 1> d_inv_;
 };
 
