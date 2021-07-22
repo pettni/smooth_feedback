@@ -60,7 +60,7 @@ std::cout << ekf.estimate() << std::endl;
 
 ### smooth::feedback::solveQP: Eigen implementation of the operator splitting approach 
 
-* [ ] Dense *and* sparse problems [must implement sparse]
+* [x] Dense *and* sparse problems
 * [ ] Written in Eigen for vectorization [should verify assembly]
 * [ ] Faster than OSQP [need at least two benchmarks]
 * [x] Templated on Scalar type

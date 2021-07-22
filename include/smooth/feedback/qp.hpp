@@ -41,6 +41,8 @@
 
 namespace smooth::feedback {
 
+using detail::LDLTSparse, detail::LDLTLapack;
+
 /**
  * @brief Quadratic program definition.
  *
@@ -160,24 +162,26 @@ struct SolverParams
   float delta = 1e-6;
 };
 
-namespace detail {
+// Traits to figure solution type from problem type
+// \cond
 template<typename T>
-struct qp_traits;
+struct QpSol;
 
 template<typename Scalar, Eigen::Index M, Eigen::Index N>
-struct qp_traits<QuadraticProgram<M, N, Scalar>>
+struct QpSol<QuadraticProgram<M, N, Scalar>>
 {
-  static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
-
-  using sol_t = Solution<M, N, Scalar>;
+  using type = Solution<M, N, Scalar>;
 };
 
 template<typename Scalar>
-struct qp_traits<QuadraticProgramSparse<Scalar>>
+struct QpSol<QuadraticProgramSparse<Scalar>>
 {
-  using sol_t = Solution<-1, -1, Scalar>;
+  using type = Solution<-1, -1, Scalar>;
 };
-}  // namespace detail
+
+template<typename T>
+using QpSol_t = typename QpSol<T>::type;
+// \endcond
 
 /**
  * @brief Solve a quadratic program using the operator splitting approach.
@@ -200,9 +204,9 @@ struct qp_traits<QuadraticProgramSparse<Scalar>>
  * For the official C implementation, see https://osqp.org/.
  */
 template<typename Pbm>
-typename detail::qp_traits<Pbm>::sol_t solveQP(const Pbm & pbm,
+QpSol_t<Pbm> solveQP(const Pbm & pbm,
   const SolverParams & prm,
-  std::optional<std::reference_wrapper<const typename detail::qp_traits<Pbm>::sol_t>> hotstart = {})
+  std::optional<std::reference_wrapper<const QpSol_t<Pbm>>> hotstart = {})
 {
   using AmatT                  = decltype(Pbm::A);
   static constexpr bool sparse = std::is_base_of_v<Eigen::SparseMatrixBase<AmatT>, AmatT>;
@@ -275,7 +279,8 @@ typename detail::qp_traits<Pbm>::sol_t solveQP(const Pbm & pbm,
   }
 
   // factorize H
-  std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, K>> ldlt(H);
+  std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, K>> ldlt(
+    std::move(H));
 
   if (ldlt.info()) { return {.code = ExitCode::Unknown, .primal = {}, .dual = {}}; }
 
@@ -323,9 +328,7 @@ typename detail::qp_traits<Pbm>::sol_t solveQP(const Pbm & pbm,
 
       if (norm(Ax - z) <= prm.eps_abs + prm.eps_rel * primal_scale
           && norm(Px + pbm.q + Aty) <= prm.eps_abs + prm.eps_abs * dual_scale) {
-        typename detail::qp_traits<Pbm>::sol_t sol{
-          .code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
-
+        QpSol_t<Pbm> sol{.code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
         if (prm.polish) { polishQP(pbm, sol, prm); }
         return sol;
       }
@@ -389,26 +392,25 @@ typename detail::qp_traits<Pbm>::sol_t solveQP(const Pbm & pbm,
 /**
  * @brief Polish solution of quadratic program
  *
- * @tparam M number of constrains
- * @tparam N number of variables
- * @tparam Scalar scalar type for linear algebra
+ * @tparam Pbm problem type
  *
- * @param[out] primal primal solution to qp problem
- * @param[in,out] dual dual solution to qp problem
  * @param[in] pbm problem formulation
+ * @param[in, out] sol solution to polish
  * @param[in] prm solver options
  */
 template<typename Pbm>
-void polishQP(
-  const Pbm & pbm, typename detail::qp_traits<Pbm>::sol_t & sol, const SolverParams & prm)
+void polishQP(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
 {
   using AmatT                  = decltype(Pbm::A);
   using Scalar                 = typename AmatT::Scalar;
+  using VecX                   = Eigen::Matrix<Scalar, -1, 1>;
   static constexpr bool sparse = std::is_base_of_v<Eigen::SparseMatrixBase<AmatT>, AmatT>;
 
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows();
 
   // FIND ACTIVE CONSTRAINT SETS
+
+  // TODO would make sense to add small margins here
 
   Eigen::Index nl = 0, nu = 0;
   for (Eigen::Index idx = 0; idx < m; ++idx) {
@@ -416,93 +418,79 @@ void polishQP(
     if (sol.dual[idx] > 0) { nu++; }
   }
 
-  Eigen::Matrix<Eigen::Index, -1, 1> L_indices(nl), U_indices(nu);
-  nl = 0, nu = 0;
-  for (Eigen::Index idx = 0; idx < m; ++idx) {
-    if (sol.dual[idx] < 0) { L_indices(nl++) = idx; }
-    if (sol.dual[idx] > 0) { U_indices(nu++) = idx; }
+  Eigen::Matrix<Eigen::Index, -1, 1> LU_idx(nl + nu);
+  for (Eigen::Index idx = 0, lcntr = 0, ucntr = 0; idx < m; ++idx) {
+    if (sol.dual[idx] < 0) { LU_idx(lcntr++) = idx; }
+    if (sol.dual[idx] > 0) { LU_idx(nl + ucntr++) = idx; }
   }
-  const Eigen::Index nb = n + nl + nu;
 
   // FORM REDUCED SYSTEMS (27) AND (30)
 
   // square symmetric system matrix
   using HT = std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, -1, -1>>;
-  HT H(nb, nb);
+  HT H(n + nl + nu, n + nl + nu);
 
+  // fill up H
   if constexpr (sparse) {
-    // preallocate nonzeros
+    // preallocate nonzeros (extra 1 for H_per)
     Eigen::Matrix<int, -1, 1> nnz(n + nl + nu);
     for (auto i = 0u; i != n; ++i) {
-      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i];
+      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
     }
-    for (auto i = 0u; i != nl; ++i) {
-      const Eigen::Index idx_i = L_indices(i);
-      nnz(n + i)               = pbm.A.outerIndexPtr()[idx_i + 1] - pbm.A.outerIndexPtr()[idx_i];
-    }
-    for (auto i = 0u; i != nu; ++i) {
-      const Eigen::Index idx_i = U_indices(i);
-      nnz(n + nl + i)          = pbm.A.outerIndexPtr()[idx_i + 1] - pbm.A.outerIndexPtr()[idx_i];
+    for (auto i = 0u; i != nl + nu; ++i) {
+      nnz(n + i) = pbm.A.outerIndexPtr()[LU_idx(i) + 1] - pbm.A.outerIndexPtr()[LU_idx(i)] + 1;
     }
     H.reserve(nnz);
 
     using PIter = typename Eigen::SparseMatrix<Scalar, Eigen::ColMajor>::InnerIterator;
     using AIter = typename Eigen::SparseMatrix<Scalar, Eigen::RowMajor>::InnerIterator;
 
-    // fill P
-    for (Eigen::Index col = 0u; col != n; ++col) {
-      for (PIter it(pbm.P, col); it && it.index() <= col; ++it) {
-        H.insert(it.index(), col) = it.value();
+    // fill P in top left block
+    for (Eigen::Index p_col = 0u; p_col != n; ++p_col) {
+      for (PIter it(pbm.P, p_col); it && it.index() <= p_col; ++it) {
+        H.insert(it.index(), p_col) = it.value();
       }
     }
 
-    // fill Al
-    for (auto i = 0u; i != nl; ++i) {
-      for (AIter it(pbm.A, L_indices(i)); it; ++it) { H.insert(it.index(), n + i) = it.value(); }
-    }
-
-    // fill Au
-    for (auto i = 0u; i != nu; ++i) {
-      for (AIter it(pbm.A, U_indices(i)); it; ++it) {
-        H.insert(it.index(), n + nl + i) = it.value();
+    // fill selected rows of A in top right block
+    for (auto a_row = 0u; a_row != nl + nu; ++a_row) {
+      for (AIter it(pbm.A, LU_idx(a_row)); it; ++it) {
+        H.insert(it.index(), n + a_row) = it.value();
       }
     }
-    H.makeCompressed();
   } else {
     H.setZero();
     H.topLeftCorner(n, n) = pbm.P;
-    for (auto i = 0u; i != nl; ++i) { H.col(n + i).head(n) = pbm.A.row(L_indices(i)); }
-    for (auto i = 0u; i != nu; ++i) { H.col(n + nl + i).head(n) = pbm.A.row(U_indices(i)); }
+    for (auto i = 0u; i != nl + nu; ++i) { H.col(n + i).head(n) = pbm.A.row(LU_idx(i)); }
   }
 
-  HT H_per = H;
+  HT Hp = H;
 
+  // add perturbing diagonal elements to Hp
   if constexpr (sparse) {
-    H_per.reserve(Eigen::Matrix<int, -1, 1>::Ones(n + nl + nu));  // make room
-    for (auto i = 0u; i != n; ++i) { H_per.coeffRef(i, i) += prm.delta; }
-    for (auto i = 0u; i != nl + nu; ++i) { H_per.coeffRef(n + i, n + i) -= prm.delta; }
-    H_per.makeCompressed();
+    for (auto i = 0u; i != n; ++i) { Hp.coeffRef(i, i) += prm.delta; }
+    for (auto i = 0u; i != nl + nu; ++i) { Hp.coeffRef(n + i, n + i) -= prm.delta; }
+    H.makeCompressed();
+    Hp.makeCompressed();
   } else {
-    H_per.topLeftCorner(n, n) += Eigen::Matrix<Scalar, -1, 1>::Constant(n, prm.delta).asDiagonal();
-    H_per.bottomRightCorner(nl + nu, nl + nu) -=
-      Eigen::Matrix<Scalar, -1, 1>::Constant(nl + nu, prm.delta).asDiagonal();
+    Hp.topLeftCorner(n, n) += VecX::Constant(n, prm.delta).asDiagonal();
+    Hp.bottomRightCorner(nl + nu, nl + nu) -= VecX::Constant(nl + nu, prm.delta).asDiagonal();
   }
 
-  Eigen::Matrix<Scalar, -1, 1> h(nb);
-  h << -pbm.q, L_indices.head(nl).unaryExpr(pbm.l), U_indices.head(nu).unaryExpr(pbm.u);
+  VecX h(n + nl + nu);
+  h << -pbm.q, LU_idx.head(nl).unaryExpr(pbm.l), LU_idx.tail(nu).unaryExpr(pbm.u);
 
   // ITERATIVE REFINEMENT
 
-  // factorize H_per
-  std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, -1>> ldlt(
-    H_per);
+  // factorize Hp
+  std::conditional_t<sparse, LDLTSparse<Scalar>, LDLTLapack<Scalar, -1>> ldlt(std::move(Hp));
 
   if (ldlt.info()) {
     sol.code = ExitCode::PolishFailed;
     return;
   }
 
-  Eigen::Matrix<Scalar, -1, 1> t_hat = Eigen::Matrix<Scalar, -1, 1>::Zero(nb);
+  VecX t_hat = VecX::Zero(n + nl + nu);
   for (auto i = 0u; i != prm.polish_iter; ++i) {
     t_hat += ldlt.solve(h - H.template selfadjointView<Eigen::Upper>() * t_hat);
   }
@@ -510,8 +498,8 @@ void polishQP(
   // UPDATE SOLUTION
 
   sol.primal = t_hat.head(n);
-  for (Eigen::Index i = 0; i < nl; ++i) { sol.dual(L_indices(i)) = t_hat(n + i); }
-  for (Eigen::Index i = 0; i < nu; ++i) { sol.dual(U_indices(i)) = t_hat(n + nl + i); }
+  for (Eigen::Index i = 0; i < nl; ++i) { sol.dual(LU_idx(i)) = t_hat(n + i); }
+  for (Eigen::Index i = 0; i < nu; ++i) { sol.dual(LU_idx(nl + i)) = t_hat(n + nl + i); }
 
   // TODO print polishing info (if verbose flag)
 }
