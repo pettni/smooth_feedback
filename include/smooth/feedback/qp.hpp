@@ -90,8 +90,13 @@ struct QuadraticProgramSparse
   /// Linear cost
   Eigen::Matrix<Scalar, -1, 1> q;
 
-  /// Inequality matrix (only upper triangular part is used)
-  Eigen::SparseMatrix<Scalar> A;
+  /**
+   * @brief Inequality matrix (only upper triangular part is used)
+   *
+   * @note The constraint matrix is stored in row-major format,
+   * so that constraints are contiguous in memory
+   */
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor> A;
   /// Inequality lower bound
   Eigen::Matrix<Scalar, -1, 1> l;
   /// Inequality upper bound
@@ -172,13 +177,12 @@ struct qp_traits<QuadraticProgramSparse<Scalar>>
 /**
  * @brief Solve a quadratic program using the operator splitting approach.
  *
- * @tparam M number of constraints
- * @tparam N number of variables
+ * @tparam Pbm problem type (QuadraticProgram or QuadraticProgramSparse)
  *
  * @param pbm problem formulation
  * @param prm solver options
  * @param hotstart provide initial guess for primal and dual variables
- * @return Problem solution as Solution<M, N>
+ * @return solution as Solution<M, N>
  *
  * @note dynamic problem sizes (`M == -1 || N == -1`) are supported
  *
@@ -190,13 +194,12 @@ struct qp_traits<QuadraticProgramSparse<Scalar>>
  *
  * For the official C implementation, see https://osqp.org/.
  */
-template<typename Problem>
-typename detail::qp_traits<Problem>::sol_t solveQP(const Problem & pbm,
+template<typename Pbm>
+typename detail::qp_traits<Pbm>::sol_t solveQP(const Pbm & pbm,
   const SolverParams & prm,
-  std::optional<std::reference_wrapper<const typename detail::qp_traits<Problem>::sol_t>> hotstart =
-    {})
+  std::optional<std::reference_wrapper<const typename detail::qp_traits<Pbm>::sol_t>> hotstart = {})
 {
-  using AmatT                     = decltype(Problem::A);
+  using AmatT                     = decltype(Pbm::A);
   static constexpr bool is_sparse = std::is_base_of_v<Eigen::SparseMatrixBase<AmatT>, AmatT>;
 
   // static sizes
@@ -229,19 +232,17 @@ typename detail::qp_traits<Problem>::sol_t solveQP(const Problem & pbm,
 
   // TODO problem scaling / conditioning
 
-  // define system matrix
+  // square symmetric system matrix
   std::conditional_t<is_sparse, Eigen::SparseMatrix<double>, Eigen::Matrix<Scalar, K, K>> H(k, k);
 
   if constexpr (is_sparse) {
-    Eigen::SparseMatrix<Scalar> At = pbm.A.transpose();
-
     // preallocate nonzeros
     Eigen::Matrix<int, -1, 1> nnz(k);
     for (auto i = 0u; i != n; ++i) {
       nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
     }
     for (auto i = 0u; i != m; ++i) {
-      nnz(n + i) = At.outerIndexPtr()[i + 1] - At.outerIndexPtr()[i] + 1;
+      nnz(n + i) = pbm.A.outerIndexPtr()[i + 1] - pbm.A.outerIndexPtr()[i] + 1;
     }
     H.reserve(nnz);
 
@@ -253,11 +254,11 @@ typename detail::qp_traits<Problem>::sol_t solveQP(const Problem & pbm,
       H.coeffRef(col, col) += sigma;
     }
 
-    for (auto col = 0u; col != m; ++col) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(At, col); it; ++it) {
-        H.insert(it.index(), n + col) = it.value();
+    for (auto row = 0u; row != m; ++row) {
+      for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(pbm.A, row); it; ++it) {
+        H.insert(it.index(), n + row) = it.value();
       }
-      H.insert(n + col, n + col) = -Scalar(1) / rho;
+      H.insert(n + row, n + row) = -Scalar(1) / rho;
     }
 
     H.makeCompressed();
@@ -268,14 +269,14 @@ typename detail::qp_traits<Problem>::sol_t solveQP(const Problem & pbm,
     H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
   }
 
-  typename detail::qp_traits<Problem>::fac_t ldlt(H);
+  // factorize H
+  typename detail::qp_traits<Pbm>::fac_t ldlt(H);
 
   if (ldlt.info()) { return {.code = ExitCode::Unknown, .primal = {}, .dual = {}}; }
 
   // initialization
-  Rn x(n);
-  Rm z(m);
-  Rm y(m);
+  Rn x;
+  Rm z, y;
 
   if (hotstart.has_value()) {
     x = hotstart.value().get().primal;
@@ -283,17 +284,17 @@ typename detail::qp_traits<Problem>::sol_t solveQP(const Problem & pbm,
     y = hotstart.value().get().dual;
   } else {
     // TODO what's a good choice here?
-    x.setZero();
-    y.setZero();
-    z.setZero();
+    x.setZero(n);
+    y.setZero(m);
+    z.setZero(m);
   }
 
   for (auto i = 0u; i != prm.max_iter; ++i) {
 
     // ADMM ITERATION
 
-    // solve linear system H p = h
     const Rk h = (Rk(k) << sigma * x - pbm.q, z - y / rho).finished();
+    // solve linear system H p = h
     const Rk p = ldlt.solve(h);
 
     const Rm z_tilde  = z + (p.tail(m) - y) / rho;
@@ -401,7 +402,7 @@ bool polishQP(Eigen::Matrix<Scalar, N, 1> & primal,
 {
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows();
 
-  // FIND ACTIVE CONTRAINT SETS
+  // FIND ACTIVE CONSTRAINT SETS
 
   Eigen::Index nl = 0, nu = 0;
   for (Eigen::Index idx = 0; idx < m; ++idx) {

@@ -258,10 +258,12 @@ TEST(QP, PortfolioOptimizationSparse)
   Eigen::Vector3d answer(497.04552984986384, 0.0, 502.9544801594811);
 
   auto sol = smooth::feedback::solveQP(problem, prm);
+  std::cout << sol.primal << std::endl;
   ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
   ASSERT_TRUE(sol.primal.isApprox(answer, tol));
 
   auto sol_hs = smooth::feedback::solveQP(problem, prm, sol);
+  std::cout << sol_hs.primal << std::endl;
   ASSERT_EQ(sol_hs.code, smooth::feedback::ExitCode::Optimal);
   ASSERT_TRUE(sol_hs.primal.isApprox(answer, tol));
 }
