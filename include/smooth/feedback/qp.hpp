@@ -53,14 +53,16 @@ using detail::LDLTSparse, detail::LDLTLapack;
  * \f[
  * \begin{cases}
  *  \min_{x} & \frac{1}{2} x^T P x + q^T x, \\
- *  \text{s.t.} & l \leq A x \leq u.
+ *  \text{s.t.} & l \leq A x \leq u,
  * \end{cases}
  * \f]
+ * where \f$ P \in \mathbb{R}^{n \times n}, q \in \mathbb{R}^n, l, u \in \mathbb{R}^m, A \in
+ * \mathbb{R}^{m \times n} \f$.
  */
 template<Eigen::Index M, Eigen::Index N, typename Scalar = double>
 struct QuadraticProgram
 {
-  /// Quadratic cost (only upper triangular part is used)
+  /// Positive semi-definite square cost (only upper trianglular part is used)
   Eigen::Matrix<Scalar, N, N> P;
   /// Linear cost
   Eigen::Matrix<Scalar, N, 1> q;
@@ -80,14 +82,16 @@ struct QuadraticProgram
  * \f[
  * \begin{cases}
  *  \min_{x} & \frac{1}{2} x^T P x + q^T x, \\
- *  \text{s.t.} & l \leq A x \leq u.
+ *  \text{s.t.} & l \leq A x \leq u,
  * \end{cases}
  * \f]
+ * where \f$ P \in \mathbb{R}^{n \times n}, q \in \mathbb{R}^n, l, u \in \mathbb{R}^m, A \in
+ * \mathbb{R}^{m \times n} \f$.
  */
 template<typename Scalar = double>
 struct QuadraticProgramSparse
 {
-  /// Quadratic cost (only upper trianglular part is used)
+  /// Positive semi-definite square cost (only upper trianglular part is used)
   Eigen::SparseMatrix<Scalar> P;
   /// Linear cost
   Eigen::Matrix<Scalar, -1, 1> q;
@@ -96,7 +100,7 @@ struct QuadraticProgramSparse
    * @brief Inequality matrix (only upper triangular part is used)
    *
    * @note The constraint matrix is stored in row-major format,
-   * so that constraints are contiguous in memory
+   * i.e. coefficients for each constraint are contiguous in memory
    */
   Eigen::SparseMatrix<Scalar, Eigen::RowMajor> A;
   /// Inequality lower bound

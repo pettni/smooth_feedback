@@ -1,6 +1,4 @@
-# smooth_feedback
-
-Control and estimation on Lie groups
+# `smooth_feedback`: Control and estimation on Lie groups
 
 Planned content:
 

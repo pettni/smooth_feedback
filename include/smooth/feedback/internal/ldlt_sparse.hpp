@@ -36,8 +36,47 @@
 namespace smooth::feedback::detail {
 
 /**
- * @brief Wrapper for suitesparse ldl_XXX routines for factorizing and solving
- * sparse symmetric linear systems of equations.
+ * Compute the nonzero pattern of L in LDL' factorization of A
+ */
+template<typename Scalar, int Layout>
+inline Eigen::Matrix<int, -1, 1> ldlt_row_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
+{
+  using It       = typename Eigen::SparseMatrix<Scalar, Layout>::InnerIterator;
+  Eigen::Index n = A.cols();
+
+  // nnz(k) = # nonzeros in row k of L
+  Eigen::Matrix<int, -1, 1> nnz =
+    Eigen::Matrix<int, -1, 1>::Ones(n);  // account for ones on diagonal
+
+  // elimination tree: tree(i) = min { j : j > i, l_{ji} != 0 }
+  // elimination tree is s.t. a non-zero at A_ki causes fill-in in row k for all tree successors of
+  // i
+  Eigen::Matrix<int, -1, 1> tree(n);
+  Eigen::Matrix<int, -1, 1> visited(n);
+
+  // traverse each row of L
+  for (auto row = 0u; row != n; ++row) {
+    tree(row)    = -1;   // no parent yet
+    visited(row) = row;  // mark
+
+    // traverse non-zeros in corresponding row/column of symmetric A (up to diagonal)
+    for (It it(A, row); it && it.index() < row; ++it) {
+      int col = it.index();
+      // traverse elimination tree to determine fill-in from non-zero A_{col, row}
+      for (; visited(col) != row; col = tree(col)) {
+        // found new non-zero
+        if (tree(col) == -1) { tree(col) = row; }  // first non-zero in this column
+        ++nnz(row);                                // increment count of row non-zeros
+        visited(col) = row;
+      }
+    }
+  }
+
+  return nnz;
+}
+
+/**
+ * @brief Bare-bones LDLt factorization of sparse matrices.
  */
 template<typename Scalar>
 class LDLTSparse
@@ -46,10 +85,10 @@ public:
   /**
    * @brief Factorize symmetric \f$ A \f$ to enable solving \f$ A x = b \f$.
    *
-   * \p A is factorized as \f$ A = U D U^T \f$ where \f$ U \f$ is upper triangular
-   * and \f$ D \f$ is block-diagonal.
+   * \p A is factorized as \f$ A = L D L^T \f$ where \f$ L \f$ is lower triangular
+   * and \f$ D \f$ is diagonal.
    *
-   * @param A sparse symmetric matrix to factorize.
+   * @param A sparse symmetric matrix to factorize in column-major format.
    *
    * @note Only the upper triangular part of \f$ A \f$ is accessed.
    */
@@ -58,9 +97,7 @@ public:
     auto n = A.cols();
 
     L_.resize(n, n);
-    L_.setIdentity();
-
-    // TODO determine sparsity pattern of L via graph method...
+    L_.reserve(ldlt_row_nnz(A));
 
     d_inv_.resize(n);
 
@@ -70,6 +107,7 @@ public:
       return;
     }
     d_inv_(0) = Scalar(1.) / d_new;
+    L_.insert(0, 0) = Scalar(1);
 
     for (auto k = 1u; k != n; ++k) {
       // TODO this copy must be avoided...
@@ -91,10 +129,12 @@ public:
         info_ = k + 1;
         return;
       }
-      d_inv_(k) = Scalar(1.) / d_new;
+      d_inv_(k)       = Scalar(1) / d_new;
+      L_.insert(k, k) = Scalar(1);
     }
 
     L_.makeCompressed();
+
     info_ = 0;
   }
 
@@ -120,7 +160,7 @@ public:
   /**
    * @brief Solve linear symmetric system of equations.
    *
-   * @param[in, out] b in: right-hand side in \f$ A x = b \f$, out: solution x.
+   * @param[in, out] b in: right-hand side in \f$ A x = b \f$, out: solution \f$ x \f$.
    */
   inline void solve_inplace(Eigen::Matrix<Scalar, -1, 1> & b) const
   {
@@ -133,7 +173,7 @@ public:
    * @brief Solve linear symmetric system of equations.
    *
    * @param b right-hand side in \f$ A x = b \f$.
-   * @return solution x.
+   * @return solution \f$ x \f$.
    */
   inline Eigen::Matrix<Scalar, -1, 1> solve(const Eigen::Matrix<Scalar, -1, 1> & b) const
   {
@@ -144,7 +184,7 @@ public:
 
 private:
   int info_;
-  Eigen::SparseMatrix<Scalar, Eigen::ColMajor> L_;
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor> L_;
   Eigen::Matrix<Scalar, -1, 1> d_inv_;
 };
 

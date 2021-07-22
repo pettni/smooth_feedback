@@ -102,7 +102,7 @@ public:
    * @return integer \f$ i \f$
    *
    * * 0: successful exit
-   * * \f$ i > 0 \f$: input matrix is singular s.t. \f$ D(i, i) = 0 \f$.
+   * * \f$ i > 0 \f$: input matrix is singular s.t. \f$ D(i-1, i-1) = 0 \f$.
    */
   inline int info() const { return info_; }
 
@@ -143,6 +143,8 @@ public:
    * @brief Solve linear symmetric system of equations.
    *
    * @param b right-hand side in \f$ A x = b \f$.
+   *
+   * @return solution \f$ x \f$.
    */
   inline Eigen::Matrix<Scalar, N, 1> solve(const Eigen::Matrix<Scalar, N, 1> & b)
   {

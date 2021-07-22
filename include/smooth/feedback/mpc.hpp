@@ -57,9 +57,10 @@ namespace smooth::feedback {
  *                    & g(t) \ominus g_{min} \geq 0, \\
  *                    & g_{max} \ominus g(t) \geq 0, \\
  *                    & u(t) \ominus u_{min} \geq 0, \\
- *                    & u_{max} \ominus u(t) \geq 0.
+ *                    & u_{max} \ominus u(t) \geq 0,
  *   \end{cases}
  * \f]
+ * where the cost matrices must be positive semi-definite.
  */
 template<LieGroup G, LieGroup U>
 struct OptimalControlProblem
@@ -113,7 +114,8 @@ struct OptimalControlProblem
  * The resulting QP has \f$ K \dim \mathfrak{g} + K \dim \mathfrak{u} \f$ variables and \f$ 2
  * K \dim \mathfrak{g} + K \dim \mathfrak{u} \f$ constraints.
  *
- * @note The optimal solution to the input is \f$ u^*(t) = u_{lin}(t) \oplus \mu^*(t) \f$ and the
+ * @note Given a solution \f$(x^*, \mu^*)\f$ to the QuadraticProgram, the corresponding
+ * solution to the OptimalControlProblem is \f$ u^*(t) = u_{lin}(t) \oplus \mu^*(t) \f$ and the
  * optimal trajectory is \f$ g^*(t) = g_{lin}(t) \oplus x^*(t) \f$.
  *
  * @note Constraints are added as \f$ g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus g_{lin}
