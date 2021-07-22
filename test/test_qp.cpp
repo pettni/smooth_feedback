@@ -226,3 +226,42 @@ TEST(QP, PortfolioOptimization)
   ASSERT_EQ(sol_hs.code, smooth::feedback::ExitCode::Optimal);
   ASSERT_TRUE(sol_hs.primal.isApprox(answer, tol));
 }
+
+TEST(QP, PortfolioOptimizationSparse)
+{
+  smooth::feedback::QuadraticProgramSparse problem;
+
+  Eigen::Matrix<double, 3, 3> P_d;
+  P_d << 0.018641, 0.00359853, 0.00130976, 0.00359853, 0.00643694, 0.00488727, 0.00130976,
+    0.00488727, 0.0686828;
+
+  problem.P.resize(3, 3);
+  problem.P = P_d.sparseView();
+  problem.q.setZero(3);
+
+  problem.A.resize(5, 3);
+  problem.A.insert(0, 0) = 1;
+  problem.A.insert(0, 1) = 1;
+  problem.A.insert(0, 2) = 1;
+  problem.A.insert(1, 0) = 0.0260022;
+  problem.A.insert(1, 1) = 0.00810132;
+  problem.A.insert(1, 2) = 0.0737159;
+  problem.A.insert(2,0) = 1;
+  problem.A.insert(3,1) = 1;
+  problem.A.insert(4,2) = 1;
+
+  problem.l.resize(5);
+  problem.l << -inf, 50, 0, 0, 0;
+  problem.u.resize(5);
+  problem.u << 1000, inf, inf, inf, inf;
+
+  Eigen::Vector3d answer(497.04552984986384, 0.0, 502.9544801594811);
+
+  auto sol = smooth::feedback::solveQP(problem, prm);
+  ASSERT_EQ(sol.code, smooth::feedback::ExitCode::Optimal);
+  ASSERT_TRUE(sol.primal.isApprox(answer, tol));
+
+  auto sol_hs = smooth::feedback::solveQP(problem, prm, sol);
+  ASSERT_EQ(sol_hs.code, smooth::feedback::ExitCode::Optimal);
+  ASSERT_TRUE(sol_hs.primal.isApprox(answer, tol));
+}

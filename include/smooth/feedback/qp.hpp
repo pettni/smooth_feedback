@@ -58,12 +58,12 @@ namespace smooth::feedback {
 template<Eigen::Index M, Eigen::Index N, typename Scalar = double>
 struct QuadraticProgram
 {
-  /// Quadratic cost
+  /// Quadratic cost (only upper triangular part is used)
   Eigen::Matrix<Scalar, N, N> P;
   /// Linear cost
   Eigen::Matrix<Scalar, N, 1> q;
 
-  /// Inequality matrix
+  /// Inequality matrix (only upper triangular part is used)
   Eigen::Matrix<Scalar, M, N> A;
   /// Inequality lower bound
   Eigen::Matrix<Scalar, M, 1> l;
@@ -85,12 +85,12 @@ struct QuadraticProgram
 template<typename Scalar = double>
 struct QuadraticProgramSparse
 {
-  /// Quadratic cost
+  /// Quadratic cost (only upper trianglular part is used)
   Eigen::SparseMatrix<Scalar> P;
   /// Linear cost
   Eigen::Matrix<Scalar, -1, 1> q;
 
-  /// Inequality matrix
+  /// Inequality matrix (only upper triangular part is used)
   Eigen::SparseMatrix<Scalar> A;
   /// Inequality lower bound
   Eigen::Matrix<Scalar, -1, 1> l;
@@ -237,24 +237,29 @@ typename detail::qp_traits<Problem>::sol_t solveQP(const Problem & pbm,
 
     // preallocate nonzeros
     Eigen::Matrix<int, -1, 1> nnz(k);
-    for (auto i = 0u; i != n; ++i) { nnz(i) = pbm.P.outerIndexPtr()[i] + 1; }
-    for (auto i = 0u; i != m; ++i) { nnz(n + i) = At.outerIndexPtr()[i] + 1; }
+    for (auto i = 0u; i != n; ++i) {
+      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
+    }
+    for (auto i = 0u; i != m; ++i) {
+      nnz(n + i) = At.outerIndexPtr()[i + 1] - At.outerIndexPtr()[i] + 1;
+    }
     H.reserve(nnz);
 
     for (Eigen::Index col = 0u; col != n; ++col) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(pbm.P, col); it && it.index() <= col;
            ++it) {
-        H.coeffRef(it.index(), col) = it.value();
+        H.insert(it.index(), col) = it.value();
       }
       H.coeffRef(col, col) += sigma;
     }
 
     for (auto col = 0u; col != m; ++col) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(At, col); it; ++it) {
-        H.coeffRef(it.index(), n + col) = it.value();
+        H.insert(it.index(), n + col) = it.value();
       }
-      H.coeffRef(n + col, n + col) -= Scalar(1) / rho;
+      H.insert(n + col, n + col) = -Scalar(1) / rho;
     }
+
     H.makeCompressed();
   } else {
     H.template topLeftCorner<N, N>(n, n) = pbm.P;
