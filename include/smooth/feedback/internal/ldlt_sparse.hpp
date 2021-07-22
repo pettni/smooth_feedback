@@ -39,7 +39,7 @@ template<typename Scalar, int Layout = Eigen::ColMajor>
 using It = typename Eigen::SparseMatrix<Scalar, Layout>::InnerIterator;
 
 /**
- * Compute the nonzero pattern of L in LDL' factorization of A
+ * @brief Compute the column-wise nonzero pattern of L in LDL' factorization of A.
  */
 template<typename Scalar, int Layout>
 inline auto ldlt_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
@@ -47,10 +47,7 @@ inline auto ldlt_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
   Eigen::Index n = A.cols();
 
   // nnz(k) = # nonzeros in row k of L
-  Eigen::Matrix<int, -1, 1> nnz =
-    Eigen::Matrix<int, -1, 1>::Ones(n);  // account for ones on diagonal
-  Eigen::Matrix<int, -1, 1> nnz_row =
-    Eigen::Matrix<int, -1, 1>::Ones(n);  // account for ones on diagonal
+  Eigen::Matrix<int, -1, 1> nnz = Eigen::Matrix<int, -1, 1>::Ones(n);  // account for diagonal ones
 
   // elimination tree: tree(i) = min { j : j > i, l_{ji} != 0 }
   // elimination tree is s.t. a non-zero at A_ki causes fill-in in row k for tree successors of i
@@ -69,13 +66,12 @@ inline auto ldlt_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
         // found new non-zero
         if (tree(col) == -1) { tree(col) = row; }  // first non-zero in this column
         ++nnz(col);                                // increment count of column non-zeros
-        ++nnz_row(row);                            // increment count of column non-zeros
         visited(col) = row;
       }
     }
   }
 
-  return std::make_tuple(nnz, nnz_row, tree);
+  return std::make_tuple(nnz, tree);
 }
 
 /**
@@ -99,13 +95,17 @@ public:
   {
     auto n = A.cols();
 
-    const auto [nnz_col, nnz_row, tree] = ldlt_nnz(A);
+    // working memory
+    Eigen::Matrix<int, -1, 1> visited(n);
+    Eigen::Matrix<int, -1, 1> Yidx(n), bfr(n);  // nonzero indices of Y and temporary buffer
+    Eigen::Matrix<Scalar, -1, 1> Yval(n);       // values of Y stored at nonzero indices
+
+    const auto [nnz_col, tree] = ldlt_nnz(A);
     L_.resize(n, n);
     L_.reserve(nnz_col);
-
     d_inv_.resize(n);
 
-    const Scalar d_new = A.coeff(0, 0);
+    Scalar d_new = A.coeff(0, 0);
     if (d_new == 0) {
       info_ = 1;
       return;
@@ -113,40 +113,48 @@ public:
     d_inv_(0)       = Scalar(1.) / d_new;
     L_.insert(0, 0) = Scalar(1);
 
-    Eigen::Matrix<int, -1, 1> visited(n);
-
+    // Fill in L row-wise
     for (auto row = 1u; row != n; ++row) {
-      // this solves the triangular sparse system
-      //  L[:k, :k] y = A[:k, k] w.r.t. y
-      Eigen::SparseMatrix<Scalar, Eigen::ColMajor> y(row, 1);
-      y.reserve(nnz_row(row) - 1);
-      visited[row] = row;
+      // solve the triangular sparse system L[:k, :k] y = A[:k, k] w.r.t. y
 
-      // pass one: insert elements (some zero) to establish y pattern
+      // find Yidx -- the non-zero indices of y
+      visited[row] = row;
+      int Ynnz     = 0;
+      Yval(row)    = 0.;
       for (It<Scalar> it(A, row); it && it.index() < row; ++it) {
-        y.coeffRef(it.index(), 0) += it.value();  // set y[i] = A(row, i)
-        for (int node = tree(it.index()); visited[node] != row; node = tree(node)) {
-          y.coeffRef(node, 0) += 0.;  // mark as nonzero (inefficient, may not be ordered)
-          visited[node] = row;
+        int branch_nnz = 0;
+        for (int node = it.index(); visited[node] != row; node = tree(node)) {
+          visited[node]     = row;
+          bfr(branch_nnz++) = node;
         }
+        while (branch_nnz > 0) {
+          Yidx[Ynnz++] = bfr[--branch_nnz];  // store branch in reverse order
+        }
+      }
+
+      for (It<Scalar> it(A, row); it && it.index() < row; ++it) {
+        Yval(it.index()) = it.value();  // set y[i] = A(row, i)
       }
 
       // pass two: iterate over columns k of L and perform subtractions y_k -= l_{k, i} y_i
-      // we can loop over y since pattern is established
-      for (It<Scalar> it_y(y, 0); it_y; ++it_y) {
-        It<Scalar> it_l(L_, it_y.index());
+      for (int i = 0; i != Ynnz; ++i) {
+        const int col = Yidx[Ynnz - i - 1];  // traverse reverse branch-wise
+        It<Scalar> it_l(L_, col);
         ++it_l;  // step past one on diagonal
-        for (; it_l && it_l.index() < row; ++it_l) {
-          y.coeffRef(it_l.index(), 0) -= it_y.value() * it_l.value();
-        }
+        for (; it_l && it_l.index(); ++it_l) { Yval(it_l.index()) -= Yval(col) * it_l.value(); }
       }
 
+      // Now y defined by Ynnz, Yidx and Yval solves system above
+
       // set L[row, :] = Dinv[:row, :row] * y
-      // and calculate d_new = A[row, row] - y' D y
+      // and calculate d_new = A[row, row] - y' Dinv y
       Scalar d_new = A.coeff(row, row);
-      for (typename Eigen::SparseMatrix<Scalar>::InnerIterator it(y, 0); it; ++it) {
-        L_.insert(row, it.index()) = it.value() * d_inv_(it.index());
-        d_new -= it.value() * it.value() * d_inv_(it.index());
+      for (int i = 0; i != Ynnz; ++i) {
+        const int yi        = Yidx[Ynnz - i - 1];
+        const Scalar yval_i = Yval[yi];
+        Yval[yi]            = 0;                    // reset for next iteration
+        L_.insert(row, yi)  = yval_i * d_inv_(yi);  // columns of L are filled in order
+        d_new -= yval_i * yval_i * d_inv_(yi);
       }
 
       if (d_new == 0) {
