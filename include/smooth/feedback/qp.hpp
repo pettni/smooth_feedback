@@ -408,6 +408,8 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
  * @param[in] pbm problem formulation
  * @param[in, out] sol solution to polish
  * @param[in] prm solver options
+ *
+ * @warning This function allocates heap memory even for static-sized problems.
  */
 template<typename Pbm>
 void polishQP(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)

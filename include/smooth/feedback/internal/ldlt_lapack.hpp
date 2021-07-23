@@ -136,7 +136,7 @@ public:
       AF_.rows(),
       IPIV_.data(),
       b.data(),
-      b.size());
+      AF_.rows());
   }
 
   /**

@@ -27,7 +27,6 @@
 
 #include <smooth/feedback/qp.hpp>
 
-
 static constexpr auto inf   = std::numeric_limits<double>::infinity();
 static constexpr double tol = 1e-4;  // TODO decrease this as solver improves
 static constexpr smooth::feedback::SolverParams prm{};
@@ -246,9 +245,9 @@ TEST(QP, PortfolioOptimizationSparse)
   problem.A.insert(1, 0) = 0.0260022;
   problem.A.insert(1, 1) = 0.00810132;
   problem.A.insert(1, 2) = 0.0737159;
-  problem.A.insert(2,0) = 1;
-  problem.A.insert(3,1) = 1;
-  problem.A.insert(4,2) = 1;
+  problem.A.insert(2, 0) = 1;
+  problem.A.insert(3, 1) = 1;
+  problem.A.insert(4, 2) = 1;
 
   problem.l.resize(5);
   problem.l << -inf, 50, 0, 0, 0;
@@ -264,4 +263,28 @@ TEST(QP, PortfolioOptimizationSparse)
   auto sol_hs = smooth::feedback::solveQP(problem, prm, sol);
   ASSERT_EQ(sol_hs.code, smooth::feedback::ExitCode::Optimal);
   ASSERT_TRUE(sol_hs.primal.isApprox(answer, tol));
+}
+
+TEST(QP, TwoDimensional)
+{
+  smooth::feedback::QuadraticProgram<2, 2> problem;
+  problem.P << 0.0100131, 0, 0, 0.01;
+  problem.q << -0.329554, 0.536459;
+  problem.A << -0.0639209, -0.168, -0.467, 0;
+  problem.l << -inf, -inf;
+  problem.u << -0.034974, 0.46571;
+  auto sol = smooth::feedback::solveQP(problem, prm);
+
+  smooth::feedback::QuadraticProgramSparse sp_problem;
+  sp_problem.A = problem.A.sparseView();
+  sp_problem.P = problem.P.sparseView();
+  sp_problem.q = problem.q;
+  sp_problem.l = problem.l;
+  sp_problem.u = problem.u;
+  auto sp_sol  = smooth::feedback::solveQP(sp_problem, prm);
+
+  ASSERT_TRUE(sol.primal.isApprox(sp_sol.primal));
+  ASSERT_TRUE(sol.dual.isApprox(sp_sol.dual));
+
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(46.6338, -17.5351), 1e-4));
 }
