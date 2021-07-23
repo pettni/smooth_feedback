@@ -42,8 +42,26 @@ TEST(Asif, Basic)
 
   const auto bu = [](const auto & g) {
     using T = typename std::decay_t<decltype(g)>::Scalar;
-    return smooth::T2<T>::Identity();
+    return smooth::T2<T>(Eigen::Matrix<T, 2, 1>(-0.1, 1));
   };
 
-  smooth::feedback::asif_to_qp<3, smooth::SE2d, smooth::T2d>(f, h, bu);
+  smooth::SE2d x0 = smooth::SE2d::Random();
+
+  smooth::feedback::AsifParams prm;
+
+  smooth::T2<double> u(Eigen::Matrix<double, 2, 1>::Zero());
+  smooth::T2<double> u_lin(Eigen::Matrix<double, 2, 1>::Zero());
+
+  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, smooth::T2d>(x0, u, u_lin, f, h, bu, prm);
+
+  std::cout << "A" << std::endl;
+  std::cout << qp.A << std::endl;
+  std::cout << "lu" << std::endl;
+  std::cout << qp.l.transpose() << std::endl;
+  std::cout << qp.u.transpose() << std::endl;
+
+  std::cout << "P" << std::endl;
+  std::cout << qp.P << std::endl;
+  std::cout << "q" << std::endl;
+  std::cout << qp.q.transpose() << std::endl;
 }

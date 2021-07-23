@@ -35,8 +35,10 @@
 
 namespace smooth::feedback::detail {
 
+// \cond
 template<typename Scalar, int Layout = Eigen::ColMajor>
 using It = typename Eigen::SparseMatrix<Scalar, Layout>::InnerIterator;
+// \endcond
 
 /**
  * @brief Compute the column-wise nonzero pattern of L in LDL' factorization of A.
@@ -55,7 +57,7 @@ inline auto ldlt_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
   Eigen::Matrix<int, -1, 1> visited(n);
 
   // traverse each row of L
-  for (auto row = 0u; row != n; ++row) {
+  for (Eigen::Index row = 0; row != n; ++row) {
     tree(row)    = -1;   // no parent yet
     visited(row) = row;  // mark
 
@@ -114,7 +116,7 @@ public:
     L_.insert(0, 0) = Scalar(1);
 
     // Fill in L row-wise
-    for (auto row = 1u; row != n; ++row) {
+    for (Eigen::Index row = 1; row != n; ++row) {
       // solve the triangular sparse system L[:k, :k] y = A[:k, k] w.r.t. y
 
       // find Yidx -- the non-zero indices of y
@@ -137,7 +139,7 @@ public:
       }
 
       // pass two: iterate over columns k of L and perform subtractions y_k -= l_{k, i} y_i
-      for (int i = 0; i != Ynnz; ++i) {
+      for (Eigen::Index i = 0; i != Ynnz; ++i) {
         const int col = Yidx[Ynnz - i - 1];  // traverse reverse branch-wise
         It<Scalar> it_l(L_, col);
         ++it_l;  // step past one on diagonal
@@ -149,7 +151,7 @@ public:
       // set L[row, :] = Dinv[:row, :row] * y
       // and calculate d_new = A[row, row] - y' Dinv y
       Scalar d_new = A.coeff(row, row);
-      for (int i = 0; i != Ynnz; ++i) {
+      for (Eigen::Index i = 0; i != Ynnz; ++i) {
         const int yi        = Yidx[Ynnz - i - 1];
         const Scalar yval_i = Yval[yi];
         Yval[yi]            = 0;                    // reset for next iteration

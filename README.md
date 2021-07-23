@@ -56,17 +56,23 @@ std::cout << ekf.estimate() << std::endl;
 ```
 ## Optimization
 
-### smooth::feedback::solveQP: Eigen implementation of the operator splitting approach 
+### smooth::feedback::solveQP: Eigen version of the operator splitting QP solver
 
-* [x] Dense *and* sparse problems
-* [ ] Written in Eigen for vectorization [should verify assembly]
+* Both dense and sparse problems
+* Eigen lazy evaluations for fast SIMD
 * [ ] Faster than OSQP [need at least two benchmarks]
-* [x] Templated on Scalar type
 
 ## TODOs
 
-- [ ] Sparse QP solver
-- [ ] QP conditioning
 - [ ] QP benchmarking
 - [ ] Sparse MPC
+- [ ] Dense ASIF 
+
+## MAYBEs
+
+- [ ] QP Pre-conditioning if necessary
+- Solvers
+  - Benchmark Eigen::LDLT with upgraded version of Eigen that supports cpp20. The code seems like it should handle indefinite although documentation says it does not.
+  - Reordering with Eigen::AMDOrdering in sparse LDLT
 - [ ] Bound distance from linearization in MPC
+
