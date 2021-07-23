@@ -332,6 +332,8 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
   //  u = S_e * u
   // where S_x = diag(s[0:n])  and S_e = diag(s[n:n+m])
   const auto [spbm, s, c] = scaleQp(pbm);
+  const Rn sd             = s.head(n);
+  const Rm se             = s.tail(m);
 
   // check that feasible set is nonempty
   if ((spbm.u - spbm.l).minCoeff() < Scalar(0.) || spbm.l.maxCoeff() == inf
@@ -380,18 +382,16 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
   std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, K>> ldlt(
     std::move(H));
 
-  if (ldlt.info()) {
-    return {.code = ExitCode::Unknown, .primal = {}, .dual = {}};
-  }
+  if (ldlt.info()) { return {.code = ExitCode::Unknown, .primal = {}, .dual = {}}; }
 
   // initialization
   Rn x;
   Rm z, y;
   if (hotstart.has_value()) {
     x = hotstart.value().get().primal;
-    x.applyOnTheLeft(s.head(n).cwiseInverse().asDiagonal());
+    x.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
     y = hotstart.value().get().dual;
-    y.applyOnTheLeft(s.tail(m).asDiagonal());
+    y.applyOnTheLeft(se.asDiagonal());
     z.noalias() = spbm.A * x;
   } else {
     x.setZero(n);
@@ -427,31 +427,31 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
       // OPTIMALITY
 
       Ax.noalias() = spbm.A * x;
-      Ax.applyOnTheLeft(s.tail(m).cwiseInverse().asDiagonal());
+      Ax.applyOnTheLeft(se.cwiseInverse().asDiagonal());
 
       // clang-format off
       // check primal
       bool optimal = true;
-      const Scalar primal_val   = norm(Ax - s.tail(m).cwiseInverse().asDiagonal() * z);
-      const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(s.tail(m).cwiseInverse().asDiagonal() * z));
+      const Scalar primal_val   = norm(Ax - se.cwiseInverse().cwiseProduct(z));
+      const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(se.cwiseInverse().cwiseProduct(z)));
       if (primal_val > prm.eps_abs + prm.eps_rel * primal_scale) {
         optimal = false;
       }
       if (optimal) {
         // primal succeeded, check dual
         Px.noalias() = spbm.P * x;
-        Px.applyOnTheLeft(s.head(n).cwiseInverse().asDiagonal());
+        Px.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
         Aty.noalias() = spbm.A.transpose() * y;
-        Aty.applyOnTheLeft(s.head(n).cwiseInverse().asDiagonal());
-        const Scalar dual_val = norm(Px + s.head(n).cwiseInverse().asDiagonal() * spbm.q + Aty);
-        const Scalar dual_scale = std::max<Scalar>({norm(Px), norm(s.head(n).cwiseInverse().asDiagonal() * spbm.q), norm(Aty)});
+        Aty.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
+        const Scalar dual_val = norm(Px + sd.cwiseInverse().cwiseProduct(spbm.q) + Aty);
+        const Scalar dual_scale = std::max<Scalar>({norm(Px), norm(sd.cwiseInverse().cwiseProduct(spbm.q)), norm(Aty)});
         if (dual_val > c * prm.eps_abs + prm.eps_rel * dual_scale) { optimal = false; }
       }
       if (optimal) {
         QpSol_t<Pbm> sol{.code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
         if (prm.polish) { polishQP(spbm, sol, prm); }
-        sol.primal.applyOnTheLeft(s.head(n).asDiagonal());
-        sol.dual.applyOnTheLeft(s.tail(m).cwiseInverse().asDiagonal());
+        sol.primal.applyOnTheLeft(sd.asDiagonal());
+        sol.dual.applyOnTheLeft(se.cwiseInverse().asDiagonal());
         return sol;
       }
       // clang-format on
@@ -461,9 +461,8 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
       dx = x_next - x;
       dy = y_next - y;
 
-      const Scalar Edy_norm = norm(s.tail(m).asDiagonal() * dy);
-      const Scalar Di_At_dy_norm =
-        norm(s.head(n).cwiseInverse().asDiagonal() * spbm.A.transpose() * dy);
+      const Scalar Edy_norm      = norm(se.cwiseProduct(dy));
+      const Scalar Di_At_dy_norm = norm(sd.cwiseInverse().asDiagonal() * spbm.A.transpose() * dy);
 
       Scalar u_dyp_plus_l_dyn = Scalar(0);
       for (auto i = 0u; i != m; ++i) {
@@ -489,13 +488,14 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
 
       // DUAL INFEASIBILITY
 
-      const Scalar D_dx_norm = norm(s.head(n).asDiagonal() * dx);
-      Ax.noalias()           = spbm.A * dx;  // note new value
-      Ax.applyOnTheLeft(s.tail(m).cwiseInverse().asDiagonal());
+      const Scalar D_dx_norm = norm(sd.cwiseProduct(dx));  // holds n( D * dx )
+      Ax.noalias()           = spbm.A * dx;                // note new value Einv * A * dx
+      Ax.applyOnTheLeft(se.cwiseInverse().asDiagonal());
+      Px.noalias() = spbm.P * dx;  // note new value Dinv * P * dx
+      Px.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
 
-      bool dual_infeasible =
-        (norm(s.head(n).cwiseInverse().asDiagonal() * spbm.P * dx) <= prm.eps_dual_inf * D_dx_norm)
-        && (spbm.q.dot(dx) <= prm.eps_dual_inf * D_dx_norm);
+      bool dual_infeasible = (norm(Px) <= c * prm.eps_dual_inf * D_dx_norm)
+                          && (spbm.q.dot(dx) <= c * prm.eps_dual_inf * D_dx_norm);
       for (auto i = 0u; i != m && dual_infeasible; ++i) {
         if (spbm.u(i) == inf) {
           dual_infeasible &= (Ax(i) >= -prm.eps_dual_inf * D_dx_norm);
