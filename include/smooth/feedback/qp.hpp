@@ -291,31 +291,36 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
   // initialization
   Rn x;
   Rm z, y;
-
   if (hotstart.has_value()) {
-    x = hotstart.value().get().primal;
-    z = pbm.A * x;
-    y = hotstart.value().get().dual;
+    x           = hotstart.value().get().primal;
+    z.noalias() = pbm.A * x;
+    y           = hotstart.value().get().dual;
   } else {
-    // TODO what's a good choice here?
     x.setZero(n);
     y.setZero(m);
     z.setZero(m);
   }
 
+  // working arrays
+  Rn x_next(n), Px(n), Aty(n), dx(n);
+  Rm z_interp(m), z_next(m), y_next(m), Ax(m), dy(m);
+  Rk p(k);
+
   for (auto i = 0u; i != prm.max_iter; ++i) {
 
     // ADMM ITERATION
 
-    const Rk h = (Rk(k) << sigma * x - pbm.q, z - y / rho).finished();
-    // solve linear system H p = h
-    const Rk p = ldlt.solve(h);
+    // solve linear system
+    p.head(n) = sigma * x - pbm.q;
+    p.tail(m) = z - y / rho;
+    ldlt.solve_inplace(p);
 
-    const Rm z_tilde  = z + (p.tail(m) - y) / rho;
-    const Rn x_next   = alpha * p.head(n) + (Scalar(1.) - alpha) * x;
-    const Rm z_interp = alpha * z_tilde + (Scalar(1.) - alpha) * z;
-    const Rm z_next   = (z_interp + y / rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
-    const Rm y_next   = y + rho * (z_interp - z_next);
+    EIGEN_ASM_COMMENT("admm");
+    x_next   = alpha * p.head(n) + x - alpha * x;
+    z_interp = alpha * z + (alpha / rho) * p.tail(m) - (alpha / rho) * y + z - alpha * z;
+    z_next   = (z_interp + y / rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
+    y_next   = y + rho * z_interp - rho * z_next;
+    EIGEN_ASM_COMMENT("/admm");
 
     // CHECK STOPPING CRITERIA
 
@@ -323,9 +328,9 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
 
       // OPTIMALITY
 
-      const Rn Px  = pbm.P * x;
-      const Rm Ax  = pbm.A * x;
-      const Rn Aty = pbm.A.transpose() * y;
+      Px.noalias()  = pbm.P * x;
+      Ax.noalias()  = pbm.A * x;
+      Aty.noalias() = pbm.A.transpose() * y;
 
       const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(z));
       const Scalar dual_scale   = std::max<Scalar>({norm(Px), norm(pbm.q), norm(Aty)});
@@ -339,8 +344,9 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
 
       // PRIMAL INFEASIBILITY
 
-      const Rn dx             = x_next - x;
-      const Rm dy             = y_next - y;
+      dx = x_next - x;
+      dy = y_next - y;
+
       const Scalar dx_norm    = norm(dx);
       const Scalar dy_norm    = norm(dy);
       const Scalar At_dy_norm = norm(pbm.A.transpose() * dy);
@@ -369,16 +375,17 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
 
       // DUAL INFEASIBILITY
 
+      Ax.noalias() = pbm.A * dx;  // note new value
+
       bool dual_infeasible = (norm(pbm.P * dx) <= prm.eps_dual_inf * dx_norm)
                           && (pbm.q.dot(dx) <= prm.eps_dual_inf * dx_norm);
-      const Rm Adx = pbm.A * dx;
       for (auto i = 0u; i != m && dual_infeasible; ++i) {
         if (pbm.u(i) == inf) {
-          dual_infeasible &= (Adx(i) >= -prm.eps_dual_inf * dx_norm);
+          dual_infeasible &= (Ax(i) >= -prm.eps_dual_inf * dx_norm);
         } else if (pbm.l(i) == -inf) {
-          dual_infeasible &= (Adx(i) <= prm.eps_dual_inf * dx_norm);
+          dual_infeasible &= (Ax(i) <= prm.eps_dual_inf * dx_norm);
         } else {
-          dual_infeasible &= std::abs(Adx(i)) < prm.eps_dual_inf * dx_norm;
+          dual_infeasible &= std::abs(Ax(i)) < prm.eps_dual_inf * dx_norm;
         }
       }
 
