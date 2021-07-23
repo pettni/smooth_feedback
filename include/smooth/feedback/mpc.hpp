@@ -171,8 +171,8 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
     // LINEARIZATION
 
     Eigen::Matrix<double, 1, 1> t_vec(t);
-    auto [xl, dxl] = diff::dr([&](const auto & v) { return glin(v(0)); }, wrt(t_vec));
-    auto ul        = ulin(t);
+    const auto [xl, dxl] = diff::dr([&](const auto & v) { return glin(v(0)); }, wrt(t_vec));
+    const auto ul        = ulin(t);
 
     const auto [flin, df_xu] = diff::dr(f, wrt(xl, ul));
 

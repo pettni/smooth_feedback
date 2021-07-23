@@ -110,7 +110,7 @@ auto asif_to_qp(const G & x0,
   SafeSet && h,
   BackupU && bu,
   const AsifParams & prm,
-  U u_lin = U::Zero())
+  const U & u_lin = U::Zero())
 {
   using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
   using std::placeholders::_1;
@@ -150,9 +150,9 @@ auto asif_to_qp(const G & x0,
     const auto [hval, dh_dx] = diff::dr([&](const auto & xx) { return h(xx); }, wrt(x));
 
     // insert barrier constraint
-    Eigen::Matrix<double, nh, nx> dh_dx0    = dh_dx * dx_dx0;
-    ret.A.template block<nh, nu>(k * nh, 0) = dh_dx0 * d_f0_du;
-    ret.l.template segment<nh>(k * nh)      = -prm.alpha * hval - dh_dx0 * f0;
+    const Eigen::Matrix<double, nh, nx> dh_dx0 = dh_dx * dx_dx0;
+    ret.A.template block<nh, nu>(k * nh, 0)    = dh_dx0 * d_f0_du;
+    ret.l.template segment<nh>(k * nh)         = -prm.alpha * hval - dh_dx0 * f0;
     ret.u.template segment<nh>(k * nh).setZero();
 
     // integrate system and sensitivity forward until next constraint
