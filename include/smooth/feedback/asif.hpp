@@ -51,45 +51,66 @@ struct AsifParams
   float alpha = 1.;
 
   /// time between barrier constraints
-  float dt = 1;
+  float tau = 1;
 
-  /// integration time step
-  float dt_int = 0.1;
+  /// integration time step (must be smaller or equal to tau)
+  float dt = 0.1;
 
   /// relaxation cost
   float relax_cost = 100;
 };
 
 /**
- * @brief Pose active set invariance problem as a QuadraticProgram.
+ * @brief Convert an active set invariance problem to a QuadraticProgram.
  *
- * @tparam K number of constraints.
+ * The objective is to impose constraints on the current input \f$ u \f$ of a system \f$
+ * \mathrm{d}^r x_t = f(x, u) \f$ s.t.
+ * \f[
+ *    \frac{\mathrm{d}}{\mathrm{d}t} h(\phi(t; x_0, bu(\cdot)))
+ *    \geq \alpha h(\phi(t; x_0, bu(\cdot)))
+ * \f]
+ * which enforces forward invariance of the set \f$ \{ x
+ * : h(x) \geq 0 \} \f$ along the **backup trajectory** \f$ bu \f$. The constraint is enforced at
+ * \f$K\f$ look-ahead time steps \f$ t_k = k \tau\f$ for \f$k = 0, \ldots, K \f$.
+ *
+ * This function encodes the problem as a QuadraticProgram that solves
+ * \f[
+ *  \begin{cases}
+ *   \min_{\mu}  & \left\| u - u_{des} \right\|^2 \\
+ *   \text{s.t.} & \text{constraint above holds for } u = u_{lin} + \mu
+ *   \end{cases}
+ * \f]
+ * A solution \f$ \mu^* \f$ to the QuadraticProgram corresponds to an input \f$ u_{lin} \oplus \mu^*
+ * \f$ applied to the system.
+ *
+ * @tparam K number of constraints (\p AsifParams::tau controls time between constraints)
  * @tparam G state Lie group type \f$\mathbb{G}\f$
  * @tparam U input Lie group type \f$\mathbb{G}\f$
  *
  * @param x0 current state of the system
  * @param u_des desired system input
- * @param u_lin system input to linearize around
  * @param f system model \f$f : \mathbb{G} \times \mathbb{U} \rightarrow \mathbb{R}^{\dim \mathfrak
  * g}\f$ s.t. \f$ \mathrm{d}^r x_t = f(x, u) \f$
  * @param h safe set \f$h : \mathbb{G} \rightarrow \mathbb{R}^{n_h}\f$ s.t. \f$ h(x) \geq 0 \f$
  * denote safe set
  * @param bu backup controller \f$ub : \mathbb{G} \rightarrow \mathbb{U} \f$
  * @param prm asif parameters
+ * @param u_lin input to linearize around (defaults to identity)
  *
  * @return QuadraticProgram modeling the ASIF filtering problem
  *
- * An solution \f$ \mu \f$ to the QuadraticProgram corresponds to an input \f$ u_lin \oplus \mu \f$
- * applied to the system.
+ * \note For the common case of \f$ U = \mathbb{R}^n \f$ and control-affine dynamics on the form \f$
+ * f = f_x(x) + f_u(x) u \f$, the linearization point \f$u_{lin}\f$ can safely be set to zero.
+ *
  */
 template<std::size_t K, LieGroup G, Manifold U, typename Dyn, typename SafeSet, typename BackupU>
 auto asif_to_qp(const G & x0,
   const U & u_des,
-  U & u_lin,
   Dyn && f,
   SafeSet && h,
   BackupU && bu,
-  const AsifParams & prm)
+  const AsifParams & prm,
+  U u_lin = U::Zero())
 {
   using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
   using std::placeholders::_1;
@@ -107,46 +128,44 @@ auto asif_to_qp(const G & x0,
   static constexpr int N = nu + 1;
 
   // iteration variables
-  double t                      = 0;
-  G x                           = x0;
-  typename G::TangentMap dx_dx0 = G::TangentMap::Identity();
+  double t          = 0;
+  G x               = x0;
+  TangentMap dx_dx0 = TangentMap::Identity();
 
   // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](
-                       const auto & x_v, auto & dx_dt_v, double) { dx_dt_v = f(x_v, bu(x_v)); };
+  const auto x_ode      = [&f, &bu](const auto & xx, auto & dd, double) { dd = f(xx, bu(xx)); };
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double) {
-    const auto [fcl, dr_fcl_dx] =
-      diff::dr([&f, &bu, &x](const auto & x_v) { return f(x_v, bu(x_v)); }, wrt(x));
-    dS_dt_v = (-G::ad(fcl) + dr_fcl_dx) * S_v;
+    const auto [fcl, dr_fcl_dx] = diff::dr([&](const auto & xx) { return f(xx, bu(xx)); }, wrt(x));
+    dS_dt_v                     = (-G::ad(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
-  const auto [f0, d_f0_dulin] = diff::dr(std::bind(f, x, _1), wrt(u_lin));
+  const auto [f0, d_f0_du] = diff::dr(std::bind(f, x, _1), wrt(u_lin));
 
   QuadraticProgram<M, N> ret;
-  ret.A.template block<K * nh, 1>(0, nu).setConstant(1);   // coeffs for delta (upper part)
-  ret.A.template block<nu, 1>(K * nh, nu).setConstant(0);  // coeffs for delta (lower part)
 
-  // loop over constraints on input
+  // loop over constraint number
   for (auto k = 0u; k != K; ++k) {
-    // differentiate barrier function w.r.t. x(t)
-    const auto [hval, dh_dx] = diff::dr([&](const auto & x_v) { return h(x_v); }, wrt(x));
+    // differentiate barrier function w.r.t. x
+    const auto [hval, dh_dx] = diff::dr([&](const auto & xx) { return h(xx); }, wrt(x));
 
-    // insert barrier constraint on u
+    // insert barrier constraint
     Eigen::Matrix<double, nh, nx> dh_dx0    = dh_dx * dx_dx0;
-    ret.A.template block<nh, nu>(k * nh, 0) = dh_dx0 * d_f0_dulin;
+    ret.A.template block<nh, nu>(k * nh, 0) = dh_dx0 * d_f0_du;
     ret.l.template segment<nh>(k * nh)      = -prm.alpha * hval - dh_dx0 * f0;
     ret.u.template segment<nh>(k * nh).setZero();
 
-    // integrate system and sensitivity forward
-    while (t < prm.dt * (k + 1)) {
-      state_stepper.do_step(x_ode, x, t, prm.dt_int);
-      sensi_stepper.do_step(dx_dx0_ode, dx_dx0, t, prm.dt_int);
-      t += prm.dt_int;
+    // integrate system and sensitivity forward until next constraint
+    while (t < prm.tau * (k + 1)) {
+      state_stepper.do_step(x_ode, x, t, prm.dt);
+      sensi_stepper.do_step(dx_dx0_ode, dx_dx0, t, prm.dt);
+      t += std::min(prm.dt, prm.tau);
     }
   }
 
   // set input constraints
+  ret.A.template block<K * nh, 1>(0, nu).setConstant(1);   // coeffs for delta (upper part)
+  ret.A.template block<nu, 1>(K * nh, nu).setConstant(0);  // coeffs for delta (lower part)
   ret.A.template bottomRows<nu>().setIdentity();
   ret.l.template tail<nu>().setConstant(-1);
   ret.u.template tail<nu>().setConstant(1);

@@ -25,34 +25,31 @@
 
 #include <gtest/gtest.h>
 
+#include <smooth/feedback/asif.hpp>
 #include <smooth/se2.hpp>
 #include <smooth/tn.hpp>
-#include <smooth/feedback/asif.hpp>
 
 TEST(Asif, Basic)
 {
   const auto f = [](const auto &, const auto & u) {
     using T = typename std::decay_t<decltype(u)>::Scalar;
-    return Eigen::Matrix<T, 3, 1>(u.rn()(0), T(0), u.rn()(1));
+    return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
   };
 
-  const auto h = [](const auto & g) {
-    return g.r2();
-  };
+  const auto h = [](const auto & g) { return g.r2(); };
 
   const auto bu = [](const auto & g) {
     using T = typename std::decay_t<decltype(g)>::Scalar;
-    return smooth::T2<T>(Eigen::Matrix<T, 2, 1>(-0.1, 1));
+    return Eigen::Matrix<T, 2, 1>(-0.1, 1);
   };
 
   smooth::SE2d x0 = smooth::SE2d::Random();
 
   smooth::feedback::AsifParams prm;
 
-  smooth::T2<double> u(Eigen::Matrix<double, 2, 1>::Zero());
-  smooth::T2<double> u_lin(Eigen::Matrix<double, 2, 1>::Zero());
+  Eigen::Vector2d u = Eigen::Vector2d::Zero();
 
-  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, smooth::T2d>(x0, u, u_lin, f, h, bu, prm);
+  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, Eigen::Vector2d>(x0, u, f, h, bu, prm);
 
   std::cout << "A" << std::endl;
   std::cout << qp.A << std::endl;

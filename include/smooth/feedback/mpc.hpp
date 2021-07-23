@@ -62,7 +62,7 @@ namespace smooth::feedback {
  * \f]
  * where the cost matrices must be positive semi-definite.
  */
-template<LieGroup G, LieGroup U>
+template<LieGroup G, Manifold U>
 struct OptimalControlProblem
 {
   /// State tangent dimension
@@ -137,7 +137,7 @@ struct OptimalControlProblem
  *
  * @return QuadraticProgram modeling the input optimal control problem.
  */
-template<std::size_t K, LieGroup G, LieGroup U, typename Dyn, typename GLin, typename ULin>
+template<std::size_t K, LieGroup G, Manifold U, typename Dyn, typename GLin, typename ULin>
 auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, ULin && ulin)
 {
   using std::placeholders::_1;
