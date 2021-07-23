@@ -31,7 +31,7 @@
  * @brief Quadratic Programming.
  */
 
-#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <Eigen/Sparse>
 
 #include <limits>
@@ -187,6 +187,92 @@ template<typename T>
 using QpSol_t = typename QpSol<T>::type;
 // \endcond
 
+template<typename Pbm>
+auto scaleQp(const Pbm & pbm)
+{
+  using AmatT                  = decltype(Pbm::A);
+  using Scalar                 = typename AmatT::Scalar;
+  static constexpr bool sparse = std::is_base_of_v<Eigen::SparseMatrixBase<AmatT>, AmatT>;
+
+  Pbm ret = pbm;
+
+  static constexpr Eigen::Index M = AmatT::RowsAtCompileTime;
+  static constexpr Eigen::Index N = AmatT::ColsAtCompileTime;
+  static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
+
+  const Eigen::Index n = ret.A.cols(), m = ret.A.rows(), k = n + m;
+  const auto norm = [](auto && t) -> Scalar { return t.template lpNorm<Eigen::Infinity>(); };
+
+  Eigen::Matrix<Scalar, K, 1> scale = Eigen::Matrix<Scalar, K, 1>::Ones(k);  // scaling
+  Eigen::Matrix<Scalar, K, 1> d_scale(k);                                    // incremental scaling
+
+  // find "norm" of cost function
+  if constexpr (sparse) {
+    for (auto i = 0u; i != n; ++i) {
+      d_scale(i) = 0;
+      // traverse each col of P
+      for (Eigen::SparseMatrix<double>::InnerIterator it(ret.P, i); it; ++it) {
+        d_scale(i) = std::max(d_scale(i), std::abs(it.value()));
+      }
+    }
+  } else {
+    d_scale.head(n) = ret.P.colwise().template lpNorm<Eigen::Infinity>();
+  }
+
+  // scale cost function
+  Scalar c = Scalar(1) / std::max({1e-3, d_scale.head(n).mean(), norm(ret.q)});
+  ret.P *= c;
+  ret.q *= c;
+
+  int it = 0;
+
+  // calculate norm for every column of [P A' ; A 0]
+  do {
+    if constexpr (sparse) {
+      // A is stored row-wise
+      // P is stored col-wise
+      Eigen::SparseMatrix<Scalar> Acol = ret.A;
+      for (auto i = 0u; i != n; ++i) {
+        d_scale(i) = 0;
+        // traverse col i of P
+        for (Eigen::SparseMatrix<double>::InnerIterator it(ret.P, i); it; ++it) {
+          d_scale(i) = std::max(d_scale(i), std::abs(it.value()));
+        }
+        // traverse col i of A
+        for (Eigen::SparseMatrix<double>::InnerIterator it(Acol, i); it; ++it) {
+          d_scale(i) = std::max(d_scale(i), std::abs(it.value()));
+        }
+      }
+      for (auto i = 0u; i != m; ++i) {
+        d_scale(n + i) = 0;
+        // traverse row i of A
+        for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(ret.A, i); it; ++it) {
+          d_scale(n + i) = std::max(d_scale(n + i), std::abs(it.value()));
+        }
+      }
+    } else {
+      d_scale.head(n) = ret.P.colwise().template lpNorm<Eigen::Infinity>().cwiseMax(
+        ret.A.colwise().template lpNorm<Eigen::Infinity>());
+      d_scale.tail(m) = ret.A.rowwise().template lpNorm<Eigen::Infinity>();
+    }
+
+    // make sure we are not doing anything stupid
+    d_scale = d_scale.cwiseMax(1e-3).cwiseInverse().cwiseSqrt();
+
+    // perform scaling
+    ret.P = d_scale.head(n).asDiagonal() * ret.P * d_scale.head(n).asDiagonal();
+    ret.q.applyOnTheLeft(d_scale.head(n).asDiagonal());
+    ret.A = d_scale.tail(m).asDiagonal() * ret.A * d_scale.head(n).asDiagonal();
+    ret.l.applyOnTheLeft(d_scale.tail(m).asDiagonal());
+    ret.u.applyOnTheLeft(d_scale.tail(m).asDiagonal());
+
+    scale.applyOnTheLeft(d_scale.asDiagonal());
+
+  } while (it++ < 10 && (d_scale.array() - 1).abs().maxCoeff() > 0.1);
+
+  return std::make_tuple(ret, scale, c);
+}
+
 /**
  * @brief Solve a quadratic program using the operator splitting approach.
  *
@@ -237,13 +323,21 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
   const Scalar alpha = static_cast<Scalar>(prm.alpha);
   const Scalar sigma = static_cast<Scalar>(prm.sigma);
 
+  // scale problem
+  // new problem is s.t.
+  //  Pnew = c * S_x * P * S_x
+  //  qnew = c * q * S_x
+  //  Enew = S_e * E * S_x
+  //  l = S_e * l
+  //  u = S_e * u
+  // where S_x = diag(s[0:n])  and S_e = diag(s[n:n+m])
+  const auto [spbm, s, c] = scaleQp(pbm);
+
   // check that feasible set is nonempty
-  if ((pbm.u - pbm.l).minCoeff() < Scalar(0.) || pbm.l.maxCoeff() == inf
-      || pbm.u.minCoeff() == -inf) {
+  if ((spbm.u - spbm.l).minCoeff() < Scalar(0.) || spbm.l.maxCoeff() == inf
+      || spbm.u.minCoeff() == -inf) {
     return {.code = ExitCode::PrimalInfeasible, .primal = {}, .dual = {}};
   }
-
-  // TODO problem scaling / conditioning
 
   // square symmetric system matrix
   std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, K, K>> H(k, k);
@@ -252,10 +346,10 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
     // preallocate nonzeros
     Eigen::Matrix<int, -1, 1> nnz(k);
     for (auto i = 0u; i != n; ++i) {
-      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
+      nnz(i) = spbm.P.outerIndexPtr()[i + 1] - spbm.P.outerIndexPtr()[i] + 1;
     }
     for (auto i = 0u; i != m; ++i) {
-      nnz(n + i) = pbm.A.outerIndexPtr()[i + 1] - pbm.A.outerIndexPtr()[i] + 1;
+      nnz(n + i) = spbm.A.outerIndexPtr()[i + 1] - spbm.A.outerIndexPtr()[i] + 1;
     }
     H.reserve(nnz);
 
@@ -263,22 +357,22 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
     using AIter = typename Eigen::SparseMatrix<Scalar, Eigen::RowMajor>::InnerIterator;
 
     for (Eigen::Index col = 0u; col != n; ++col) {
-      for (PIter it(pbm.P, col); it && it.index() <= col; ++it) {
+      for (PIter it(spbm.P, col); it && it.index() <= col; ++it) {
         H.insert(it.index(), col) = it.value();
       }
       H.coeffRef(col, col) += sigma;
     }
 
     for (auto row = 0u; row != m; ++row) {
-      for (AIter it(pbm.A, row); it; ++it) { H.insert(it.index(), n + row) = it.value(); }
+      for (AIter it(spbm.A, row); it; ++it) { H.insert(it.index(), n + row) = it.value(); }
       H.insert(n + row, n + row) = -Scalar(1) / rho;
     }
 
     H.makeCompressed();
   } else {
-    H.template topLeftCorner<N, N>(n, n) = pbm.P;
+    H.template topLeftCorner<N, N>(n, n) = spbm.P;
     H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
-    H.template topRightCorner<N, M>(n, m)    = pbm.A.transpose();
+    H.template topRightCorner<N, M>(n, m)    = spbm.A.transpose();
     H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
   }
 
@@ -286,15 +380,19 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
   std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, K>> ldlt(
     std::move(H));
 
-  if (ldlt.info()) { return {.code = ExitCode::Unknown, .primal = {}, .dual = {}}; }
+  if (ldlt.info()) {
+    return {.code = ExitCode::Unknown, .primal = {}, .dual = {}};
+  }
 
   // initialization
   Rn x;
   Rm z, y;
   if (hotstart.has_value()) {
-    x           = hotstart.value().get().primal;
-    z.noalias() = pbm.A * x;
-    y           = hotstart.value().get().dual;
+    x = hotstart.value().get().primal;
+    x.applyOnTheLeft(s.head(n).cwiseInverse().asDiagonal());
+    y = hotstart.value().get().dual;
+    y.applyOnTheLeft(s.tail(m).asDiagonal());
+    z.noalias() = spbm.A * x;
   } else {
     x.setZero(n);
     y.setZero(m);
@@ -311,14 +409,14 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
     // ADMM ITERATION
 
     // solve linear system
-    p.head(n) = sigma * x - pbm.q;
+    p.head(n) = sigma * x - spbm.q;
     p.tail(m) = z - y / rho;
     ldlt.solve_inplace(p);
 
     EIGEN_ASM_COMMENT("admm");
     x_next   = alpha * p.head(n) + x - alpha * x;
     z_interp = alpha * z + (alpha / rho) * p.tail(m) - (alpha / rho) * y + z - alpha * z;
-    z_next   = (z_interp + y / rho).cwiseMax(pbm.l).cwiseMin(pbm.u);
+    z_next   = (z_interp + y / rho).cwiseMax(spbm.l).cwiseMin(spbm.u);
     y_next   = y + rho * z_interp - rho * z_next;
     EIGEN_ASM_COMMENT("/admm");
 
@@ -328,64 +426,83 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
 
       // OPTIMALITY
 
-      Px.noalias()  = pbm.P * x;
-      Ax.noalias()  = pbm.A * x;
-      Aty.noalias() = pbm.A.transpose() * y;
+      Ax.noalias() = spbm.A * x;
+      Ax.applyOnTheLeft(s.tail(m).cwiseInverse().asDiagonal());
 
-      const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(z));
-      const Scalar dual_scale   = std::max<Scalar>({norm(Px), norm(pbm.q), norm(Aty)});
-
-      if (norm(Ax - z) <= prm.eps_abs + prm.eps_rel * primal_scale
-          && norm(Px + pbm.q + Aty) <= prm.eps_abs + prm.eps_abs * dual_scale) {
+      // clang-format off
+      // check primal
+      bool optimal = true;
+      const Scalar primal_val   = norm(Ax - s.tail(m).cwiseInverse().asDiagonal() * z);
+      const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(s.tail(m).cwiseInverse().asDiagonal() * z));
+      if (primal_val > prm.eps_abs + prm.eps_rel * primal_scale) {
+        optimal = false;
+      }
+      if (optimal) {
+        // primal succeeded, check dual
+        Px.noalias() = spbm.P * x;
+        Px.applyOnTheLeft(s.head(n).cwiseInverse().asDiagonal());
+        Aty.noalias() = spbm.A.transpose() * y;
+        Aty.applyOnTheLeft(s.head(n).cwiseInverse().asDiagonal());
+        const Scalar dual_val = norm(Px + s.head(n).cwiseInverse().asDiagonal() * spbm.q + Aty);
+        const Scalar dual_scale = std::max<Scalar>({norm(Px), norm(s.head(n).cwiseInverse().asDiagonal() * spbm.q), norm(Aty)});
+        if (dual_val > c * prm.eps_abs + prm.eps_rel * dual_scale) { optimal = false; }
+      }
+      if (optimal) {
         QpSol_t<Pbm> sol{.code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
-        if (prm.polish) { polishQP(pbm, sol, prm); }
+        if (prm.polish) { polishQP(spbm, sol, prm); }
+        sol.primal.applyOnTheLeft(s.head(n).asDiagonal());
+        sol.dual.applyOnTheLeft(s.tail(m).cwiseInverse().asDiagonal());
         return sol;
       }
+      // clang-format on
 
       // PRIMAL INFEASIBILITY
 
       dx = x_next - x;
       dy = y_next - y;
 
-      const Scalar dx_norm    = norm(dx);
-      const Scalar dy_norm    = norm(dy);
-      const Scalar At_dy_norm = norm(pbm.A.transpose() * dy);
+      const Scalar Edy_norm = norm(s.tail(m).asDiagonal() * dy);
+      const Scalar Di_At_dy_norm =
+        norm(s.head(n).cwiseInverse().asDiagonal() * spbm.A.transpose() * dy);
 
       Scalar u_dyp_plus_l_dyn = Scalar(0);
       for (auto i = 0u; i != m; ++i) {
-        if (pbm.u(i) != inf) {
-          u_dyp_plus_l_dyn += pbm.u(i) * std::max<Scalar>(Scalar(0), dy(i));
-        } else if (dy(i) > prm.eps_primal_inf * dy_norm) {
+        if (spbm.u(i) != inf) {
+          u_dyp_plus_l_dyn += spbm.u(i) * std::max<Scalar>(Scalar(0), dy(i));
+        } else if (dy(i) > prm.eps_primal_inf * Edy_norm) {
           // contributes +inf to sum --> no certificate
           u_dyp_plus_l_dyn = inf;
           break;
         }
-        if (pbm.l(i) != -inf) {
-          u_dyp_plus_l_dyn += pbm.l(i) * std::min<Scalar>(Scalar(0), dy(i));
-        } else if (dy(i) < -prm.eps_primal_inf * dy_norm) {
+        if (spbm.l(i) != -inf) {
+          u_dyp_plus_l_dyn += spbm.l(i) * std::min<Scalar>(Scalar(0), dy(i));
+        } else if (dy(i) < -prm.eps_primal_inf * Edy_norm) {
           // contributes +inf to sum --> no certificate
           u_dyp_plus_l_dyn = inf;
           break;
         }
       }
 
-      if (std::max<Scalar>(At_dy_norm, u_dyp_plus_l_dyn) < prm.eps_primal_inf * dy_norm) {
+      if (std::max<Scalar>(Di_At_dy_norm, u_dyp_plus_l_dyn) < prm.eps_primal_inf * Edy_norm) {
         return {.code = ExitCode::PrimalInfeasible, .primal = {}, .dual = {}};
       }
 
       // DUAL INFEASIBILITY
 
-      Ax.noalias() = pbm.A * dx;  // note new value
+      const Scalar D_dx_norm = norm(s.head(n).asDiagonal() * dx);
+      Ax.noalias()           = spbm.A * dx;  // note new value
+      Ax.applyOnTheLeft(s.tail(m).cwiseInverse().asDiagonal());
 
-      bool dual_infeasible = (norm(pbm.P * dx) <= prm.eps_dual_inf * dx_norm)
-                          && (pbm.q.dot(dx) <= prm.eps_dual_inf * dx_norm);
+      bool dual_infeasible =
+        (norm(s.head(n).cwiseInverse().asDiagonal() * spbm.P * dx) <= prm.eps_dual_inf * D_dx_norm)
+        && (spbm.q.dot(dx) <= prm.eps_dual_inf * D_dx_norm);
       for (auto i = 0u; i != m && dual_infeasible; ++i) {
-        if (pbm.u(i) == inf) {
-          dual_infeasible &= (Ax(i) >= -prm.eps_dual_inf * dx_norm);
-        } else if (pbm.l(i) == -inf) {
-          dual_infeasible &= (Ax(i) <= prm.eps_dual_inf * dx_norm);
+        if (spbm.u(i) == inf) {
+          dual_infeasible &= (Ax(i) >= -prm.eps_dual_inf * D_dx_norm);
+        } else if (spbm.l(i) == -inf) {
+          dual_infeasible &= (Ax(i) <= prm.eps_dual_inf * D_dx_norm);
         } else {
-          dual_infeasible &= std::abs(Ax(i)) < prm.eps_dual_inf * dx_norm;
+          dual_infeasible &= std::abs(Ax(i)) < prm.eps_dual_inf * D_dx_norm;
         }
       }
 
@@ -405,7 +522,7 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
  *
  * @tparam Pbm problem type
  *
- * @param[in] pbm problem formulation
+ * @param[in] spbm problem formulation
  * @param[in, out] sol solution to polish
  * @param[in] prm solver options
  *

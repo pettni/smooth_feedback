@@ -288,3 +288,40 @@ TEST(QP, TwoDimensional)
 
   ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(46.6338, -17.5351), 1e-4));
 }
+
+TEST(QP, Scale)
+{
+  static constexpr int M = 8;
+  static constexpr int N = 4;
+  smooth::feedback::QuadraticProgram<M, N> problem;
+  problem.P.setRandom();
+  problem.P *= 100;
+  problem.q.setRandom();
+
+  problem.A.setRandom();
+  problem.A *= 100;
+  problem.l.setRandom();
+  problem.u.setRandom();
+
+  auto [scaled_problem, scale, c] = smooth::feedback::scaleQp(problem);
+
+  Eigen::Matrix<double, N, N> D_x = scale.head(N).asDiagonal();
+  Eigen::Matrix<double, M, M> D_e = scale.tail(M).asDiagonal();
+
+  ASSERT_TRUE((c * D_x * problem.P * D_x).isApprox(scaled_problem.P));
+  ASSERT_TRUE((c * D_x * problem.q).isApprox(scaled_problem.q));
+  ASSERT_TRUE((D_e * problem.A * D_x).isApprox(scaled_problem.A));
+  ASSERT_TRUE((D_e * problem.l).isApprox(scaled_problem.l));
+  ASSERT_TRUE((D_e * problem.u).isApprox(scaled_problem.u));
+
+  smooth::feedback::QuadraticProgramSparse sp_problem;
+  sp_problem.A                             = problem.A.sparseView();
+  sp_problem.P                             = problem.P.sparseView();
+  sp_problem.q                             = problem.q;
+  sp_problem.l                             = problem.l;
+  sp_problem.u                             = problem.u;
+  auto [sp_scaled_problem, sp_scale, sp_c] = smooth::feedback::scaleQp(sp_problem);
+
+  ASSERT_NEAR(c, sp_c, 1e-5);
+  ASSERT_TRUE(sp_scale.isApprox(scale));
+}
