@@ -303,7 +303,7 @@ TEST(QP, Scale)
   problem.l.setRandom();
   problem.u.setRandom();
 
-  auto [scaled_problem, scale, c] = smooth::feedback::scale_qp(problem);
+  auto [scaled_problem, scale, c] = smooth::feedback::detail::scale_qp(problem);
 
   Eigen::Matrix<double, N, N> D_x = scale.head(N).asDiagonal();
   Eigen::Matrix<double, M, M> D_e = scale.tail(M).asDiagonal();
@@ -320,7 +320,7 @@ TEST(QP, Scale)
   sp_problem.q                             = problem.q;
   sp_problem.l                             = problem.l;
   sp_problem.u                             = problem.u;
-  auto [sp_scaled_problem, sp_scale, sp_c] = smooth::feedback::scale_qp(sp_problem);
+  auto [sp_scaled_problem, sp_scale, sp_c] = smooth::feedback::detail::scale_qp(sp_problem);
 
   ASSERT_NEAR(c, sp_c, 1e-5);
   ASSERT_TRUE(sp_scale.isApprox(scale));
