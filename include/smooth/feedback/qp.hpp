@@ -111,12 +111,13 @@ struct QuadraticProgramSparse
 
 /// Solver exit codes
 enum class ExitCode : int {
-  Optimal,
-  PolishFailed,
-  PrimalInfeasible,
-  DualInfeasible,
-  MaxIterations,
-  Unknown
+  Optimal,           /// Solution satisifes optimality condition. Solution is polished if
+                     /// `SolverParams::polish = true`.
+  PolishFailed,      /// Solution satisfies optimality condition but is not polished
+  PrimalInfeasible,  /// A certificate of primal infeasibility was found, no solution returned
+  DualInfeasible,    /// A certificate of dual infeasibility was found, no solution returned
+  MaxIterations,     /// Max number of iterations was reached, returned solution is not optimal
+  Unknown            /// Solution is useless because of other reasons, no solution returned
 };
 
 /// Solver solution
@@ -132,7 +133,7 @@ struct Solution
 };
 
 /**
- * @brief Options for solveQP
+ * @brief Options for solve_qp
  */
 struct SolverParams
 {
@@ -187,8 +188,36 @@ template<typename T>
 using QpSol_t = typename QpSol<T>::type;
 // \endcond
 
+/**
+ * @brief Re-scale a QuadraticProgram
+ *
+ * @param pbm problem \f$ (P, q, A, l, u) \f$ to rescale.
+ *
+ * @returns tuple `(spbm, s, c)` where `spbm` is a scaled problem \f$ (\bar P, \bar q, \bar A, \bar
+ * l, \bar u)\f$.
+ *
+ * The scaled problem is defined as
+ *
+ * * \f$ \bar P = c S_x P S_x \f$,
+ * * \f$ \bar q = c q S_x \f$,
+ * * \f$ \bar A = S_e A S_x \f$,
+ * * \f$ \bar l = S_e l \f$,
+ * * \f$ \bar u = S_e u \f$,
+ *
+ * where \f$ S_x = diag(s_{0:n}), S_e = diag(s_{n:n+m}) \f$.
+ *
+ * The objective of the rescaling is the make the columns of
+ * \f[
+ *   \begin{bmatrix} \bar P & \bar A^T \\ \bar A & 0 \end{bmatrix}
+ * \f]
+ * have similar \f$ l_\infty \f$ norm, and similarly for
+ * the columns of
+ * \f[
+ *  \begin{bmatrix} \bar P & \bar q \end{bmatrix}.
+ * \f]
+ */
 template<typename Pbm>
-auto scaleQp(const Pbm & pbm)
+auto scale_qp(const Pbm & pbm)
 {
   using AmatT                  = decltype(Pbm::A);
   using Scalar                 = typename AmatT::Scalar;
@@ -260,14 +289,20 @@ auto scaleQp(const Pbm & pbm)
     d_scale = d_scale.cwiseMax(1e-3).cwiseInverse().cwiseSqrt();
 
     // perform scaling
-    ret.P = d_scale.head(n).asDiagonal() * ret.P * d_scale.head(n).asDiagonal();
+    if constexpr (sparse) {
+      ret.P = d_scale.head(n).asDiagonal() * ret.P * d_scale.head(n).asDiagonal();
+      ret.A = d_scale.tail(m).asDiagonal() * ret.A * d_scale.head(n).asDiagonal();
+    } else {
+      ret.P.applyOnTheLeft(d_scale.head(n).asDiagonal());
+      ret.P.applyOnTheRight(d_scale.head(n).asDiagonal());
+      ret.A.applyOnTheLeft(d_scale.tail(m).asDiagonal());
+      ret.A.applyOnTheRight(d_scale.head(n).asDiagonal());
+    }
     ret.q.applyOnTheLeft(d_scale.head(n).asDiagonal());
-    ret.A = d_scale.tail(m).asDiagonal() * ret.A * d_scale.head(n).asDiagonal();
     ret.l.applyOnTheLeft(d_scale.tail(m).asDiagonal());
     ret.u.applyOnTheLeft(d_scale.tail(m).asDiagonal());
 
     scale.applyOnTheLeft(d_scale.asDiagonal());
-
   } while (it++ < 10 && (d_scale.array() - 1).abs().maxCoeff() > 0.1);
 
   return std::make_tuple(ret, scale, c);
@@ -294,7 +329,7 @@ auto scaleQp(const Pbm & pbm)
  * For the official C implementation, see https://osqp.org/.
  */
 template<typename Pbm>
-QpSol_t<Pbm> solveQP(const Pbm & pbm,
+QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   const SolverParams & prm,
   std::optional<std::reference_wrapper<const QpSol_t<Pbm>>> hotstart = {})
 {
@@ -323,17 +358,10 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
   const Scalar alpha = static_cast<Scalar>(prm.alpha);
   const Scalar sigma = static_cast<Scalar>(prm.sigma);
 
-  // scale problem
-  // new problem is s.t.
-  //  Pnew = c * S_x * P * S_x
-  //  qnew = c * q * S_x
-  //  Enew = S_e * E * S_x
-  //  l = S_e * l
-  //  u = S_e * u
-  // where S_x = diag(s[0:n])  and S_e = diag(s[n:n+m])
-  const auto [spbm, s, c] = scaleQp(pbm);
-  const Rn sd             = s.head(n);
-  const Rm se             = s.tail(m);
+  // scale problem and store diagonal scaling matrices
+  const auto [spbm, S, c] = scale_qp(pbm);
+  const Rn D              = S.head(n);
+  const Rm E              = S.tail(m);
 
   // check that feasible set is nonempty
   if ((spbm.u - spbm.l).minCoeff() < Scalar(0.) || spbm.l.maxCoeff() == inf
@@ -389,9 +417,9 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
   Rm z, y;
   if (hotstart.has_value()) {
     x = hotstart.value().get().primal;
-    x.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
+    x.applyOnTheLeft(D.cwiseInverse().asDiagonal());
     y = hotstart.value().get().dual;
-    y.applyOnTheLeft(se.asDiagonal());
+    y.applyOnTheLeft(E.asDiagonal());
     z.noalias() = spbm.A * x;
   } else {
     x.setZero(n);
@@ -413,12 +441,10 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
     p.tail(m) = z - y / rho;
     ldlt.solve_inplace(p);
 
-    EIGEN_ASM_COMMENT("admm");
     x_next   = alpha * p.head(n) + x - alpha * x;
     z_interp = alpha * z + (alpha / rho) * p.tail(m) - (alpha / rho) * y + z - alpha * z;
     z_next   = (z_interp + y / rho).cwiseMax(spbm.l).cwiseMin(spbm.u);
     y_next   = y + rho * z_interp - rho * z_next;
-    EIGEN_ASM_COMMENT("/admm");
 
     // CHECK STOPPING CRITERIA
 
@@ -427,31 +453,31 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
       // OPTIMALITY
 
       Ax.noalias() = spbm.A * x;
-      Ax.applyOnTheLeft(se.cwiseInverse().asDiagonal());
+      Ax.applyOnTheLeft(E.cwiseInverse().asDiagonal());
 
       // clang-format off
       // check primal
       bool optimal = true;
-      const Scalar primal_val   = norm(Ax - se.cwiseInverse().cwiseProduct(z));
-      const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(se.cwiseInverse().cwiseProduct(z)));
+      const Scalar primal_val   = norm(Ax - E.cwiseInverse().cwiseProduct(z));
+      const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(E.cwiseInverse().cwiseProduct(z)));
       if (primal_val > prm.eps_abs + prm.eps_rel * primal_scale) {
         optimal = false;
       }
       if (optimal) {
         // primal succeeded, check dual
         Px.noalias() = spbm.P * x;
-        Px.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
+        Px.applyOnTheLeft(D.cwiseInverse().asDiagonal());
         Aty.noalias() = spbm.A.transpose() * y;
-        Aty.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
-        const Scalar dual_val = norm(Px + sd.cwiseInverse().cwiseProduct(spbm.q) + Aty);
-        const Scalar dual_scale = std::max<Scalar>({norm(Px), norm(sd.cwiseInverse().cwiseProduct(spbm.q)), norm(Aty)});
+        Aty.applyOnTheLeft(D.cwiseInverse().asDiagonal());
+        const Scalar dual_val = norm(Px + D.cwiseInverse().cwiseProduct(spbm.q) + Aty);
+        const Scalar dual_scale = std::max<Scalar>({norm(Px), norm(D.cwiseInverse().cwiseProduct(spbm.q)), norm(Aty)});
         if (dual_val > c * prm.eps_abs + prm.eps_rel * dual_scale) { optimal = false; }
       }
       if (optimal) {
         QpSol_t<Pbm> sol{.code = ExitCode::Optimal, .primal = std::move(x), .dual = std::move(y)};
-        if (prm.polish) { polishQP(spbm, sol, prm); }
-        sol.primal.applyOnTheLeft(sd.asDiagonal());
-        sol.dual.applyOnTheLeft(se.cwiseInverse().asDiagonal());
+        if (prm.polish) { polish_qp(spbm, sol, prm); }
+        sol.primal.applyOnTheLeft(D.asDiagonal());
+        sol.dual.applyOnTheLeft(E.cwiseInverse().asDiagonal());
         return sol;
       }
       // clang-format on
@@ -461,9 +487,10 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
       dx = x_next - x;
       dy = y_next - y;
 
-      const Scalar Edy_norm      = norm(se.cwiseProduct(dy));
-      const Scalar Di_At_dy_norm = norm(sd.cwiseInverse().asDiagonal() * spbm.A.transpose() * dy);
+      Aty.noalias() = spbm.A.transpose() * dy;
+      Aty.applyOnTheLeft(D.cwiseInverse().asDiagonal());  // note new value Dinv A' dy
 
+      const Scalar Edy_norm   = norm(E.cwiseProduct(dy));
       Scalar u_dyp_plus_l_dyn = Scalar(0);
       for (auto i = 0u; i != m; ++i) {
         if (spbm.u(i) != inf) {
@@ -482,17 +509,17 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
         }
       }
 
-      if (std::max<Scalar>(Di_At_dy_norm, u_dyp_plus_l_dyn) < prm.eps_primal_inf * Edy_norm) {
+      if (std::max<Scalar>(norm(Aty), u_dyp_plus_l_dyn) < prm.eps_primal_inf * Edy_norm) {
         return {.code = ExitCode::PrimalInfeasible, .primal = {}, .dual = {}};
       }
 
       // DUAL INFEASIBILITY
 
-      const Scalar D_dx_norm = norm(sd.cwiseProduct(dx));  // holds n( D * dx )
-      Ax.noalias()           = spbm.A * dx;                // note new value Einv * A * dx
-      Ax.applyOnTheLeft(se.cwiseInverse().asDiagonal());
-      Px.noalias() = spbm.P * dx;  // note new value Dinv * P * dx
-      Px.applyOnTheLeft(sd.cwiseInverse().asDiagonal());
+      const Scalar D_dx_norm = norm(D.cwiseProduct(dx));  // holds n( D * dx )
+      Ax.noalias()           = spbm.A * dx;
+      Ax.applyOnTheLeft(E.cwiseInverse().asDiagonal());  // note new value Einv * A * dx
+      Px.noalias() = spbm.P * dx;
+      Px.applyOnTheLeft(D.cwiseInverse().asDiagonal());  // note new value Dinv * P * dx
 
       bool dual_infeasible = (norm(Px) <= c * prm.eps_dual_inf * D_dx_norm)
                           && (spbm.q.dot(dx) <= c * prm.eps_dual_inf * D_dx_norm);
@@ -529,7 +556,7 @@ QpSol_t<Pbm> solveQP(const Pbm & pbm,
  * @warning This function allocates heap memory even for static-sized problems.
  */
 template<typename Pbm>
-void polishQP(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
+void polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
 {
   using AmatT                  = decltype(Pbm::A);
   using Scalar                 = typename AmatT::Scalar;
@@ -633,8 +660,6 @@ void polishQP(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
 
   // TODO print polishing info (if verbose flag)
 }
-
-// Solution<-1, -1> solve(const QuadraticProgramSparse &, const SolverParams &) { return {}; }
 
 }  // namespace smooth::feedback
 
