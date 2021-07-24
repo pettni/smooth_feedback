@@ -72,7 +72,8 @@ public:
    *
    * @note Only the upper triangular part of \f$ A \f$ is accessed.
    */
-  inline LDLTLapack(Eigen::Matrix<Scalar, N, N> && A) : AF_(std::move(A)), IPIV_(AF_.cols())
+  inline LDLTLapack(Eigen::Matrix<Scalar, N, N, Eigen::ColMajor> && A)
+      : AF_(std::move(A)), IPIV_(AF_.cols())
   {
     static constexpr lapack_int LWORK = N == -1 ? -1 : 3 * N;
     Eigen::Matrix<Scalar, LWORK, 1> work(3 * AF_.cols());

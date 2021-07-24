@@ -250,44 +250,41 @@ auto scale_qp(const Pbm & pbm)
       }
     }
   } else {
-    d_scale.head(n) = ret.P.colwise().template lpNorm<Eigen::Infinity>();
+    d_scale.template head<N>(n) = ret.P.colwise().template lpNorm<Eigen::Infinity>();
   }
 
   // scale cost function
-  Scalar c = Scalar(1) / std::max({1e-3, d_scale.head(n).mean(), norm(ret.q)});
+  Scalar c = Scalar(1) / std::max({1e-3, d_scale.template head<N>(n).mean(), norm(ret.q)});
   ret.P *= c;
   ret.q *= c;
 
-  int it = 0;
+  int iter = 0;
 
   // calculate norm for every column of [P A' ; A 0]
   do {
     if constexpr (sparse) {
-      // A is stored row-wise
-      // P is stored col-wise
-      Eigen::SparseMatrix<Scalar> Acol = ret.A;
+      // P is stored col wise
       for (auto i = 0u; i != n; ++i) {
         d_scale(i) = 0;
-        // traverse col i of P
         for (Eigen::SparseMatrix<double>::InnerIterator it(ret.P, i); it; ++it) {
-          d_scale(i) = std::max(d_scale(i), std::abs(it.value()));
-        }
-        // traverse col i of A
-        for (Eigen::SparseMatrix<double>::InnerIterator it(Acol, i); it; ++it) {
+          // upper left block of H
           d_scale(i) = std::max(d_scale(i), std::abs(it.value()));
         }
       }
+      // A is stored row wise
       for (auto i = 0u; i != m; ++i) {
         d_scale(n + i) = 0;
-        // traverse row i of A
         for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(ret.A, i); it; ++it) {
+          // bottom left block of H
+          d_scale(it.index()) = std::max(d_scale(it.index()), std::abs(it.value()));
+          // upper right block of H
           d_scale(n + i) = std::max(d_scale(n + i), std::abs(it.value()));
         }
       }
     } else {
-      d_scale.head(n) = ret.P.colwise().template lpNorm<Eigen::Infinity>().cwiseMax(
+      d_scale.template head<N>(n) = ret.P.colwise().template lpNorm<Eigen::Infinity>().cwiseMax(
         ret.A.colwise().template lpNorm<Eigen::Infinity>());
-      d_scale.tail(m) = ret.A.rowwise().template lpNorm<Eigen::Infinity>();
+      d_scale.template segment<M>(n, m) = ret.A.rowwise().template lpNorm<Eigen::Infinity>();
     }
 
     // make sure we are not doing anything stupid
@@ -295,22 +292,24 @@ auto scale_qp(const Pbm & pbm)
 
     // perform scaling
     if constexpr (sparse) {
-      ret.P = d_scale.head(n).asDiagonal() * ret.P * d_scale.head(n).asDiagonal();
-      ret.A = d_scale.tail(m).asDiagonal() * ret.A * d_scale.head(n).asDiagonal();
+      ret.P =
+        d_scale.template head<N>(n).asDiagonal() * ret.P * d_scale.template head<N>(n).asDiagonal();
+      ret.A = d_scale.template segment<M>(n, m).asDiagonal() * ret.A
+            * d_scale.template head<N>(n).asDiagonal();
     } else {
-      ret.P.applyOnTheLeft(d_scale.head(n).asDiagonal());
-      ret.P.applyOnTheRight(d_scale.head(n).asDiagonal());
-      ret.A.applyOnTheLeft(d_scale.tail(m).asDiagonal());
-      ret.A.applyOnTheRight(d_scale.head(n).asDiagonal());
+      ret.P.applyOnTheLeft(d_scale.template head<N>(n).asDiagonal());
+      ret.P.applyOnTheRight(d_scale.template head<N>(n).asDiagonal());
+      ret.A.applyOnTheLeft(d_scale.template segment<M>(n, m).asDiagonal());
+      ret.A.applyOnTheRight(d_scale.template head<N>(n).asDiagonal());
     }
-    ret.q.applyOnTheLeft(d_scale.head(n).asDiagonal());
-    ret.l.applyOnTheLeft(d_scale.tail(m).asDiagonal());
-    ret.u.applyOnTheLeft(d_scale.tail(m).asDiagonal());
+    ret.q.applyOnTheLeft(d_scale.template head<N>(n).asDiagonal());
+    ret.l.applyOnTheLeft(d_scale.template segment<M>(n, m).asDiagonal());
+    ret.u.applyOnTheLeft(d_scale.template segment<M>(n, m).asDiagonal());
 
     scale.applyOnTheLeft(d_scale.asDiagonal());
-  } while (it++ < 10 && (d_scale.array() - 1).abs().maxCoeff() > 0.1);
+  } while (iter++ < 10 && (d_scale.array() - 1).abs().maxCoeff() > 0.1);
 
-  return std::make_tuple(ret, scale, c);
+  return std::make_tuple(std::move(ret), std::move(scale), c);
 }
 
 /**
@@ -334,6 +333,7 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
   using LDLT =
     std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, -1>>;
 
+  static constexpr Eigen::Index N = AmatT::ColsAtCompileTime;
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows();
 
   // FIND ACTIVE CONSTRAINT SETS
@@ -389,7 +389,9 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
   } else {
     H.setZero();
     H.topLeftCorner(n, n) = pbm.P;
-    for (auto i = 0u; i != nl + nu; ++i) { H.col(n + i).head(n) = pbm.A.row(LU_idx(i)); }
+    for (auto i = 0u; i != nl + nu; ++i) {
+      H.col(n + i).template head<N>(n) = pbm.A.row(LU_idx(i));
+    }
   }
 
   HT Hp = H;
@@ -421,7 +423,7 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
 
   // UPDATE SOLUTION
 
-  sol.primal = t_hat.head(n);
+  sol.primal = t_hat.template head<N>(n);
   for (Eigen::Index i = 0; i < nl; ++i) { sol.dual(LU_idx(i)) = t_hat(n + i); }
   for (Eigen::Index i = 0; i < nu; ++i) { sol.dual(LU_idx(nl + i)) = t_hat(n + nl + i); }
 
@@ -451,20 +453,16 @@ std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
   Eigen::Matrix<Scalar, decltype(Pbm::A)::RowsAtCompileTime, 1> Ax(m);
 
   // check primal
-  bool optimal              = true;
-  Ax.noalias()              = pbm.A * x;
-  const Scalar primal_val   = norm(Ax - z);
-  const Scalar primal_scale = std::max<Scalar>(norm(Ax), norm(z));
-  if (primal_val > prm.eps_abs + prm.eps_rel * primal_scale) { optimal = false; }
-  if (optimal) {
+  Ax.noalias() = pbm.A * x;
+  if (norm(Ax - z) <= prm.eps_abs + prm.eps_rel * std::max<Scalar>(norm(Ax), norm(z))) {
     // primal succeeded, check dual
     Px.noalias()            = pbm.P * x;
     Aty.noalias()           = pbm.A.transpose() * y;
-    const Scalar dual_val   = norm(Px + pbm.q + Aty);
     const Scalar dual_scale = std::max<Scalar>({norm(Px), norm(pbm.q), norm(Aty)});
-    if (dual_val > prm.eps_abs + prm.eps_rel * dual_scale) { optimal = false; }
+    if (norm(Px + pbm.q + Aty) <= prm.eps_abs + prm.eps_rel * dual_scale) {
+      return ExitCode::Optimal;
+    }
   }
-  if (optimal) { return ExitCode::Optimal; }
 
   // PRIMAL INFEASIBILITY
 
@@ -566,9 +564,10 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
 
   // cast parameters to scalar type
-  const Scalar rho   = static_cast<Scalar>(prm.rho);
-  const Scalar alpha = static_cast<Scalar>(prm.alpha);
-  const Scalar sig   = static_cast<Scalar>(prm.sigma);
+  const Scalar rho        = static_cast<Scalar>(prm.rho);
+  const Scalar alpha      = static_cast<Scalar>(prm.alpha);
+  const Scalar alpha_comp = Scalar(1) - alpha;
+  const Scalar sigma      = static_cast<Scalar>(prm.sigma);
 
   // return code: when set algorithm is finished
   std::optional<ExitCode> ret_code = std::nullopt;
@@ -602,7 +601,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
       for (PIter it(spbm.P, col); it && it.index() <= col; ++it) {
         H.insert(it.index(), col) = it.value();
       }
-      H.coeffRef(col, col) += sig;
+      H.coeffRef(col, col) += sigma;
     }
     for (auto row = 0u; row != m; ++row) {
       for (AIter it(spbm.A, row); it; ++it) { H.insert(it.index(), n + row) = it.value(); }
@@ -611,7 +610,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     H.makeCompressed();
   } else {
     H.template topLeftCorner<N, N>(n, n) = spbm.P;
-    H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sig).asDiagonal();
+    H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
     H.template topRightCorner<N, M>(n, m)    = spbm.A.transpose();
     H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
   }
@@ -626,9 +625,9 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   if (warmstart.has_value()) {
     // warmstart variables must be scaled
     x = warmstart.value().get().primal;
-    x.applyOnTheLeft(S.head(n).cwiseInverse().asDiagonal());
+    x.applyOnTheLeft(S.template head<N>(n).cwiseInverse().asDiagonal());
     y = warmstart.value().get().dual;
-    y.applyOnTheLeft(S.tail(m).cwiseInverse().asDiagonal());
+    y.applyOnTheLeft(S.template segment<M>(n, m).cwiseInverse().asDiagonal());
     y *= c;
     z.noalias() = spbm.A * x;
   } else {
@@ -638,35 +637,37 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   }
 
   // allocate working arrays
-  Rn x_next(n);
-  Rm z_interp(m), z_next(m), y_next(m);
+  Rn x_us(n), dx_us(n);
+  Rm z_next(m), y_us(m), z_us(m), dy_us(m);
   Rk p(k);
 
   // main optimization loop
   for (auto iter = 0u; iter != prm.max_iter && !ret_code; ++iter) {
-    EIGEN_ASM_COMMENT("solve");
-    p.template head<N>(n)       = sig * x - spbm.q;
+    p.template head<N>(n)       = sigma * x - spbm.q;
     p.template segment<M>(n, m) = z - y / rho;
     ldlt.solve_inplace(p);
-    EIGEN_ASM_COMMENT("/solve");
 
-    EIGEN_ASM_COMMENT("admm");
-    x_next   = alpha * p.template head<N>(n) + (Scalar(1) - alpha) * x;
-    z_interp = (alpha / rho) * p.template segment<M>(n, m) - (alpha / rho) * y + z;
-    z_next   = (z_interp + y / rho).cwiseMax(spbm.l).cwiseMin(spbm.u);
-    y_next   = y + rho * z_interp - rho * z_next;
-    EIGEN_ASM_COMMENT("/admm");
+    if (iter % prm.stop_check_iter == prm.stop_check_iter - 1) {
+      // termination checking requires difference, store old scaled values
+      dx_us = x, dy_us = y;
+    }
+
+    x      = alpha * p.template head<N>(n) + alpha_comp * x;
+    z_next = ((alpha / rho) * p.template segment<M>(n, m) + (alpha_comp / rho) * y + z)
+               .cwiseMax(spbm.l)
+               .cwiseMin(spbm.u);
+    y = alpha_comp * y + alpha * p.template segment<M>(n, m) + rho * z - rho * z_next;
+    z = z_next;
 
     if (iter % prm.stop_check_iter == prm.stop_check_iter - 1) {
       // check stopping criteria for unscaled problem and unscaled variables
-      Rn x_us  = S.head(n).cwiseProduct(x);
-      Rm y_us  = S.tail(m).cwiseProduct(y) / c;
-      Rm z_us  = S.tail(m).cwiseInverse().cwiseProduct(z);
-      Rn dx_us = S.head(n).cwiseProduct(x_next) - x_us;
-      Rm dy_us = S.tail(m).cwiseProduct(y_next) / c - y_us;
+      x_us     = S.template head<N>(n).cwiseProduct(x);
+      y_us     = S.template segment<M>(n, m).cwiseProduct(y) / c;
+      z_us     = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
+      dx_us    = S.template head<N>(n).cwiseProduct(x - dx_us);
+      dy_us    = S.template segment<M>(n, m).cwiseProduct(y - dy_us) / c;
       ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);
     }
-    x = x_next, y = y_next, z = z_next;
   }
 
   detail::QpSol_t<Pbm> sol{.code = ret_code.value_or(ExitCode::MaxIterations),
@@ -679,8 +680,9 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   }
 
   // unscale solution
-  sol.primal.applyOnTheLeft(S.head(n).asDiagonal());
-  sol.dual.applyOnTheLeft((S.tail(m) / c).asDiagonal());
+  sol.primal.applyOnTheLeft(S.template head<N>(n).asDiagonal());
+  sol.dual.applyOnTheLeft(S.template segment<M>(n, m).asDiagonal());
+  sol.dual /= c;
 
   // TODO print solver summary
 
