@@ -566,9 +566,9 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
 
   // cast parameters to scalar type
-  const Scalar rho = static_cast<Scalar>(prm.rho);
-  const Scalar alp = static_cast<Scalar>(prm.alpha);
-  const Scalar sig = static_cast<Scalar>(prm.sigma);
+  const Scalar rho   = static_cast<Scalar>(prm.rho);
+  const Scalar alpha = static_cast<Scalar>(prm.alpha);
+  const Scalar sig   = static_cast<Scalar>(prm.sigma);
 
   // return code: when set algorithm is finished
   std::optional<ExitCode> ret_code = std::nullopt;
@@ -639,19 +639,23 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
   // allocate working arrays
   Rn x_next(n);
-  Rm z_ipt(m), z_next(m), y_next(m);
+  Rm z_interp(m), z_next(m), y_next(m);
   Rk p(k);
 
   // main optimization loop
   for (auto iter = 0u; iter != prm.max_iter && !ret_code; ++iter) {
+    EIGEN_ASM_COMMENT("solve");
     p.template head<N>(n)       = sig * x - spbm.q;
     p.template segment<M>(n, m) = z - y / rho;
     ldlt.solve_inplace(p);
+    EIGEN_ASM_COMMENT("/solve");
 
-    x_next = alp * p.template head<N>(n) + x - alp * x;
-    z_ipt  = alp * z + (alp / rho) * p.template segment<M>(n, m) - (alp / rho) * y + z - alp * z;
-    z_next = (z_ipt + y / rho).cwiseMax(spbm.l).cwiseMin(spbm.u);
-    y_next = y + rho * z_ipt - rho * z_next;
+    EIGEN_ASM_COMMENT("admm");
+    x_next   = alpha * p.template head<N>(n) + (Scalar(1) - alpha) * x;
+    z_interp = (alpha / rho) * p.template segment<M>(n, m) - (alpha / rho) * y + z;
+    z_next   = (z_interp + y / rho).cwiseMax(spbm.l).cwiseMin(spbm.u);
+    y_next   = y + rho * z_interp - rho * z_next;
+    EIGEN_ASM_COMMENT("/admm");
 
     if (iter % prm.stop_check_iter == prm.stop_check_iter - 1) {
       // check stopping criteria for unscaled problem and unscaled variables
