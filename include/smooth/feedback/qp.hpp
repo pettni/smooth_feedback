@@ -338,18 +338,16 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
 
   // FIND ACTIVE CONSTRAINT SETS
 
-  // TODO would make sense to add small margins here
-
   Eigen::Index nl = 0, nu = 0;
   for (Eigen::Index idx = 0; idx < m; ++idx) {
-    if (sol.dual[idx] < 0) { nl++; }
-    if (sol.dual[idx] > 0) { nu++; }
+    if (sol.dual[idx] < -10 * std::numeric_limits<Scalar>::epsilon()) { nl++; }
+    if (sol.dual[idx] > 10 * std::numeric_limits<Scalar>::epsilon()) { nu++; }
   }
 
   Eigen::Matrix<Eigen::Index, -1, 1> LU_idx(nl + nu);
   for (Eigen::Index idx = 0, lcntr = 0, ucntr = 0; idx < m; ++idx) {
-    if (sol.dual[idx] < 0) { LU_idx(lcntr++) = idx; }
-    if (sol.dual[idx] > 0) { LU_idx(nl + ucntr++) = idx; }
+    if (sol.dual[idx] < -10 * std::numeric_limits<Scalar>::epsilon()) { LU_idx(lcntr++) = idx; }
+    if (sol.dual[idx] > 10 * std::numeric_limits<Scalar>::epsilon()) { LU_idx(nl + ucntr++) = idx; }
   }
 
   // FORM REDUCED SYSTEMS (27) AND (30)
@@ -451,6 +449,8 @@ std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
   // working memory
   Eigen::Matrix<Scalar, decltype(Pbm::A)::ColsAtCompileTime, 1> Px(n), Aty(n);
   Eigen::Matrix<Scalar, decltype(Pbm::A)::RowsAtCompileTime, 1> Ax(m);
+
+  // OPTIMALITY
 
   // check primal
   Ax.noalias() = pbm.A * x;
