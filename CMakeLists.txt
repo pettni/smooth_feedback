@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.15)
 project(smooth_feedback VERSION 0.0.1)
 
-include(CTest)
-include(GoogleTest)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_EXAMPLES "Build the examples." OFF)
+option(BUILD_TESTING "Build the tests." OFF)
+
+include(CTest)
+include(GoogleTest)
 
 find_package(Boost REQUIRED)
 find_package(smooth REQUIRED)
