@@ -4,7 +4,7 @@ project(smooth_feedback VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(BUILD_TESTING "Build the examples." OFF)
+option(BUILD_TESTING "Build tests." OFF)
 option(BUILD_EXAMPLES "Build the examples." OFF)
 option(BUILD_BENCHMARK "Build the benchmarks." OFF)
 
@@ -39,7 +39,7 @@ if(BUILD_EXAMPLES)
 endif()
 
 # ---------------------------------------------------------------------------------------
-# EXAMPLES
+# BENCHMARKS
 # ---------------------------------------------------------------------------------------
 
 if(BUILD_BENCHMARK)
