@@ -99,7 +99,6 @@ install(
 if(BUILD_TESTING)
   find_package(GTest REQUIRED)
   find_package(autodiff REQUIRED)
-  find_package(Ceres REQUIRED)
 
   add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
