@@ -1,0 +1,10 @@
+<map id="include/smooth/feedback/qp.hpp" name="include/smooth/feedback/qp.hpp">
+<area shape="rect" id="node1" title="Quadratic Programming." alt="" coords="119,5,285,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,95,100,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="215,169,314,196"/>
+<area shape="rect" id="node4" title=" " alt="" coords="175,95,229,121"/>
+<area shape="rect" id="node5" href="$ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="431,95,586,121"/>
+<area shape="rect" id="node8" href="$ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="253,95,407,121"/>
+<area shape="rect" id="node6" title=" " alt="" coords="413,169,498,196"/>
+<area shape="rect" id="node7" title=" " alt="" coords="522,169,599,196"/>
+</map>
