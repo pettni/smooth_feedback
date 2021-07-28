@@ -33,10 +33,13 @@
 
 #include <Eigen/Core>
 
+#include <chrono>
 #include <smooth/concepts.hpp>
 #include <smooth/diff.hpp>
 
 #include "qp.hpp"
+
+using std::chrono::duration_cast, std::chrono::nanoseconds;
 
 namespace smooth::feedback {
 
@@ -137,8 +140,15 @@ struct OptimalControlProblem
  *
  * @return QuadraticProgram modeling the input optimal control problem.
  */
-template<std::size_t K, LieGroup G, Manifold U, typename Dyn, typename GLin, typename ULin>
-auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, ULin && ulin)
+template<std::size_t K,
+  LieGroup G,
+  Manifold U,
+  typename Dyn,
+  typename GLin,
+  typename DGLin,
+  typename ULin>
+auto ocp_to_qp(
+  const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, DGLin && dglin, ULin && ulin)
 {
   using std::placeholders::_1;
 
@@ -176,9 +186,9 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
 
     // LINEARIZATION
 
-    Eigen::Matrix<double, 1, 1> t_vec(t);
-    const auto [xl, dxl] = diff::dr([&](const auto & v) { return glin(v(0)); }, wrt(t_vec));
-    const auto ul        = ulin(t);
+    const auto xl  = glin(t);
+    const auto dxl = dglin(t);
+    const auto ul  = ulin(t);
 
     const auto [flin, df_xu] = diff::dr(f, wrt(xl, ul));
 
@@ -272,6 +282,73 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
 
   return ret;
 }
+
+/**
+ * TODOs
+ * - interface to set weights
+ * - hotstart
+ * - handle linearizations
+ */
+template<std::size_t K, LieGroup G, Manifold U, typename Dyn>
+class MPC
+{
+public:
+  MPC(Dyn && dyn, const SolverParams & qp_prm = SolverParams{})
+      : dyn_(std::forward<Dyn>(dyn)), qp_prm_(qp_prm)
+  {
+    // TODO set this stuff
+    ocp_.Q.setIdentity();
+    ocp_.QT.setIdentity();
+    ocp_.R.setIdentity();
+    ocp_.T = 5;
+  }
+
+  MPC(const Dyn & dyn, const SolverParams & qp_prm = SolverParams{}) : MPC(Dyn(dyn), qp_prm) {}
+
+  U operator()(const nanoseconds & t_abs, const G & g)
+  {
+    ocp_.x0   = g;
+    ocp_.gdes = [this, &t_abs](double t) {
+      return x_des_(t_abs + duration_cast<nanoseconds>(std::chrono::duration<double>(t)));
+    };
+    ocp_.udes = [this, &t_abs](double t) {
+      return u_des_(t_abs + duration_cast<nanoseconds>(std::chrono::duration<double>(t)));
+    };
+
+    const auto glin  = [](double) -> G { return G::Identity(); };
+    const auto dglin = [](double) -> typename G::Tangent { return G::Tangent::Zero(); };
+    const auto ulin  = [](double) -> U { return U::Identity(); };
+
+    const auto qp  = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, glin, dglin, ulin);
+    const auto sol = smooth::feedback::solve_qp(qp, qp_prm_);
+
+    return ulin(0) + sol.primal.template head<U::SizeAtCompileTime>();
+
+    // TODO: update linearization point here
+  }
+
+  void set_xudes(
+    const std::function<G(nanoseconds)> & x_des, const std::function<U(nanoseconds)> & u_des)
+  {
+    x_des_ = x_des;
+    u_des_ = u_des;
+  };
+
+  void set_xudes(std::function<G(nanoseconds)> && x_des, std::function<U(nanoseconds)> && u_des)
+  {
+    x_des_ = std::move(x_des);
+    u_des_ = std::move(u_des);
+  };
+
+private:
+  Dyn dyn_;
+
+  SolverParams qp_prm_;
+  OptimalControlProblem<G, U> ocp_;
+
+  std::function<G(nanoseconds)> x_des_;  // desired state, absolute time
+  std::function<U(nanoseconds)> u_des_;  // desired input, absolute time
+};
 
 }  // namespace smooth::feedback
 

@@ -48,11 +48,11 @@ TEST(Mpc, Basic)
     using T = typename std::decay_t<decltype(u)>::Scalar;
     return Eigen::Matrix<T, 3, 1>(u.rn()(0), T(0), u.rn()(1));
   };
-  const auto glin = [](auto t) {
-    using T = std::decay_t<decltype(t)>;
-    return smooth::SE2<T>::exp(t * Eigen::Matrix<T, 3, 1>(T(0.2), T(0.1), T(-0.1)));
+  const auto glin = [](double t) -> smooth::SE2d {
+    return smooth::SE2d::exp(t * Eigen::Vector3d(0.2, 0.1, -0.1));
   };
-  const auto ulin = [](double) -> smooth::T2d { return smooth::T2d::Identity(); };
+  const auto dglin = [](double) -> Eigen::Vector3d { return Eigen::Vector3d::Zero(); };
+  const auto ulin  = [](double) -> smooth::T2d { return smooth::T2d::Identity(); };
 
-  ASSERT_NO_THROW(smooth::feedback::ocp_to_qp<3>(ocp, f, glin, ulin););
+  ASSERT_NO_THROW(smooth::feedback::ocp_to_qp<3>(ocp, f, glin, dglin, ulin););
 }

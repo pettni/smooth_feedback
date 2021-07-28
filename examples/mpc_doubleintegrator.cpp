@@ -1,10 +1,11 @@
 #include <boost/numeric/odeint.hpp>
+#include <smooth/compat/autodiff.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 
-#include <matplot/matplot.h>
 #include <chrono>
+#include <matplot/matplot.h>
 
 template<typename T>
 using G = smooth::T2<T>;
@@ -14,71 +15,46 @@ using U = smooth::T1<T>;
 using Gd = G<double>;
 using Ud = U<double>;
 
+using namespace boost::numeric::odeint;
+
 int main()
 {
-  using namespace boost::numeric::odeint;
-
   std::srand(5);
-
-  smooth::feedback::SolverParams prm{};
-
-  smooth::feedback::OptimalControlProblem<Gd, Ud> ocp{};
-
-  ocp.gdes = []<typename T>(const T &) -> smooth::T2<T> {
-    return smooth::T2<T>(Eigen::Matrix<T, 2, 1>(-0.2, 0));
-  };
-
-  ocp.udes = []<typename T>(const T &) -> smooth::T1<T> { return smooth::T1<T>::Identity(); };
-
-  ocp.R.setIdentity();
-  ocp.Q.diagonal().setConstant(2);
-  ocp.QT.setIdentity();
-  ocp.T                     = 5;
   static constexpr int nMpc = 20;
-
-  const auto f = []<typename T>(const smooth::T2<T> & x, const smooth::T1<T> & u) {
-    return Eigen::Matrix<T, 2, 1>(x.rn()(1), u.rn()(0));
-  };
-
-  const auto glin = []<typename T>(const T &) { return smooth::T2<T>::Identity(); };
-  const auto ulin = []<typename T>(const T &) { return smooth::T1<T>::Identity(); };
-
   Gd g;
   Ud u;
   g.setRandom();
-  double t                   = 0;
-  static constexpr double dt = 0.05;
+  std::chrono::nanoseconds t(1234);
+  std::chrono::nanoseconds dt = std::chrono::milliseconds(50);
+  double dt_dbl               = std::chrono::duration<double>(dt).count();
 
-  using state_t = Gd;
-  using deriv_t = Eigen::Vector2d;
+  auto f = []<typename T>(const G<T> & x, const U<T> & u) {
+    return typename G<T>::Tangent(x.rn()(1), u.rn()(0));
+  };
 
-  runge_kutta4<state_t, double, deriv_t, double, vector_space_algebra> stepper{};
+  smooth::feedback::MPC<nMpc, Gd, Ud, decltype(f)> mpc(f);
 
-  const auto ode = [&f, &u](const state_t & x, deriv_t & d, double) { d = f(x, u); };
+  mpc.set_xudes([](auto) -> smooth::T2d { return smooth::T2d(Eigen::Vector2d(0.2, 0)); },
+    [](auto) -> smooth::T1d { return smooth::T1d::Identity(); });
 
-  std::vector<double> tvec;
-  std::vector<double> xvec;
-  std::vector<double> yvec;
-  std::vector<double> uvec;
+  runge_kutta4<Gd, double, typename Gd::Tangent, double, vector_space_algebra> stepper{};
+
+  const auto ode = [&f, &u](const Gd & x, typename Gd::Tangent & d, double) { d = f(x, u); };
+
+  std::vector<double> tvec, xvec, yvec, uvec;
 
   for (auto i = 0u; i != 200; ++i) {
-    // solve MPC
-    ocp.x0 = g;
-    auto qp = smooth::feedback::ocp_to_qp<nMpc>(ocp, f, glin, ulin);
-    auto sol = smooth::feedback::solve_qp(qp, prm);
-
-    Eigen::Matrix<double, -1, 1> sol_u = sol.primal.head<nMpc>();
-    Eigen::Matrix<double, -1, 1> sol_x = sol.primal.tail<2 * nMpc>();
+    // compute MPC input
+    u = mpc(t, g);
 
     // store data
-    tvec.push_back(t);
+    tvec.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t).count());
     xvec.push_back(g.rn().x());
     yvec.push_back(g.rn().y());
-    uvec.push_back(sol_u(0));
+    uvec.push_back(u.rn()(0));
 
     // step dynamics
-    u.rn() = sol_u.head<1>();
-    stepper.do_step(ode, g, t, dt);
+    stepper.do_step(ode, g, double(0.), dt_dbl);
     t += dt;
   }
 
