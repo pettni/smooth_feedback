@@ -25,12 +25,11 @@
 
 #include <gtest/gtest.h>
 
-// #include <smooth/compat/autodiff.hpp>
-// #include <smooth/compat/ceres.hpp>
-
+#include <boost/numeric/odeint.hpp>
+#include <smooth/compat/autodiff.hpp>
+#include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
-
 
 TEST(Mpc, Basic)
 {

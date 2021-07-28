@@ -112,7 +112,7 @@ if(BUILD_TESTING)
   gtest_discover_tests(test_ekf)
 
   add_executable(test_mpc test/test_mpc.cpp)
-  target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff)
+  target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff lapacke)
   gtest_discover_tests(test_mpc)
 
   add_executable(test_ldlt test/test_ldlt.cpp)

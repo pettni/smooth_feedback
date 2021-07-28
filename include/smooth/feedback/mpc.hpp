@@ -161,7 +161,13 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
 
   const double dt = pbm.T / static_cast<double>(K);
 
-  QuadraticProgram<ncon, nvar> ret;
+  QuadraticProgram<-1, -1> ret;
+  ret.P.setZero(nvar, nvar);
+  ret.q.setZero(nvar);
+
+  ret.A.setZero(ncon, nvar);
+  ret.l.setZero(ncon);
+  ret.u.setZero(ncon);
 
   // DYNAMICS CONSTRAINTS
 
@@ -259,7 +265,7 @@ auto ocp_to_qp(const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, 
 
   for (auto k = 1u; k < K; ++k) {
     ret.P.template block<nx, nx>(nU + (k - 1) * nx, nU + (k - 1) * nx) = pbm.Q * dt;
-    ret.q.template segment<nx>(nU + (k - 1) * nx) = pbm.Q * (glin(k * dt) - pbm.gdes(k * dt));
+    ret.q.template segment<nx>(nU + (k - 1) * nx) = pbm.Q * (glin(k * dt) - pbm.gdes(k * dt)) * dt;
   }
   ret.P.template block<nx, nx>(nU + (K - 1) * nx, nU + (K - 1) * nx) = pbm.QT;
   ret.q.template segment<nx>(nU + (K - 1) * nx) = pbm.QT * (glin(pbm.T) - pbm.gdes(pbm.T));

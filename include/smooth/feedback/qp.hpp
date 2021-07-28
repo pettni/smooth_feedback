@@ -65,7 +65,7 @@ struct QuadraticProgram
   /// Linear cost
   Eigen::Matrix<Scalar, N, 1> q;
 
-  /// Inequality matrix (only upper triangular part is used)
+  /// Inequality matrix
   Eigen::Matrix<Scalar, M, N> A;
   /// Inequality lower bound
   Eigen::Matrix<Scalar, M, 1> l;
