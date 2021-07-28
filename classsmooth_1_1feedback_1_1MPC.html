@@ -80,13 +80,17 @@ $(function() {
 <div class="title">smooth::feedback::MPC&lt; K, G, U, Dyn &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a43afd901b7ae2c5602d2d76efa7043bf"><td class="memTemplParams" colspan="2"><a id="a43afd901b7ae2c5602d2d76efa7043bf"></a>
-template&lt;typename DD &gt; </td></tr>
-<tr class="memitem:a43afd901b7ae2c5602d2d76efa7043bf"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>MPC</b> (DD &amp;&amp;dyn, const <a class="el" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a> &amp;qp_prm=<a class="el" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a>{})</td></tr>
-<tr class="separator:a43afd901b7ae2c5602d2d76efa7043bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c1de7bf0dc2a682fc390084c192b5e4"><td class="memItemLeft" align="right" valign="top"><a id="a8c1de7bf0dc2a682fc390084c192b5e4"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MPC</b> (Dyn &amp;&amp;dyn, const <a class="el" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a> &amp;qp_prm=<a class="el" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a>{})</td></tr>
+<tr class="separator:a8c1de7bf0dc2a682fc390084c192b5e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d05d792a8c8f781931a7bed003d6fca"><td class="memItemLeft" align="right" valign="top"><a id="a7d05d792a8c8f781931a7bed003d6fca"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MPC</b> (const Dyn &amp;dyn, const <a class="el" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a> &amp;qp_prm=<a class="el" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a>{})</td></tr>
+<tr class="separator:a7d05d792a8c8f781931a7bed003d6fca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0119168a933d3bd3ecfdcc4a020b73b1"><td class="memItemLeft" align="right" valign="top"><a id="a0119168a933d3bd3ecfdcc4a020b73b1"></a>
 U&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (const nanoseconds &amp;t_abs, const G &amp;g)</td></tr>
 <tr class="separator:a0119168a933d3bd3ecfdcc4a020b73b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,8 +111,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_udes</b> (std::fu
 <div class="textblock"><h3>template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn&gt;<br />
 class smooth::feedback::MPC&lt; K, G, U, Dyn &gt;</h3>
 
+<p>TODOs</p><ul>
+<li>interface to set weights</li>
+<li>hotstart</li>
+<li>handle linearizations </li>
+</ul>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00287">287</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00293">293</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><hr/>The documentation for this class was generated from the following file:<ul>
 <li>include/smooth/feedback/<a class="el" href="mpc_8hpp_source.html">mpc.hpp</a></li>
 </ul>
