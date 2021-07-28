@@ -84,6 +84,7 @@ $(function() {
 <p>Model-Predictive Control (MPC) on Lie groups.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;Eigen/Core&gt;</code><br />
+<code>#include &lt;chrono&gt;</code><br />
 <code>#include &lt;smooth/concepts.hpp&gt;</code><br />
 <code>#include &lt;smooth/diff.hpp&gt;</code><br />
 <code>#include &quot;<a class="el" href="qp_8hpp_source.html">qp.hpp</a>&quot;</code><br />
@@ -92,11 +93,12 @@ Include dependency graph for mpc.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="mpc_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2mpc_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2mpc_8hpp" id="ainclude_2smooth_2feedback_2mpc_8hpp">
-<area shape="rect" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="354,5,521,47"/>
-<area shape="rect" title=" " alt="" coords="497,244,583,271"/>
-<area shape="rect" title=" " alt="" coords="288,95,435,121"/>
-<area shape="rect" title=" " alt="" coords="459,95,570,121"/>
-<area shape="rect" href="qp_8hpp.html" title="Quadratic Programming." alt="" coords="203,95,263,121"/>
+<area shape="rect" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="321,5,487,47"/>
+<area shape="rect" title=" " alt="" coords="519,244,604,271"/>
+<area shape="rect" title=" " alt="" coords="245,95,307,121"/>
+<area shape="rect" title=" " alt="" coords="331,95,477,121"/>
+<area shape="rect" title=" " alt="" coords="502,95,613,121"/>
+<area shape="rect" href="qp_8hpp.html" title="Quadratic Programming." alt="" coords="161,95,221,121"/>
 <area shape="rect" title=" " alt="" coords="470,169,565,196"/>
 <area shape="rect" title=" " alt="" coords="5,244,104,271"/>
 <area shape="rect" title=" " alt="" coords="213,169,267,196"/>
@@ -113,26 +115,28 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optimal control problem defintiion.  <a href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC&lt; K, G, U, Dyn &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a56cb99ad579e9e3ca33e43fd5e783ac1"><td class="memTemplParams" colspan="2">template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , typename GLin , typename ULin &gt; </td></tr>
-<tr class="memitem:a56cb99ad579e9e3ca33e43fd5e783ac1"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#a56cb99ad579e9e3ca33e43fd5e783ac1">smooth::feedback::ocp_to_qp</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, Dyn &amp;&amp;f, GLin &amp;&amp;glin, ULin &amp;&amp;ulin)</td></tr>
-<tr class="memdesc:a56cb99ad579e9e3ca33e43fd5e783ac1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a> on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \).  <a href="mpc_8hpp.html#a56cb99ad579e9e3ca33e43fd5e783ac1">More...</a><br /></td></tr>
-<tr class="separator:a56cb99ad579e9e3ca33e43fd5e783ac1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57d13b0887b0f9c5667a0df3e6eeb9be"><td class="memTemplParams" colspan="2">template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , typename GLin , typename DGLin , typename ULin &gt; </td></tr>
+<tr class="memitem:a57d13b0887b0f9c5667a0df3e6eeb9be"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#a57d13b0887b0f9c5667a0df3e6eeb9be">smooth::feedback::ocp_to_qp</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, Dyn &amp;&amp;f, GLin &amp;&amp;glin, DGLin &amp;&amp;dglin, ULin &amp;&amp;ulin)</td></tr>
+<tr class="memdesc:a57d13b0887b0f9c5667a0df3e6eeb9be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a> on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \).  <a href="mpc_8hpp.html#a57d13b0887b0f9c5667a0df3e6eeb9be">More...</a><br /></td></tr>
+<tr class="separator:a57d13b0887b0f9c5667a0df3e6eeb9be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Model-Predictive Control (MPC) on Lie groups. </p>
 
 <p class="definition">Definition in file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a56cb99ad579e9e3ca33e43fd5e783ac1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a56cb99ad579e9e3ca33e43fd5e783ac1">&#9670;&nbsp;</a></span>ocp_to_qp()</h2>
+<a id="a57d13b0887b0f9c5667a0df3e6eeb9be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57d13b0887b0f9c5667a0df3e6eeb9be">&#9670;&nbsp;</a></span>ocp_to_qp()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , typename GLin , typename ULin &gt; </div>
+template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , typename GLin , typename DGLin , typename ULin &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">auto smooth::feedback::ocp_to_qp </td>
@@ -151,6 +155,12 @@ template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , typename GLin 
           <td></td>
           <td class="paramtype">GLin &amp;&amp;&#160;</td>
           <td class="paramname"><em>glin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">DGLin &amp;&amp;&#160;</td>
+          <td class="paramname"><em>dglin</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -196,7 +206,7 @@ Constraints are added as \( g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>QuadraticProgram modeling the input optimal control problem. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00141">141</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00150">150</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
