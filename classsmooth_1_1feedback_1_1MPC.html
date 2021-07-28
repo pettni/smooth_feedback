@@ -94,18 +94,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a0119168a933d3bd3ecfdcc4a020b73b1"><td class="memItemLeft" align="right" valign="top"><a id="a0119168a933d3bd3ecfdcc4a020b73b1"></a>
 U&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (const nanoseconds &amp;t_abs, const G &amp;g)</td></tr>
 <tr class="separator:a0119168a933d3bd3ecfdcc4a020b73b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08c1a10ddef769c58a9f118d2e49eba9"><td class="memItemLeft" align="right" valign="top"><a id="a08c1a10ddef769c58a9f118d2e49eba9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_xdes</b> (const std::function&lt; G(nanoseconds)&gt; &amp;x_des)</td></tr>
-<tr class="separator:a08c1a10ddef769c58a9f118d2e49eba9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34301a057e354741538d752823faef21"><td class="memItemLeft" align="right" valign="top"><a id="a34301a057e354741538d752823faef21"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_xdes</b> (std::function&lt; G(nanoseconds)&gt; &amp;&amp;x_des)</td></tr>
-<tr class="separator:a34301a057e354741538d752823faef21"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac28e471981ae2c0516fb2a059a4e054d"><td class="memItemLeft" align="right" valign="top"><a id="ac28e471981ae2c0516fb2a059a4e054d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_udes</b> (const std::function&lt; U(nanoseconds)&gt; &amp;u_des)</td></tr>
-<tr class="separator:ac28e471981ae2c0516fb2a059a4e054d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4687a9b7ba33fd0e5ba06249c4ea914c"><td class="memItemLeft" align="right" valign="top"><a id="a4687a9b7ba33fd0e5ba06249c4ea914c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_udes</b> (std::function&lt; U(nanoseconds)&gt; &amp;&amp;u_des)</td></tr>
-<tr class="separator:a4687a9b7ba33fd0e5ba06249c4ea914c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbce194f31edb191540461defc449814"><td class="memItemLeft" align="right" valign="top"><a id="acbce194f31edb191540461defc449814"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_xudes</b> (const std::function&lt; G(nanoseconds)&gt; &amp;x_des, const std::function&lt; U(nanoseconds)&gt; &amp;u_des)</td></tr>
+<tr class="separator:acbce194f31edb191540461defc449814"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a422cc8f0ffc33873c3cb753c6d2baecc"><td class="memItemLeft" align="right" valign="top"><a id="a422cc8f0ffc33873c3cb753c6d2baecc"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_xudes</b> (std::function&lt; G(nanoseconds)&gt; &amp;&amp;x_des, std::function&lt; U(nanoseconds)&gt; &amp;&amp;u_des)</td></tr>
+<tr class="separator:a422cc8f0ffc33873c3cb753c6d2baecc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn&gt;<br />
