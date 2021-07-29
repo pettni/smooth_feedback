@@ -164,8 +164,9 @@ struct LinearizationInfo
  * @return QuadraticProgramSparse modeling the input optimal control problem.
  */
 template<std::size_t K, LieGroup G, Manifold U, typename Dyn>
-QuadraticProgramSparse<double> ocp_to_qp(
-  const OptimalControlProblem<G, U> & pbm, Dyn && f, const LinearizationInfo<G, U> & lin)
+QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm,
+  Dyn && f,
+  const LinearizationInfo<G, U> & lin = LinearizationInfo<G, U>{})
 {
   using std::placeholders::_1;
 
@@ -237,12 +238,11 @@ QuadraticProgramSparse<double> ocp_to_qp(
     // TIME DISCRETIZATION
 
     const AT At2     = At * At;
-    const AT At3     = At2 * At;
     const double dt2 = dt * dt;
     const double dt3 = dt2 * dt;
 
     // dltv system x^+ = Ak x + Bk u + Ek by truncated taylor expansion of the matrix exponential
-    const AT Ak = AT::Identity() + At * dt + At2 * dt2 / 2. + At3 * dt3 / 6.;
+    const AT Ak = AT::Identity() + At * dt + At2 * dt2 / 2. + At2 * At * dt3 / 6.;
     const BT Bk = Bt * dt + At * Bt * dt2 / 2. + At2 * Bt * dt3 / 6.;
     const ET Ek = Et * dt + At * Et * dt2 / 2. + At2 * Et * dt3 / 6.;
 
@@ -263,19 +263,19 @@ QuadraticProgramSparse<double> ocp_to_qp(
       ret.l.template segment<nx>(nx * k) = ret.u.template segment<nx>(nx * k);
 
     } else {
-      // x(k) - A x(k-1) - B u(k-1) = E
+      // x(k+1) - A x(k) - B u(k) = E
 
-      // identity matrix on x(k)
+      // identity matrix on x(k+1)
       for (auto i = 0u; i != nx; ++i) { ret.A.insert(nx * k + i, nU + nx * k + i) = 1; }
 
-      // A matrix on x(k-1)
+      // A matrix on x(k)
       for (auto i = 0u; i != nx; ++i) {
         for (auto j = 0u; j != nx; ++j) {
           ret.A.insert(nx * k + i, nU + nx * (k - 1) + j) = -Ak(i, j);
         }
       }
 
-      // B matrix on u(k-1)
+      // B matrix on u(k)
       for (auto i = 0u; i != nx; ++i) {
         for (auto j = 0u; j != nu; ++j) { ret.A.insert(nx * k + i, nu * k + j) = -Bk(i, j); }
       }
@@ -309,14 +309,14 @@ QuadraticProgramSparse<double> ocp_to_qp(
   for (auto i = 0u; i != n_x_iq; ++i) { ret.A.insert(n_eq + n_u_iq + i, nU + i) = 1; }
 
   if (pbm.gmin) {
-    for (auto k = 1u; k < K; ++k) {
+    for (auto k = 1u; k < K + 1; ++k) {
       ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmin.value() - lin.g(k * dt);
     }
   } else {
     ret.l.template segment<nX>(n_eq + n_u_iq).setConstant(-std::numeric_limits<double>::infinity());
   }
   if (pbm.gmax) {
-    for (auto k = 1u; k < K; ++k) {
+    for (auto k = 1u; k < K + 1; ++k) {
       ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmax.value() - lin.g(k * dt);
     }
   } else {
@@ -329,7 +329,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
     for (auto i = 0u; i != nu; ++i) {
       for (auto j = 0u; j != nu; ++j) { ret.P.insert(k * nu + i, k * nu + j) = pbm.R(i, j) * dt; }
     }
-    ret.q.template segment<nu>(k * nu) = pbm.R * (lin.u(k * dt) - pbm.udes(k * dt));
+    ret.q.template segment<nu>(k * nu) = pbm.R * (lin.u(k * dt) - pbm.udes(k * dt)) * dt;
   }
 
   // STATE COSTS
@@ -366,29 +366,28 @@ QuadraticProgramSparse<double> ocp_to_qp(
  * @tparam G state space LieGroup type
  * @tparam U input space Manifold type
  * @tparam Dyn callable type that represents dynamics
+ *
+ * This MPC class keeps and repeatedly solves an internal OptimalControlProblem that is updated to
+ * track a time-dependent trajectory defined through set_xudes().
  */
 template<std::size_t K, typename T, LieGroup G, Manifold U, typename Dyn>
 class MPC
 {
 public:
   /**
-   * @brief Create an MPC instance
+   * @brief Create an MPC instance.
    *
-   * @param dyn callable object that represents dynamics \f$ \mathrm{d}^r f_t = f(x, u) \f$.
+   * @param f callable object that represents dynamics \f$ \mathrm{d}^r f_t = f(x, u) \f$.
    * @param t time horizon
    * @param qp_prm optional parameters for the QP solver (see \p solve_qp)
    */
-  MPC(Dyn && dyn, T t, const SolverParams & qp_prm = SolverParams{})
-      : dyn_(std::forward<Dyn>(dyn)), qp_prm_(qp_prm)
+  MPC(Dyn && f, T t, const SolverParams & qp_prm = SolverParams{})
+      : dyn_(std::forward<Dyn>(f)), qp_prm_(qp_prm)
   {
-    // TODO set this stuff
-    ocp_.Q.setIdentity();
-    ocp_.QT.setIdentity();
-    ocp_.R.setIdentity();
     ocp_.T = std::chrono::duration_cast<std::chrono::duration<double>>(t).count();
   }
   /// See constructor above
-  MPC(const Dyn & dyn, T t, const SolverParams & qp_prm = SolverParams{}) : MPC(Dyn(dyn), t, qp_prm) {}
+  MPC(const Dyn & f, T t, const SolverParams & qp_prm = SolverParams{}) : MPC(Dyn(f), t, qp_prm) {}
   /// Default constructor
   MPC() = default;
   /// Default copy constructor
@@ -403,7 +402,7 @@ public:
   ~MPC() = default;
 
   /**
-   * @brief Get input
+   * @brief Solve MPC problem and return input.
    *
    * @param t current time
    * @param g current state
@@ -429,7 +428,7 @@ public:
   }
 
   /**
-   * @brief Set input bounds
+   * @brief Set input bounds.
    */
   void set_ulim(const U & umin, const U & umax)
   {
@@ -438,7 +437,7 @@ public:
   }
 
   /**
-   * @brief Set the desired state and input trajectories (lvalue version)
+   * @brief Set the desired state and input trajectories (lvalue version).
    *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
    * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
@@ -450,7 +449,7 @@ public:
   };
 
   /**
-   * @brief Set the desired state and input trajectories (rvalue version)
+   * @brief Set the desired state and input trajectories (rvalue version).
    *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
    * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
@@ -460,6 +459,39 @@ public:
     x_des_ = std::move(x_des);
     u_des_ = std::move(u_des);
   };
+
+  /**
+   * @brief Set the running state cost in the internal OptimalControlProblem.
+   *
+   * @param Q positive definite matrix of size \f$ n_x \times n_x \f$
+   */
+  template<typename D1>
+  void set_running_state_cost(const Eigen::MatrixBase<D1> & Q)
+  {
+    ocp_.Q = Q;
+  }
+
+  /**
+   * @brief Set the final state cost in the internal OptimalControlProblem.
+   *
+   * @param QT positive definite matrix of size \f$ n_x \times n_x \f$
+   */
+  template<typename D1>
+  void set_final_state_cost(const Eigen::MatrixBase<D1> & QT)
+  {
+    ocp_.QT = QT;
+  }
+
+  /**
+   * @brief Set the running input cost in the internal OptimalControlProblem.
+   *
+   * @param R positive definite matrix of size \f$ n_u \times n_u \f$
+   */
+  template<typename D1>
+  void set_input_cost(const Eigen::MatrixBase<D1> & R)
+  {
+    ocp_.R = R;
+  }
 
 private:
   Dyn dyn_{};
