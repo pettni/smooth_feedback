@@ -316,42 +316,48 @@ $(function() {
 <div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
 <div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> glin  = [](double) -&gt; G { <span class="keywordflow">return</span> G::Identity(); };</div>
 <div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> dglin = [](double) -&gt; <span class="keyword">typename</span> G::Tangent { <span class="keywordflow">return</span> G::Tangent::Zero(); };</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> ulin  = [](double) -&gt; U { <span class="keywordflow">return</span> U::Identity(); };</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160; </div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> qp  = smooth::feedback::ocp_to_qp&lt;K&gt;(ocp_, dyn_, glin, dglin, ulin);</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> sol = <a class="code" href="qp_8hpp.html#aac3bee1b891cd0ef7fe9916c374423d0">smooth::feedback::solve_qp</a>(qp, qp_prm_);</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160; </div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    <span class="keywordflow">return</span> ulin(0) + sol.primal.template head&lt;U::SizeAtCompileTime&gt;();</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <span class="comment">// TODO: update linearization point here</span></div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;  }</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160; </div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;  <span class="keywordtype">void</span> set_xudes(</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    <span class="keyword">const</span> std::function&lt;G(nanoseconds)&gt; &amp; x_des, <span class="keyword">const</span> std::function&lt;U(nanoseconds)&gt; &amp; u_des)</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;  {</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    x_des_ = x_des;</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    u_des_ = u_des;</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;  };</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160; </div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;  <span class="keywordtype">void</span> set_xudes(std::function&lt;G(nanoseconds)&gt; &amp;&amp; x_des, std::function&lt;U(nanoseconds)&gt; &amp;&amp; u_des)</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> ulin  = [](double) -&gt; U {</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;      <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;) {</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        <span class="keywordflow">return</span> U::Identity();</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;      } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <span class="keywordflow">return</span> U::Zero();</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;      }</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    };</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> qp  = smooth::feedback::ocp_to_qp&lt;K&gt;(ocp_, dyn_, glin, dglin, ulin);</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> sol = <a class="code" href="qp_8hpp.html#aac3bee1b891cd0ef7fe9916c374423d0">smooth::feedback::solve_qp</a>(qp, qp_prm_);</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160; </div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    <span class="keywordflow">return</span> ulin(0) + sol.primal.template head&lt;U::SizeAtCompileTime&gt;();</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    <span class="comment">// TODO: update linearization point here</span></div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;  }</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;  <span class="keywordtype">void</span> set_xudes(</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <span class="keyword">const</span> std::function&lt;G(nanoseconds)&gt; &amp; x_des, <span class="keyword">const</span> std::function&lt;U(nanoseconds)&gt; &amp; u_des)</div>
 <div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;  {</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    x_des_ = std::move(x_des);</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    u_des_ = std::move(u_des);</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    x_des_ = x_des;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    u_des_ = u_des;</div>
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;  };</div>
 <div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160; </div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;  Dyn dyn_{};</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160; </div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;  <a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a> qp_prm_{};</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;  <a class="code" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem&lt;G, U&gt;</a> ocp_{};</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;  <span class="keywordtype">void</span> set_xudes(std::function&lt;G(nanoseconds)&gt; &amp;&amp; x_des, std::function&lt;U(nanoseconds)&gt; &amp;&amp; u_des)</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;  {</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    x_des_ = std::move(x_des);</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    u_des_ = std::move(u_des);</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;  };</div>
 <div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;  std::function&lt;G(nanoseconds)&gt; x_des_{};  <span class="comment">// desired state, absolute time</span></div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;  std::function&lt;U(nanoseconds)&gt; u_des_{};  <span class="comment">// desired input, absolute time</span></div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;};</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;  Dyn dyn_{};</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;  <a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html">SolverParams</a> qp_prm_{};</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;  <a class="code" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem&lt;G, U&gt;</a> ocp_{};</div>
 <div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160; </div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__MPC_HPP_</span></div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;  std::function&lt;G(nanoseconds)&gt; x_des_{};  <span class="comment">// desired state, absolute time</span></div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;  std::function&lt;U(nanoseconds)&gt; u_des_{};  <span class="comment">// desired input, absolute time</span></div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;};</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__MPC_HPP_</span></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00293">mpc.hpp:294</a></div></div>
 <div class="ttc" id="ampc_8hpp_html_a57d13b0887b0f9c5667a0df3e6eeb9be"><div class="ttname"><a href="mpc_8hpp.html#a57d13b0887b0f9c5667a0df3e6eeb9be">smooth::feedback::ocp_to_qp</a></div><div class="ttdeci">auto ocp_to_qp(const OptimalControlProblem&lt; G, U &gt; &amp;pbm, Dyn &amp;&amp;f, GLin &amp;&amp;glin, DGLin &amp;&amp;dglin, ULin &amp;&amp;ulin)</div><div class="ttdoc">Convert OptimalControlProblem on  into a tangent space QuadraticProgram on .</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00150">mpc.hpp:150</a></div></div>
 <div class="ttc" id="aqp_8hpp_html"><div class="ttname"><a href="qp_8hpp.html">qp.hpp</a></div><div class="ttdoc">Quadratic Programming.</div></div>
