@@ -124,6 +124,16 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:ac712796a298cecdab047ddc4b06715b6"><td class="memTemplParams" colspan="2"><a id="ac712796a298cecdab047ddc4b06715b6"></a>
+template&lt;std::size_t K, std::size_t nx, std::size_t nu&gt; </td></tr>
+<tr class="memitem:ac712796a298cecdab047ddc4b06715b6"><td class="memTemplItemLeft" align="right" valign="top">constexpr std::array&lt; int, K *(2 *nx+nu)&gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#ac712796a298cecdab047ddc4b06715b6">smooth::feedback::mpc_nnz_pattern_A</a> ()</td></tr>
+<tr class="memdesc:ac712796a298cecdab047ddc4b06715b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate row-wise sparsity pattern of QP matrix A in <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem. <br /></td></tr>
+<tr class="separator:ac712796a298cecdab047ddc4b06715b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4b66e25020fd030a90ae6b63514095d"><td class="memTemplParams" colspan="2"><a id="ab4b66e25020fd030a90ae6b63514095d"></a>
+template&lt;std::size_t K, std::size_t nx, std::size_t nu&gt; </td></tr>
+<tr class="memitem:ab4b66e25020fd030a90ae6b63514095d"><td class="memTemplItemLeft" align="right" valign="top">constexpr std::array&lt; int, K *(nu+nx)&gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#ab4b66e25020fd030a90ae6b63514095d">smooth::feedback::mpc_nnz_pattern_P</a> ()</td></tr>
+<tr class="memdesc:ab4b66e25020fd030a90ae6b63514095d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate column-wise sparsity pattern of QP matrix P in <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem. <br /></td></tr>
+<tr class="separator:ab4b66e25020fd030a90ae6b63514095d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4123d2f9a95cab0f545889a9f9d55f7"><td class="memTemplParams" colspan="2">template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn &gt; </td></tr>
 <tr class="memitem:ae4123d2f9a95cab0f545889a9f9d55f7"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgramSparse&lt; double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#ae4123d2f9a95cab0f545889a9f9d55f7">smooth::feedback::ocp_to_qp</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, Dyn &amp;&amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin=LinearizationInfo&lt; G, U &gt;{})</td></tr>
 <tr class="memdesc:ae4123d2f9a95cab0f545889a9f9d55f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a> on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \).  <a href="mpc_8hpp.html#ae4123d2f9a95cab0f545889a9f9d55f7">More...</a><br /></td></tr>
@@ -197,7 +207,7 @@ Constraints are added as \( g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>QuadraticProgramSparse modeling the input optimal control problem. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00167">167</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00192">192</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
