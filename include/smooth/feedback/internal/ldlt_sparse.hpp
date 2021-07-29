@@ -86,8 +86,11 @@ public:
   /**
    * @brief Factorize symmetric \f$ A \f$ to enable solving \f$ A x = b \f$.
    *
-   * \p A is factorized as \f$ A = L D L^T \f$ where \f$ L \f$ is lower triangular
-   * and \f$ D \f$ is diagonal.
+   * \p A is factorized as \f$ A = P^T L D L^T P \f$ where \f$ P \f$ is a permutation matrix,
+   * \f$ L \f$ is lower triangular and \f$ D \f$ is diagonal.
+   *
+   * The permutation matrix is obtained from the fillin-reducing approximate minimum degree (AMD)
+   * ordering.
    *
    * @param A sparse symmetric matrix to factorize in column-major format.
    *
@@ -97,17 +100,26 @@ public:
   {
     auto n = A.cols();
 
+    // calculate re-ordering
+    Eigen::AMDOrdering<int> ordering;
+    ordering(A, P_);
+    Pinv_ = P_.inverse();
+
+    // permute Ap = P A P'
+    Eigen::SparseMatrix<Scalar> Ap;
+    Ap = A.template selfadjointView<Eigen::Upper>().twistedBy(P_);
+
     // working memory
     Eigen::Matrix<int, -1, 1> visited(n);
     Eigen::Matrix<int, -1, 1> Yidx(n), bfr(n);  // nonzero indices of Y and temporary buffer
     Eigen::Matrix<Scalar, -1, 1> Yval(n);       // values of Y stored at nonzero indices
 
-    const auto [nnz_col, tree] = ldlt_nnz(A);
+    const auto [nnz_col, tree] = ldlt_nnz(Ap);
     L_.resize(n, n);
     L_.reserve(nnz_col);
     d_inv_.resize(n);
 
-    Scalar d_new = A.coeff(0, 0);
+    Scalar d_new = Ap.coeff(0, 0);
     if (d_new == 0) {
       info_ = 1;
       return;
@@ -116,13 +128,13 @@ public:
 
     // Fill in L row-wise (implicit ones on diagonal)
     for (Eigen::Index row = 1; row != n; ++row) {
-      // solve the triangular sparse system L[:k, :k] y = A[:k, k] w.r.t. y
+      // solve the triangular sparse system L[:k, :k] y = Ap[:k, k] w.r.t. y
 
       // find Yidx -- the non-zero indices of y
       visited[row] = row;
       int Ynnz     = 0;
       Yval(row)    = 0.;
-      for (It<Scalar> it(A, row); it && it.index() < row; ++it) {
+      for (It<Scalar> it(Ap, row); it && it.index() < row; ++it) {
         int branch_nnz = 0;
         for (int node = it.index(); visited[node] != row; node = tree(node)) {
           visited[node]     = row;
@@ -133,8 +145,8 @@ public:
         }
       }
 
-      for (It<Scalar> it(A, row); it && it.index() < row; ++it) {
-        Yval(it.index()) = it.value();  // set y[i] = A(row, i)
+      for (It<Scalar> it(Ap, row); it && it.index() < row; ++it) {
+        Yval(it.index()) = it.value();  // set y[i] = Ap(row, i)
       }
 
       // pass two: iterate over columns k of L and perform subtractions y_k -= l_{k, i} y_i
@@ -148,8 +160,8 @@ public:
       // Now y defined by Ynnz, Yidx and Yval solves system above
 
       // set L[row, :] = Dinv[:row, :row] * y
-      // and calculate d_new = A[row, row] - y' Dinv y
-      Scalar d_new = A.coeff(row, row);
+      // and calculate d_new = Ap[row, row] - y' Dinv y
+      Scalar d_new = Ap.coeff(row, row);
       for (Eigen::Index i = 0; i != Ynnz; ++i) {
         const int yi        = Yidx[Ynnz - i - 1];
         const Scalar yval_i = Yval[yi];
@@ -196,7 +208,12 @@ public:
    */
   inline void solve_inplace(Eigen::Matrix<Scalar, -1, 1> & b) const
   {
+    // need to solve P' L D L' P x = b; we apply inverses from left to right
+
     const Eigen::Index N = L_.cols();
+
+    // solve P' x = b in-place
+    b.applyOnTheLeft(P_);
 
     // solve L x = b in-place
     for (Eigen::Index col = 0; col != N; ++col) {
@@ -210,6 +227,9 @@ public:
     for (Eigen::Index row = N - 1; row >= 0; --row) {
       for (It<Scalar> it(L_, row); it; ++it) { b(row) -= b(it.index()) * it.value(); }
     }
+
+    // solve P x = b in-place
+    b.applyOnTheLeft(Pinv_);
   }
 
   /**
@@ -228,6 +248,8 @@ public:
 private:
   int info_;
   Eigen::SparseMatrix<Scalar, Eigen::ColMajor> L_;
+  Eigen::PermutationMatrix<-1, -1, int> P_;
+  Eigen::PermutationMatrix<-1, -1, int> Pinv_;
   Eigen::Matrix<Scalar, -1, 1> d_inv_;
 };
 

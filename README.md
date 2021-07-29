@@ -126,11 +126,6 @@ a solver is included.
 #include <smooth/feedback/qp.hpp>
 ```
 
-#### TODOs
-
-- AMD reordering before sparse factorization
-- Pivoting in sparse factorization
-
 
 <!-- MARKDOWN LINKS AND IMAGES -->
 [doc-link]: https://pettni.github.io/smooth_feedback
