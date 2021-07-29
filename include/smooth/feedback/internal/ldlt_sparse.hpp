@@ -48,8 +48,8 @@ inline auto ldlt_nnz(const Eigen::SparseMatrix<Scalar, Layout> & A)
 {
   Eigen::Index n = A.cols();
 
-  // nnz(k) = # nonzeros in row k of L
-  Eigen::Matrix<int, -1, 1> nnz = Eigen::Matrix<int, -1, 1>::Ones(n);  // account for diagonal ones
+  // nnz(k) = # nonzeros in row k of L (excluding ones on diagonal)
+  Eigen::Matrix<int, -1, 1> nnz = Eigen::Matrix<int, -1, 1>::Zero(n);
 
   // elimination tree: tree(i) = min { j : j > i, l_{ji} != 0 }
   // elimination tree is s.t. a non-zero at A_ki causes fill-in in row k for tree successors of i
@@ -112,10 +112,9 @@ public:
       info_ = 1;
       return;
     }
-    d_inv_(0)       = Scalar(1.) / d_new;
-    L_.insert(0, 0) = Scalar(1);
+    d_inv_(0) = Scalar(1.) / d_new;
 
-    // Fill in L row-wise
+    // Fill in L row-wise (implicit ones on diagonal)
     for (Eigen::Index row = 1; row != n; ++row) {
       // solve the triangular sparse system L[:k, :k] y = A[:k, k] w.r.t. y
 
@@ -141,9 +140,9 @@ public:
       // pass two: iterate over columns k of L and perform subtractions y_k -= l_{k, i} y_i
       for (Eigen::Index i = 0; i != Ynnz; ++i) {
         const int col = Yidx[Ynnz - i - 1];  // traverse reverse branch-wise
-        It<Scalar> it_l(L_, col);
-        ++it_l;  // step past one on diagonal
-        for (; it_l && it_l.index(); ++it_l) { Yval(it_l.index()) -= Yval(col) * it_l.value(); }
+        for (It<Scalar> it_l(L_, col); it_l && it_l.index(); ++it_l) {
+          Yval(it_l.index()) -= Yval(col) * it_l.value();
+        }
       }
 
       // Now y defined by Ynnz, Yidx and Yval solves system above
@@ -163,8 +162,7 @@ public:
         info_ = row + 1;
         return;
       }
-      d_inv_(row)         = Scalar(1) / d_new;
-      L_.insert(row, row) = Scalar(1);
+      d_inv_(row) = Scalar(1) / d_new;
     }
 
     L_.makeCompressed();
@@ -198,9 +196,20 @@ public:
    */
   inline void solve_inplace(Eigen::Matrix<Scalar, -1, 1> & b) const
   {
-    L_.template triangularView<Eigen::Lower>().solveInPlace(b);
-    b.applyOnTheLeft(d_inv_.asDiagonal());
-    L_.template triangularView<Eigen::Lower>().transpose().solveInPlace(b);
+    const Eigen::Index N = L_.cols();
+
+    // solve L x = b in-place
+    for (Eigen::Index col = 0; col != N; ++col) {
+      for (It<Scalar> it(L_, col); it; ++it) { b(it.index()) -= b(col) * it.value(); }
+    }
+
+    // solve D x = b in-place
+    for (int col = 0; col != N; ++col) { b(col) *= d_inv_(col); }
+
+    // solve L' x = b in-place
+    for (Eigen::Index row = N - 1; row >= 0; --row) {
+      for (It<Scalar> it(L_, row); it; ++it) { b(row) -= b(it.index()) * it.value(); }
+    }
   }
 
   /**
