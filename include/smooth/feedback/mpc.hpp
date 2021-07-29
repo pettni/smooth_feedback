@@ -39,8 +39,6 @@
 
 #include "qp.hpp"
 
-using std::chrono::duration_cast, std::chrono::nanoseconds;
-
 namespace smooth::feedback {
 
 /**
@@ -105,6 +103,30 @@ struct OptimalControlProblem
 };
 
 /**
+ * @brief Struct to define a linearization point.
+ */
+template<LieGroup G, Manifold U>
+struct LinearizationInfo
+{
+  /// state trajectory \f$g_{lin}(t)\f$ to linearize around as a function \f$ \mathbb{R} \rightarrow
+  /// G \f$
+  std::function<G(double)> g = [](double) -> G { return G::Identity(); };
+  /// state trajectory derivative \f$\mathrm{d}^r (g_{lin})_t\f$ to linearize around as a function
+  /// \f$ \mathbb{R} \rightarrow \mathbb{R}^{\dim \mathfrak g} \f$
+  std::function<typename G::Tangent(double)> dg = [](double) ->
+    typename G::Tangent { return G::Tangent::Zero(); };
+  /// input trajectory \f$u_{lin}(t)\f$ to linearize around as a function \f$ \mathbb{R} \rightarrow
+  /// G \f$
+  std::function<U(double)> u = [](double) -> U {
+    if constexpr (LieGroup<U>) {
+      return U::Identity();
+    } else {
+      return U::Zero();
+    }
+  };
+};
+
+/**
  * @brief Convert OptimalControlProblem on \f$ (\mathbb{G}, \mathbb{U}) \f$ into a tangent space
  * QuadraticProgram on \f$ (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \f$.
  *
@@ -124,31 +146,26 @@ struct OptimalControlProblem
  * @note Constraints are added as \f$ g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus g_{lin}
  * \f$ and similarly for the input. Beware of using constraints on non-Euclidean spaces.
  *
- * @note \p f and \p glin must be differentiable with the default smooth::diff method. If using an
- * automatic differentiation method this means that the functions must be templated on the scalar
- * type.
+ * @note \p f must be differentiable with the default smooth::diff method. If using an automatic
+ * differentiation method this means that it must be templated on the scalar type.
  *
- * @tparam K number of discretization steps
+ * @tparam K number of discretization points. More points create a larger QP, but the distance \f$ T
+ * / K \f$ between points should be smaller than the smallest system time constant for adequate
+ * performance.
  * @tparam G problem state group type \f$ \mathbb{G} \f$
  * @tparam U problem input group type \f$ \mathbb{U} \f$
  *
  * @param pbm optimal control problem
  * @param f dynamics \f$ f : \mathbb{G} \times \mathbb{U} \rightarrow \mathbb{R}^{\dim \mathfrak
  * g}\f$ s.t. \f$ \mathrm{d}^r g_t = f(g, u) \f$
- * @param glin state trajectory \f$g_{lin}(t)\f$ to linearize around
- * @param ulin input trajectory \f$u_{lin}(t)\f$ to linearize around
+ * @param lin linearization point, default is to linearize around Identity (LieGroup) / Zero
+ * (non-LieGroup manifold)
  *
  * @return QuadraticProgramSparse modeling the input optimal control problem.
  */
-template<std::size_t K,
-  LieGroup G,
-  Manifold U,
-  typename Dyn,
-  typename GLin,
-  typename DGLin,
-  typename ULin>
+template<std::size_t K, LieGroup G, Manifold U, typename Dyn>
 QuadraticProgramSparse<double> ocp_to_qp(
-  const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, DGLin && dglin, ULin && ulin)
+  const OptimalControlProblem<G, U> & pbm, Dyn && f, const LinearizationInfo<G, U> & lin)
 {
   using std::placeholders::_1;
 
@@ -206,9 +223,9 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
     // LINEARIZATION
 
-    const auto xl  = glin(t);
-    const auto dxl = dglin(t);
-    const auto ul  = ulin(t);
+    const auto xl  = lin.g(t);
+    const auto dxl = lin.dg(t);
+    const auto ul  = lin.u(t);
 
     const auto [flin, df_xu] = diff::dr(f, wrt(xl, ul));
 
@@ -242,7 +259,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
         for (auto j = 0u; j != nu; ++j) { ret.A.insert(nx * k + i, nu * k + j) = -Bk(i, j); }
       }
 
-      ret.u.template segment<nx>(nx * k) = Ak * (pbm.x0 - glin(t)) + Ek;
+      ret.u.template segment<nx>(nx * k) = Ak * (pbm.x0 - lin.g(t)) + Ek;
       ret.l.template segment<nx>(nx * k) = ret.u.template segment<nx>(nx * k);
 
     } else {
@@ -274,14 +291,14 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   if (pbm.umin) {
     for (auto k = 0u; k < K; ++k) {
-      ret.l.template segment<nu>(n_eq + k * nu) = pbm.umin.value() - ulin(k * dt);
+      ret.l.template segment<nu>(n_eq + k * nu) = pbm.umin.value() - lin.u(k * dt);
     }
   } else {
     ret.l.template segment<nU>(n_eq).setConstant(-std::numeric_limits<double>::infinity());
   }
   if (pbm.umax) {
     for (auto k = 0u; k < K; ++k) {
-      ret.u.template segment<nu>(n_eq + k * nu) = pbm.umax.value() - ulin(k * dt);
+      ret.u.template segment<nu>(n_eq + k * nu) = pbm.umax.value() - lin.u(k * dt);
     }
   } else {
     ret.u.template segment<nU>(n_eq).setConstant(std::numeric_limits<double>::infinity());
@@ -293,14 +310,14 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   if (pbm.gmin) {
     for (auto k = 1u; k < K; ++k) {
-      ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmin.value() - glin(k * dt);
+      ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmin.value() - lin.g(k * dt);
     }
   } else {
     ret.l.template segment<nX>(n_eq + n_u_iq).setConstant(-std::numeric_limits<double>::infinity());
   }
   if (pbm.gmax) {
     for (auto k = 1u; k < K; ++k) {
-      ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmax.value() - glin(k * dt);
+      ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmax.value() - lin.g(k * dt);
     }
   } else {
     ret.u.template segment<nX>(n_eq + n_u_iq).setConstant(std::numeric_limits<double>::infinity());
@@ -312,7 +329,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
     for (auto i = 0u; i != nu; ++i) {
       for (auto j = 0u; j != nu; ++j) { ret.P.insert(k * nu + i, k * nu + j) = pbm.R(i, j) * dt; }
     }
-    ret.q.template segment<nu>(k * nu) = pbm.R * (ulin(k * dt) - pbm.udes(k * dt));
+    ret.q.template segment<nu>(k * nu) = pbm.R * (lin.u(k * dt) - pbm.udes(k * dt));
   }
 
   // STATE COSTS
@@ -324,7 +341,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
         ret.P.insert(nU + (k - 1) * nx + i, nU + (k - 1) * nx + j) = pbm.Q(i, j) * dt;
       }
     }
-    ret.q.template segment<nx>(nU + (k - 1) * nx) = pbm.Q * (glin(k * dt) - pbm.gdes(k * dt)) * dt;
+    ret.q.template segment<nx>(nU + (k - 1) * nx) = pbm.Q * (lin.g(k * dt) - pbm.gdes(k * dt)) * dt;
   }
 
   // last state x(K) ~ x(T)
@@ -333,7 +350,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
       ret.P.insert(nU + (K - 1) * nx + i, nU + (K - 1) * nx + j) = pbm.QT(i, j);
     }
   }
-  ret.q.template segment<nx>(nU + (K - 1) * nx) = pbm.QT * (glin(pbm.T) - pbm.gdes(pbm.T));
+  ret.q.template segment<nx>(nU + (K - 1) * nx) = pbm.QT * (lin.g(pbm.T) - pbm.gdes(pbm.T));
 
   ret.A.makeCompressed();
   ret.P.makeCompressed();
@@ -342,69 +359,103 @@ QuadraticProgramSparse<double> ocp_to_qp(
 }
 
 /**
- * TODOs
- * - interface to set weights
- * - hotstart
- * - handle linearizations
+ * @brief Model-Predictive Control (MPC) on Lie groups.
+ *
+ * @tparam K number of MPC discretization steps (seee ocp_to_qp).
+ * @tparam T time type, must be a std::chrono::duration-like
+ * @tparam G state space LieGroup type
+ * @tparam U input space Manifold type
+ * @tparam Dyn callable type that represents dynamics
  */
-template<std::size_t K, LieGroup G, Manifold U, typename Dyn>
+template<std::size_t K, typename T, LieGroup G, Manifold U, typename Dyn>
 class MPC
 {
 public:
-  MPC(Dyn && dyn, const SolverParams & qp_prm = SolverParams{})
+  /**
+   * @brief Create an MPC instance
+   *
+   * @param dyn callable object that represents dynamics \f$ \mathrm{d}^r f_t = f(x, u) \f$.
+   * @param t time horizon
+   * @param qp_prm optional parameters for the QP solver (see \p solve_qp)
+   */
+  MPC(Dyn && dyn, T t, const SolverParams & qp_prm = SolverParams{})
       : dyn_(std::forward<Dyn>(dyn)), qp_prm_(qp_prm)
   {
     // TODO set this stuff
     ocp_.Q.setIdentity();
     ocp_.QT.setIdentity();
     ocp_.R.setIdentity();
-    ocp_.T = 5;
+    ocp_.T = std::chrono::duration_cast<std::chrono::duration<double>>(t).count();
   }
-
-  MPC(const Dyn & dyn, const SolverParams & qp_prm = SolverParams{}) : MPC(Dyn(dyn), qp_prm) {}
-  MPC()            = default;
+  /// See constructor above
+  MPC(const Dyn & dyn, T t, const SolverParams & qp_prm = SolverParams{}) : MPC(Dyn(dyn), t, qp_prm) {}
+  /// Default constructor
+  MPC() = default;
+  /// Default copy constructor
   MPC(const MPC &) = default;
-  MPC(MPC &&)      = default;
+  /// Default move constructor
+  MPC(MPC &&) = default;
+  /// Default copy assignment
   MPC & operator=(const MPC &) = default;
+  /// Default move assignment
   MPC & operator=(MPC &&) = default;
-  ~MPC()                  = default;
+  /// Default destructor
+  ~MPC() = default;
 
-  U operator()(const nanoseconds & t_abs, const G & g)
+  /**
+   * @brief Get input
+   *
+   * @param t current time
+   * @param g current state
+   *
+   * @return input calculated by MPC
+   */
+  U operator()(const T & t, const G & g)
   {
     ocp_.x0   = g;
-    ocp_.gdes = [this, &t_abs](double t) {
-      return x_des_(t_abs + duration_cast<nanoseconds>(std::chrono::duration<double>(t)));
+    ocp_.gdes = [this, &t](double t_loc) {
+      return x_des_(t + duration_cast<T>(std::chrono::duration<double>(t_loc)));
     };
-    ocp_.udes = [this, &t_abs](double t) {
-      return u_des_(t_abs + duration_cast<nanoseconds>(std::chrono::duration<double>(t)));
-    };
-
-    const auto glin  = [](double) -> G { return G::Identity(); };
-    const auto dglin = [](double) -> typename G::Tangent { return G::Tangent::Zero(); };
-    const auto ulin  = [](double) -> U {
-      if constexpr (LieGroup<U>) {
-        return U::Identity();
-      } else {
-        return U::Zero();
-      }
+    ocp_.udes = [this, &t](double t_loc) {
+      return u_des_(t + duration_cast<T>(std::chrono::duration<double>(t_loc)));
     };
 
-    const auto qp  = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, glin, dglin, ulin);
+    const auto qp  = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, lin_);
     const auto sol = smooth::feedback::solve_qp(qp, qp_prm_);
 
-    return ulin(0) + sol.primal.template head<U::SizeAtCompileTime>();
+    return lin_.u(0) + sol.primal.template head<U::SizeAtCompileTime>();
 
     // TODO: update linearization point here
   }
 
-  void set_xudes(
-    const std::function<G(nanoseconds)> & x_des, const std::function<U(nanoseconds)> & u_des)
+  /**
+   * @brief Set input bounds
+   */
+  void set_ulim(const U & umin, const U & umax)
+  {
+    ocp_.umin = umin;
+    ocp_.umax = umax;
+  }
+
+  /**
+   * @brief Set the desired state and input trajectories (lvalue version)
+   *
+   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
+   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
+   */
+  void set_xudes(const std::function<G(T)> & x_des, const std::function<U(T)> & u_des)
   {
     x_des_ = x_des;
     u_des_ = u_des;
   };
 
-  void set_xudes(std::function<G(nanoseconds)> && x_des, std::function<U(nanoseconds)> && u_des)
+  /**
+   * @brief Set the desired state and input trajectories (rvalue version)
+   *
+   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
+   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
+   */
+  void set_xudes(std::function<G(T)> && x_des, std::function<U(T)> && u_des)
   {
     x_des_ = std::move(x_des);
     u_des_ = std::move(u_des);
@@ -416,8 +467,10 @@ private:
   SolverParams qp_prm_{};
   OptimalControlProblem<G, U> ocp_{};
 
-  std::function<G(nanoseconds)> x_des_{};  // desired state, absolute time
-  std::function<U(nanoseconds)> u_des_{};  // desired input, absolute time
+  LinearizationInfo<G, U> lin_{};
+
+  std::function<G(T)> x_des_{};
+  std::function<U(T)> u_des_{};
 };
 
 }  // namespace smooth::feedback
