@@ -323,7 +323,13 @@ public:
 
     const auto glin  = [](double) -> G { return G::Identity(); };
     const auto dglin = [](double) -> typename G::Tangent { return G::Tangent::Zero(); };
-    const auto ulin  = [](double) -> U { return U::Identity(); };
+    const auto ulin  = [](double) -> U {
+      if constexpr (LieGroup<U>) {
+        return U::Identity();
+      } else {
+        return U::Zero();
+      }
+    };
 
     const auto qp  = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, glin, dglin, ulin);
     const auto sol = smooth::feedback::solve_qp(qp, qp_prm_);
