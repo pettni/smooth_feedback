@@ -119,7 +119,7 @@ enum class ExitCode : int {
 };
 
 /// Solver solution
-template<Eigen::Index M, Eigen::Index N, typename Scalar>
+template<Eigen::Index M, Eigen::Index N, typename Scalar = double>
 struct Solution
 {
   /// Exit code
@@ -172,7 +172,7 @@ namespace detail {
 template<typename T>
 struct QpSol;
 
-template<typename Scalar, Eigen::Index M, Eigen::Index N>
+template<Eigen::Index M, Eigen::Index N, typename Scalar>
 struct QpSol<QuadraticProgram<M, N, Scalar>>
 {
   using type = Solution<M, N, Scalar>;
@@ -406,7 +406,9 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
   }
 
   VecX h(n + nl + nu);
-  h << -pbm.q, LU_idx.head(nl).unaryExpr(pbm.l), LU_idx.tail(nu).unaryExpr(pbm.u);
+  h.head(n) = -pbm.q;
+  for (auto i = 0u; i != nl; ++i) { h(n + i) = pbm.l(LU_idx(i)); }
+  for (auto i = 0u; i != nu; ++i) { h(n + nl + i) = pbm.u(LU_idx(nl + i)); }
 
   // ITERATIVE REFINEMENT
 

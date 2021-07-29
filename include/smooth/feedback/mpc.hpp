@@ -304,6 +304,12 @@ public:
   }
 
   MPC(const Dyn & dyn, const SolverParams & qp_prm = SolverParams{}) : MPC(Dyn(dyn), qp_prm) {}
+  MPC()            = default;
+  MPC(const MPC &) = default;
+  MPC(MPC &&)      = default;
+  MPC & operator=(const MPC &) = default;
+  MPC & operator=(MPC &&) = default;
+  ~MPC()                  = default;
 
   U operator()(const nanoseconds & t_abs, const G & g)
   {
@@ -341,13 +347,13 @@ public:
   };
 
 private:
-  Dyn dyn_;
+  Dyn dyn_{};
 
-  SolverParams qp_prm_;
-  OptimalControlProblem<G, U> ocp_;
+  SolverParams qp_prm_{};
+  OptimalControlProblem<G, U> ocp_{};
 
-  std::function<G(nanoseconds)> x_des_;  // desired state, absolute time
-  std::function<U(nanoseconds)> u_des_;  // desired input, absolute time
+  std::function<G(nanoseconds)> x_des_{};  // desired state, absolute time
+  std::function<U(nanoseconds)> u_des_{};  // desired input, absolute time
 };
 
 }  // namespace smooth::feedback

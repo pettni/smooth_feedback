@@ -5,7 +5,10 @@
 #include <smooth/se2.hpp>
 
 #include <chrono>
+
+#ifdef ENABLE_PLOTTING
 #include <matplot/matplot.h>
+#endif
 
 template<typename T>
 using G = smooth::T2<T>;
@@ -58,6 +61,7 @@ int main()
     t += dt;
   }
 
+#ifdef ENABLE_PLOTTING
   matplot::figure();
   matplot::hold(matplot::on);
 
@@ -67,4 +71,11 @@ int main()
   matplot::legend({"x", "v", "u"});
 
   matplot::show();
+#else
+  std::cout << "TRAJECTORY:" << std::endl;
+  for (auto i = 0u; i != tvec.size(); ++i) {
+    std::cout << "t=" << tvec[i] << ": "
+              << " x=" << xvec[i] << ", v=" << yvec[i] << std::endl;
+  }
+#endif
 }
