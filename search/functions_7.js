@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['qp_5fcheck_5fstopping_102',['qp_check_stopping',['../qp_8hpp.html#a9590f1c2a0b4817571c1cbc79b23e117',1,'smooth::feedback::detail']]]
+  ['polish_5fqp_110',['polish_qp',['../qp_8hpp.html#ad70cfd0399d0b455fc8f256bc7903f81',1,'smooth::feedback::detail']]],
+  ['predict_111',['predict',['../classsmooth_1_1feedback_1_1EKF.html#a00975328bcd4aa634713819cb654b681',1,'smooth::feedback::EKF']]]
 ];

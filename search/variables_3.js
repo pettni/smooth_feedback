@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['eps_5fabs_115',['eps_abs',['../structsmooth_1_1feedback_1_1SolverParams.html#ac373ef291960d3e7c8687b1336118d81',1,'smooth::feedback::SolverParams']]],
-  ['eps_5fdual_5finf_116',['eps_dual_inf',['../structsmooth_1_1feedback_1_1SolverParams.html#ae7adff1a52965188dd73ffdd0ca644a6',1,'smooth::feedback::SolverParams']]],
-  ['eps_5fprimal_5finf_117',['eps_primal_inf',['../structsmooth_1_1feedback_1_1SolverParams.html#ab5e7206b678da4ffcf7b23487e56b002',1,'smooth::feedback::SolverParams']]],
-  ['eps_5frel_118',['eps_rel',['../structsmooth_1_1feedback_1_1SolverParams.html#a3cdfd055012ec95f6a854321e9fc37a5',1,'smooth::feedback::SolverParams']]]
+  ['eps_5fabs_129',['eps_abs',['../structsmooth_1_1feedback_1_1SolverParams.html#ac373ef291960d3e7c8687b1336118d81',1,'smooth::feedback::SolverParams']]],
+  ['eps_5fdual_5finf_130',['eps_dual_inf',['../structsmooth_1_1feedback_1_1SolverParams.html#ae7adff1a52965188dd73ffdd0ca644a6',1,'smooth::feedback::SolverParams']]],
+  ['eps_5fprimal_5finf_131',['eps_primal_inf',['../structsmooth_1_1feedback_1_1SolverParams.html#ab5e7206b678da4ffcf7b23487e56b002',1,'smooth::feedback::SolverParams']]],
+  ['eps_5frel_132',['eps_rel',['../structsmooth_1_1feedback_1_1SolverParams.html#a3cdfd055012ec95f6a854321e9fc37a5',1,'smooth::feedback::SolverParams']]]
 ];
