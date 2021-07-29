@@ -127,6 +127,31 @@ struct LinearizationInfo
 };
 
 /**
+ * @brief Calculate row-wise sparsity pattern of QP matrix A in MPC problem.
+ */
+template<std::size_t K, std::size_t nx, std::size_t nu>
+constexpr std::array<int, K *(2 * nx + nu)> mpc_nnz_pattern_A()
+{
+  std::array<int, K *(2 * nx + nu)> ret{};
+  for (std::size_t i = 0u; i != nx; ++i) { ret[i] = 1 + nu; }
+  for (std::size_t i = nx; i != K * nx; ++i) { ret[i] = 1 + nx + nu; }
+  for (std::size_t i = K * nx; i != K * (2 * nx + nu); ++i) { ret[i] = 1; }
+  return ret;
+}
+
+/**
+ * @brief Calculate column-wise sparsity pattern of QP matrix P in MPC problem.
+ */
+template<std::size_t K, std::size_t nx, std::size_t nu>
+constexpr std::array<int, K *(nu + nx)> mpc_nnz_pattern_P()
+{
+  std::array<int, K *(nx + nu)> ret{};
+  for (std::size_t i = 0u; i != K * nu; ++i) { ret[i] = nu; }
+  for (std::size_t i = K * nu; i != K * (nu + nx); ++i) { ret[i] = nx; }
+  return ret;
+}
+
+/**
  * @brief Convert OptimalControlProblem on \f$ (\mathbb{G}, \mathbb{U}) \f$ into a tangent space
  * QuadraticProgram on \f$ (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \f$.
  *
@@ -191,31 +216,17 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
 
   QuadraticProgramSparse ret;
   ret.P.resize(nvar, nvar);
-  ret.q.setZero(nvar);
-
+  ret.q.resize(nvar);
   ret.A.resize(ncon, nvar);
-  ret.l.setZero(ncon);
-  ret.u.setZero(ncon);
+  ret.l.resize(ncon);
+  ret.u.resize(ncon);
 
   // SET SPARSITY PATTERNS
 
-  Eigen::Matrix<int, ncon, 1> A_sparsity;     // row-wise
-  Eigen::Matrix<int, nU + nX, 1> P_sparsity;  // column-wise (but symmetric so doesn't matter)
-
-  // dynamics
-  A_sparsity.template head<nx>().setConstant(nu + 1);                     // B, I
-  A_sparsity.template segment<nx *(K - 1)>(nx).setConstant(nx + nu + 1);  // B, A, I
-
-  // input and state bounds
-  A_sparsity.template segment<n_u_iq>(n_eq).setConstant(1);
-  A_sparsity.template segment<n_x_iq>(n_eq + n_u_iq).setConstant(1);
-
-  // cost matrix is block-diagonal with blocks of size nu x nu and nx x nx
-  P_sparsity.template head<nU>().setConstant(nu);
-  P_sparsity.template segment<nX>(nU).setConstant(nx);
-
-  ret.A.reserve(A_sparsity);
-  ret.P.reserve(P_sparsity);
+  static constexpr auto Ap = mpc_nnz_pattern_A<K, nx, nu>();
+  static constexpr auto Pp = mpc_nnz_pattern_P<K, nx, nu>();
+  ret.A.reserve(Eigen::Map<const Eigen::Matrix<int, ncon, 1>>(Ap.data()));
+  ret.P.reserve(Eigen::Map<const Eigen::Matrix<int, nvar, 1>>(Pp.data()));
 
   // DYNAMICS CONSTRAINTS
 
