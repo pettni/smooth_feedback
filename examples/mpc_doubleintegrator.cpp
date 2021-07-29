@@ -42,7 +42,10 @@ int main()
   // create MPC object and set input bounds, and desired trajectories
   smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, 5s);
   mpc.set_ulim(Eigen::Matrix<double, 1, 1>(-0.5), Eigen::Matrix<double, 1, 1>(0.5));
-  mpc.set_xudes([](Time t) -> Gd { return Gd(Eigen::Vector2d(sin(0.5 * t.count()), 0)); },
+  mpc.set_input_cost(Eigen::Matrix<double, 1, 1>::Constant(0.1));
+  mpc.set_running_state_cost(Eigen::Matrix<double, 2, 2>::Identity());
+  mpc.set_final_state_cost(0.1 * Eigen::Matrix<double, 2, 2>::Identity());
+  mpc.set_xudes([](Time t) -> Gd { return Gd(Eigen::Vector2d(-0.5 * sin(0.3 * t.count()), 0)); },
     [](Time) -> Ud { return Ud::Zero(); });
 
   // prepare for integrating the closed-loop system
@@ -51,12 +54,12 @@ int main()
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
-  for (std::chrono::milliseconds t = 20s; t < 40s; t += 50ms) {
+  for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
     u = mpc(t, g);
 
     // store data
-    tvec.push_back(t.count());
+    tvec.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t).count());
     xvec.push_back(g.rn().x());
     vvec.push_back(g.rn().y());
     uvec.push_back(u(0));
@@ -70,9 +73,11 @@ int main()
   matplot::hold(matplot::on);
 
   matplot::plot(tvec, xvec)->line_width(2);
+  matplot::plot(tvec, matplot::transform(tvec, [](auto t) { return -0.5 * sin(0.3 * t); }), "k--")
+    ->line_width(2);
   matplot::plot(tvec, vvec)->line_width(2);
   matplot::plot(tvec, uvec)->line_width(2);
-  matplot::legend({"x", "v", "u"});
+  matplot::legend({"x", "x_{des}", "v", "u"});
 
   matplot::show();
 #else
