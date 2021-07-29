@@ -138,7 +138,7 @@ struct OptimalControlProblem
  * @param glin state trajectory \f$g_{lin}(t)\f$ to linearize around
  * @param ulin input trajectory \f$u_{lin}(t)\f$ to linearize around
  *
- * @return QuadraticProgram modeling the input optimal control problem.
+ * @return QuadraticProgramSparse modeling the input optimal control problem.
  */
 template<std::size_t K,
   LieGroup G,
@@ -147,7 +147,7 @@ template<std::size_t K,
   typename GLin,
   typename DGLin,
   typename ULin>
-auto ocp_to_qp(
+QuadraticProgramSparse<double> ocp_to_qp(
   const OptimalControlProblem<G, U> & pbm, Dyn && f, GLin && glin, DGLin && dglin, ULin && ulin)
 {
   using std::placeholders::_1;
@@ -171,17 +171,37 @@ auto ocp_to_qp(
 
   const double dt = pbm.T / static_cast<double>(K);
 
-  QuadraticProgram<-1, -1> ret;
-  ret.P.setZero(nvar, nvar);
+  QuadraticProgramSparse ret;
+  ret.P.resize(nvar, nvar);
   ret.q.setZero(nvar);
 
-  ret.A.setZero(ncon, nvar);
+  ret.A.resize(ncon, nvar);
   ret.l.setZero(ncon);
   ret.u.setZero(ncon);
 
+  // SET SPARSITY PATTERNS
+
+  Eigen::Matrix<int, ncon, 1> A_sparsity;     // row-wise
+  Eigen::Matrix<int, nU + nX, 1> P_sparsity;  // column-wise (but symmetric so doesn't matter)
+
+  // dynamics
+  A_sparsity.template head<nx>().setConstant(nu + 1);                     // B, I
+  A_sparsity.template segment<nx *(K - 1)>(nx).setConstant(nx + nu + 1);  // B, A, I
+
+  // input and state bounds
+  A_sparsity.template segment<n_u_iq>(n_eq).setConstant(1);
+  A_sparsity.template segment<n_x_iq>(n_eq + n_u_iq).setConstant(1);
+
+  // cost matrix is block-diagonal with blocks of size nu x nu and nx x nx
+  P_sparsity.template head<nU>().setConstant(nu);
+  P_sparsity.template segment<nX>(nU).setConstant(nx);
+
+  ret.A.reserve(A_sparsity);
+  ret.P.reserve(P_sparsity);
+
   // DYNAMICS CONSTRAINTS
 
-  for (auto k = 0u; k < K; ++k) {
+  for (auto k = 0u; k != K; ++k) {
     const double t = k * dt;
 
     // LINEARIZATION
@@ -213,24 +233,45 @@ auto ocp_to_qp(
 
     if (k == 0) {
       // x(1) - B u(0) = A x0 + E
-      ret.A.template block<nx, nx>(nx * k, nU + nx * k).setIdentity();
-      ret.A.template block<nx, nu>(nx * k, nu * k) = -Bk;
-      ret.u.template segment<nx>(nx * k)           = Ak * (pbm.x0 - glin(t)) + Ek;
-      ret.l.template segment<nx>(nx * k)           = ret.u.template segment<nx>(nx * k);
+
+      // identity matrix on x(1)
+      for (auto i = 0u; i != nx; ++i) { ret.A.insert(nx * k + i, nU + nx * k + i) = 1; }
+
+      // B matrix on u(0)
+      for (auto i = 0u; i != nx; ++i) {
+        for (auto j = 0u; j != nu; ++j) { ret.A.insert(nx * k + i, nu * k + j) = -Bk(i, j); }
+      }
+
+      ret.u.template segment<nx>(nx * k) = Ak * (pbm.x0 - glin(t)) + Ek;
+      ret.l.template segment<nx>(nx * k) = ret.u.template segment<nx>(nx * k);
 
     } else {
       // x(k) - A x(k-1) - B u(k-1) = E
-      ret.A.template block<nx, nx>(nx * k, nU + nx * k).setIdentity();
-      ret.A.template block<nx, nx>(nx * k, nU + nx * (k - 1)) = -Ak;
-      ret.A.template block<nx, nu>(nx * k, nu * k)            = -Bk;
-      ret.u.template segment<nx>(nx * k)                      = Ek;
-      ret.l.template segment<nx>(nx * k)                      = Ek;
+
+      // identity matrix on x(k)
+      for (auto i = 0u; i != nx; ++i) { ret.A.insert(nx * k + i, nU + nx * k + i) = 1; }
+
+      // A matrix on x(k-1)
+      for (auto i = 0u; i != nx; ++i) {
+        for (auto j = 0u; j != nx; ++j) {
+          ret.A.insert(nx * k + i, nU + nx * (k - 1) + j) = -Ak(i, j);
+        }
+      }
+
+      // B matrix on u(k-1)
+      for (auto i = 0u; i != nx; ++i) {
+        for (auto j = 0u; j != nu; ++j) { ret.A.insert(nx * k + i, nu * k + j) = -Bk(i, j); }
+      }
+
+      ret.u.template segment<nx>(nx * k) = Ek;
+      ret.l.template segment<nx>(nx * k) = Ek;
     }
   }
 
   // INPUT CONSTRAINTS
 
-  ret.A.template block<nU, nU>(n_eq, 0).setIdentity();
+  for (auto i = 0u; i != n_u_iq; ++i) { ret.A.insert(n_eq + i, i) = 1; }
+
   if (pbm.umin) {
     for (auto k = 0u; k < K; ++k) {
       ret.l.template segment<nu>(n_eq + k * nu) = pbm.umin.value() - ulin(k * dt);
@@ -248,7 +289,8 @@ auto ocp_to_qp(
 
   // STATE CONSTRAINTS
 
-  ret.A.template block<nX, nX>(n_eq + n_u_iq, nU).setIdentity();
+  for (auto i = 0u; i != n_x_iq; ++i) { ret.A.insert(n_eq + n_u_iq + i, nU + i) = 1; }
+
   if (pbm.gmin) {
     for (auto k = 1u; k < K; ++k) {
       ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmin.value() - glin(k * dt);
@@ -267,18 +309,34 @@ auto ocp_to_qp(
   // INPUT COSTS
 
   for (auto k = 0u; k < K; ++k) {
-    ret.P.template block<nu, nu>(k * nu, k * nu) = pbm.R * dt;
-    ret.q.template segment<nu>(k * nu)           = pbm.R * (ulin(k * dt) - pbm.udes(k * dt));
+    for (auto i = 0u; i != nu; ++i) {
+      for (auto j = 0u; j != nu; ++j) { ret.P.insert(k * nu + i, k * nu + j) = pbm.R(i, j) * dt; }
+    }
+    ret.q.template segment<nu>(k * nu) = pbm.R * (ulin(k * dt) - pbm.udes(k * dt));
   }
 
   // STATE COSTS
 
+  // intermediate states x(1) ... x(K-1)
   for (auto k = 1u; k < K; ++k) {
-    ret.P.template block<nx, nx>(nU + (k - 1) * nx, nU + (k - 1) * nx) = pbm.Q * dt;
+    for (auto i = 0u; i != nx; ++i) {
+      for (auto j = 0u; j != nx; ++j) {
+        ret.P.insert(nU + (k - 1) * nx + i, nU + (k - 1) * nx + j) = pbm.Q(i, j) * dt;
+      }
+    }
     ret.q.template segment<nx>(nU + (k - 1) * nx) = pbm.Q * (glin(k * dt) - pbm.gdes(k * dt)) * dt;
   }
-  ret.P.template block<nx, nx>(nU + (K - 1) * nx, nU + (K - 1) * nx) = pbm.QT;
+
+  // last state x(K) ~ x(T)
+  for (auto i = 0u; i != nx; ++i) {
+    for (auto j = 0u; j != nx; ++j) {
+      ret.P.insert(nU + (K - 1) * nx + i, nU + (K - 1) * nx + j) = pbm.QT(i, j);
+    }
+  }
   ret.q.template segment<nx>(nU + (K - 1) * nx) = pbm.QT * (glin(pbm.T) - pbm.gdes(pbm.T));
+
+  ret.A.makeCompressed();
+  ret.P.makeCompressed();
 
   return ret;
 }

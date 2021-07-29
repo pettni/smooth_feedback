@@ -36,8 +36,6 @@ to work very well.
 
 #### TODOs
 
-- Sparse encoding
-- Class for MPC tracking
 - Possibility to bound deviation from linearization trajectory
 
 ### Active Set Invariance: Don't collide with stuff
@@ -127,6 +125,11 @@ a solver is included.
 ```cpp
 #include <smooth/feedback/qp.hpp>
 ```
+
+#### TODOs
+
+- AMD reordering before sparse factorization
+- Pivoting in sparse factorization
 
 
 <!-- MARKDOWN LINKS AND IMAGES -->
