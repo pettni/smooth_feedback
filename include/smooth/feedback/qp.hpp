@@ -333,6 +333,9 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
   using LDLT =
     std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, -1>>;
 
+  static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
+  static constexpr Scalar eps = std::numeric_limits<Scalar>::epsilon();
+
   static constexpr Eigen::Index N = AmatT::ColsAtCompileTime;
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows();
 
@@ -340,14 +343,14 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
 
   Eigen::Index nl = 0, nu = 0;
   for (Eigen::Index idx = 0; idx < m; ++idx) {
-    if (sol.dual[idx] < -10 * std::numeric_limits<Scalar>::epsilon()) { nl++; }
-    if (sol.dual[idx] > 10 * std::numeric_limits<Scalar>::epsilon()) { nu++; }
+    if (sol.dual[idx] < -100 * eps && pbm.l[idx] != -inf) { nl++; }
+    if (sol.dual[idx] > 100 * eps && pbm.u[idx] != inf) { nu++; }
   }
 
   Eigen::Matrix<Eigen::Index, -1, 1> LU_idx(nl + nu);
   for (Eigen::Index idx = 0, lcntr = 0, ucntr = 0; idx < m; ++idx) {
-    if (sol.dual[idx] < -10 * std::numeric_limits<Scalar>::epsilon()) { LU_idx(lcntr++) = idx; }
-    if (sol.dual[idx] > 10 * std::numeric_limits<Scalar>::epsilon()) { LU_idx(nl + ucntr++) = idx; }
+    if (sol.dual[idx] < -100 * eps && pbm.l[idx] != -inf) { LU_idx(lcntr++) = idx; }
+    if (sol.dual[idx] > 100 * eps && pbm.u[idx] != inf) { LU_idx(nl + ucntr++) = idx; }
   }
 
   // FORM REDUCED SYSTEMS (27) AND (30)

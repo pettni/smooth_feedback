@@ -61,7 +61,7 @@ int main()
     t += dt;
   }
 
-#ifdef ENABLE_PLOTTINsdG
+#ifdef ENABLE_PLOTTING
   matplot::figure();
   matplot::hold(matplot::on);
 

@@ -105,9 +105,9 @@ public:
     ordering(A, P_);
     Pinv_ = P_.inverse();
 
-    // permute Ap = P A P'
+    // permute Ap = P' A P
     Eigen::SparseMatrix<Scalar> Ap;
-    Ap = A.template selfadjointView<Eigen::Upper>().twistedBy(P_);
+    Ap = A.template selfadjointView<Eigen::Upper>().twistedBy(Pinv_);
 
     // working memory
     Eigen::Matrix<int, -1, 1> visited(n);
@@ -212,8 +212,8 @@ public:
 
     const Eigen::Index N = L_.cols();
 
-    // solve P' x = b in-place
-    b.applyOnTheLeft(P_);
+    // solve P x = b in-place
+    b.applyOnTheLeft(Pinv_);
 
     // solve L x = b in-place
     for (Eigen::Index col = 0; col != N; ++col) {
@@ -228,8 +228,8 @@ public:
       for (It<Scalar> it(L_, row); it; ++it) { b(row) -= b(it.index()) * it.value(); }
     }
 
-    // solve P x = b in-place
-    b.applyOnTheLeft(Pinv_);
+    // solve P' x = b in-place
+    b.applyOnTheLeft(P_);
   }
 
   /**
