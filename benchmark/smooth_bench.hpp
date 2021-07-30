@@ -14,8 +14,6 @@ struct SmoothWrapper
 
   BenchResult operator()()
   {
-
-    using std::chrono::high_resolution_clock;
     auto t0  = std::chrono::high_resolution_clock::now();
     auto sol = smooth::feedback::solve_qp(qp_, prm_);
     auto t1  = std::chrono::high_resolution_clock::now();
@@ -23,8 +21,8 @@ struct SmoothWrapper
       .solution = sol.primal,
       .success  = (sol.code == smooth::feedback::ExitCode::Optimal)
               || (sol.code == smooth::feedback::ExitCode::MaxIterations),
-      .objective =
-        (sol.primal.transpose() * qp_.P * sol.primal + qp_.q.transpose() * sol.primal).eval()[0]};
+      .objective = (qp_.P.template selfadjointView<Eigen::Upper>() * (0.5 * sol.primal) + qp_.q)
+                     .dot(sol.primal)};
   }
 
   Problem qp_;

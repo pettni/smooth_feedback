@@ -31,21 +31,17 @@ struct SuiteResult
 void compareRuns(SuiteResult & res, const BatchResult & a, const BatchResult & b)
 {
 
-  auto a_p = a.batch.first;
-  auto a_v = a.batch.second;
-  auto b_p = b.batch.first;
-  auto b_v = b.batch.second;
+  auto [a_p, a_v] = a.batch;
+  auto [b_p, b_v] = b.batch;
 
   if (a_v.size() != b_v.size()) { throw std::runtime_error("different bach sizes"); }
+
   for (auto i = 0u; i != a_v.size(); ++i) {
     if ((a_p[i].qp.u - b_p[i].qp.u).norm() > 1e-6) { throw std::runtime_error("Problem mismatch"); }
     if (FLAGS_verbose) {
-
-      std::cout
-        << "--------------------------------------------------------------------------------"
-        << std::endl;
+      std::cout << "-----------------------------------------------------------------" << std::endl;
     }
-    if (a_v[i]) {
+    if (a_v[i].has_value()) {
       auto a_dur = std::chrono::duration<double>(a_v[i]->dt).count();
       res.total_a_duration += a_dur;
       ++res.num_a;
@@ -98,25 +94,25 @@ void compareRuns(SuiteResult & res, const BatchResult & a, const BatchResult & b
   std::cout << std::setw(30) << "Num B: " << res.num_b << std::endl;
 
   std::cout << std::setw(30)
-            << "Avg Duration A : " << res.total_a_duration / std::max((int)res.num_a, 1)
+            << "Avg Duration A : " << res.total_a_duration / std::max<int>(res.num_a, 1)
             << std::endl;
   std::cout << std::setw(30)
-            << "Avg Duration B : " << res.total_b_duration / std::max((int)res.num_b, 1)
+            << "Avg Duration B : " << res.total_b_duration / std::max<int>(res.num_b, 1)
             << std::endl;
   std::cout << std::setw(30)
-            << "Avg Duration Ratio : " << res.total_duration_ratio / std::max(1, (int)res.num_valid)
+            << "Avg Duration Ratio : " << res.total_duration_ratio / std::max<int>(1, res.num_valid)
             << std::endl;
   std::cout << std::setw(30) << "Min Duration Ratio: " << res.min_duration_ratio << std::endl;
   std::cout << std::setw(30) << "Max Duration Ratio: " << res.max_duration_ratio << std::endl;
 
   std::cout << std::setw(30)
-            << "Avg Primal Diff: " << res.total_primal_diff / std::max(1, (int)res.num_valid)
+            << "Avg Primal Diff: " << res.total_primal_diff / std::max<int>(1, res.num_valid)
             << std::endl;
   std::cout << std::setw(30) << "Min Primal Diff: " << res.min_primal_diff << std::endl;
   std::cout << std::setw(30) << "Max Primal Diff: " << res.max_primal_diff << std::endl;
 
   std::cout << std::setw(30)
-            << "Avg Obj Improvement: " << res.total_obj_impr / std::max(1, (int)res.num_valid)
+            << "Avg Obj Improvement: " << res.total_obj_impr / std::max<int>(1, res.num_valid)
             << std::endl;
   std::cout << std::setw(30) << "Worst Obj Improvement: " << res.worst_obj_impr << std::endl;
   std::cout << std::setw(30) << "Best Obj Improvement: " << res.best_obj_impr << std::endl;
@@ -125,7 +121,7 @@ void compareRuns(SuiteResult & res, const BatchResult & a, const BatchResult & b
 int main(int argc, char ** argv)
 {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  constexpr auto maxN   = 30;
+  constexpr auto maxN   = 6;
   constexpr auto startN = 2;
   constexpr auto lenN   = maxN - startN;
 
@@ -133,6 +129,7 @@ int main(int argc, char ** argv)
 
   using ResultMap =
     std::unordered_map<std::string, std::array<std::array<SuiteResult, lenN>, D.size()>>;
+
   ResultMap allResults;
   std::array<SuiteResult, lenN> sparseStatic;
   std::array<int, lenN> indexArr;
@@ -197,11 +194,11 @@ int main(int argc, char ** argv)
       std::array<double, maxN - startN> aAvgDur, bAvgDur;
       std::transform(
         it->second[i].begin(), it->second[i].end(), aAvgDur.begin(), [](SuiteResult s) -> double {
-          return s.total_a_duration / std::max(1, (int)s.num_a);
+          return s.total_a_duration / std::max<int>(1, s.num_a);
         });
       std::transform(
         it->second[i].begin(), it->second[i].end(), bAvgDur.begin(), [](SuiteResult s) -> double {
-          return s.total_b_duration / std::max(1, (int)s.num_b);
+          return s.total_b_duration / std::max<int>(1, s.num_b);
         });
       axVec[i]->plot(indexArr, aAvgDur)->line_width(3);
       std::ostringstream ss1, ss2;

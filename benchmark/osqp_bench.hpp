@@ -70,18 +70,21 @@ struct OsqpWrapper
   {
     auto t0 = std::chrono::high_resolution_clock::now();
     osqp_setup(&work_, data_, settings_);
-    auto exit = osqp_solve(work_);
-    auto t1   = std::chrono::high_resolution_clock::now();
+    osqp_solve(work_);
+    auto t1 = std::chrono::high_resolution_clock::now();
+
+    auto code = work_->info->status_val;
 
     Eigen::Matrix<double, -1, 1> qp_primal =
       Eigen::Map<const Eigen::Matrix<double, -1, 1>>(work_->solution->x, data_->n);
 
     osqp_cleanup(work_);
 
-    return {.dt  = t1 - t0,
-      .solution  = qp_primal,
-      .success   = (exit == 0) || (exit == OSQP_MAX_ITER_REACHED),
-      .objective = (qp_primal.transpose() * P_).dot(qp_primal) + q_.dot(qp_primal)};
+    return {.dt = t1 - t0,
+      .solution = qp_primal,
+      .success  = (code == OSQP_SOLVED) || (code == OSQP_MAX_ITER_REACHED),
+      .objective =
+        (P_.template selfadjointView<Eigen::Upper>() * (0.5 * qp_primal) + q_).dot(qp_primal)};
   }
 
   Eigen::SparseMatrix<Scalar, Eigen::ColMajor, long long> P_;
