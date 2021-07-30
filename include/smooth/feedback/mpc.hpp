@@ -104,6 +104,8 @@ struct OptimalControlProblem
 
 /**
  * @brief Struct to define a linearization point.
+ *
+ * Default constructor linearizes around Identity (LieGroup) or Zero (non-LieGroup Manifold)
  */
 template<LieGroup G, Manifold U>
 struct LinearizationInfo
@@ -512,8 +514,13 @@ private:
 
   LinearizationInfo<G, U> lin_{};
 
-  std::function<G(T)> x_des_{};
-  std::function<U(T)> u_des_{};
+  std::function<G(T)> x_des_ = [](T) -> G { return G::Identity(); };
+  std::function<U(T)> u_des_ = [](T) -> U {
+    if constexpr (LieGroup<U>)
+      return U::Identity();
+    else
+      return U::Zero();
+  };
 };
 
 }  // namespace smooth::feedback
