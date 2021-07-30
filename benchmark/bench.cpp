@@ -142,40 +142,23 @@ int main(int argc, char ** argv)
     for (auto j = 0u; j < D.size(); ++j) {
       double d = D[j];
 
-      std::cout
-        << "################################################################################"
-        << std::endl;
-      std::cout
-        << "################################################################################"
-        << std::endl;
+      std::cout << "#################################################################" << std::endl;
+      std::cout << "#################################################################" << std::endl;
       std::cout << "Variables: " << N << std::endl;
       std::cout << "Constraints: " << M << std::endl;
       std::cout << "Density: " << d << std::endl;
-      std::cout
-        << "################################################################################"
-        << std::endl;
-      std::cout
-        << "################################################################################"
-        << std::endl;
-
+      std::cout << "#################################################################" << std::endl;
+      std::cout << "#################################################################" << std::endl;
       std::default_random_engine gen1, gen2;
-      std::cout
-        << "--------------------------------------------------------------------------------"
-        << std::endl;
+      std::cout << "-----------------------------------------------------------------" << std::endl;
       std::cout << "OSQP" << std::endl;
-      std::cout
-        << "--------------------------------------------------------------------------------"
-        << std::endl;
+      std::cout << "-----------------------------------------------------------------" << std::endl;
       srand(1);
       auto osqp_res = BenchSuite<OsqpWrapper, M, N>(gen1, FLAGS_batch, d);
       srand(1);
-      std::cout
-        << "--------------------------------------------------------------------------------"
-        << std::endl;
+      std::cout << "-----------------------------------------------------------------" << std::endl;
       std::cout << "SMOOTH" << std::endl;
-      std::cout
-        << "--------------------------------------------------------------------------------"
-        << std::endl;
+      std::cout << "-----------------------------------------------------------------" << std::endl;
       auto smooth_res = BenchSuite<SmoothWrapper, M, N>(gen2, FLAGS_batch, d);
 
       auto keys = osqp_res.first;
@@ -185,27 +168,18 @@ int main(int argc, char ** argv)
             std::make_pair(k, std::array<std::array<SuiteResult, lenN>, D.size()>{}));
           allResults[k][j] = std::array<SuiteResult, lenN>{};
         }
-        std::cout
-          << "################################################################################"
-          << std::endl;
+        std::cout << "###############################################################" << std::endl;
         std::cout << k << std::endl;
-        std::cout
-          << "################################################################################"
-          << std::endl;
-
+        std::cout << "###############################################################" << std::endl;
         auto osqp_k   = osqp_res.second[k];
         auto smooth_k = smooth_res.second[k];
         compareRuns(allResults[k][j][i - startN], osqp_k, smooth_k);
 
         indexArr[i - startN] = i;
       }
-      std::cout
-        << "################################################################################"
-        << std::endl;
+      std::cout << "#################################################################" << std::endl;
       std::cout << "Sparse vs Static" << std::endl;
-      std::cout
-        << "################################################################################"
-        << std::endl;
+      std::cout << "#################################################################" << std::endl;
       compareRuns(
         sparseStatic[i - startN], smooth_res.second["Sparse"], smooth_res.second["Static"]);
     }
@@ -229,13 +203,13 @@ int main(int argc, char ** argv)
         it->second[i].begin(), it->second[i].end(), bAvgDur.begin(), [](SuiteResult s) -> double {
           return s.total_b_duration / std::max(1, (int)s.num_b);
         });
-      axVec[i]->plot(indexArr, aAvgDur);
+      axVec[i]->plot(indexArr, aAvgDur)->line_width(3);
       std::ostringstream ss1, ss2;
       ss1 << "OSQP " << it->first << " " << D[i];
       ss2 << "Smooth " << it->first << " " << D[i];
 
       names[i].push_back(ss1.str());
-      axVec[i]->plot(indexArr, bAvgDur);
+      axVec[i]->plot(indexArr, bAvgDur)->line_width(3);
       names[i].push_back(ss2.str());
     }
     axVec[i]->xlabel("Number of Variables");
