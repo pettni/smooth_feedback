@@ -207,6 +207,7 @@ struct RandomStatic : public StaticBase<M, N, Scalar>
 struct BenchResult
 {
   std::chrono::high_resolution_clock::duration dt;
+  uint64_t iter;
   Eigen::Matrix<double, -1, -1> solution;
   bool success;
   double objective;

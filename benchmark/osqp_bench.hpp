@@ -74,6 +74,7 @@ struct OsqpWrapper
     auto t1 = std::chrono::high_resolution_clock::now();
 
     auto code = work_->info->status_val;
+    auto iter = work_->info->iter;
 
     Eigen::Matrix<double, -1, 1> qp_primal =
       Eigen::Map<const Eigen::Matrix<double, -1, 1>>(work_->solution->x, data_->n);
@@ -81,8 +82,9 @@ struct OsqpWrapper
     osqp_cleanup(work_);
 
     return {.dt = t1 - t0,
+      .iter = static_cast<uint64_t>(iter),
       .solution = qp_primal,
-      .success  = (code == OSQP_SOLVED) || (code == OSQP_MAX_ITER_REACHED),
+      .success  = (code == OSQP_SOLVED),
       .objective =
         (P_.template selfadjointView<Eigen::Upper>() * (0.5 * qp_primal) + q_).dot(qp_primal)};
   }

@@ -18,9 +18,9 @@ struct SmoothWrapper
     auto sol = smooth::feedback::solve_qp(qp_, prm_);
     auto t1  = std::chrono::high_resolution_clock::now();
     return {.dt = t1 - t0,
+      .iter     = sol.iter,
       .solution = sol.primal,
-      .success  = (sol.code == smooth::feedback::ExitCode::Optimal)
-              || (sol.code == smooth::feedback::ExitCode::MaxIterations),
+      .success  = sol.code == smooth::feedback::ExitCode::Optimal,
       .objective = (qp_.P.template selfadjointView<Eigen::Upper>() * (0.5 * sol.primal) + qp_.q)
                      .dot(sol.primal)};
   }
