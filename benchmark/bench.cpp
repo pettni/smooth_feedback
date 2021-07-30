@@ -129,8 +129,8 @@ void compareRuns(SuiteResult & res, const BatchResult & a, const BatchResult & b
 int main(int argc, char ** argv)
 {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  constexpr auto startN = 4;
-  constexpr auto maxN   = 16;
+  constexpr auto startN = 10;
+  constexpr auto maxN   = 11;
   constexpr auto lenN   = maxN - startN;
 
   constexpr std::array<double, 2> D = {0.25, 1.};
