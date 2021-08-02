@@ -124,6 +124,8 @@ struct Solution
 {
   /// Exit code
   ExitCode code = ExitCode::Unknown;
+  /// Number of iterations
+  uint64_t iter;
   /// Primal vector
   Eigen::Matrix<Scalar, N, 1> primal;
   /// Dual vector
@@ -253,8 +255,13 @@ auto scale_qp(const Pbm & pbm)
     d_scale.template head<N>(n) = ret.P.colwise().template lpNorm<Eigen::Infinity>();
   }
 
+  // if there are "zero cols"
+  for (auto i = 0u; i != n; ++i) {
+    if (d_scale(i) == 0) { d_scale(i) = 1; }
+  }
+
   // scale cost function
-  Scalar c = Scalar(1) / std::max({1e-3, d_scale.template head<N>(n).mean(), norm(ret.q)});
+  Scalar c = Scalar(1) / std::max({1e-6, d_scale.template head<N>(n).mean(), norm(ret.q)});
   ret.P *= c;
   ret.q *= c;
 
@@ -287,8 +294,12 @@ auto scale_qp(const Pbm & pbm)
       d_scale.template segment<M>(n, m) = ret.A.rowwise().template lpNorm<Eigen::Infinity>();
     }
 
-    // make sure we are not doing anything stupid
-    d_scale = d_scale.cwiseMax(1e-3).cwiseInverse().cwiseSqrt();
+    // if there are "zero cols" we don't scale
+    for (auto i = 0u; i != k; ++i) {
+      if (d_scale(i) == 0) { d_scale(i) = 1; }
+    }
+
+    d_scale = d_scale.cwiseMax(1e-8).cwiseInverse().cwiseSqrt();
 
     // perform scaling
     if constexpr (sparse) {
@@ -647,7 +658,8 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   Rk p(k);
 
   // main optimization loop
-  for (auto iter = 0u; iter != prm.max_iter && !ret_code; ++iter) {
+  auto iter = 0u;
+  for (; iter != prm.max_iter && !ret_code; ++iter) {
     p.template head<N>(n)       = sigma * x - spbm.q;
     p.template segment<M>(n, m) = z - y / rho;
     ldlt.solve_inplace(p);
@@ -676,6 +688,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   }
 
   detail::QpSol_t<Pbm> sol{.code = ret_code.value_or(ExitCode::MaxIterations),
+    .iter                        = iter,
     .primal                      = std::move(x),
     .dual                        = std::move(y)};
 

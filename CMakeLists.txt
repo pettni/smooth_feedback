@@ -4,8 +4,9 @@ project(smooth_feedback VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(BUILD_TESTING "Build tests." OFF)
 option(BUILD_EXAMPLES "Build the examples." OFF)
-option(BUILD_TESTING "Build the tests." OFF)
+option(BUILD_BENCHMARK "Build the benchmarks." OFF)
 
 include(CTest)
 include(GoogleTest)
@@ -35,6 +36,14 @@ INTERFACE
 
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+# ---------------------------------------------------------------------------------------
+# BENCHMARKS
+# ---------------------------------------------------------------------------------------
+
+if(BUILD_BENCHMARK)
+  add_subdirectory(benchmark)
 endif()
 
 # ---------------------------------------------------------------------------------------
