@@ -422,8 +422,15 @@ public:
    *
    * @return input calculated by MPC
    */
-  U operator()(const T & t, const G & g)
+  ExitCode operator()(U & u,
+    const T & t,
+    const G & g,
+    std::optional<std::reference_wrapper<std::vector<G>>> x_traj = std::nullopt)
   {
+    static constexpr int nx = G::SizeAtCompileTime;
+    static constexpr int nu = U::SizeAtCompileTime;
+    static constexpr int nU = K * nu;
+
     ocp_.x0   = g;
     ocp_.gdes = [this, &t](double t_loc) {
       return x_des_(t + duration_cast<T>(std::chrono::duration<double>(t_loc)));
@@ -435,7 +442,18 @@ public:
     const auto qp  = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, lin_);
     const auto sol = smooth::feedback::solve_qp(qp, qp_prm_);
 
-    return lin_.u(0) + sol.primal.template head<U::SizeAtCompileTime>();
+    u = lin_.u(0) + sol.primal.template head<nu>();
+
+    if (x_traj.has_value()) {
+      const double dt = ocp_.T / static_cast<double>(K);
+      x_traj.value().get().resize(K + 1);
+      x_traj.value().get()[0] = ocp_.x0;
+      for (auto i = 1; i < K + 1; ++i) {
+        x_traj.value().get()[i] =
+          lin_.g(i * dt) + sol.primal.template segment<nx>(nU + (i - 1) * nx);
+      }
+    }
+    return sol.code;
 
     // TODO: update linearization point here
   }
