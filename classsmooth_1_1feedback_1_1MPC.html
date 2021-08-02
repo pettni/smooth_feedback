@@ -119,9 +119,9 @@ Public Member Functions</h2></td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ab3941316a572edd087eb790bf2330cf5">~MPC</a> ()=default</td></tr>
 <tr class="memdesc:ab3941316a572edd087eb790bf2330cf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor. <br /></td></tr>
 <tr class="separator:ab3941316a572edd087eb790bf2330cf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a63dfc821a0f9ac79540a5689dcb221e2"><td class="memItemLeft" align="right" valign="top">U&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a63dfc821a0f9ac79540a5689dcb221e2">operator()</a> (const T &amp;t, const G &amp;g)</td></tr>
-<tr class="memdesc:a63dfc821a0f9ac79540a5689dcb221e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solve <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem and return input.  <a href="classsmooth_1_1feedback_1_1MPC.html#a63dfc821a0f9ac79540a5689dcb221e2">More...</a><br /></td></tr>
-<tr class="separator:a63dfc821a0f9ac79540a5689dcb221e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae15ea2421a85a57051b23d57b69330ab"><td class="memItemLeft" align="right" valign="top"><a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21">ExitCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ae15ea2421a85a57051b23d57b69330ab">operator()</a> (U &amp;u, const T &amp;t, const G &amp;g, std::optional&lt; std::reference_wrapper&lt; std::vector&lt; G &gt;&gt;&gt; x_traj=std::nullopt)</td></tr>
+<tr class="memdesc:ae15ea2421a85a57051b23d57b69330ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solve <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem and return input.  <a href="classsmooth_1_1feedback_1_1MPC.html#ae15ea2421a85a57051b23d57b69330ab">More...</a><br /></td></tr>
+<tr class="separator:ae15ea2421a85a57051b23d57b69330ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c152da66d4d283a0d4c5a57aec09954"><td class="memItemLeft" align="right" valign="top"><a id="a7c152da66d4d283a0d4c5a57aec09954"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a7c152da66d4d283a0d4c5a57aec09954">set_ulim</a> (const U &amp;umin, const U &amp;umax)</td></tr>
 <tr class="memdesc:a7c152da66d4d283a0d4c5a57aec09954"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set input bounds. <br /></td></tr>
@@ -221,8 +221,8 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a63dfc821a0f9ac79540a5689dcb221e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a63dfc821a0f9ac79540a5689dcb221e2">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="ae15ea2421a85a57051b23d57b69330ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae15ea2421a85a57051b23d57b69330ab">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -233,8 +233,14 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">U <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; K, T, G, U, Dyn &gt;::operator() </td>
+          <td class="memname"><a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21">ExitCode</a> <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; K, T, G, U, Dyn &gt;::operator() </td>
           <td>(</td>
+          <td class="paramtype">U &amp;&#160;</td>
+          <td class="paramname"><em>u</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">const T &amp;&#160;</td>
           <td class="paramname"><em>t</em>, </td>
         </tr>
@@ -242,7 +248,13 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const G &amp;&#160;</td>
-          <td class="paramname"><em>g</em>&#160;</td>
+          <td class="paramname"><em>g</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::optional&lt; std::reference_wrapper&lt; std::vector&lt; G &gt;&gt;&gt;&#160;</td>
+          <td class="paramname"><em>x_traj</em> = <code>std::nullopt</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -307,7 +319,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00493">493</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00511">511</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -347,7 +359,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00504">504</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00522">522</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -387,7 +399,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00482">482</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00500">500</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -436,7 +448,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00458">458</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00476">476</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -485,7 +497,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00470">470</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00488">488</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

@@ -369,100 +369,119 @@ $(function() {
 <div class="line"><a name="l00413"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a74ed78bd8636c862bf7e1004afb9498c">  413</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp; <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a74ed78bd8636c862bf7e1004afb9498c">operator=</a>(<a class="code" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&amp;) = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00415"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#ab3941316a572edd087eb790bf2330cf5">  415</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#ab3941316a572edd087eb790bf2330cf5">~MPC</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160; </div>
-<div class="line"><a name="l00425"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a63dfc821a0f9ac79540a5689dcb221e2">  425</a></span>&#160;  U <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a63dfc821a0f9ac79540a5689dcb221e2">operator()</a>(<span class="keyword">const</span> T &amp; t, <span class="keyword">const</span> G &amp; g)</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;  {</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;    ocp_.x0   = g;</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;    ocp_.gdes = [<span class="keyword">this</span>, &amp;t](<span class="keywordtype">double</span> t_loc) {</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;      <span class="keywordflow">return</span> x_des_(t + duration_cast&lt;T&gt;(std::chrono::duration&lt;double&gt;(t_loc)));</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    };</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    ocp_.udes = [<span class="keyword">this</span>, &amp;t](<span class="keywordtype">double</span> t_loc) {</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;      <span class="keywordflow">return</span> u_des_(t + duration_cast&lt;T&gt;(std::chrono::duration&lt;double&gt;(t_loc)));</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    };</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160; </div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> qp  = smooth::feedback::ocp_to_qp&lt;K&gt;(ocp_, dyn_, lin_);</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> sol = <a class="code" href="qp_8hpp.html#aac3bee1b891cd0ef7fe9916c374423d0">smooth::feedback::solve_qp</a>(qp, qp_prm_);</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160; </div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;    <span class="keywordflow">return</span> lin_.u(0) + sol.primal.template head&lt;U::SizeAtCompileTime&gt;();</div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160; </div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;    <span class="comment">// TODO: update linearization point here</span></div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;  }</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160; </div>
-<div class="line"><a name="l00446"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a7c152da66d4d283a0d4c5a57aec09954">  446</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a7c152da66d4d283a0d4c5a57aec09954">set_ulim</a>(<span class="keyword">const</span> U &amp; umin, <span class="keyword">const</span> U &amp; umax)</div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;  {</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;    ocp_.umin = umin;</div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;    ocp_.umax = umax;</div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;  }</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160; </div>
-<div class="line"><a name="l00458"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a3c41f1625395018d8105d9d7ca18d1c3">  458</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a3c41f1625395018d8105d9d7ca18d1c3">set_xudes</a>(<span class="keyword">const</span> std::function&lt;G(T)&gt; &amp; x_des, <span class="keyword">const</span> std::function&lt;U(T)&gt; &amp; u_des)</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;  {</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;    x_des_ = x_des;</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;    u_des_ = u_des;</div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;  };</div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160; </div>
-<div class="line"><a name="l00470"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">  470</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">set_xudes</a>(std::function&lt;G(T)&gt; &amp;&amp; x_des, std::function&lt;U(T)&gt; &amp;&amp; u_des)</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;  {</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;    x_des_ = std::move(x_des);</div>
-<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;    u_des_ = std::move(u_des);</div>
-<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;  };</div>
-<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160; </div>
-<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> D1&gt;</div>
-<div class="line"><a name="l00482"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">  482</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">set_running_state_cost</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;D1&gt; &amp; Q)</div>
-<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;  {</div>
-<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;    ocp_.Q = Q;</div>
-<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;  }</div>
-<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160; </div>
-<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> D1&gt;</div>
-<div class="line"><a name="l00493"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a0ad1ac9fcae19048328c8d6a893357ca">  493</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a0ad1ac9fcae19048328c8d6a893357ca">set_final_state_cost</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;D1&gt; &amp; QT)</div>
-<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;  {</div>
-<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;    ocp_.QT = QT;</div>
-<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;  }</div>
-<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160; </div>
-<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> D1&gt;</div>
-<div class="line"><a name="l00504"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a96ed34c66f931709a85cf6eaba1c7149">  504</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a96ed34c66f931709a85cf6eaba1c7149">set_input_cost</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;D1&gt; &amp; R)</div>
-<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;  {</div>
-<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;    ocp_.R = R;</div>
-<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;  }</div>
-<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160; </div>
-<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;  Dyn dyn_{};</div>
-<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160; </div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;  SolverParams qp_prm_{};</div>
-<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;  OptimalControlProblem&lt;G, U&gt; ocp_{};</div>
-<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160; </div>
-<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;  LinearizationInfo&lt;G, U&gt; lin_{};</div>
-<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160; </div>
-<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;  std::function&lt;G(T)&gt; x_des_ = [](T) -&gt; G { <span class="keywordflow">return</span> G::Identity(); };</div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;  std::function&lt;U(T)&gt; u_des_ = [](T) -&gt; U {</div>
-<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;    <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;)</div>
-<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;      <span class="keywordflow">return</span> U::Identity();</div>
-<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;      <span class="keywordflow">return</span> U::Zero();</div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;  };</div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;};</div>
-<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160; </div>
-<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160; </div>
-<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__MPC_HPP_</span></div>
+<div class="line"><a name="l00425"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#ae15ea2421a85a57051b23d57b69330ab">  425</a></span>&#160;  <a class="code" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21">ExitCode</a> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#ae15ea2421a85a57051b23d57b69330ab">operator()</a>(U &amp; u,</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;    <span class="keyword">const</span> T &amp; t,</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;    <span class="keyword">const</span> G &amp; g,</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;    std::optional&lt;std::reference_wrapper&lt;std::vector&lt;G&gt;&gt;&gt; x_traj = std::nullopt)</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;  {</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">int</span> nx = G::SizeAtCompileTime;</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">int</span> nu = U::SizeAtCompileTime;</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">int</span> nU = K * nu;</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160; </div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    ocp_.x0   = g;</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    ocp_.gdes = [<span class="keyword">this</span>, &amp;t](<span class="keywordtype">double</span> t_loc) {</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;      <span class="keywordflow">return</span> x_des_(t + duration_cast&lt;T&gt;(std::chrono::duration&lt;double&gt;(t_loc)));</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;    };</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;    ocp_.udes = [<span class="keyword">this</span>, &amp;t](<span class="keywordtype">double</span> t_loc) {</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;      <span class="keywordflow">return</span> u_des_(t + duration_cast&lt;T&gt;(std::chrono::duration&lt;double&gt;(t_loc)));</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;    };</div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160; </div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> qp  = smooth::feedback::ocp_to_qp&lt;K&gt;(ocp_, dyn_, lin_);</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> sol = <a class="code" href="qp_8hpp.html#aac3bee1b891cd0ef7fe9916c374423d0">smooth::feedback::solve_qp</a>(qp, qp_prm_);</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160; </div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    u = lin_.u(0) + sol.primal.template head&lt;nu&gt;();</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160; </div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;    <span class="keywordflow">if</span> (x_traj.has_value()) {</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">double</span> dt = ocp_.T / <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(K);</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;      x_traj.value().get().resize(K + 1);</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;      x_traj.value().get()[0] = ocp_.x0;</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;      <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 1; i &lt; K + 1; ++i) {</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;        x_traj.value().get()[i] =</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;          lin_.g(i * dt) + sol.primal.template segment&lt;nx&gt;(nU + (i - 1) * nx);</div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;      }</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;    }</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;    <span class="keywordflow">return</span> sol.code;</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160; </div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;    <span class="comment">// TODO: update linearization point here</span></div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;  }</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160; </div>
+<div class="line"><a name="l00464"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a7c152da66d4d283a0d4c5a57aec09954">  464</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a7c152da66d4d283a0d4c5a57aec09954">set_ulim</a>(<span class="keyword">const</span> U &amp; umin, <span class="keyword">const</span> U &amp; umax)</div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;  {</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;    ocp_.umin = umin;</div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;    ocp_.umax = umax;</div>
+<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;  }</div>
+<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160; </div>
+<div class="line"><a name="l00476"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a3c41f1625395018d8105d9d7ca18d1c3">  476</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a3c41f1625395018d8105d9d7ca18d1c3">set_xudes</a>(<span class="keyword">const</span> std::function&lt;G(T)&gt; &amp; x_des, <span class="keyword">const</span> std::function&lt;U(T)&gt; &amp; u_des)</div>
+<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;  {</div>
+<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;    x_des_ = x_des;</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;    u_des_ = u_des;</div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;  };</div>
+<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160; </div>
+<div class="line"><a name="l00488"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">  488</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">set_xudes</a>(std::function&lt;G(T)&gt; &amp;&amp; x_des, std::function&lt;U(T)&gt; &amp;&amp; u_des)</div>
+<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;  {</div>
+<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;    x_des_ = std::move(x_des);</div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;    u_des_ = std::move(u_des);</div>
+<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;  };</div>
+<div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160; </div>
+<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> D1&gt;</div>
+<div class="line"><a name="l00500"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">  500</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">set_running_state_cost</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;D1&gt; &amp; Q)</div>
+<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;  {</div>
+<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;    ocp_.Q = Q;</div>
+<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;  }</div>
+<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160; </div>
+<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> D1&gt;</div>
+<div class="line"><a name="l00511"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a0ad1ac9fcae19048328c8d6a893357ca">  511</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a0ad1ac9fcae19048328c8d6a893357ca">set_final_state_cost</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;D1&gt; &amp; QT)</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;  {</div>
+<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;    ocp_.QT = QT;</div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;  }</div>
+<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160; </div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> D1&gt;</div>
+<div class="line"><a name="l00522"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html#a96ed34c66f931709a85cf6eaba1c7149">  522</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#a96ed34c66f931709a85cf6eaba1c7149">set_input_cost</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;D1&gt; &amp; R)</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;  {</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;    ocp_.R = R;</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;  }</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160; </div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;  Dyn dyn_{};</div>
+<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160; </div>
+<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;  SolverParams qp_prm_{};</div>
+<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;  OptimalControlProblem&lt;G, U&gt; ocp_{};</div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160; </div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;  LinearizationInfo&lt;G, U&gt; lin_{};</div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160; </div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;  std::function&lt;G(T)&gt; x_des_ = [](T) -&gt; G { <span class="keywordflow">return</span> G::Identity(); };</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;  std::function&lt;U(T)&gt; u_des_ = [](T) -&gt; U {</div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;    <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;)</div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;      <span class="keywordflow">return</span> U::Identity();</div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;      <span class="keywordflow">return</span> U::Zero();</div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;  };</div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;};</div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160; </div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160; </div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__MPC_HPP_</span></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00387">mpc.hpp:388</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a0ad1ac9fcae19048328c8d6a893357ca"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a0ad1ac9fcae19048328c8d6a893357ca">smooth::feedback::MPC::set_final_state_cost</a></div><div class="ttdeci">void set_final_state_cost(const Eigen::MatrixBase&lt; D1 &gt; &amp;QT)</div><div class="ttdoc">Set the final state cost in the internal OptimalControlProblem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00493">mpc.hpp:493</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a0ad1ac9fcae19048328c8d6a893357ca"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a0ad1ac9fcae19048328c8d6a893357ca">smooth::feedback::MPC::set_final_state_cost</a></div><div class="ttdeci">void set_final_state_cost(const Eigen::MatrixBase&lt; D1 &gt; &amp;QT)</div><div class="ttdoc">Set the final state cost in the internal OptimalControlProblem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00511">mpc.hpp:511</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a1f7ff8a8cb88a9f294b21d1ba7ddfed5"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a1f7ff8a8cb88a9f294b21d1ba7ddfed5">smooth::feedback::MPC::MPC</a></div><div class="ttdeci">MPC(const MPC &amp;)=default</div><div class="ttdoc">Default copy constructor.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a3c41f1625395018d8105d9d7ca18d1c3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a3c41f1625395018d8105d9d7ca18d1c3">smooth::feedback::MPC::set_xudes</a></div><div class="ttdeci">void set_xudes(const std::function&lt; G(T)&gt; &amp;x_des, const std::function&lt; U(T)&gt; &amp;u_des)</div><div class="ttdoc">Set the desired state and input trajectories (lvalue version).</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00458">mpc.hpp:458</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a3c41f1625395018d8105d9d7ca18d1c3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a3c41f1625395018d8105d9d7ca18d1c3">smooth::feedback::MPC::set_xudes</a></div><div class="ttdeci">void set_xudes(const std::function&lt; G(T)&gt; &amp;x_des, const std::function&lt; U(T)&gt; &amp;u_des)</div><div class="ttdoc">Set the desired state and input trajectories (lvalue version).</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00476">mpc.hpp:476</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a4e20b65598f7099f7c5628ec9dc10fe4"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a4e20b65598f7099f7c5628ec9dc10fe4">smooth::feedback::MPC::MPC</a></div><div class="ttdeci">MPC()=default</div><div class="ttdoc">Default constructor.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a63dfc821a0f9ac79540a5689dcb221e2"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a63dfc821a0f9ac79540a5689dcb221e2">smooth::feedback::MPC::operator()</a></div><div class="ttdeci">U operator()(const T &amp;t, const G &amp;g)</div><div class="ttdoc">Solve MPC problem and return input.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00425">mpc.hpp:425</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a74ed78bd8636c862bf7e1004afb9498c"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a74ed78bd8636c862bf7e1004afb9498c">smooth::feedback::MPC::operator=</a></div><div class="ttdeci">MPC &amp; operator=(MPC &amp;&amp;)=default</div><div class="ttdoc">Default move assignment.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a7c152da66d4d283a0d4c5a57aec09954"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a7c152da66d4d283a0d4c5a57aec09954">smooth::feedback::MPC::set_ulim</a></div><div class="ttdeci">void set_ulim(const U &amp;umin, const U &amp;umax)</div><div class="ttdoc">Set input bounds.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00446">mpc.hpp:446</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a8e251f25a70cc76d93b5e8cd87605c9e"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">smooth::feedback::MPC::set_running_state_cost</a></div><div class="ttdeci">void set_running_state_cost(const Eigen::MatrixBase&lt; D1 &gt; &amp;Q)</div><div class="ttdoc">Set the running state cost in the internal OptimalControlProblem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00482">mpc.hpp:482</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a96ed34c66f931709a85cf6eaba1c7149"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a96ed34c66f931709a85cf6eaba1c7149">smooth::feedback::MPC::set_input_cost</a></div><div class="ttdeci">void set_input_cost(const Eigen::MatrixBase&lt; D1 &gt; &amp;R)</div><div class="ttdoc">Set the running input cost in the internal OptimalControlProblem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00504">mpc.hpp:504</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a7c152da66d4d283a0d4c5a57aec09954"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a7c152da66d4d283a0d4c5a57aec09954">smooth::feedback::MPC::set_ulim</a></div><div class="ttdeci">void set_ulim(const U &amp;umin, const U &amp;umax)</div><div class="ttdoc">Set input bounds.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00464">mpc.hpp:464</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a8e251f25a70cc76d93b5e8cd87605c9e"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">smooth::feedback::MPC::set_running_state_cost</a></div><div class="ttdeci">void set_running_state_cost(const Eigen::MatrixBase&lt; D1 &gt; &amp;Q)</div><div class="ttdoc">Set the running state cost in the internal OptimalControlProblem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00500">mpc.hpp:500</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a96ed34c66f931709a85cf6eaba1c7149"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a96ed34c66f931709a85cf6eaba1c7149">smooth::feedback::MPC::set_input_cost</a></div><div class="ttdeci">void set_input_cost(const Eigen::MatrixBase&lt; D1 &gt; &amp;R)</div><div class="ttdoc">Set the running input cost in the internal OptimalControlProblem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00522">mpc.hpp:522</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a978e82e8fc7bbf4f6bb97d0e1a69a4f7"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a978e82e8fc7bbf4f6bb97d0e1a69a4f7">smooth::feedback::MPC::MPC</a></div><div class="ttdeci">MPC(const Dyn &amp;f, T t, const SolverParams &amp;qp_prm=SolverParams{})</div><div class="ttdoc">See constructor above.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00403">mpc.hpp:403</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ab2fae45d3f699f6c633bffc5ea153d2e"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ab2fae45d3f699f6c633bffc5ea153d2e">smooth::feedback::MPC::MPC</a></div><div class="ttdeci">MPC(Dyn &amp;&amp;f, T t, const SolverParams &amp;qp_prm=SolverParams{})</div><div class="ttdoc">Create an MPC instance.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00397">mpc.hpp:397</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ab3941316a572edd087eb790bf2330cf5"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ab3941316a572edd087eb790bf2330cf5">smooth::feedback::MPC::~MPC</a></div><div class="ttdeci">~MPC()=default</div><div class="ttdoc">Default destructor.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ae0a8ac426fbc8366617efeef692ec55d"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">smooth::feedback::MPC::set_xudes</a></div><div class="ttdeci">void set_xudes(std::function&lt; G(T)&gt; &amp;&amp;x_des, std::function&lt; U(T)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired state and input trajectories (rvalue version).</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00470">mpc.hpp:470</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ae0a8ac426fbc8366617efeef692ec55d"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">smooth::feedback::MPC::set_xudes</a></div><div class="ttdeci">void set_xudes(std::function&lt; G(T)&gt; &amp;&amp;x_des, std::function&lt; U(T)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired state and input trajectories (rvalue version).</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00488">mpc.hpp:488</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ae15ea2421a85a57051b23d57b69330ab"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ae15ea2421a85a57051b23d57b69330ab">smooth::feedback::MPC::operator()</a></div><div class="ttdeci">ExitCode operator()(U &amp;u, const T &amp;t, const G &amp;g, std::optional&lt; std::reference_wrapper&lt; std::vector&lt; G &gt;&gt;&gt; x_traj=std::nullopt)</div><div class="ttdoc">Solve MPC problem and return input.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00425">mpc.hpp:425</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ae6a0af6d1dc17b53da36f58f93bb2b62"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ae6a0af6d1dc17b53da36f58f93bb2b62">smooth::feedback::MPC::operator=</a></div><div class="ttdeci">MPC &amp; operator=(const MPC &amp;)=default</div><div class="ttdoc">Default copy assignment.</div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_af6119acde22cc871fdedb7fbdaaff319"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#af6119acde22cc871fdedb7fbdaaff319">smooth::feedback::MPC::MPC</a></div><div class="ttdeci">MPC(MPC &amp;&amp;)=default</div><div class="ttdoc">Default move constructor.</div></div>
 <div class="ttc" id="ampc_8hpp_html_ab4b66e25020fd030a90ae6b63514095d"><div class="ttname"><a href="mpc_8hpp.html#ab4b66e25020fd030a90ae6b63514095d">smooth::feedback::mpc_nnz_pattern_P</a></div><div class="ttdeci">constexpr std::array&lt; int, K *(nu+nx)&gt; mpc_nnz_pattern_P()</div><div class="ttdoc">Calculate column-wise sparsity pattern of QP matrix P in MPC problem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00148">mpc.hpp:148</a></div></div>
 <div class="ttc" id="ampc_8hpp_html_ac712796a298cecdab047ddc4b06715b6"><div class="ttname"><a href="mpc_8hpp.html#ac712796a298cecdab047ddc4b06715b6">smooth::feedback::mpc_nnz_pattern_A</a></div><div class="ttdeci">constexpr std::array&lt; int, K *(2 *nx+nu)&gt; mpc_nnz_pattern_A()</div><div class="ttdoc">Calculate row-wise sparsity pattern of QP matrix A in MPC problem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00135">mpc.hpp:135</a></div></div>
 <div class="ttc" id="ampc_8hpp_html_ae4123d2f9a95cab0f545889a9f9d55f7"><div class="ttname"><a href="mpc_8hpp.html#ae4123d2f9a95cab0f545889a9f9d55f7">smooth::feedback::ocp_to_qp</a></div><div class="ttdeci">QuadraticProgramSparse&lt; double &gt; ocp_to_qp(const OptimalControlProblem&lt; G, U &gt; &amp;pbm, Dyn &amp;&amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin=LinearizationInfo&lt; G, U &gt;{})</div><div class="ttdoc">Convert OptimalControlProblem on  into a tangent space QuadraticProgram on .</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00194">mpc.hpp:194</a></div></div>
 <div class="ttc" id="aqp_8hpp_html"><div class="ttname"><a href="qp_8hpp.html">qp.hpp</a></div><div class="ttdoc">Quadratic Programming.</div></div>
+<div class="ttc" id="aqp_8hpp_html_a954b9ecf10d53d85469fd077c33cda21"><div class="ttname"><a href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21">smooth::feedback::ExitCode</a></div><div class="ttdeci">ExitCode</div><div class="ttdoc">Solver exit codes.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00111">qp.hpp:111</a></div></div>
 <div class="ttc" id="aqp_8hpp_html_aac3bee1b891cd0ef7fe9916c374423d0"><div class="ttname"><a href="qp_8hpp.html#aac3bee1b891cd0ef7fe9916c374423d0">smooth::feedback::solve_qp</a></div><div class="ttdeci">detail::QpSol_t&lt; Pbm &gt; solve_qp(const Pbm &amp;pbm, const SolverParams &amp;prm, std::optional&lt; std::reference_wrapper&lt; const detail::QpSol_t&lt; Pbm &gt;&gt;&gt; warmstart={})</div><div class="ttdoc">Solve a quadratic program using the operator splitting approach.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00555">qp.hpp:555</a></div></div>
 <div class="ttc" id="astructsmooth_1_1feedback_1_1LinearizationInfo_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1LinearizationInfo.html">smooth::feedback::LinearizationInfo</a></div><div class="ttdoc">Struct to define a linearization point.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00111">mpc.hpp:112</a></div></div>
 <div class="ttc" id="astructsmooth_1_1feedback_1_1LinearizationInfo_html_a0b0f9b13db3a24f43a67b61b8fdc650d"><div class="ttname"><a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#a0b0f9b13db3a24f43a67b61b8fdc650d">smooth::feedback::LinearizationInfo::dg</a></div><div class="ttdeci">std::function&lt; typename G::Tangent(double)&gt; dg</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00118">mpc.hpp:118</a></div></div>
