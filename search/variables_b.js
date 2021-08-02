@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['sigma_161',['sigma',['../structsmooth_1_1feedback_1_1SolverParams.html#a2da35f09aa6317d61ea6d7a145f88999',1,'smooth::feedback::SolverParams']]],
-  ['stop_5fcheck_5fiter_162',['stop_check_iter',['../structsmooth_1_1feedback_1_1SolverParams.html#aea5a9d9642b0aa147a1cc744c0d205a5',1,'smooth::feedback::SolverParams']]]
+  ['r_160',['R',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#aa68e642bf9b7479ae6f7a29075d7af59',1,'smooth::feedback::OptimalControlProblem']]],
+  ['relax_5fcost_161',['relax_cost',['../structsmooth_1_1feedback_1_1AsifParams.html#a26ef2ec3f08274f5d1fc1de6e1cb37ad',1,'smooth::feedback::AsifParams']]],
+  ['rho_162',['rho',['../structsmooth_1_1feedback_1_1SolverParams.html#a6967237df310fabe3a8c1b1bc97a5a63',1,'smooth::feedback::SolverParams']]]
 ];

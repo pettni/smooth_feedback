@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['q_155',['Q',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a18104640f745da44e2e3f932aa4979dd',1,'smooth::feedback::OptimalControlProblem']]],
-  ['q_156',['q',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#af9cfac2013f678eb683f2bf5fa8e5aee',1,'smooth::feedback::QuadraticProgram::q()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a7cff5c59c37d778e10785d29e7715989',1,'smooth::feedback::QuadraticProgramSparse::q()']]],
-  ['qt_157',['QT',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#af638e433f7ac2f2cbe611c21569bc889',1,'smooth::feedback::OptimalControlProblem']]]
+  ['p_153',['P',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#a0f23929c20ff8fd2c8ee6ca09b057e13',1,'smooth::feedback::QuadraticProgram::P()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a8da2f569b867c08ee44ef5220e22b248',1,'smooth::feedback::QuadraticProgramSparse::P()']]],
+  ['polish_154',['polish',['../structsmooth_1_1feedback_1_1SolverParams.html#a254c7e79867feb74a80085ac21e17e79',1,'smooth::feedback::SolverParams']]],
+  ['polish_5fiter_155',['polish_iter',['../structsmooth_1_1feedback_1_1SolverParams.html#ac89b0980c35b5638b2919b2a2655406f',1,'smooth::feedback::SolverParams']]],
+  ['primal_156',['primal',['../structsmooth_1_1feedback_1_1Solution.html#a1982dc0ccccafd31382549578b9d5aa1',1,'smooth::feedback::Solution']]]
 ];

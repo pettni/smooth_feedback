@@ -1,6 +1,7 @@
 <map id="include/smooth/feedback/internal/ldlt_lapack.hpp" name="include/smooth/feedback/internal/ldlt_lapack.hpp">
-<area shape="rect" id="node1" title="Wrapper for lapack ldlt routines." alt="" coords="100,5,267,47"/>
-<area shape="rect" id="node2" href="$qp_8hpp.html" title="Quadratic Programming." alt="" coords="100,95,267,136"/>
+<area shape="rect" id="node1" title="Wrapper for lapack ldlt routines." alt="" coords="196,5,363,47"/>
+<area shape="rect" id="node2" href="$qp_8hpp.html" title="Quadratic Programming." alt="" coords="196,95,363,136"/>
 <area shape="rect" id="node3" href="$asif_8hpp.html" title="Active Set Invariance Filtering (ASIF) on Lie groups." alt="" coords="5,184,172,225"/>
-<area shape="rect" id="node4" href="$mpc_8hpp.html" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="196,184,363,225"/>
+<area shape="rect" id="node4" href="$osqp_8hpp_source.html" title=" " alt="" coords="196,184,363,225"/>
+<area shape="rect" id="node5" href="$mpc_8hpp.html" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="387,184,553,225"/>
 </map>

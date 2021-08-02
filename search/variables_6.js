@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['max_5fiter_148',['max_iter',['../structsmooth_1_1feedback_1_1SolverParams.html#a1bc8213d9cc2ab3a98ea302a4f4df992',1,'smooth::feedback::SolverParams']]]
+  ['l_149',['l',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#abb1555f458de94ff6c13ff522fa1ad58',1,'smooth::feedback::QuadraticProgram::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a59fa967c2807534e8f749993b4c82d9d',1,'smooth::feedback::QuadraticProgramSparse::l()']]]
 ];
