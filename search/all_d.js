@@ -14,5 +14,5 @@ var searchData=
   ['solve_5finplace_75',['solve_inplace',['../classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31',1,'smooth::feedback::detail::LDLTLapack::solve_inplace()'],['../classsmooth_1_1feedback_1_1detail_1_1LDLTSparse.html#ac62e74394dcdcdcf12b6e232bfce746d',1,'smooth::feedback::detail::LDLTSparse::solve_inplace()']]],
   ['solve_5fqp_76',['solve_qp',['../qp_8hpp.html#aac3bee1b891cd0ef7fe9916c374423d0',1,'smooth::feedback']]],
   ['solverparams_77',['SolverParams',['../structsmooth_1_1feedback_1_1SolverParams.html',1,'smooth::feedback']]],
-  ['stop_5fcheck_5fiter_78',['stop_check_iter',['../structsmooth_1_1feedback_1_1SolverParams.html#aea5a9d9642b0aa147a1cc744c0d205a5',1,'smooth::feedback::SolverParams']]]
+  ['stop_5fcheck_5fiter_78',['stop_check_iter',['../structsmooth_1_1feedback_1_1SolverParams.html#a58508200877b66d1d3400e62d1b41bac',1,'smooth::feedback::SolverParams']]]
 ];
