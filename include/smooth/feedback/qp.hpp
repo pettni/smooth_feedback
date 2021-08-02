@@ -154,15 +154,15 @@ struct SolverParams
   float eps_dual_inf = 1e-4;
 
   /// max number of iterations
-  uint64_t max_iter = std::numeric_limits<uint64_t>::max();
+  uint32_t max_iter = std::numeric_limits<uint32_t>::max();
 
   /// iterations between checking stopping criterion
-  uint64_t stop_check_iter = 10;
+  uint32_t stop_check_iter = 10;
 
   /// run solution polishing (uses dynamic memory)
   bool polish = true;
   /// number of iterations to refine polish
-  uint64_t polish_iter = 5;
+  uint32_t polish_iter = 5;
   /// regularization parameter for polishing
   float delta = 1e-6;
 };
