@@ -56,7 +56,7 @@ int main()
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
-    u = mpc(t, g);
+    mpc(u, t, g);
 
     // store data
     tvec.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t).count());

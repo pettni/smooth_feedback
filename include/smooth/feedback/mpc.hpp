@@ -448,14 +448,15 @@ public:
       const double dt = ocp_.T / static_cast<double>(K);
       x_traj.value().get().resize(K + 1);
       x_traj.value().get()[0] = ocp_.x0;
-      for (auto i = 1; i < K + 1; ++i) {
+      for (auto i = 1u; i < K + 1; ++i) {
         x_traj.value().get()[i] =
           lin_.g(i * dt) + sol.primal.template segment<nx>(nU + (i - 1) * nx);
       }
     }
-    return sol.code;
 
     // TODO: update linearization point here
+
+    return sol.code;
   }
 
   /**

@@ -152,7 +152,8 @@ TEST(Mpc, BasicLieInput)
     },
     [](nanoseconds) -> smooth::T2d { return smooth::T2d::Identity(); });
 
-  ASSERT_NO_THROW(mpc(std::chrono::milliseconds(100), smooth::SE2d::Random()));
+  smooth::T2d u;
+  ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random()));
 }
 
 TEST(Mpc, BasicEigenInput)
@@ -170,5 +171,6 @@ TEST(Mpc, BasicEigenInput)
     },
     [](nanoseconds) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
 
-  ASSERT_NO_THROW(mpc(std::chrono::milliseconds(100), smooth::SE2d::Random()));
+  Eigen::Vector2d u;
+  ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random()));
 }
