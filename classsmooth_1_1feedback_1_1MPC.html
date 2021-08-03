@@ -132,6 +132,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:ae0a8ac426fbc8366617efeef692ec55d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">set_xudes</a> (std::function&lt; G(T)&gt; &amp;&amp;x_des, std::function&lt; U(T)&gt; &amp;&amp;u_des)</td></tr>
 <tr class="memdesc:ae0a8ac426fbc8366617efeef692ec55d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired state and input trajectories (rvalue version).  <a href="classsmooth_1_1feedback_1_1MPC.html#ae0a8ac426fbc8366617efeef692ec55d">More...</a><br /></td></tr>
 <tr class="separator:ae0a8ac426fbc8366617efeef692ec55d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97c806a8a82cdf1597943d74384c8ba1"><td class="memItemLeft" align="right" valign="top"><a id="a97c806a8a82cdf1597943d74384c8ba1"></a>
+<a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">LinearizationInfo</a>&lt; G, U &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a97c806a8a82cdf1597943d74384c8ba1">linearization</a> ()</td></tr>
+<tr class="memdesc:a97c806a8a82cdf1597943d74384c8ba1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the linearization. <br /></td></tr>
+<tr class="separator:a97c806a8a82cdf1597943d74384c8ba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed2438676414c7321f16dbbc757d0a6e"><td class="memItemLeft" align="right" valign="top"><a id="aed2438676414c7321f16dbbc757d0a6e"></a>
+const <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">LinearizationInfo</a>&lt; G, U &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aed2438676414c7321f16dbbc757d0a6e">linearization</a> () const</td></tr>
+<tr class="memdesc:aed2438676414c7321f16dbbc757d0a6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Const access the linearization. <br /></td></tr>
+<tr class="separator:aed2438676414c7321f16dbbc757d0a6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e251f25a70cc76d93b5e8cd87605c9e"><td class="memTemplParams" colspan="2">template&lt;typename D1 &gt; </td></tr>
 <tr class="memitem:a8e251f25a70cc76d93b5e8cd87605c9e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">set_running_state_cost</a> (const Eigen::MatrixBase&lt; D1 &gt; &amp;Q)</td></tr>
 <tr class="memdesc:a8e251f25a70cc76d93b5e8cd87605c9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the running state cost in the internal <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a>.  <a href="classsmooth_1_1feedback_1_1MPC.html#a8e251f25a70cc76d93b5e8cd87605c9e">More...</a><br /></td></tr>
@@ -279,7 +287,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>input calculated by <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00425">425</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00426">426</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -319,7 +327,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00512">512</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00529">529</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -359,7 +367,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00523">523</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00540">540</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -399,7 +407,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00501">501</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00518">518</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -448,7 +456,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00477">477</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00478">478</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -497,7 +505,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn &gt
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00489">489</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00490">490</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

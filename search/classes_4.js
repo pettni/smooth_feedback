@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['optimalcontrolproblem_95',['OptimalControlProblem',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html',1,'smooth::feedback']]]
+  ['optimalcontrolproblem_96',['OptimalControlProblem',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html',1,'smooth::feedback']]]
 ];
