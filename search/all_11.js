@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['_7empc_92',['~MPC',['../classsmooth_1_1feedback_1_1MPC.html#ab3941316a572edd087eb790bf2330cf5',1,'smooth::feedback::MPC']]]
+  ['x0_97',['x0',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac4af927a70f4a218546ce290c5093e8d',1,'smooth::feedback::OptimalControlProblem']]]
 ];

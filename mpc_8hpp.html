@@ -87,18 +87,22 @@ $(function() {
 <code>#include &lt;chrono&gt;</code><br />
 <code>#include &lt;smooth/concepts.hpp&gt;</code><br />
 <code>#include &lt;smooth/diff.hpp&gt;</code><br />
+<code>#include &lt;smooth/spline/bezier.hpp&gt;</code><br />
+<code>#include &lt;smooth/tn.hpp&gt;</code><br />
 <code>#include &quot;<a class="el" href="qp_8hpp_source.html">qp.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for mpc.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="mpc_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2mpc_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2mpc_8hpp" id="ainclude_2smooth_2feedback_2mpc_8hpp">
-<area shape="rect" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="321,5,487,47"/>
-<area shape="rect" title=" " alt="" coords="519,244,604,271"/>
-<area shape="rect" title=" " alt="" coords="245,95,307,121"/>
-<area shape="rect" title=" " alt="" coords="331,95,477,121"/>
-<area shape="rect" title=" " alt="" coords="502,95,613,121"/>
-<area shape="rect" href="qp_8hpp.html" title="Quadratic Programming." alt="" coords="161,95,221,121"/>
+<area shape="rect" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="459,5,626,47"/>
+<area shape="rect" title=" " alt="" coords="671,244,756,271"/>
+<area shape="rect" title=" " alt="" coords="231,95,292,121"/>
+<area shape="rect" title=" " alt="" coords="316,95,463,121"/>
+<area shape="rect" title=" " alt="" coords="487,95,598,121"/>
+<area shape="rect" title=" " alt="" coords="623,95,788,121"/>
+<area shape="rect" title=" " alt="" coords="812,95,916,121"/>
+<area shape="rect" href="qp_8hpp.html" title="Quadratic Programming." alt="" coords="146,95,206,121"/>
 <area shape="rect" title=" " alt="" coords="470,169,565,196"/>
 <area shape="rect" title=" " alt="" coords="5,244,104,271"/>
 <area shape="rect" title=" " alt="" coords="213,169,267,196"/>
@@ -117,6 +121,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Struct to define a linearization point.  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">smooth::feedback::MPCParams</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC&lt; K, T, G, U, Dyn &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Model-Predictive Control (<a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a>) on Lie groups.  <a href="classsmooth_1_1feedback_1_1MPC.html#details">More...</a><br /></td></tr>
@@ -184,6 +190,7 @@ template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn &gt; </div>
 </p>
 <p> where the discrete time index \(k\) corresponds to time \(t_k = k \frac{T}{K} \) for \( k = 0, 1, \ldots, K \).</p>
 <p>The resulting QP has \( K \dim \mathfrak{g} + K \dim \mathfrak{u} \) variables and \( 2 K \dim \mathfrak{g} + K \dim \mathfrak{u} \) constraints.</p>
+<p>The QP inequalities constrain the variables so that the QP solution stays within the domain of validity of the linearization.</p>
 <dl class="section note"><dt>Note</dt><dd>Given a solution \((x^*, \mu^*)\) to the QuadraticProgram, the corresponding solution to the OptimalControlProblem is \( u^*(t) = u_{lin}(t) \oplus \mu^*(t) \) and the optimal trajectory is \( g^*(t) = g_{lin}(t) \oplus x^*(t) \).</dd>
 <dd>
 Constraints are added as \( g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus g_{lin} \) and similarly for the input. Beware of using constraints on non-Euclidean spaces.</dd>
@@ -207,7 +214,7 @@ Constraints are added as \( g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>QuadraticProgramSparse modeling the input optimal control problem. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00218">218</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00223">223</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
