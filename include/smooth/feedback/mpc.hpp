@@ -126,6 +126,30 @@ struct LinearizationInfo
       return U::Zero();
     }
   };
+
+  /**
+   * @brief Domain of validity of state linearization
+   *
+   *  Defines an upper bound \f$ \bar a \f$ s.t. the linearization is valid for \f$ g \f$ s.t.
+   * \f[
+   *   \left\| g \ominus_r g_{lin} \right \| \leq \bar a.
+   * \f]
+   */
+  Eigen::Matrix<double, G::SizeAtCompileTime, 1> g_domain =
+    Eigen::Matrix<double, G::SizeAtCompileTime, 1>::Constant(
+      std::numeric_limits<double>::infinity());
+
+  /**
+   * @brief Domain of validity of input linearization
+   *
+   *  Defines an upper bound \f$ \bar b \f$ s.t. the linearization is valid for \f$ u \f$ s.t.
+   * \f[
+   *   \left\| u \ominus_r u_{lin} \right \| \leq \bar b.
+   * \f]
+   */
+  Eigen::Matrix<double, U::SizeAtCompileTime, 1> u_domain =
+    Eigen::Matrix<double, U::SizeAtCompileTime, 1>::Constant(
+      std::numeric_limits<double>::infinity());
 };
 
 /**
@@ -317,6 +341,14 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
     ret.u.template segment<nU>(n_eq).setConstant(std::numeric_limits<double>::infinity());
   }
 
+  // linearization bounds
+  for (auto k = 1u; k < K + 1; ++k) {
+    ret.l.template segment<nu>(n_eq + k * nu) =
+      ret.l.template segment<nu>(n_eq + k * nu).cwiseMax(-lin.u_domain);
+    ret.u.template segment<nu>(n_eq + k * nu) =
+      ret.u.template segment<nu>(n_eq + k * nu).cwiseMin(lin.u_domain);
+  }
+
   // STATE CONSTRAINTS
 
   for (auto i = 0u; i != n_x_iq; ++i) { ret.A.insert(n_eq + n_u_iq + i, nU + i) = 1; }
@@ -334,6 +366,14 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
     }
   } else {
     ret.u.template segment<nX>(n_eq + n_u_iq).setConstant(std::numeric_limits<double>::infinity());
+  }
+
+  // linearization bounds
+  for (auto k = 1u; k < K + 1; ++k) {
+    ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) =
+      ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx).cwiseMax(-lin.g_domain);
+    ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) =
+      ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx).cwiseMin(lin.g_domain);
   }
 
   // INPUT COSTS
@@ -393,6 +433,10 @@ public:
    * @param f callable object that represents dynamics \f$ \mathrm{d}^r f_t = f(x, u) \f$.
    * @param t time horizon
    * @param qp_prm optional parameters for the QP solver (see \p solve_qp)
+   *
+   * @note For nonlinear problems it is up to the user to update the linearization point
+   * in an appropriate way. Common
+   *
    */
   MPC(Dyn && f, T t, const SolverParams & qp_prm = SolverParams{})
       : dyn_(std::forward<Dyn>(f)), qp_prm_(qp_prm)
@@ -418,10 +462,12 @@ public:
   /**
    * @brief Solve MPC problem and return input.
    *
-   * @param t current time
-   * @param g current state
+   * @param[out] u resulting input
+   * @param[in] t current time
+   * @param[in] g current state
+   * @param[out] x_traj optionally return MPC trajectory
    *
-   * @return input calculated by MPC
+   * @return solver exit code
    */
   ExitCode operator()(U & u,
     const T & t,
@@ -440,8 +486,8 @@ public:
       return u_des_(t + duration_cast<T>(std::chrono::duration<double>(t_loc)));
     };
 
-    const auto qp  = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, lin_);
-    const auto sol = smooth::feedback::solve_qp(qp, qp_prm_);
+    const auto qp = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, lin_);
+    Solution<-1, -1, double> sol = smooth::feedback::solve_qp(qp, qp_prm_, warmstart_);
 
     u = lin_.u(0) + sol.primal.template head<nu>();
 
@@ -455,7 +501,9 @@ public:
       }
     }
 
-    // TODO: update linearization point here
+    if (sol.code == ExitCode::Optimal) {
+      warmstart_ = sol;  // store successful solution for later warmstart
+    }
 
     return sol.code;
   }
@@ -496,18 +544,17 @@ public:
   /**
    * @brief Access the linearization.
    */
-  LinearizationInfo<G, U> & linearization()
-  {
-    return lin_;
-  }
+  LinearizationInfo<G, U> & linearization() { return lin_; }
 
   /**
    * @brief Const access the linearization.
    */
-  const LinearizationInfo<G, U> & linearization() const
-  {
-    return lin_;
-  }
+  const LinearizationInfo<G, U> & linearization() const { return lin_; }
+
+  /**
+   * @brief Reset initial guess for next iteration to zero.
+   */
+  void reset_warmstart() { warmstart_ = {}; }
 
   /**
    * @brief Set the running state cost in the internal OptimalControlProblem.
@@ -547,6 +594,7 @@ private:
 
   SolverParams qp_prm_{};
   OptimalControlProblem<G, U> ocp_{};
+  std::optional<Solution<-1, -1, double>> warmstart_{};
 
   LinearizationInfo<G, U> lin_{};
 
