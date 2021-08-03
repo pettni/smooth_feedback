@@ -94,6 +94,12 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a0b0f9b13db3a24f43a67b61b8fdc650d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad084e1f47c64feee186769e3bd834dcc"><td class="memItemLeft" align="right" valign="top">std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">u</a></td></tr>
 <tr class="separator:ad084e1f47c64feee186769e3bd834dcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc0a39718ddcafe8b0b3395eb64691a9"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; double, G::SizeAtCompileTime, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#acc0a39718ddcafe8b0b3395eb64691a9">g_domain</a></td></tr>
+<tr class="memdesc:acc0a39718ddcafe8b0b3395eb64691a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Domain of validity of state linearization.  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#acc0a39718ddcafe8b0b3395eb64691a9">More...</a><br /></td></tr>
+<tr class="separator:acc0a39718ddcafe8b0b3395eb64691a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac86f0494b7ba041dd45d82971ce411a0"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; double, U::SizeAtCompileTime, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac86f0494b7ba041dd45d82971ce411a0">u_domain</a></td></tr>
+<tr class="memdesc:ac86f0494b7ba041dd45d82971ce411a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Domain of validity of input linearization.  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac86f0494b7ba041dd45d82971ce411a0">More...</a><br /></td></tr>
+<tr class="separator:ac86f0494b7ba041dd45d82971ce411a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;LieGroup G, Manifold U&gt;<br />
@@ -144,6 +150,32 @@ template&lt;LieGroup G, Manifold U&gt; </div>
 
 </div>
 </div>
+<a id="acc0a39718ddcafe8b0b3395eb64691a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc0a39718ddcafe8b0b3395eb64691a9">&#9670;&nbsp;</a></span>g_domain</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, Manifold U&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Eigen::Matrix&lt;double, G::SizeAtCompileTime, 1&gt; <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">smooth::feedback::LinearizationInfo</a>&lt; G, U &gt;::g_domain</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    Eigen::Matrix&lt;double, G::SizeAtCompileTime, 1&gt;::Constant(</div>
+<div class="line">      std::numeric_limits&lt;double&gt;::infinity())</div>
+</div><!-- fragment -->
+<p>Domain of validity of state linearization. </p>
+<p>Defines an upper bound \( \bar a \) s.t. the linearization is valid for \( g \) s.t. </p><p class="formulaDsp">
+\[ \left\| g \ominus_r g_{lin} \right \| \leq \bar a. \]
+</p>
+ 
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00138">138</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+
+</div>
+</div>
 <a id="ad084e1f47c64feee186769e3bd834dcc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad084e1f47c64feee186769e3bd834dcc">&#9670;&nbsp;</a></span>u</h2>
 
@@ -167,6 +199,32 @@ template&lt;LieGroup G, Manifold U&gt; </div>
 </div><!-- fragment --><p>input trajectory \(u_{lin}(t)\) to linearize around as a function \( \mathbb{R} \rightarrow G \) </p>
 
 <p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00122">122</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ac86f0494b7ba041dd45d82971ce411a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac86f0494b7ba041dd45d82971ce411a0">&#9670;&nbsp;</a></span>u_domain</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, Manifold U&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Eigen::Matrix&lt;double, U::SizeAtCompileTime, 1&gt; <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">smooth::feedback::LinearizationInfo</a>&lt; G, U &gt;::u_domain</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    Eigen::Matrix&lt;double, U::SizeAtCompileTime, 1&gt;::Constant(</div>
+<div class="line">      std::numeric_limits&lt;double&gt;::infinity())</div>
+</div><!-- fragment -->
+<p>Domain of validity of input linearization. </p>
+<p>Defines an upper bound \( \bar b \) s.t. the linearization is valid for \( u \) s.t. </p><p class="formulaDsp">
+\[ \left\| u \ominus_r u_{lin} \right \| \leq \bar b. \]
+</p>
+ 
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00150">150</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
