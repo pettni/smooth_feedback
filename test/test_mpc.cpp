@@ -144,7 +144,7 @@ TEST(Mpc, BasicLieInput)
   };
 
   smooth::feedback::MPC<3, nanoseconds, smooth::SE2d, smooth::T2d, decltype(f)> mpc(
-    std::move(f), nanoseconds(100));
+    std::move(f), smooth::feedback::MPCParams{});
   mpc.set_xudes(
     [](nanoseconds t) -> smooth::SE2d {
       double t_dbl = std::chrono::duration_cast<std::chrono::duration<double>>(t).count();
@@ -162,15 +162,35 @@ TEST(Mpc, BasicEigenInput)
     return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
   };
 
-  smooth::feedback::MPC<3, nanoseconds, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(
-    std::move(f), nanoseconds(100));
+  smooth::feedback::MPC<3, std::chrono::duration<double>, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(
+    std::move(f), smooth::feedback::MPCParams{});
   mpc.set_xudes(
-    [](nanoseconds t) -> smooth::SE2d {
+    [](std::chrono::duration<double> t) -> smooth::SE2d {
       double t_dbl = std::chrono::duration_cast<std::chrono::duration<double>>(t).count();
       return smooth::SE2<double>::exp(t_dbl * Eigen::Vector3d(0.2, 0.1, -0.1));
     },
-    [](nanoseconds) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
+    [](std::chrono::duration<double>) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
 
   Eigen::Vector2d u;
   ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random()));
+}
+
+TEST(Mpc, BasicEigenInputClock)
+{
+  auto f = []<typename T>(const smooth::SE2<T> &, const Eigen::Matrix<T, 2, 1> & u) {
+    return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
+  };
+
+  smooth::feedback::MPC<3, std::chrono::steady_clock::time_point, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(
+    std::move(f), smooth::feedback::MPCParams{});
+  mpc.set_xudes(
+    [](std::chrono::steady_clock::time_point) -> smooth::SE2d {
+      return smooth::SE2<double>::exp(Eigen::Vector3d(0.2, 0.1, -0.1));
+    },
+    [](std::chrono::steady_clock::time_point) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
+
+  std::chrono::steady_clock clock;
+
+  Eigen::Vector2d u;
+  ASSERT_NO_THROW(mpc(u, clock.now(), smooth::SE2d::Random()));
 }

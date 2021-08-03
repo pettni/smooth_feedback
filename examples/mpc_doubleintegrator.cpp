@@ -39,8 +39,15 @@ int main()
   auto f = []<typename T>(const G<T> & x, const U<T> & u) ->
     typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
 
+  // parameters
+  smooth::feedback::MPCParams prm{.T = 5,
+    .warmstart                       = true,
+    .relinearization_interval        = 0,
+    .relinearize_on_new_desired      = false,
+    .iterative_relinearization       = 0};
+
   // create MPC object and set input bounds, and desired trajectories
-  smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, 5s);
+  smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
   mpc.set_ulim(Eigen::Matrix<double, 1, 1>(-0.5), Eigen::Matrix<double, 1, 1>(0.5));
   mpc.set_input_cost(Eigen::Matrix<double, 1, 1>::Constant(0.1));
   mpc.set_running_state_cost(Eigen::Matrix<double, 2, 2>::Identity());
