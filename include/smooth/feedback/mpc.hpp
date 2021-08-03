@@ -399,6 +399,7 @@ public:
   {
     ocp_.T = std::chrono::duration_cast<std::chrono::duration<double>>(t).count();
   }
+
   /// See constructor above
   MPC(const Dyn & f, T t, const SolverParams & qp_prm = SolverParams{}) : MPC(Dyn(f), t, qp_prm) {}
   /// Default constructor
@@ -491,6 +492,22 @@ public:
     x_des_ = std::move(x_des);
     u_des_ = std::move(u_des);
   };
+
+  /**
+   * @brief Access the linearization.
+   */
+  LinearizationInfo<G, U> & linearization()
+  {
+    return lin_;
+  }
+
+  /**
+   * @brief Const access the linearization.
+   */
+  const LinearizationInfo<G, U> & linearization() const
+  {
+    return lin_;
+  }
 
   /**
    * @brief Set the running state cost in the internal OptimalControlProblem.
