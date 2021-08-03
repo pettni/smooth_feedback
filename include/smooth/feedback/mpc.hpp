@@ -568,14 +568,10 @@ public:
       // check if solution touches linearization domain
       bool touches = false;
       for (int k = 0; !touches && k != K; ++k) {
-        if ((lin_.u_domain - sol.primal.template segment<nu>(k * nu).cwiseAbs()).minCoeff()
-            < 1e-5) {
-          touches = true;
-        }
-        if ((lin_.g_domain - sol.primal.template segment<nx>(nU + k * nx).cwiseAbs()).minCoeff()
-            < 1e-5) {
-          touches = true;
-        }
+        // clang-format off
+        if (((1. - 1e-6) * lin_.u_domain - sol.primal.template segment<nu>(     k * nu).cwiseAbs()).minCoeff() < 0) { touches = true; }
+        if (((1. - 1e-6) * lin_.g_domain - sol.primal.template segment<nx>(nU + k * nx).cwiseAbs()).minCoeff() < 0) { touches = true; }
+        // clang-format on
       }
       if (touches) {
         // relinearize and solve again
@@ -628,8 +624,8 @@ public:
   /**
    * @brief Set the desired state and input trajectories (lvalue version).
    *
-   * @note If MPCParams::relinearize_on_new_desired is set this triggers a relinearization at the
-   * next call to operator()().
+   * @note If MPCParams::relinearize_on_new_desired is set this triggers a relinearization around
+   * the desired trajectories at the next call to operator()().
    *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
    * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
@@ -642,8 +638,8 @@ public:
   /**
    * @brief Set the desired state and input trajectories (rvalue version).
    *
-   * @note If MPCParams::relinearize_on_new_desired is set this triggers a relinearization at the
-   * next call to operator()().
+   * @note If MPCParams::relinearize_on_new_desired is set this triggers a relinearization around
+   * the desired trajectories at the next call to operator()().
    *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
    * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
@@ -715,16 +711,14 @@ public:
     const double dt         = ocp_.T / static_cast<double>(K);
 
     // STATE LINEARIZATION
-    std::vector<double> tt;
-    std::vector<G> gg;
-    tt.reserve(K + 1);
-    gg.reserve(K + 1);
-    tt.push_back(0);
-    gg.push_back(ocp_.x0);
+    std::vector<double> tt(K + 1);
+    std::vector<G> gg(K + 1);
+    tt[0] = 0;
+    gg[0] = ocp_.x0;
 
     for (auto k = 1u; k != K + 1; ++k) {
-      tt.push_back(dt * k);
-      gg.push_back(lin_.g(k * dt) + sol.primal.template segment<nx>(nU + (k - 1) * nx));
+      tt[k] = dt * k;
+      gg[k] = lin_.g(k * dt) + sol.primal.template segment<nx>(nU + (k - 1) * nx);
     }
 
     auto g_spline = smooth::fit_cubic_bezier(tt, gg);
@@ -737,27 +731,23 @@ public:
 
     // INPUT LINEARIZATION
     if constexpr (LieGroup<U>) {
-      std::vector<double> tt;
-      std::vector<U> uu;
-      tt.reserve(K);
-      uu.reserve(K);
+      std::vector<double> tt(K);
+      std::vector<U> uu(K);
 
       for (auto k = 0u; k != K; ++k) {
-        tt.push_back(k * dt);
-        uu.push_back(lin_.u(k * dt) + sol.primal.template segment<nu>(k * nu));
+        tt[k] = k * dt;
+        uu[k] = lin_.u(k * dt) + sol.primal.template segment<nu>(k * nu);
       }
 
       auto u_spline = smooth::fit_linear_bezier(tt, uu);
       lin_.u        = [u_spline = std::move(u_spline)](double t) -> U { return u_spline.eval(t); };
     } else {
-      std::vector<double> tt;
+      std::vector<double> tt(K);
       std::vector<smooth::Tn<U::SizeAtCompileTime, double>> uu(K);
-      tt.reserve(K);
-      uu.reserve(K);
 
       for (auto k = 0u; k != K; ++k) {
-        tt.push_back(k * dt);
-        uu.push_back(lin_.u(k * dt) + sol.primal.template segment<nu>(k * nu));
+        tt[k] = k * dt;
+        uu[k] = lin_.u(k * dt) + sol.primal.template segment<nu>(k * nu);
       }
 
       auto u_spline = smooth::fit_linear_bezier(tt, uu);
