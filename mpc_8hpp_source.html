@@ -547,81 +547,75 @@ $(function() {
 <div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> dt         = ocp_.T / <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(K);</div>
 <div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160; </div>
 <div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;    <span class="comment">// STATE LINEARIZATION</span></div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;    std::vector&lt;double&gt; tt;</div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;    std::vector&lt;G&gt; gg;</div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;    tt.reserve(K + 1);</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;    gg.reserve(K + 1);</div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;    tt.push_back(0);</div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;    gg.push_back(ocp_.x0);</div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160; </div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 1u; k != K + 1; ++k) {</div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;      tt.push_back(dt * k);</div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;      gg.push_back(lin_.g(k * dt) + sol.<a class="code" href="structsmooth_1_1feedback_1_1Solution.html#a1982dc0ccccafd31382549578b9d5aa1">primal</a>.template segment&lt;nx&gt;(nU + (k - 1) * nx));</div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;    }</div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160; </div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;    <span class="keyword">auto</span> g_spline = smooth::fit_cubic_bezier(tt, gg);</div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;    lin_.g        = [g_spline = g_spline](<span class="keywordtype">double</span> t) -&gt; G { <span class="keywordflow">return</span> g_spline.eval(t); };</div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;    lin_.dg       = [g_spline = std::move(g_spline)](<span class="keywordtype">double</span> t) -&gt; <span class="keyword">typename</span> G::Tangent {</div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;      <span class="keyword">typename</span> G::Tangent ret;</div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;      g_spline.eval(t, ret);</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;      <span class="keywordflow">return</span> ret;</div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;    };</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160; </div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;    <span class="comment">// INPUT LINEARIZATION</span></div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;    <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;) {</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;      std::vector&lt;double&gt; tt;</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;      std::vector&lt;U&gt; uu;</div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;      tt.reserve(K);</div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;      uu.reserve(K);</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160; </div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;      <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k != K; ++k) {</div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;        tt.push_back(k * dt);</div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        uu.push_back(lin_.u(k * dt) + sol.<a class="code" href="structsmooth_1_1feedback_1_1Solution.html#a1982dc0ccccafd31382549578b9d5aa1">primal</a>.template segment&lt;nu&gt;(k * nu));</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;      }</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160; </div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;      <span class="keyword">auto</span> u_spline = smooth::fit_linear_bezier(tt, uu);</div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;      lin_.u        = [u_spline = std::move(u_spline)](<span class="keywordtype">double</span> t) -&gt; U { <span class="keywordflow">return</span> u_spline.eval(t); };</div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;      std::vector&lt;double&gt; tt;</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;      std::vector&lt;smooth::Tn&lt;U::SizeAtCompileTime, double&gt;&gt; uu(K);</div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;      tt.reserve(K);</div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;      uu.reserve(K);</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160; </div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;      <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k != K; ++k) {</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;        tt.push_back(k * dt);</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;        uu.push_back(lin_.u(k * dt) + sol.<a class="code" href="structsmooth_1_1feedback_1_1Solution.html#a1982dc0ccccafd31382549578b9d5aa1">primal</a>.template segment&lt;nu&gt;(k * nu));</div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;      }</div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160; </div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;      <span class="keyword">auto</span> u_spline = smooth::fit_linear_bezier(tt, uu);</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;      lin_.u = [u_spline = std::move(u_spline)](<span class="keywordtype">double</span> t) -&gt; U { <span class="keywordflow">return</span> u_spline.eval(t).rn(); };</div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;    }</div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;  }</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160; </div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;  <a class="code" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a> prm_{};</div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;    std::vector&lt;double&gt; tt(K + 1);</div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;    std::vector&lt;G&gt; gg(K + 1);</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;    tt[0] = 0;</div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;    gg[0] = ocp_.x0;</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160; </div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 1u; k != K + 1; ++k) {</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;      tt[k] = dt * k;</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;      gg[k] = lin_.g(k * dt) + sol.<a class="code" href="structsmooth_1_1feedback_1_1Solution.html#a1982dc0ccccafd31382549578b9d5aa1">primal</a>.template segment&lt;nx&gt;(nU + (k - 1) * nx);</div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;    }</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160; </div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;    <span class="keyword">auto</span> g_spline = smooth::fit_cubic_bezier(tt, gg);</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;    lin_.g        = [g_spline = g_spline](<span class="keywordtype">double</span> t) -&gt; G { <span class="keywordflow">return</span> g_spline.eval(t); };</div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;    lin_.dg       = [g_spline = std::move(g_spline)](<span class="keywordtype">double</span> t) -&gt; <span class="keyword">typename</span> G::Tangent {</div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;      <span class="keyword">typename</span> G::Tangent ret;</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;      g_spline.eval(t, ret);</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;      <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;    };</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160; </div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;    <span class="comment">// INPUT LINEARIZATION</span></div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;    <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;) {</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;      std::vector&lt;double&gt; tt(K);</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;      std::vector&lt;U&gt; uu(K);</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160; </div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;      <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k != K; ++k) {</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;        tt[k] = k * dt;</div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;        uu[k] = lin_.u(k * dt) + sol.<a class="code" href="structsmooth_1_1feedback_1_1Solution.html#a1982dc0ccccafd31382549578b9d5aa1">primal</a>.template segment&lt;nu&gt;(k * nu);</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;      }</div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160; </div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;      <span class="keyword">auto</span> u_spline = smooth::fit_linear_bezier(tt, uu);</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;      lin_.u        = [u_spline = std::move(u_spline)](<span class="keywordtype">double</span> t) -&gt; U { <span class="keywordflow">return</span> u_spline.eval(t); };</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;      std::vector&lt;double&gt; tt(K);</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;      std::vector&lt;smooth::Tn&lt;U::SizeAtCompileTime, double&gt;&gt; uu(K);</div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160; </div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;      <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k != K; ++k) {</div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;        tt[k] = k * dt;</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;        uu[k] = lin_.u(k * dt) + sol.<a class="code" href="structsmooth_1_1feedback_1_1Solution.html#a1982dc0ccccafd31382549578b9d5aa1">primal</a>.template segment&lt;nu&gt;(k * nu);</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;      }</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160; </div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;      <span class="keyword">auto</span> u_spline = smooth::fit_linear_bezier(tt, uu);</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;      lin_.u = [u_spline = std::move(u_spline)](<span class="keywordtype">double</span> t) -&gt; U { <span class="keywordflow">return</span> u_spline.eval(t).rn(); };</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;    }</div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;  }</div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160; </div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;  <a class="code" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a> prm_{};</div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160; </div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;  Dyn dyn_{};</div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160; </div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;  SolverParams qp_prm_{};</div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;  OptimalControlProblem&lt;G, U&gt; ocp_{};</div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;  std::optional&lt;Solution&lt;-1, -1, <span class="keywordtype">double</span>&gt;&gt; warmstart_{};</div>
 <div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160; </div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;  Dyn dyn_{};</div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160; </div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;  SolverParams qp_prm_{};</div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;  OptimalControlProblem&lt;G, U&gt; ocp_{};</div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;  std::optional&lt;Solution&lt;-1, -1, <span class="keywordtype">double</span>&gt;&gt; warmstart_{};</div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160; </div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;  <span class="keywordtype">bool</span> relinearize_{<span class="keyword">false</span>};</div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;  uint32_t lin_cntr_{0};</div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;  LinearizationInfo&lt;G, U&gt; lin_{};</div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160; </div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;  std::function&lt;G(T)&gt; x_des_ = [](T) -&gt; G { <span class="keywordflow">return</span> G::Identity(); };</div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;  std::function&lt;U(T)&gt; u_des_ = [](T) -&gt; U {</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;    <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;)</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;      <span class="keywordflow">return</span> U::Identity();</div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;      <span class="keywordflow">return</span> U::Zero();</div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;  };</div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;};</div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160; </div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160; </div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__MPC_HPP_</span></div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;  <span class="keywordtype">bool</span> relinearize_{<span class="keyword">false</span>};</div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;  uint32_t lin_cntr_{0};</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;  LinearizationInfo&lt;G, U&gt; lin_{};</div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160; </div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;  std::function&lt;G(T)&gt; x_des_ = [](T) -&gt; G { <span class="keywordflow">return</span> G::Identity(); };</div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;  std::function&lt;U(T)&gt; u_des_ = [](T) -&gt; U {</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;    <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;)</div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;      <span class="keywordflow">return</span> U::Identity();</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;      <span class="keywordflow">return</span> U::Zero();</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;  };</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;};</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160; </div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160; </div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__MPC_HPP_</span></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00480">mpc.hpp:481</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a0ad1ac9fcae19048328c8d6a893357ca"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a0ad1ac9fcae19048328c8d6a893357ca">smooth::feedback::MPC::set_final_state_cost</a></div><div class="ttdeci">void set_final_state_cost(const Eigen::MatrixBase&lt; D1 &gt; &amp;QT)</div><div class="ttdoc">Set the final state cost in the internal OptimalControlProblem.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00687">mpc.hpp:687</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_a138a55edc4cc75c15ddad29a0a2619eb"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#a138a55edc4cc75c15ddad29a0a2619eb">smooth::feedback::MPC::MPC</a></div><div class="ttdeci">MPC(Dyn &amp;&amp;f, const MPCParams &amp;prm, const SolverParams &amp;qp_prm=SolverParams{})</div><div class="ttdoc">Create an MPC instance.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00490">mpc.hpp:490</a></div></div>
