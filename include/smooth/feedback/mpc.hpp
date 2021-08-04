@@ -347,7 +347,7 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
   }
 
   // linearization bounds
-  for (auto k = 1u; k < K + 1; ++k) {
+  for (auto k = 0u; k < K; ++k) {
     ret.l.template segment<nu>(n_eq + k * nu) =
       ret.l.template segment<nu>(n_eq + k * nu).cwiseMax(-lin.u_domain);
     ret.u.template segment<nu>(n_eq + k * nu) =
