@@ -536,6 +536,7 @@ public:
     static constexpr int nu = U::SizeAtCompileTime;
     static constexpr int nU = K * nu;
 
+    // update problem
     ocp_.x0   = g;
     ocp_.T    = prm_.T;
     ocp_.gdes = [this, &t](double t_loc) -> G {
@@ -545,19 +546,16 @@ public:
       return u_des_(t + duration_cast<nanoseconds>(std::chrono::duration<double>(t_loc)));
     };
 
-    if (relinearize_) {
-      // linearize about desired trajectory
-      lin_.u  = ocp_.udes;
-      lin_.g  = ocp_.gdes;
-      lin_.dg = [this](double t) -> typename G::Tangent {
-        // need numerical derivative here since gdes is not templated...
-        Eigen::Matrix<double, 1, 1> tvec(t);
-        auto [gval, dg] = smooth::diff::dr<smooth::diff::Type::NUMERICAL>(
-          [this](const auto & v) { return lin_.g(v.x()); }, smooth::wrt(tvec));
-        return dg;
-      };
-      lin_cntr_ = 0;
-    }
+    // linearize around desired trajectory
+    lin_.u  = ocp_.udes;
+    lin_.g  = ocp_.gdes;
+    lin_.dg = [this](double t) -> typename G::Tangent {
+      // need numerical derivative here since gdes is not templated...
+      Eigen::Matrix<double, 1, 1> tvec(t);
+      auto [gv, dg] = diff::dr<diff::Type::NUMERICAL>(
+        [this](const auto & v) { return lin_.g(v.x()); }, wrt(tvec));
+      return dg;
+    };
 
     const double dt = ocp_.T / static_cast<double>(K);
 
@@ -574,7 +572,7 @@ public:
         // clang-format on
       }
       if (touches) {
-        // relinearize and solve again
+        // relinearize around solution and solve again
         relinearize(sol);
         lin_cntr_ = 0;
 
@@ -600,12 +598,6 @@ public:
     }
 
     if (sol.code == ExitCode::Optimal) {
-      if (prm_.relinearization_interval > 0 && lin_cntr_ >= prm_.relinearization_interval) {
-        relinearize(sol);  // relinearize problem about current solution
-        lin_cntr_ = 0;
-      } else {
-        ++lin_cntr_;
-      }
       if (prm_.warmstart) warmstart_ = sol;  // store successful solution for later warmstart
     }
 
@@ -638,9 +630,6 @@ public:
   /**
    * @brief Set the desired state and input trajectories (rvalue version).
    *
-   * @note If MPCParams::relinearize_on_new_desired is set this triggers a relinearization around
-   * the desired trajectories at the next call to operator()().
-   *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
    * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
    */
@@ -648,8 +637,6 @@ public:
   {
     x_des_ = std::move(x_des);
     u_des_ = std::move(u_des);
-
-    if (prm_.relinearize_on_new_desired) { relinearize_ = true; }
   };
 
   /**

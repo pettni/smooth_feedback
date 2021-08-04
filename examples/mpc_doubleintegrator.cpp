@@ -2,7 +2,7 @@
 #include <smooth/compat/autodiff.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/mpc.hpp>
-#include <smooth/se2.hpp>
+#include <smooth/tn.hpp>
 
 #include <chrono>
 
@@ -63,10 +63,13 @@ int main()
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
-    mpc(u, t, g);
+    auto code = mpc(u, t, g);
+    if (code != smooth::feedback::ExitCode::Optimal) {
+      std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
+    }
 
     // store data
-    tvec.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t).count());
+    tvec.push_back(duration_cast<Time>(t).count());
     xvec.push_back(g.rn().x());
     vvec.push_back(g.rn().y());
     uvec.push_back(u(0));
