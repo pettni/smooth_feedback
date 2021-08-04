@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['u_185',['u',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc',1,'smooth::feedback::LinearizationInfo::u()'],['../structsmooth_1_1feedback_1_1QuadraticProgram.html#a6308cf45596d755de52b198990530fd9',1,'smooth::feedback::QuadraticProgram::u()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a590786eb3c3230068cffb62700276c6c',1,'smooth::feedback::QuadraticProgramSparse::u()']]],
-  ['u_5fdomain_186',['u_domain',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ac86f0494b7ba041dd45d82971ce411a0',1,'smooth::feedback::LinearizationInfo']]],
-  ['udes_187',['udes',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f',1,'smooth::feedback::OptimalControlProblem']]],
-  ['umax_188',['umax',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac963cb442a986c534539410d72696efa',1,'smooth::feedback::OptimalControlProblem']]],
-  ['umin_189',['umin',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a1624e12b755acd35332b19cedad1ac05',1,'smooth::feedback::OptimalControlProblem']]]
+  ['u_188',['u',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc',1,'smooth::feedback::LinearizationInfo::u()'],['../structsmooth_1_1feedback_1_1QuadraticProgram.html#a6308cf45596d755de52b198990530fd9',1,'smooth::feedback::QuadraticProgram::u()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a590786eb3c3230068cffb62700276c6c',1,'smooth::feedback::QuadraticProgramSparse::u()']]],
+  ['u_5fdomain_189',['u_domain',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ac86f0494b7ba041dd45d82971ce411a0',1,'smooth::feedback::LinearizationInfo']]],
+  ['udes_190',['udes',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f',1,'smooth::feedback::OptimalControlProblem']]],
+  ['umax_191',['umax',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac963cb442a986c534539410d72696efa',1,'smooth::feedback::OptimalControlProblem']]],
+  ['umin_192',['umin',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a1624e12b755acd35332b19cedad1ac05',1,'smooth::feedback::OptimalControlProblem']]]
 ];

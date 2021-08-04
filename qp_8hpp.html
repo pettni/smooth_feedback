@@ -86,6 +86,7 @@ $(function() {
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;Eigen/Dense&gt;</code><br />
 <code>#include &lt;Eigen/Sparse&gt;</code><br />
+<code>#include &lt;chrono&gt;</code><br />
 <code>#include &lt;limits&gt;</code><br />
 <code>#include &quot;<a class="el" href="ldlt__lapack_8hpp_source.html">internal/ldlt_lapack.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="ldlt__sparse_8hpp_source.html">internal/ldlt_sparse.hpp</a>&quot;</code><br />
@@ -94,14 +95,15 @@ Include dependency graph for qp.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="qp_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2qp_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2qp_8hpp" id="ainclude_2smooth_2feedback_2qp_8hpp">
-<area shape="rect" title="Quadratic Programming." alt="" coords="119,5,285,47"/>
+<area shape="rect" title="Quadratic Programming." alt="" coords="163,5,329,47"/>
 <area shape="rect" title=" " alt="" coords="5,95,100,121"/>
-<area shape="rect" title=" " alt="" coords="215,169,314,196"/>
-<area shape="rect" title=" " alt="" coords="175,95,229,121"/>
-<area shape="rect" href="ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="431,95,586,121"/>
-<area shape="rect" href="ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="253,95,407,121"/>
-<area shape="rect" title=" " alt="" coords="413,169,498,196"/>
-<area shape="rect" title=" " alt="" coords="522,169,599,196"/>
+<area shape="rect" title=" " alt="" coords="258,169,357,196"/>
+<area shape="rect" title=" " alt="" coords="175,95,237,121"/>
+<area shape="rect" title=" " alt="" coords="261,95,314,121"/>
+<area shape="rect" href="ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="517,95,671,121"/>
+<area shape="rect" href="ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="338,95,493,121"/>
+<area shape="rect" title=" " alt="" coords="498,169,583,196"/>
+<area shape="rect" title=" " alt="" coords="607,169,685,196"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -135,12 +137,16 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a954b9ecf10d53d85469fd077c33cda21"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21">smooth::feedback::ExitCode</a> : int { <b>Optimal</b>
+<tr class="memitem:a954b9ecf10d53d85469fd077c33cda21"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21">smooth::feedback::ExitCode</a> : int { <br />
+&#160;&#160;<b>Optimal</b>
 , <a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21a9dc0130434f81159ae1da5d0d87551ee">PolishFailed</a>
 , <a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21a190b2e9507159faf8c6939d98220a75e">PrimalInfeasible</a>
 , <a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21ad5184b646ae0f0f1f1cde90d98b540e5">DualInfeasible</a>
 , <a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21a89d18cc81de326d8fc836491777795e0">MaxIterations</a>
-, <a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21a88183b946cc5f0e8c96b2e66e1c74a7e">Unknown</a>
+, <a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21a9e8b9350c8f1716701ec1f9bbe76432e">MaxTime</a>
+, <br />
+&#160;&#160;<a class="el" href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21a88183b946cc5f0e8c96b2e66e1c74a7e">Unknown</a>
+<br />
  }</td></tr>
 <tr class="memdesc:a954b9ecf10d53d85469fd077c33cda21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solver exit codes.  <a href="qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21">More...</a><br /></td></tr>
 <tr class="separator:a954b9ecf10d53d85469fd077c33cda21"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -200,12 +206,14 @@ template&lt;typename Pbm , typename D1 , typename D2 , typename D3 , typename D4
 </td></tr>
 <tr><td class="fieldname"><a id="a954b9ecf10d53d85469fd077c33cda21a89d18cc81de326d8fc836491777795e0"></a>MaxIterations&#160;</td><td class="fielddoc"><p>A certificate of dual infeasibility was found, no solution returned. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a954b9ecf10d53d85469fd077c33cda21a88183b946cc5f0e8c96b2e66e1c74a7e"></a>Unknown&#160;</td><td class="fielddoc"><p>Max number of iterations was reached, returned solution is not optimal. </p>
+<tr><td class="fieldname"><a id="a954b9ecf10d53d85469fd077c33cda21a9e8b9350c8f1716701ec1f9bbe76432e"></a>MaxTime&#160;</td><td class="fielddoc"><p>Max number of iterations was reached, returned solution is not optimal. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a954b9ecf10d53d85469fd077c33cda21a88183b946cc5f0e8c96b2e66e1c74a7e"></a>Unknown&#160;</td><td class="fielddoc"><p>Max time was reached, returned solution is not optimal. </p>
 <p><a class="el" href="structsmooth_1_1feedback_1_1Solution.html" title="Solver solution.">Solution</a> is useless because of other reasons, no solution returned </p>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00111">111</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00112">112</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>
@@ -261,7 +269,7 @@ template&lt;typename Pbm &gt; </div>
 </dl>
 <dl class="section warning"><dt>Warning</dt><dd>This function allocates heap memory even for static-sized problems. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00338">338</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00343">343</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>
@@ -312,7 +320,7 @@ template&lt;typename Pbm &gt; </div>
 \[ \begin{bmatrix} \bar P &amp; \bar q \end{bmatrix}. \]
 </p>
  
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00227">227</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00232">232</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>
@@ -372,7 +380,7 @@ template&lt;typename Pbm &gt; </div>
 </ul>
 <p>For the official C implementation, see <a href="https://osqp.org/">https://osqp.org/</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00555">555</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00560">560</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>

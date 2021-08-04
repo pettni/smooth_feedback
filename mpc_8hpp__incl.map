@@ -1,16 +1,16 @@
 <map id="include/smooth/feedback/mpc.hpp" name="include/smooth/feedback/mpc.hpp">
-<area shape="rect" id="node1" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="459,5,626,47"/>
-<area shape="rect" id="node2" title=" " alt="" coords="671,244,756,271"/>
-<area shape="rect" id="node3" title=" " alt="" coords="231,95,292,121"/>
-<area shape="rect" id="node4" title=" " alt="" coords="316,95,463,121"/>
-<area shape="rect" id="node5" title=" " alt="" coords="487,95,598,121"/>
-<area shape="rect" id="node6" title=" " alt="" coords="623,95,788,121"/>
-<area shape="rect" id="node7" title=" " alt="" coords="812,95,916,121"/>
-<area shape="rect" id="node8" href="$qp_8hpp.html" title="Quadratic Programming." alt="" coords="146,95,206,121"/>
-<area shape="rect" id="node9" title=" " alt="" coords="470,169,565,196"/>
-<area shape="rect" id="node10" title=" " alt="" coords="5,244,104,271"/>
-<area shape="rect" id="node11" title=" " alt="" coords="213,169,267,196"/>
-<area shape="rect" id="node12" href="$ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="291,169,445,196"/>
-<area shape="rect" id="node14" href="$ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="35,169,189,196"/>
-<area shape="rect" id="node13" title=" " alt="" coords="329,244,407,271"/>
+<area shape="rect" id="node1" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="184,5,351,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="139,244,225,271"/>
+<area shape="rect" id="node3" title=" " alt="" coords="134,169,195,196"/>
+<area shape="rect" id="node4" title=" " alt="" coords="41,95,187,121"/>
+<area shape="rect" id="node5" title=" " alt="" coords="212,95,323,121"/>
+<area shape="rect" id="node6" title=" " alt="" coords="347,95,513,121"/>
+<area shape="rect" id="node7" title=" " alt="" coords="537,95,641,121"/>
+<area shape="rect" id="node8" href="$qp_8hpp.html" title="Quadratic Programming." alt="" coords="665,95,725,121"/>
+<area shape="rect" id="node9" title=" " alt="" coords="723,169,817,196"/>
+<area shape="rect" id="node10" title=" " alt="" coords="689,244,787,271"/>
+<area shape="rect" id="node11" title=" " alt="" coords="287,169,341,196"/>
+<area shape="rect" id="node12" href="$ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="365,169,519,196"/>
+<area shape="rect" id="node14" href="$ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="543,169,698,196"/>
+<area shape="rect" id="node13" title=" " alt="" coords="403,244,481,271"/>
 </map>
