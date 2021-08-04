@@ -123,7 +123,7 @@ int main()
 #else
   std::cout << "TRAJECTORY:" << std::endl;
   for (auto i = 0u; i != tvec.size(); ++i) {
-    std::cout << "t=" << tvec[i] << ": x=" << xvec[i] << ", v=" << vvec[i] << std::endl;
+    std::cout << "t=" << tvec[i] << ": x=" << xvec[i] << ", y=" << yvec[i] << std::endl;
   }
 #endif
 }
