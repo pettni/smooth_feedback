@@ -51,8 +51,8 @@ int main()
   // create MPC object
   smooth::feedback::MPCParams prm{.T = T,
     .warmstart                       = true,
-    .relinearization_interval        = 0,
-    .relinearize_on_new_desired      = false,
+    .relinearize_state_around_sol    = false,
+    .relinearize_input_around_sol    = false,
     .iterative_relinearization       = 0};
   smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
 

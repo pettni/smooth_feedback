@@ -34,6 +34,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+#include <chrono>
 #include <limits>
 
 #include "internal/ldlt_lapack.hpp"
@@ -115,6 +116,7 @@ enum class ExitCode : int {
   PrimalInfeasible,  /// A certificate of primal infeasibility was found, no solution returned
   DualInfeasible,    /// A certificate of dual infeasibility was found, no solution returned
   MaxIterations,     /// Max number of iterations was reached, returned solution is not optimal
+  MaxTime,           /// Max time was reached, returned solution is not optimal
   Unknown            /// Solution is useless because of other reasons, no solution returned
 };
 
@@ -154,10 +156,13 @@ struct SolverParams
   float eps_dual_inf = 1e-4;
 
   /// max number of iterations
-  uint32_t max_iter = std::numeric_limits<uint32_t>::max();
+  std::optional<uint32_t> max_iter = {};
+
+  /// max solution time
+  std::optional<std::chrono::nanoseconds> max_time = {};
 
   /// iterations between checking stopping criterion
-  uint32_t stop_check_iter = 10;
+  uint32_t stop_check_iter = 25;
 
   /// run solution polishing (uses dynamic memory)
   bool polish = true;
@@ -631,6 +636,8 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
   }
 
+  const auto t0 = std::chrono::high_resolution_clock::now();
+
   // factorize H
   LDLT ldlt(std::move(H));
   if (ldlt.info()) { ret_code = ExitCode::Unknown; }
@@ -659,7 +666,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
   // main optimization loop
   auto iter = 0u;
-  for (; iter != prm.max_iter && !ret_code; ++iter) {
+  for (; (!prm.max_iter || iter != prm.max_iter.value()) && !ret_code; ++iter) {
     p.template head<N>(n)       = sigma * x - spbm.q;
     p.template segment<M>(n, m) = z - y / rho;
     ldlt.solve_inplace(p);
@@ -684,6 +691,13 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
       dx_us    = S.template head<N>(n).cwiseProduct(x - dx_us);
       dy_us    = S.template segment<M>(n, m).cwiseProduct(y - dy_us) / c;
       ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);
+
+      // check for timeout
+      if (!ret_code) {
+        if (prm.max_time && std::chrono::high_resolution_clock::now() > t0 + prm.max_time.value()) {
+          ret_code = ExitCode::MaxTime;
+        }
+      }
     }
   }
 
@@ -692,7 +706,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     .primal                      = std::move(x),
     .dual                        = std::move(y)};
 
-  // polish solution
+  // polish solution if optimal
   if (sol.code == ExitCode::Optimal && prm.polish) {
     if (!detail::polish_qp(spbm, sol, prm)) { sol.code = ExitCode::PolishFailed; }
   }

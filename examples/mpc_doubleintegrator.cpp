@@ -42,8 +42,8 @@ int main()
   // parameters
   smooth::feedback::MPCParams prm{.T = 5,
     .warmstart                       = true,
-    .relinearization_interval        = 0,
-    .relinearize_on_new_desired      = false,
+    .relinearize_state_around_sol    = false,
+    .relinearize_input_around_sol    = false,
     .iterative_relinearization       = 0};
 
   // create MPC object and set input bounds, and desired trajectories
