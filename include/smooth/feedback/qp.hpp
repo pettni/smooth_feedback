@@ -696,7 +696,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     p.template segment<M>(n, m) = z - y / rho;
     ldlt.solve_inplace(p);
 
-    if (iter % prm.stop_check_iter == 0) {
+    if (iter % prm.stop_check_iter == 1) {
       // termination checking requires difference, store old scaled values
       dx_us = x, dy_us = y;
     }
@@ -708,7 +708,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     y = alpha_comp * y + alpha * p.template segment<M>(n, m) + rho * z - rho * z_next;
     z = z_next;
 
-    if (iter % prm.stop_check_iter == 0) {
+    if (iter % prm.stop_check_iter == 1) {
       // check stopping criteria for unscaled problem and unscaled variables
       x_us     = S.template head<N>(n).cwiseProduct(x);
       y_us     = S.template segment<M>(n, m).cwiseProduct(y) / c;
