@@ -56,15 +56,21 @@ Solution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
   settings->polish             = prm.polish;
   settings->polish_refine_iter = prm.polish_iter;
   settings->delta              = prm.delta;
-  settings->linsys_solver      = QDLDL_SOLVER;
 
   settings->adaptive_rho       = false;
+  settings->linsys_solver      = QDLDL_SOLVER;
   settings->scaled_termination = false;
 
-  if (prm.max_iter) { settings->max_iter = prm.max_iter.value(); }
+  if (prm.max_iter) {
+    settings->max_iter = prm.max_iter.value();
+  } else {
+    settings->max_iter = std::numeric_limits<c_int>::max();
+  }
   if (prm.max_time) {
     settings->time_limit =
       duration_cast<std::chrono::duration<double>>(prm.max_time.value()).count();
+  } else {
+    settings->time_limit = 0;
   }
 
   OSQPData * data = (OSQPData *)c_malloc(sizeof(OSQPData));
@@ -89,6 +95,8 @@ Solution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
     osqp_warm_start(
       work, warmstart.value().get().primal.data(), warmstart.value().get().dual.data());
     settings->warm_start = 1;
+  } else {
+    settings->warm_start = 0;
   }
 
   if (!error) { error &= osqp_solve(work); }
@@ -109,6 +117,10 @@ Solution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
     }
     case OSQP_MAX_ITER_REACHED: {
       ret.code = ExitCode::MaxIterations;
+      break;
+    }
+    case OSQP_TIME_LIMIT_REACHED: {
+      ret.code = ExitCode::MaxTime;
       break;
     }
     default: {

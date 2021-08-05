@@ -651,6 +651,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
   if (prm.verbose) {
     using std::cout, std::left, std::endl, std::setw, std::right;
+    // clang-format off
     cout << "========================= QP Solver =========================" << endl;
     cout << "Solving QP with n=" << n << ", m=" << m << endl;
     cout << setw(8)  << right  << "ITER"
@@ -658,6 +659,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
          << setw(14) << right << "PRI_RES"
          << setw(14) << right << "DUA_RES"
          << setw(7) << right << "TIME" << std::endl;
+    // clang-format on
   }
 
   // factorize H
@@ -715,19 +717,19 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
       z_us     = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
       dx_us    = S.template head<N>(n).cwiseProduct(x - dx_us);
       dy_us    = S.template segment<M>(n, m).cwiseProduct(y - dy_us) / c;
-
       ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);
 
       if (prm.verbose) {
-        using std::cout, std::scientific, std::defaultfloat, std::endl, std::setw, std::left, std::right, std::chrono::microseconds;
-
+        using std::cout, std::scientific, std::endl, std::setw, std::right,
+          std::chrono::microseconds;
         // clang-format off
         cout << setw(7) << right << iter << ":"
           << scientific
           << setw(14) << right << (0.5 * pbm.P * x_us + pbm.q).dot(x_us)
           << setw(14) << right << (pbm.A * x_us - z_us).template lpNorm<Eigen::Infinity>()
           << setw(14) << right << (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).template lpNorm<Eigen::Infinity>()
-          << setw(7) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count() << std::endl;
+          << setw(7) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
+          << std::endl;
         // clang-format on
       }
 
