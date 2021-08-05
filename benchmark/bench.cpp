@@ -97,43 +97,37 @@ void compareRuns(SuiteResult & res, const BatchResult & a, const BatchResult & b
     }
   }
 
-  std::cout << std::setw(30) << "Num Problems: " << a_v.size() << std::endl;
-  std::cout << std::setw(30) << "Num A: " << res.num_a << std::endl;
-  std::cout << std::setw(30) << "Num B: " << res.num_b << std::endl;
+  using std::cout, std::setw, std::endl;
 
-  std::cout << std::setw(30)
-            << "Avg Duration A : " << res.total_a_duration / std::max<int>(res.num_a, 1)
-            << std::endl;
-  std::cout << std::setw(30)
-            << "Avg Duration B : " << res.total_b_duration / std::max<int>(res.num_b, 1)
-            << std::endl;
-  std::cout << std::setw(30)
-            << "Avg Duration Ratio : " << res.total_duration_ratio / std::max<int>(1, res.num_valid)
-            << std::endl;
-  std::cout << std::setw(30) << "Min Duration Ratio: " << res.min_duration_ratio << std::endl;
-  std::cout << std::setw(30) << "Max Duration Ratio: " << res.max_duration_ratio << std::endl;
+  // clang-format off
+  cout << setw(30) << "Num Problems"          << a_v.size() << endl;
+  cout << setw(30) << "Num A"                 << res.num_a << endl;
+  cout << setw(30) << "Num B"                 << res.num_b << endl;
 
-  std::cout << std::setw(30)
-            << "Avg Primal Diff: " << res.total_primal_diff / std::max<int>(1, res.num_valid)
-            << std::endl;
-  std::cout << std::setw(30) << "Min Primal Diff: " << res.min_primal_diff << std::endl;
-  std::cout << std::setw(30) << "Max Primal Diff: " << res.max_primal_diff << std::endl;
+  cout << setw(30) << "Avg Duration A"        << res.total_a_duration / std::max<int>(res.num_a, 1) << endl;
+  cout << setw(30) << "Avg Duration B"        << res.total_b_duration / std::max<int>(res.num_b, 1) << endl;
+  cout << setw(30) << "Avg Duration Ratio"    << res.total_duration_ratio / std::max<int>(1, res.num_valid) << endl;
+  cout << setw(30) << "Min Duration Ratio"    << res.min_duration_ratio << endl;
+  cout << setw(30) << "Max Duration Ratio"    << res.max_duration_ratio << endl;
 
-  std::cout << std::setw(30)
-            << "Avg Obj Improvement: " << res.total_obj_impr / std::max<int>(1, res.num_valid)
-            << std::endl;
-  std::cout << std::setw(30) << "Worst Obj Improvement: " << res.worst_obj_impr << std::endl;
-  std::cout << std::setw(30) << "Best Obj Improvement: " << res.best_obj_impr << std::endl;
+  cout << setw(30) << "Avg Primal Diff"       << res.total_primal_diff / std::max<int>(1, res.num_valid) << endl;
+  cout << setw(30) << "Min Primal Diff"       << res.min_primal_diff << endl;
+  cout << setw(30) << "Max Primal Diff"       << res.max_primal_diff << endl;
+
+  cout << setw(30) << "Avg Obj Improvement"   << res.total_obj_impr / std::max<int>(1, res.num_valid) << endl;
+  cout << setw(30) << "Worst Obj Improvement" << res.worst_obj_impr << endl;
+  cout << setw(30) << "Best Obj Improvement"  << res.best_obj_impr << endl;
+  // clang-format onf
 }
 
 int main(int argc, char ** argv)
 {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  constexpr auto startN = 10;
-  constexpr auto maxN   = 11;
+  constexpr auto startN = 4;
+  constexpr auto maxN   = 31;
   constexpr auto lenN   = maxN - startN;
 
-  constexpr std::array<double, 2> D = {0.25, 1.};
+  constexpr std::array<double, 3> D = {0.15, 0.5, 1.};
 
   using ResultMap =
     std::unordered_map<std::string, std::array<std::array<SuiteResult, lenN>, D.size()>>;
