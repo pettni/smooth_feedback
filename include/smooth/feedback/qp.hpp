@@ -381,19 +381,20 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
 
   // square symmetric system matrix
   using HT = std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, -1, -1>>;
-  HT H(n + nl + nu, n + nl + nu);
+  HT H(n + nl + nu, n + nl + nu), Hp(n + nl + nu, n + nl + nu);
 
   // fill up H
   if constexpr (sparse) {
-    // preallocate nonzeros (extra 1 for H_per)
+    // preallocate nonzeros
     Eigen::Matrix<int, -1, 1> nnz(n + nl + nu);
     for (auto i = 0u; i != n; ++i) {
-      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
+      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i];
     }
     for (auto i = 0u; i != nl + nu; ++i) {
-      nnz(n + i) = pbm.A.outerIndexPtr()[LU_idx(i) + 1] - pbm.A.outerIndexPtr()[LU_idx(i)] + 1;
+      nnz(n + i) = pbm.A.outerIndexPtr()[LU_idx(i) + 1] - pbm.A.outerIndexPtr()[LU_idx(i)];
     }
     H.reserve(nnz);
+    Hp.reserve(nnz + Eigen::Matrix<int, -1, 1>::Ones(n + nl + nu));
 
     using PIter = typename Eigen::SparseMatrix<Scalar, Eigen::ColMajor>::InnerIterator;
     using AIter = typename Eigen::SparseMatrix<Scalar, Eigen::RowMajor>::InnerIterator;
@@ -402,6 +403,7 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
     for (Eigen::Index p_col = 0u; p_col != n; ++p_col) {
       for (PIter it(pbm.P, p_col); it && it.index() <= p_col; ++it) {
         H.insert(it.index(), p_col) = it.value();
+        Hp.insert(it.index(), p_col) = it.value();
       }
     }
 
@@ -409,6 +411,7 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
     for (auto a_row = 0u; a_row != nl + nu; ++a_row) {
       for (AIter it(pbm.A, LU_idx(a_row)); it; ++it) {
         H.insert(it.index(), n + a_row) = it.value();
+        Hp.insert(it.index(), n + a_row) = it.value();
       }
     }
   } else {
@@ -417,9 +420,8 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
     for (auto i = 0u; i != nl + nu; ++i) {
       H.col(n + i).template head<N>(n) = pbm.A.row(LU_idx(i));
     }
+    Hp = H;
   }
-
-  HT Hp = H;
 
   // add perturbing diagonal elements to Hp
   if constexpr (sparse) {
@@ -593,7 +595,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
 
   // cast parameters to scalar type
-  const Scalar rho        = static_cast<Scalar>(prm.rho);
+  const Scalar rho_bar    = static_cast<Scalar>(prm.rho);
   const Scalar alpha      = static_cast<Scalar>(prm.alpha);
   const Scalar alpha_comp = Scalar(1) - alpha;
   const Scalar sigma      = static_cast<Scalar>(prm.sigma);
@@ -601,17 +603,33 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   // return code: when set algorithm is finished
   std::optional<ExitCode> ret_code = std::nullopt;
 
+  // allocate working arrays
+  Rn x_us(n), dx_us(n);
+  Rm z_next(m), y_us(m), z_us(m), dy_us(m), rho(m);
+  Rk p(k);
+
   // scale problem
   Scalar c                      = 1;
   Eigen::Matrix<Scalar, K, 1> S = Eigen::Matrix<Scalar, K, 1>::Ones(k);
   Pbm spbm                      = pbm;
   if (prm.scaling) { std::tie(spbm, S, c) = detail::scale_qp(pbm); }
 
-  if ((spbm.u - spbm.l).minCoeff() < Scalar(0.) || spbm.l.maxCoeff() == inf
-      || spbm.u.minCoeff() == -inf) {
-    // feasible set is trivially empty
-    ret_code = ExitCode::PrimalInfeasible;
+  for (auto i = 0u; i != m; ++i) {
+    if (spbm.l(i) == inf || spbm.u(i) == -inf || spbm.u(i) - spbm.l(i) < Scalar(0.)) {
+      ret_code = ExitCode::PrimalInfeasible;  // feasible set trivially empty
+    }
+
+    // set rho depending on constraint type
+    if (spbm.l(i) == -inf && spbm.u(i) == inf) {
+      rho(i) = Scalar(1e-6);  // unbounded
+    } else if (abs(spbm.l(i) - spbm.u(i)) < 1e-5) {
+      rho(i) = Scalar(1e3) * rho_bar;  // equality
+    } else {
+      rho(i) = rho_bar;  // inequality
+    }
   }
+
+  const auto t0 = std::chrono::high_resolution_clock::now();
 
   // fill square symmetric system matrix H
   std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, K, K>> H(k, k);
@@ -637,28 +655,28 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     }
     for (auto row = 0u; row != m; ++row) {
       for (AIter it(spbm.A, row); it; ++it) { H.insert(it.index(), n + row) = it.value(); }
-      H.insert(n + row, n + row) = -Scalar(1) / rho;
+      H.insert(n + row, n + row) = Scalar(-1) / rho(row);
     }
     H.makeCompressed();
   } else {
     H.template topLeftCorner<N, N>(n, n) = spbm.P;
     H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
     H.template topRightCorner<N, M>(n, m)    = spbm.A.transpose();
-    H.template bottomRightCorner<M, M>(m, m) = Rm::Constant(m, Scalar(-1.) / rho).asDiagonal();
+    H.template bottomRightCorner<M, M>(m, m) = (-rho).cwiseInverse().asDiagonal();
   }
 
-  const auto t0 = std::chrono::high_resolution_clock::now();
+  const auto t_fill = std::chrono::high_resolution_clock::now();
 
   if (prm.verbose) {
     using std::cout, std::left, std::endl, std::setw, std::right;
     // clang-format off
     cout << "========================= QP Solver =========================" << endl;
     cout << "Solving QP with n=" << n << ", m=" << m << endl;
-    cout << setw(8)  << right  << "ITER"
+    cout << setw(8)  << right << "ITER"
          << setw(14) << right << "OBJ"
          << setw(14) << right << "PRI_RES"
          << setw(14) << right << "DUA_RES"
-         << setw(7) << right << "TIME" << std::endl;
+         << setw(10) << right << "TIME" << std::endl;
     // clang-format on
   }
 
@@ -686,16 +704,11 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     z.setZero(m);
   }
 
-  // allocate working arrays
-  Rn x_us(n), dx_us(n);
-  Rm z_next(m), y_us(m), z_us(m), dy_us(m);
-  Rk p(k);
-
   // main optimization loop
   auto iter = 0u;
   for (; (!prm.max_iter || iter != prm.max_iter.value()) && !ret_code; ++iter) {
     p.template head<N>(n)       = sigma * x - spbm.q;
-    p.template segment<M>(n, m) = z - y / rho;
+    p.template segment<M>(n, m) = z - rho.cwiseInverse().cwiseProduct(y);
     ldlt.solve_inplace(p);
 
     if (iter % prm.stop_check_iter == 1) {
@@ -704,10 +717,12 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     }
 
     x      = alpha * p.template head<N>(n) + alpha_comp * x;
-    z_next = ((alpha / rho) * p.template segment<M>(n, m) + (alpha_comp / rho) * y + z)
+    z_next = (alpha * rho.cwiseInverse().cwiseProduct(p.template segment<M>(n, m))
+              + alpha_comp * rho.cwiseInverse().cwiseProduct(y) + z)
                .cwiseMax(spbm.l)
                .cwiseMin(spbm.u);
-    y = alpha_comp * y + alpha * p.template segment<M>(n, m) + rho * z - rho * z_next;
+    y = alpha_comp * y + alpha * p.template segment<M>(n, m) + rho.cwiseProduct(z)
+      - rho.cwiseProduct(z_next);
     z = z_next;
 
     if (iter % prm.stop_check_iter == 1) {
@@ -720,15 +735,14 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
       ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);
 
       if (prm.verbose) {
-        using std::cout, std::scientific, std::endl, std::setw, std::right,
-          std::chrono::microseconds;
+        using std::cout, std::endl, std::setw, std::right, std::chrono::microseconds;
         // clang-format off
         cout << setw(7) << right << iter << ":"
-          << scientific
+          << std::scientific
           << setw(14) << right << (0.5 * pbm.P * x_us + pbm.q).dot(x_us)
           << setw(14) << right << (pbm.A * x_us - z_us).template lpNorm<Eigen::Infinity>()
           << setw(14) << right << (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).template lpNorm<Eigen::Infinity>()
-          << setw(7) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
+          << setw(10) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
           << std::endl;
         // clang-format on
       }
@@ -751,7 +765,27 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
   // polish solution if optimal
   if (sol.code == ExitCode::Optimal && prm.polish) {
-    if (!detail::polish_qp(spbm, sol, prm)) { sol.code = ExitCode::PolishFailed; }
+    if (detail::polish_qp(spbm, sol, prm)) {
+      if (prm.verbose) {
+        using std::cout, std::endl, std::setw, std::right, std::chrono::microseconds;
+        x_us = S.template head<N>(n).cwiseProduct(sol.primal);  // NOTE: x std::moved to sol
+        y_us = S.template segment<M>(n, m).cwiseProduct(sol.dual) / c;  // NOTE: y std::moved to sol
+        z_us = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
+        // clang-format off
+        cout << setw(8) << right << "polish:"
+          << std::scientific
+          << setw(14) << right << (0.5 * pbm.P * x_us + pbm.q).dot(x_us)
+          << setw(14) << right << (pbm.A * x_us - z_us).template lpNorm<Eigen::Infinity>()
+          << setw(14) << right << (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).template lpNorm<Eigen::Infinity>()
+          << setw(10) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
+          << std::endl;
+        // clang-format on
+      }
+
+    } else {
+      if (prm.verbose) { std::cout << "Polish failed" << std::endl; }
+      sol.code = ExitCode::PolishFailed;
+    }
   }
 
   const auto t_polish = std::chrono::high_resolution_clock::now();
@@ -770,7 +804,8 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
     cout << setw(25) << left << "Iterations"                << setw(10) << right << iter - 1                                               << endl;
     cout << setw(25) << left << "Total time (microseconds)" << setw(10) << right << duration_cast<microseconds>(t_polish - t0).count()     << endl;
-    cout << setw(25) << left << "  Factorization"           << setw(10) << right << duration_cast<microseconds>(t_factor - t0).count()     << endl;
+    cout << setw(25) << left << "  Matrix filling"          << setw(10) << right << duration_cast<microseconds>(t_fill - t0).count()       << endl;
+    cout << setw(25) << left << "  Factorization"           << setw(10) << right << duration_cast<microseconds>(t_factor - t_fill).count() << endl;
     cout << setw(25) << left << "  Iteration"               << setw(10) << right << duration_cast<microseconds>(t_iter - t_factor).count() << endl;
     cout << setw(25) << left << "  Polish"                  << setw(10) << right << duration_cast<microseconds>(t_polish - t_iter).count() << endl;
     cout << "=============================================================" << endl;
