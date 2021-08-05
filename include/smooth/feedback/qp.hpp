@@ -35,6 +35,8 @@
 #include <Eigen/Sparse>
 
 #include <chrono>
+#include <iomanip>
+#include <iostream>
 #include <limits>
 
 #include "internal/ldlt_lapack.hpp"
@@ -139,12 +141,18 @@ struct Solution
  */
 struct SolverParams
 {
+  /// print solver info to stdout
+  bool verbose = false;
+
   /// relaxation parameter
   float alpha = 1.6;
   /// first dul step size
   float rho = 0.1;
   /// second dual step length
   float sigma = 1e-6;
+
+  /// scale problem
+  bool scaling = true;
 
   /// absolute threshold for convergence
   float eps_abs = 1e-3;
@@ -594,7 +602,10 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   std::optional<ExitCode> ret_code = std::nullopt;
 
   // scale problem
-  const auto [spbm, S, c] = detail::scale_qp(pbm);
+  Scalar c                      = 1;
+  Eigen::Matrix<Scalar, K, 1> S = Eigen::Matrix<Scalar, K, 1>::Ones(k);
+  Pbm spbm                      = pbm;
+  if (prm.scaling) { std::tie(spbm, S, c) = detail::scale_qp(pbm); }
 
   if ((spbm.u - spbm.l).minCoeff() < Scalar(0.) || spbm.l.maxCoeff() == inf
       || spbm.u.minCoeff() == -inf) {
@@ -638,8 +649,22 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
   const auto t0 = std::chrono::high_resolution_clock::now();
 
+  if (prm.verbose) {
+    using std::cout, std::left, std::endl, std::setw, std::right;
+    cout << "========================= QP Solver =========================" << endl;
+    cout << "Solving QP with n=" << n << ", m=" << m << endl;
+    cout << setw(8)  << right  << "ITER"
+         << setw(14) << right << "OBJ"
+         << setw(14) << right << "PRI_RES"
+         << setw(14) << right << "DUA_RES"
+         << setw(7) << right << "TIME" << std::endl;
+  }
+
   // factorize H
   LDLT ldlt(std::move(H));
+
+  const auto t_factor = std::chrono::high_resolution_clock::now();
+
   if (ldlt.info()) { ret_code = ExitCode::Unknown; }
 
   // initialize solver variables
@@ -671,7 +696,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     p.template segment<M>(n, m) = z - y / rho;
     ldlt.solve_inplace(p);
 
-    if (iter % prm.stop_check_iter == prm.stop_check_iter - 1) {
+    if (iter % prm.stop_check_iter == 0) {
       // termination checking requires difference, store old scaled values
       dx_us = x, dy_us = y;
     }
@@ -683,14 +708,28 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     y = alpha_comp * y + alpha * p.template segment<M>(n, m) + rho * z - rho * z_next;
     z = z_next;
 
-    if (iter % prm.stop_check_iter == prm.stop_check_iter - 1) {
+    if (iter % prm.stop_check_iter == 0) {
       // check stopping criteria for unscaled problem and unscaled variables
       x_us     = S.template head<N>(n).cwiseProduct(x);
       y_us     = S.template segment<M>(n, m).cwiseProduct(y) / c;
       z_us     = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
       dx_us    = S.template head<N>(n).cwiseProduct(x - dx_us);
       dy_us    = S.template segment<M>(n, m).cwiseProduct(y - dy_us) / c;
+
       ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);
+
+      if (prm.verbose) {
+        using std::cout, std::scientific, std::defaultfloat, std::endl, std::setw, std::left, std::right, std::chrono::microseconds;
+
+        // clang-format off
+        cout << setw(7) << right << iter << ":"
+          << scientific
+          << setw(14) << right << (0.5 * pbm.P * x_us + pbm.q).dot(x_us)
+          << setw(14) << right << (pbm.A * x_us - z_us).template lpNorm<Eigen::Infinity>()
+          << setw(14) << right << (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).template lpNorm<Eigen::Infinity>()
+          << setw(7) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count() << std::endl;
+        // clang-format on
+      }
 
       // check for timeout
       if (!ret_code) {
@@ -706,17 +745,35 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
     .primal                      = std::move(x),
     .dual                        = std::move(y)};
 
+  const auto t_iter = std::chrono::high_resolution_clock::now();
+
   // polish solution if optimal
   if (sol.code == ExitCode::Optimal && prm.polish) {
     if (!detail::polish_qp(spbm, sol, prm)) { sol.code = ExitCode::PolishFailed; }
   }
+
+  const auto t_polish = std::chrono::high_resolution_clock::now();
 
   // unscale solution
   sol.primal.applyOnTheLeft(S.template head<N>(n).asDiagonal());
   sol.dual.applyOnTheLeft(S.template segment<M>(n, m).asDiagonal());
   sol.dual /= c;
 
-  // TODO print solver summary
+  if (prm.verbose) {
+    using std::cout, std::left, std::right, std::setw, std::endl, std::chrono::microseconds;
+
+    // clang-format off
+    cout << "QP solver summary:" << endl;
+    cout << "Result " << static_cast<int>(sol.code) << endl;
+
+    cout << setw(25) << left << "Iterations"                << setw(10) << right << iter - 1                                               << endl;
+    cout << setw(25) << left << "Total time (microseconds)" << setw(10) << right << duration_cast<microseconds>(t_polish - t0).count()     << endl;
+    cout << setw(25) << left << "  Factorization"           << setw(10) << right << duration_cast<microseconds>(t_factor - t0).count()     << endl;
+    cout << setw(25) << left << "  Iteration"               << setw(10) << right << duration_cast<microseconds>(t_iter - t_factor).count() << endl;
+    cout << setw(25) << left << "  Polish"                  << setw(10) << right << duration_cast<microseconds>(t_polish - t_iter).count() << endl;
+    cout << "=============================================================" << endl;
+    // clang-format on
+  }
 
   return sol;
 }

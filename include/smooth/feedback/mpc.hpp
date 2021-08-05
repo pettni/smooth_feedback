@@ -565,7 +565,13 @@ public:
     const double dt = ocp_.T / static_cast<double>(K);
 
     const auto qp = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, lin_);
-    auto sol      = smooth::feedback::solve_qp(qp, prm_.qp, warmstart_);
+
+#ifdef SMOOTH__FEEDBACK__COMPAT__OSQP_HPP_
+#pragma message("Using OSQP qp solver in MPC")
+    auto sol = smooth::feedback::solve_qp_osqp(qp, prm_.qp, warmstart_);
+#else
+    auto sol = smooth::feedback::solve_qp(qp, prm_.qp, warmstart_);
+#endif
 
     for (auto i = 0u; i < prm_.iterative_relinearization; ++i) {
       // check if solution touches linearization domain
@@ -582,7 +588,11 @@ public:
         relinearize_input_around_sol(sol);
 
         const auto qp = smooth::feedback::ocp_to_qp<K>(ocp_, dyn_, lin_);
-        sol           = smooth::feedback::solve_qp(qp, qp_prm_);
+#ifdef SMOOTH__FEEDBACK__COMPAT__OSQP_HPP_
+        sol = smooth::feedback::solve_qp_osqp(qp, prm_.qp, warmstart_);
+#else
+        sol = smooth::feedback::solve_qp(qp, prm_.qp, warmstart_);
+#endif
       } else {
         // solution seems fine
         break;

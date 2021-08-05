@@ -20,7 +20,9 @@ namespace smooth::feedback {
  * call. For more fine-grained control use the low-level OSQP interface (https://osqp.org/).
  */
 template<typename Problem>
-auto solve_qp_osqp(const Problem & pbm, const SolverParams & prm)
+Solution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
+  const SolverParams & prm,
+  std::optional<std::reference_wrapper<const Solution<-1, -1, double>>> warmstart = {})
 {
   // Covert to sparse matrices with OSQP indexing
   Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> P;
@@ -40,22 +42,30 @@ auto solve_qp_osqp(const Problem & pbm, const SolverParams & prm)
 
   OSQPSettings * settings = (OSQPSettings *)c_malloc(sizeof(OSQPSettings));
   osqp_set_default_settings(settings);
+
+  settings->verbose            = prm.verbose;
   settings->sigma              = prm.sigma;
   settings->alpha              = prm.alpha;
   settings->rho                = prm.rho;
-  settings->sigma              = prm.sigma;
   settings->eps_abs            = prm.eps_abs;
   settings->eps_rel            = prm.eps_rel;
   settings->eps_prim_inf       = prm.eps_primal_inf;
   settings->eps_dual_inf       = prm.eps_dual_inf;
-  settings->max_iter           = prm.max_iter;
+  settings->scaling            = prm.scaling;
   settings->check_termination  = prm.stop_check_iter;
   settings->polish             = prm.polish;
   settings->polish_refine_iter = prm.polish_iter;
   settings->delta              = prm.delta;
+  settings->linsys_solver      = QDLDL_SOLVER;
+
   settings->adaptive_rho       = false;
   settings->scaled_termination = false;
-  settings->linsys_solver      = QDLDL_SOLVER;
+
+  if (prm.max_iter) { settings->max_iter = prm.max_iter.value(); }
+  if (prm.max_time) {
+    settings->time_limit =
+      duration_cast<std::chrono::duration<double>>(prm.max_time.value()).count();
+  }
 
   OSQPData * data = (OSQPData *)c_malloc(sizeof(OSQPData));
   data->n         = A.cols();
@@ -74,6 +84,12 @@ auto solve_qp_osqp(const Problem & pbm, const SolverParams & prm)
   ret.code = ExitCode::Unknown;
 
   c_int error = osqp_setup(&work, data, settings);
+
+  if (warmstart) {
+    osqp_warm_start(
+      work, warmstart.value().get().primal.data(), warmstart.value().get().dual.data());
+    settings->warm_start = 1;
+  }
 
   if (!error) { error &= osqp_solve(work); }
 
