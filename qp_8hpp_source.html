@@ -589,136 +589,138 @@ $(function() {
 <div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160; </div>
 <div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;  <span class="keywordflow">if</span> (prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a67d5cc7ba04d0d5c97e0bfb88ce59c38">verbose</a>) {</div>
 <div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;    <span class="keyword">using</span> std::cout, std::left, std::endl, std::setw, std::right;</div>
-<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;========================= QP Solver =========================&quot;</span> &lt;&lt; endl;</div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Solving QP with n=&quot;</span> &lt;&lt; n &lt;&lt; <span class="stringliteral">&quot;, m=&quot;</span> &lt;&lt; m &lt;&lt; endl;</div>
-<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;    cout &lt;&lt; setw(8)  &lt;&lt; right  &lt;&lt; <span class="stringliteral">&quot;ITER&quot;</span></div>
-<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;OBJ&quot;</span></div>
-<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;PRI_RES&quot;</span></div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;DUA_RES&quot;</span></div>
-<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;         &lt;&lt; setw(7) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;TIME&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;  }</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160; </div>
-<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;  <span class="comment">// factorize H</span></div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;  LDLT ldlt(std::move(H));</div>
-<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160; </div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> t_factor = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;    <span class="comment">// clang-format off</span></div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;========================= QP Solver =========================&quot;</span> &lt;&lt; endl;</div>
+<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Solving QP with n=&quot;</span> &lt;&lt; n &lt;&lt; <span class="stringliteral">&quot;, m=&quot;</span> &lt;&lt; m &lt;&lt; endl;</div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;    cout &lt;&lt; setw(8)  &lt;&lt; right  &lt;&lt; <span class="stringliteral">&quot;ITER&quot;</span></div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;OBJ&quot;</span></div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;PRI_RES&quot;</span></div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;DUA_RES&quot;</span></div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;         &lt;&lt; setw(7) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;TIME&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;    <span class="comment">// clang-format on</span></div>
+<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;  }</div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160; </div>
+<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;  <span class="comment">// factorize H</span></div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;  LDLT ldlt(std::move(H));</div>
 <div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160; </div>
-<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;  <span class="keywordflow">if</span> (ldlt.info()) { ret_code = ExitCode::Unknown; }</div>
+<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> t_factor = std::chrono::high_resolution_clock::now();</div>
 <div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160; </div>
-<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;  <span class="comment">// initialize solver variables</span></div>
-<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;  Rn x;</div>
-<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;  Rm z, y;</div>
-<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;  <span class="keywordflow">if</span> (warmstart.has_value()) {</div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;    <span class="comment">// warmstart variables must be scaled</span></div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;    x = warmstart.value().get().primal;</div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;    x.applyOnTheLeft(S.template head&lt;N&gt;(n).cwiseInverse().asDiagonal());</div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;    y = warmstart.value().get().dual;</div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;    y.applyOnTheLeft(S.template segment&lt;M&gt;(n, m).cwiseInverse().asDiagonal());</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;    y *= c;</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;    z.noalias() = spbm.A * x;</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;  } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;    x.setZero(n);</div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;    y.setZero(m);</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;    z.setZero(m);</div>
-<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;  }</div>
-<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160; </div>
-<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;  <span class="comment">// allocate working arrays</span></div>
-<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;  Rn x_us(n), dx_us(n);</div>
-<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;  Rm z_next(m), y_us(m), z_us(m), dy_us(m);</div>
-<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;  Rk p(k);</div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160; </div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;  <span class="comment">// main optimization loop</span></div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;  <span class="keyword">auto</span> iter = 0u;</div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;  <span class="keywordflow">for</span> (; (!prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a05ef68b8127ea50da7089c53b71921bc">max_iter</a> || iter != prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a05ef68b8127ea50da7089c53b71921bc">max_iter</a>.value()) &amp;&amp; !ret_code; ++iter) {</div>
-<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;    p.template head&lt;N&gt;(n)       = sigma * x - spbm.q;</div>
-<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;    p.template segment&lt;M&gt;(n, m) = z - y / rho;</div>
-<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;    ldlt.solve_inplace(p);</div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160; </div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;    <span class="keywordflow">if</span> (iter % prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a58508200877b66d1d3400e62d1b41bac">stop_check_iter</a> == 1) {</div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;      <span class="comment">// termination checking requires difference, store old scaled values</span></div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;      dx_us = x, dy_us = y;</div>
-<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;    }</div>
-<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160; </div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;    x      = alpha * p.template head&lt;N&gt;(n) + alpha_comp * x;</div>
-<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;    z_next = ((alpha / rho) * p.template segment&lt;M&gt;(n, m) + (alpha_comp / rho) * y + z)</div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;               .cwiseMax(spbm.l)</div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;               .cwiseMin(spbm.u);</div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;    y = alpha_comp * y + alpha * p.template segment&lt;M&gt;(n, m) + rho * z - rho * z_next;</div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;    z = z_next;</div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160; </div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;    <span class="keywordflow">if</span> (iter % prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a58508200877b66d1d3400e62d1b41bac">stop_check_iter</a> == 1) {</div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;      <span class="comment">// check stopping criteria for unscaled problem and unscaled variables</span></div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;      x_us     = S.template head&lt;N&gt;(n).cwiseProduct(x);</div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;      y_us     = S.template segment&lt;M&gt;(n, m).cwiseProduct(y) / c;</div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;      z_us     = S.template segment&lt;M&gt;(n, m).cwiseInverse().cwiseProduct(z);</div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;      dx_us    = S.template head&lt;N&gt;(n).cwiseProduct(x - dx_us);</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;      dy_us    = S.template segment&lt;M&gt;(n, m).cwiseProduct(y - dy_us) / c;</div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160; </div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;      ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);</div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160; </div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;      <span class="keywordflow">if</span> (prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a67d5cc7ba04d0d5c97e0bfb88ce59c38">verbose</a>) {</div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;        <span class="keyword">using</span> std::cout, std::scientific, std::defaultfloat, std::endl, std::setw, std::left, std::right, std::chrono::microseconds;</div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160; </div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;        <span class="comment">// clang-format off</span></div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;        cout &lt;&lt; setw(7) &lt;&lt; right &lt;&lt; iter &lt;&lt; <span class="stringliteral">&quot;:&quot;</span></div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;          &lt;&lt; scientific</div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (0.5 * pbm.P * x_us + pbm.q).dot(x_us)</div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.A * x_us - z_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;          &lt;&lt; setw(7) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(std::chrono::high_resolution_clock::now() - t0).count() &lt;&lt; std::endl;</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;        <span class="comment">// clang-format on</span></div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;      }</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160; </div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;      <span class="comment">// check for timeout</span></div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;      <span class="keywordflow">if</span> (!ret_code) {</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;        <span class="keywordflow">if</span> (prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a9b72af1457dc7521b0ba85128f3dd6e6">max_time</a> &amp;&amp; std::chrono::high_resolution_clock::now() &gt; t0 + prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a9b72af1457dc7521b0ba85128f3dd6e6">max_time</a>.value()) {</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;          ret_code = ExitCode::MaxTime;</div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;        }</div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;      }</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;    }</div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;  }</div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160; </div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;  detail::QpSol_t&lt;Pbm&gt; sol{.code = ret_code.value_or(ExitCode::MaxIterations),</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;    .iter                        = iter,</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;    .primal                      = std::move(x),</div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;    .dual                        = std::move(y)};</div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160; </div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> t_iter = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;  <span class="keywordflow">if</span> (ldlt.info()) { ret_code = ExitCode::Unknown; }</div>
+<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160; </div>
+<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;  <span class="comment">// initialize solver variables</span></div>
+<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;  Rn x;</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;  Rm z, y;</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;  <span class="keywordflow">if</span> (warmstart.has_value()) {</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;    <span class="comment">// warmstart variables must be scaled</span></div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;    x = warmstart.value().get().primal;</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;    x.applyOnTheLeft(S.template head&lt;N&gt;(n).cwiseInverse().asDiagonal());</div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;    y = warmstart.value().get().dual;</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;    y.applyOnTheLeft(S.template segment&lt;M&gt;(n, m).cwiseInverse().asDiagonal());</div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;    y *= c;</div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;    z.noalias() = spbm.A * x;</div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;  } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;    x.setZero(n);</div>
+<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;    y.setZero(m);</div>
+<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;    z.setZero(m);</div>
+<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;  }</div>
+<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160; </div>
+<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;  <span class="comment">// allocate working arrays</span></div>
+<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;  Rn x_us(n), dx_us(n);</div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;  Rm z_next(m), y_us(m), z_us(m), dy_us(m);</div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;  Rk p(k);</div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160; </div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;  <span class="comment">// main optimization loop</span></div>
+<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;  <span class="keyword">auto</span> iter = 0u;</div>
+<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;  <span class="keywordflow">for</span> (; (!prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a05ef68b8127ea50da7089c53b71921bc">max_iter</a> || iter != prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a05ef68b8127ea50da7089c53b71921bc">max_iter</a>.value()) &amp;&amp; !ret_code; ++iter) {</div>
+<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;    p.template head&lt;N&gt;(n)       = sigma * x - spbm.q;</div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;    p.template segment&lt;M&gt;(n, m) = z - y / rho;</div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;    ldlt.solve_inplace(p);</div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160; </div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;    <span class="keywordflow">if</span> (iter % prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a58508200877b66d1d3400e62d1b41bac">stop_check_iter</a> == 1) {</div>
+<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;      <span class="comment">// termination checking requires difference, store old scaled values</span></div>
+<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;      dx_us = x, dy_us = y;</div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;    }</div>
+<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160; </div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;    x      = alpha * p.template head&lt;N&gt;(n) + alpha_comp * x;</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;    z_next = ((alpha / rho) * p.template segment&lt;M&gt;(n, m) + (alpha_comp / rho) * y + z)</div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;               .cwiseMax(spbm.l)</div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;               .cwiseMin(spbm.u);</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;    y = alpha_comp * y + alpha * p.template segment&lt;M&gt;(n, m) + rho * z - rho * z_next;</div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;    z = z_next;</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160; </div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;    <span class="keywordflow">if</span> (iter % prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a58508200877b66d1d3400e62d1b41bac">stop_check_iter</a> == 1) {</div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;      <span class="comment">// check stopping criteria for unscaled problem and unscaled variables</span></div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;      x_us     = S.template head&lt;N&gt;(n).cwiseProduct(x);</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;      y_us     = S.template segment&lt;M&gt;(n, m).cwiseProduct(y) / c;</div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;      z_us     = S.template segment&lt;M&gt;(n, m).cwiseInverse().cwiseProduct(z);</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;      dx_us    = S.template head&lt;N&gt;(n).cwiseProduct(x - dx_us);</div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;      dy_us    = S.template segment&lt;M&gt;(n, m).cwiseProduct(y - dy_us) / c;</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;      ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160; </div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;      <span class="keywordflow">if</span> (prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a67d5cc7ba04d0d5c97e0bfb88ce59c38">verbose</a>) {</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;        <span class="keyword">using</span> std::cout, std::scientific, std::endl, std::setw, std::right,</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;          std::chrono::microseconds;</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;        <span class="comment">// clang-format off</span></div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;        cout &lt;&lt; setw(7) &lt;&lt; right &lt;&lt; iter &lt;&lt; <span class="stringliteral">&quot;:&quot;</span></div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;          &lt;&lt; scientific</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (0.5 * pbm.P * x_us + pbm.q).dot(x_us)</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.A * x_us - z_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;          &lt;&lt; setw(7) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(std::chrono::high_resolution_clock::now() - t0).count()</div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;          &lt;&lt; std::endl;</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;        <span class="comment">// clang-format on</span></div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;      }</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160; </div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;      <span class="comment">// check for timeout</span></div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;      <span class="keywordflow">if</span> (!ret_code) {</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;        <span class="keywordflow">if</span> (prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a9b72af1457dc7521b0ba85128f3dd6e6">max_time</a> &amp;&amp; std::chrono::high_resolution_clock::now() &gt; t0 + prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a9b72af1457dc7521b0ba85128f3dd6e6">max_time</a>.value()) {</div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;          ret_code = ExitCode::MaxTime;</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;        }</div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;      }</div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;    }</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;  }</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160; </div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;  detail::QpSol_t&lt;Pbm&gt; sol{.code = ret_code.value_or(ExitCode::MaxIterations),</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;    .iter                        = iter,</div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;    .primal                      = std::move(x),</div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;    .dual                        = std::move(y)};</div>
 <div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160; </div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;  <span class="comment">// polish solution if optimal</span></div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;  <span class="keywordflow">if</span> (sol.code == ExitCode::Optimal &amp;&amp; prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a254c7e79867feb74a80085ac21e17e79">polish</a>) {</div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;    <span class="keywordflow">if</span> (!detail::polish_qp(spbm, sol, prm)) { sol.code = ExitCode::PolishFailed; }</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;  }</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160; </div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> t_polish = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> t_iter = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160; </div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;  <span class="comment">// polish solution if optimal</span></div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;  <span class="keywordflow">if</span> (sol.code == ExitCode::Optimal &amp;&amp; prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a254c7e79867feb74a80085ac21e17e79">polish</a>) {</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;    <span class="keywordflow">if</span> (!detail::polish_qp(spbm, sol, prm)) { sol.code = ExitCode::PolishFailed; }</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;  }</div>
 <div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160; </div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;  <span class="comment">// unscale solution</span></div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;  sol.primal.applyOnTheLeft(S.template head&lt;N&gt;(n).asDiagonal());</div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;  sol.dual.applyOnTheLeft(S.template segment&lt;M&gt;(n, m).asDiagonal());</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;  sol.dual /= c;</div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160; </div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;  <span class="keywordflow">if</span> (prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a67d5cc7ba04d0d5c97e0bfb88ce59c38">verbose</a>) {</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;    <span class="keyword">using</span> std::cout, std::left, std::right, std::setw, std::endl, std::chrono::microseconds;</div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160; </div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;    <span class="comment">// clang-format off</span></div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;QP solver summary:&quot;</span> &lt;&lt; endl;</div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Result &quot;</span> &lt;&lt; <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(sol.code) &lt;&lt; endl;</div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160; </div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Iterations&quot;</span>                &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; iter - 1                                               &lt;&lt; endl;</div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Total time (microseconds)&quot;</span> &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t0).count()     &lt;&lt; endl;</div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Factorization&quot;</span>           &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_factor - t0).count()     &lt;&lt; endl;</div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Iteration&quot;</span>               &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_iter - t_factor).count() &lt;&lt; endl;</div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Polish&quot;</span>                  &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t_iter).count() &lt;&lt; endl;</div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;=============================================================&quot;</span> &lt;&lt; endl;</div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;    <span class="comment">// clang-format on</span></div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;  }</div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160; </div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;  <span class="keywordflow">return</span> sol;</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;}</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160; </div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> t_polish = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160; </div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;  <span class="comment">// unscale solution</span></div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;  sol.primal.applyOnTheLeft(S.template head&lt;N&gt;(n).asDiagonal());</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;  sol.dual.applyOnTheLeft(S.template segment&lt;M&gt;(n, m).asDiagonal());</div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;  sol.dual /= c;</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160; </div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;  <span class="keywordflow">if</span> (prm.<a class="code" href="structsmooth_1_1feedback_1_1SolverParams.html#a67d5cc7ba04d0d5c97e0bfb88ce59c38">verbose</a>) {</div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;    <span class="keyword">using</span> std::cout, std::left, std::right, std::setw, std::endl, std::chrono::microseconds;</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160; </div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;    <span class="comment">// clang-format off</span></div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;QP solver summary:&quot;</span> &lt;&lt; endl;</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Result &quot;</span> &lt;&lt; <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(sol.code) &lt;&lt; endl;</div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160; </div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Iterations&quot;</span>                &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; iter - 1                                               &lt;&lt; endl;</div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Total time (microseconds)&quot;</span> &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t0).count()     &lt;&lt; endl;</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Factorization&quot;</span>           &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_factor - t0).count()     &lt;&lt; endl;</div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Iteration&quot;</span>               &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_iter - t_factor).count() &lt;&lt; endl;</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Polish&quot;</span>                  &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t_iter).count() &lt;&lt; endl;</div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;=============================================================&quot;</span> &lt;&lt; endl;</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;    <span class="comment">// clang-format on</span></div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;  }</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160; </div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;  <span class="keywordflow">return</span> sol;</div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;}</div>
 <div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160; </div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__QP_HPP_</span></div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160; </div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__QP_HPP_</span></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">smooth::feedback::detail::LDLTLapack</a></div><div class="ttdoc">Wrapper for LAPACKE xSYTRF / xSYTRS routines for factorizing and solving symmetric linear systems of ...</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00062">ldlt_lapack.hpp:63</a></div></div>
 <div class="ttc" id="aldlt__lapack_8hpp_html"><div class="ttname"><a href="ldlt__lapack_8hpp.html">ldlt_lapack.hpp</a></div><div class="ttdoc">Wrapper for lapack ldlt routines.</div></div>
 <div class="ttc" id="aldlt__sparse_8hpp_html"><div class="ttname"><a href="ldlt__sparse_8hpp.html">ldlt_sparse.hpp</a></div><div class="ttdoc">Sparse LDL' for non-singular matrices.</div></div>
