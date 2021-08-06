@@ -20,9 +20,10 @@ namespace smooth::feedback {
  * call. For more fine-grained control use the low-level OSQP interface (https://osqp.org/).
  */
 template<typename Problem>
-Solution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
-  const SolverParams & prm,
-  std::optional<std::reference_wrapper<const Solution<-1, -1, double>>> warmstart = {})
+QPSolution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
+  const QPSolverParams & prm,
+  std::optional<std::reference_wrapper<const QPSolution<-1, -1, double>>> warmstart =
+    {})
 {
   // Covert to sparse matrices with OSQP indexing
   Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> P;
@@ -86,8 +87,8 @@ Solution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
 
   OSQPWorkspace * work;
 
-  Solution<-1, -1, double> ret;
-  ret.code = ExitCode::Unknown;
+  QPSolution<-1, -1, double> ret;
+  ret.code = QPSolutionStatus::Unknown;
 
   c_int error = osqp_setup(&work, data, settings);
 
@@ -104,23 +105,23 @@ Solution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
   if (!error) {
     switch (work->info->status_val) {
     case OSQP_SOLVED: {
-      ret.code = ExitCode::Optimal;
+      ret.code = QPSolutionStatus::Optimal;
       break;
     }
     case OSQP_PRIMAL_INFEASIBLE: {
-      ret.code = ExitCode::PrimalInfeasible;
+      ret.code = QPSolutionStatus::PrimalInfeasible;
       break;
     }
     case OSQP_DUAL_INFEASIBLE: {
-      ret.code = ExitCode::DualInfeasible;
+      ret.code = QPSolutionStatus::DualInfeasible;
       break;
     }
     case OSQP_MAX_ITER_REACHED: {
-      ret.code = ExitCode::MaxIterations;
+      ret.code = QPSolutionStatus::MaxIterations;
       break;
     }
     case OSQP_TIME_LIMIT_REACHED: {
-      ret.code = ExitCode::MaxTime;
+      ret.code = QPSolutionStatus::MaxTime;
       break;
     }
     default: {

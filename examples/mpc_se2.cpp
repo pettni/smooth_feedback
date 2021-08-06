@@ -24,6 +24,8 @@ using U = Eigen::Matrix<T, 2, 1>;
 using Gd = G<double>;
 using Ud = U<double>;
 
+using Tangentd = typename Gd::Tangent;
+
 int main()
 {
   // number of MPC discretization points steps
@@ -39,7 +41,7 @@ int main()
   Eigen::Vector3d vdes(1, 0, 0.4);
 
   // dynamics
-  auto f = []<typename T>(const G<T> & x, const U<T> & u) -> typename G<T>::Tangent {
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> typename G<T>::Tangent {
     typename G<T>::Tangent ret;
     ret.template head<3>() = x.template part<1>();
     ret(3)                 = -T(0.2) * x.template part<1>().x() + u(0);
@@ -75,15 +77,15 @@ int main()
   mpc.set_xudes(xdes, udes);
 
   // prepare for integrating the closed-loop system
-  runge_kutta4<Gd, double, typename Gd::Tangent, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, typename Gd::Tangent & d, double) { d = f(x, u); };
+  runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
+  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
   std::vector<double> tvec, xvec, yvec, u1vec, u2vec;
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 30s; t += 50ms) {
     // compute MPC input
     auto code = mpc(u, t, g);
-    if (code != smooth::feedback::ExitCode::Optimal) {
+    if (code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
     }
 

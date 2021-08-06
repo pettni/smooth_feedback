@@ -32,17 +32,24 @@ void ekf_snippet()
 {
   smooth::feedback::EKF<smooth::SE2d> ekf;
 
+  // motion model
+  auto f = []<typename T>(double, const smooth::SE2<T> &) ->
+    typename smooth::SE2<T>::Tangent { return typename smooth::SE2<T>::Tangent(0.4, 0.01, 0.1); };
+
+  // measurement model
+  Eigen::Vector2d landmark(1, 1);
+  auto h = [&landmark]<typename T>(
+             const smooth::SE2<T> & x) -> Eigen::Matrix<T, 2, 1> { return x.inverse() * landmark; };
+
   // PREDICT STEP: propagate filter over time
-  ekf.predict(
-    [](double, const auto &) { return smooth::SE2d::Tangent(0.4, 0.01, 0.1); },  // motion model
+  ekf.predict(f,
     Eigen::Matrix3d::Identity(),  // motion covariance
     1.                            // time step length
   );
 
-  // UPDATE STEP: register a measurement of a landmark at [1, 1]
-  Eigen::Vector2d landmark(1, 1);
-  ekf.update([&landmark](const auto & x) { return x.inverse() * landmark; },  // measurement model
-    Eigen::Vector2d(0.3, 0.6),                                                // measurement result
+  // UPDATE STEP: register a measurement of the known landmark
+  ekf.update(h,
+    Eigen::Vector2d(0.3, 0.6),   // measurement result
     Eigen::Matrix2d::Identity()  // measurement covariance
   );
 

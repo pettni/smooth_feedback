@@ -23,44 +23,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
+#ifndef SMOOTH__FEEDBACK__INTERNAL__META_HPP_
+#define SMOOTH__FEEDBACK__INTERNAL__META_HPP_
 
-#include <smooth/feedback/asif.hpp>
-#include <smooth/se2.hpp>
-#include <smooth/tn.hpp>
+#include <smooth/concepts.hpp>
 
-template<typename T>
-using G = smooth::SE2<T>;
+namespace smooth::feedback {
 
-template<typename T>
-using U = Eigen::Matrix<T, 2, 1>;
-
-TEST(Asif, Basic)
+/// Identity for Eigen types is the zero vector/matrix
+template<Manifold T>
+requires(!LieGroup<T>)
+T identity()
 {
-  const auto f = []<typename T>(T, const G<T> &, const U<T> & u) {
-    return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
-  };
-
-  const auto h = []<typename T>(T, const G<T> & g) { return g.r2(); };
-
-  const auto bu = []<typename T>(T, const G<T> &) { return Eigen::Matrix<T, 2, 1>(-0.1, 1); };
-
-  smooth::SE2d x0 = smooth::SE2d::Random();
-
-  smooth::feedback::AsifParams prm;
-
-  Eigen::Vector2d u = Eigen::Vector2d::Zero();
-
-  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, Eigen::Vector2d>(x0, u, f, h, bu, prm);
-
-  std::cout << "A" << std::endl;
-  std::cout << qp.A << std::endl;
-  std::cout << "lu" << std::endl;
-  std::cout << qp.l.transpose() << std::endl;
-  std::cout << qp.u.transpose() << std::endl;
-
-  std::cout << "P" << std::endl;
-  std::cout << qp.P << std::endl;
-  std::cout << "q" << std::endl;
-  std::cout << qp.q.transpose() << std::endl;
+  return T::Zero();
 }
+
+/// Identity for LieGroup types is the zero vector/matrix
+template<LieGroup G>
+G identity()
+{
+  return G::Identity();
+}
+
+}  // namespace smooth::feedback
+
+#endif  // SMOOTH__FEEDBACK__INTERNAL__META_HPP_
+

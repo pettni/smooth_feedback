@@ -95,7 +95,7 @@ public:
    * @note The time \f$t\f$ argument of \f$f(t, x)\f$ ranges over the interval \f$t \in [0,
    * \tau]\f$.
    *
-   * @note The covariance \f$Q\f$ is infinitesimal, i.e. its SI unit is \f$S^2/T\f$
+   * @note The covariance \f$ Q \f$ is infinitesimal, i.e. its SI unit is \f$S^2/T\f$
    * where \f$S\f$ is the unit of state and \f$T\f$ is the unit of time.
    *
    * @note Only the upper triangular part of Q is used.
@@ -148,9 +148,8 @@ public:
         .template triangularView<Eigen::Upper>();
 
     // solve for Kalman gain
-    // TODO(pettni) use ldlt after requiring new Eigen (Eigen < 3.3.8 has problem with cpp20)
     const Eigen::Matrix<Scalar, G::Dof, Ny> K =
-      S.template selfadjointView<Eigen::Upper>().llt().solve(H * P_).transpose();
+      S.template selfadjointView<Eigen::Upper>().ldlt().solve(H * P_).transpose();
 
     // update estimate and covariance
     g_hat_ += K * (y - hval);

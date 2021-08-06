@@ -111,9 +111,9 @@ struct QuadraticProgramSparse
 };
 
 /// Solver exit codes
-enum class ExitCode : int {
+enum class QPSolutionStatus : int {
   Optimal,           /// Solution satisifes optimality condition. Solution is polished if
-                     /// `SolverParams::polish = true`.
+                     /// `QPSolverParams::polish = true`.
   PolishFailed,      /// Solution satisfies optimality condition but is not polished
   PrimalInfeasible,  /// A certificate of primal infeasibility was found, no solution returned
   DualInfeasible,    /// A certificate of dual infeasibility was found, no solution returned
@@ -124,10 +124,10 @@ enum class ExitCode : int {
 
 /// Solver solution
 template<Eigen::Index M, Eigen::Index N, typename Scalar = double>
-struct Solution
+struct QPSolution
 {
   /// Exit code
-  ExitCode code = ExitCode::Unknown;
+  QPSolutionStatus code = QPSolutionStatus::Unknown;
   /// Number of iterations
   uint64_t iter;
   /// Primal vector
@@ -139,7 +139,7 @@ struct Solution
 /**
  * @brief Options for solve_qp
  */
-struct SolverParams
+struct QPSolverParams
 {
   /// print solver info to stdout
   bool verbose = false;
@@ -185,22 +185,22 @@ namespace detail {
 // Traits to figure solution type from problem type
 // \cond
 template<typename T>
-struct QpSol;
+struct qp_solution;
 
 template<Eigen::Index M, Eigen::Index N, typename Scalar>
-struct QpSol<QuadraticProgram<M, N, Scalar>>
+struct qp_solution<QuadraticProgram<M, N, Scalar>>
 {
-  using type = Solution<M, N, Scalar>;
+  using type = QPSolution<M, N, Scalar>;
 };
 
 template<typename Scalar>
-struct QpSol<QuadraticProgramSparse<Scalar>>
+struct qp_solution<QuadraticProgramSparse<Scalar>>
 {
-  using type = Solution<-1, -1, Scalar>;
+  using type = QPSolution<-1, -1, Scalar>;
 };
 
 template<typename T>
-using QpSol_t = typename QpSol<T>::type;
+using qp_solution_t = typename qp_solution<T>::type;
 // \endcond
 
 /**
@@ -348,7 +348,7 @@ auto scale_qp(const Pbm & pbm)
  * @warning This function allocates heap memory even for static-sized problems.
  */
 template<typename Pbm>
-bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
+bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams & prm)
 {
   using AmatT                  = decltype(Pbm::A);
   using Scalar                 = typename AmatT::Scalar;
@@ -402,7 +402,7 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
     // fill P in top left block
     for (Eigen::Index p_col = 0u; p_col != n; ++p_col) {
       for (PIter it(pbm.P, p_col); it && it.index() <= p_col; ++it) {
-        H.insert(it.index(), p_col) = it.value();
+        H.insert(it.index(), p_col)  = it.value();
         Hp.insert(it.index(), p_col) = it.value();
       }
     }
@@ -410,7 +410,7 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
     // fill selected rows of A in top right block
     for (auto a_row = 0u; a_row != nl + nu; ++a_row) {
       for (AIter it(pbm.A, LU_idx(a_row)); it; ++it) {
-        H.insert(it.index(), n + a_row) = it.value();
+        H.insert(it.index(), n + a_row)  = it.value();
         Hp.insert(it.index(), n + a_row) = it.value();
       }
     }
@@ -463,13 +463,13 @@ bool polish_qp(const Pbm & pbm, QpSol_t<Pbm> & sol, const SolverParams & prm)
  * @brief Check stopping criterion for QP solver.
  */
 template<typename Pbm, typename D1, typename D2, typename D3, typename D4, typename D5>
-std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
+std::optional<QPSolutionStatus> qp_check_stopping(const Pbm & pbm,
   const Eigen::MatrixBase<D1> & x,
   const Eigen::MatrixBase<D2> & y,
   const Eigen::MatrixBase<D3> & z,
   const Eigen::MatrixBase<D4> & dx,
   const Eigen::MatrixBase<D5> & dy,
-  const SolverParams & prm)
+  const QPSolverParams & prm)
 {
   using Scalar = typename decltype(Pbm::A)::Scalar;
 
@@ -491,7 +491,7 @@ std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
     Aty.noalias()           = pbm.A.transpose() * y;
     const Scalar dual_scale = std::max<Scalar>({norm(Px), norm(pbm.q), norm(Aty)});
     if (norm(Px + pbm.q + Aty) <= prm.eps_abs + prm.eps_rel * dual_scale) {
-      return ExitCode::Optimal;
+      return QPSolutionStatus::Optimal;
     }
   }
 
@@ -519,7 +519,7 @@ std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
   }
 
   if (std::max<Scalar>(norm(Aty), u_dyp_plus_l_dyn) < prm.eps_primal_inf * Edy_norm) {
-    return ExitCode::PrimalInfeasible;
+    return QPSolutionStatus::PrimalInfeasible;
   }
 
   // DUAL INFEASIBILITY
@@ -539,7 +539,7 @@ std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
     }
   }
 
-  if (dual_infeasible) { return ExitCode::DualInfeasible; }
+  if (dual_infeasible) { return QPSolutionStatus::DualInfeasible; }
 
   return std::nullopt;
 }
@@ -554,7 +554,7 @@ std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
  * @param pbm problem formulation
  * @param prm solver options
  * @param warmstart provide initial guess for primal and dual variables
- * @return solution as Solution<M, N>
+ * @return solution as QuasraticProgramSolution<M, N>
  *
  * @note dynamic problem sizes (`M == -1 || N == -1`) are supported
  *
@@ -567,9 +567,9 @@ std::optional<ExitCode> qp_check_stopping(const Pbm & pbm,
  * For the official C implementation, see https://osqp.org/.
  */
 template<typename Pbm>
-detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
-  const SolverParams & prm,
-  std::optional<std::reference_wrapper<const detail::QpSol_t<Pbm>>> warmstart = {})
+detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
+  const QPSolverParams & prm,
+  std::optional<std::reference_wrapper<const detail::qp_solution_t<Pbm>>> warmstart = {})
 {
   using AmatT                  = decltype(Pbm::A);
   using Scalar                 = typename AmatT::Scalar;
@@ -601,7 +601,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   const Scalar sigma      = static_cast<Scalar>(prm.sigma);
 
   // return code: when set algorithm is finished
-  std::optional<ExitCode> ret_code = std::nullopt;
+  std::optional<QPSolutionStatus> ret_code = std::nullopt;
 
   // allocate working arrays
   Rn x_us(n), dx_us(n);
@@ -616,7 +616,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
   for (auto i = 0u; i != m; ++i) {
     if (spbm.l(i) == inf || spbm.u(i) == -inf || spbm.u(i) - spbm.l(i) < Scalar(0.)) {
-      ret_code = ExitCode::PrimalInfeasible;  // feasible set trivially empty
+      ret_code = QPSolutionStatus::PrimalInfeasible;  // feasible set trivially empty
     }
 
     // set rho depending on constraint type
@@ -685,7 +685,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
   const auto t_factor = std::chrono::high_resolution_clock::now();
 
-  if (ldlt.info()) { ret_code = ExitCode::Unknown; }
+  if (ldlt.info()) { ret_code = QPSolutionStatus::Unknown; }
 
   // initialize solver variables
   Rn x;
@@ -750,13 +750,13 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
       // check for timeout
       if (!ret_code) {
         if (prm.max_time && std::chrono::high_resolution_clock::now() > t0 + prm.max_time.value()) {
-          ret_code = ExitCode::MaxTime;
+          ret_code = QPSolutionStatus::MaxTime;
         }
       }
     }
   }
 
-  detail::QpSol_t<Pbm> sol{.code = ret_code.value_or(ExitCode::MaxIterations),
+  detail::qp_solution_t<Pbm> sol{.code = ret_code.value_or(QPSolutionStatus::MaxIterations),
     .iter                        = iter,
     .primal                      = std::move(x),
     .dual                        = std::move(y)};
@@ -764,11 +764,11 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
   const auto t_iter = std::chrono::high_resolution_clock::now();
 
   // polish solution if optimal
-  if (sol.code == ExitCode::Optimal && prm.polish) {
+  if (sol.code == QPSolutionStatus::Optimal && prm.polish) {
     if (detail::polish_qp(spbm, sol, prm)) {
       if (prm.verbose) {
         using std::cout, std::endl, std::setw, std::right, std::chrono::microseconds;
-        x_us = S.template head<N>(n).cwiseProduct(sol.primal);  // NOTE: x std::moved to sol
+        x_us = S.template head<N>(n).cwiseProduct(sol.primal);          // NOTE: x std::moved to sol
         y_us = S.template segment<M>(n, m).cwiseProduct(sol.dual) / c;  // NOTE: y std::moved to sol
         z_us = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
         // clang-format off
@@ -784,7 +784,7 @@ detail::QpSol_t<Pbm> solve_qp(const Pbm & pbm,
 
     } else {
       if (prm.verbose) { std::cout << "Polish failed" << std::endl; }
-      sol.code = ExitCode::PolishFailed;
+      sol.code = QPSolutionStatus::PolishFailed;
     }
   }
 

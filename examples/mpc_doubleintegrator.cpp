@@ -23,6 +23,8 @@ using U = Eigen::Matrix<T, 1, 1>;
 using Gd = G<double>;
 using Ud = U<double>;
 
+using Tangentd = typename Gd::Tangent;
+
 int main()
 {
   using std::sin;
@@ -36,7 +38,7 @@ int main()
   Ud u;
 
   // dynamics
-  auto f = []<typename T>(const G<T> & x, const U<T> & u) ->
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> u) ->
     typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
 
   // parameters
@@ -56,15 +58,15 @@ int main()
     [](Time) -> Ud { return Ud::Zero(); });
 
   // prepare for integrating the closed-loop system
-  runge_kutta4<Gd, double, typename Gd::Tangent, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, typename Gd::Tangent & d, double) { d = f(x, u); };
+  runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
+  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
     auto code = mpc(u, t, g);
-    if (code != smooth::feedback::ExitCode::Optimal) {
+    if (code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
     }
 

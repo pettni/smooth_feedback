@@ -11,7 +11,7 @@ Tool collection for control and estimation on Lie groups leveraging the
 ## Control on Lie groups
 
 These controllers are implemented for systems with dynamics on the form
-![](https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(\mathbf{x},&space;\mathbf{u}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}.) 
+![](https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(t, \mathbf{x},&space;\mathbf{u}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}.) 
 
 Nonlinearities are handled via linearization around a reference point or trajectory. For group-linear dynamics
 this automatically results in a linear system in the tangent space, in which case these algorithms are expected
@@ -52,17 +52,17 @@ to work very well.
 ## Filtering on Lie groups
 
 Filters take system models on the form
-![](https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(\mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U},) 
+![](https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(t, \mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U},) 
 to use it in a feedback loop for a controlled system use partial application:
 ```cpp
-// controlled system dynamics dr x_t = f(x, u)
-const auto f = [] (const auto & x, const auto & g) -> Tangent { ... };
+// controlled system dynamics dr x_t = f(t, x, u)
+const auto f = [] (const auto & t, const auto & x, const auto & g) -> Tangent { ... };
 
 // variable that holds current input
 U u;
 
-// closed-loop dynamics dr x_t = f(x) to use in the filters
-const auto f_cl = [&f, &u] (const auto & x) -> Tangent { return f(x, u); };
+// closed-loop dynamics dr x_t = f(t, x) to use in the filters
+const auto f_cl = [&f, &u] (const auto & t, const auto & x) -> Tangent { return f(t, x, u); };
 ```
 
 ### smooth::feedback::EKF: The only Kalman filter you need in 63 lines of code
@@ -82,22 +82,24 @@ const auto f_cl = [&f, &u] (const auto & x) -> Tangent { return f(x, u); };
 smooth::feedback::EKF<smooth::SE2d> ekf;
 
 // motion model
-const auto f = [](double, const auto &) { return smooth::SE2d::Tangent(0.4, 0.01, 0.1); };
+auto f = []<typename T>(double, const smooth::SE2<T> &) -> typename smooth::SE2<T>::Tangent {
+  return typename smooth::SE2<T>::Tangent(0.4, 0.01, 0.1);
+};
 
 // measurement model
 Eigen::Vector2d landmark(1, 1);
-const auto h = [&landmark](const auto & x) { return x.inverse() * landmark; };
+auto h = [&landmark]<typename T>(const smooth::SE2<T> & x) -> Eigen::Matrix<T, 2, 1> {
+  return x.inverse() * landmark;
+};
 
 // PREDICT STEP: propagate filter over time
-ekf.predict(
-  f,
+ekf.predict(f,
   Eigen::Matrix3d::Identity(),  // motion covariance
   1.                            // time step length
 );
 
-// UPDATE STEP: register a measurement of a landmark at [1, 1]
-ekf.update(
-  h,
+// UPDATE STEP: register a measurement of the known landmark
+ekf.update(h,
   Eigen::Vector2d(0.3, 0.6),   // measurement result
   Eigen::Matrix2d::Identity()  // measurement covariance
 );
@@ -116,9 +118,9 @@ a solver is included.
 
 *STATUS*: moderately tested
 
-* Eigen version of the [operator splitting algorithm](https://osqp.org/)
-* For both dense and sparse problems
-* Eigen lazy evaluations enable fast SIMD code
+* Eigen port of the [operator splitting QP solver](https://osqp.org/). 
+* For both dense and sparse problems.
+* Eigen lazy evaluations enable fast SIMD in the compiled assembly.
 
 **Example**:
 
