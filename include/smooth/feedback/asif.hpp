@@ -126,7 +126,7 @@ auto asif_to_qp(const G & x0,
   euler<G, double, Tangent, double, vector_space_algebra> state_stepper{};
   euler<TangentMap, double, TangentMap, double, vector_space_algebra> sensi_stepper{};
 
-  static constexpr int M = K * nh + nu;
+  static constexpr int M = K * nh + nu + 1;
   static constexpr int N = nu + 1;
 
   // iteration variables
@@ -135,19 +135,35 @@ auto asif_to_qp(const G & x0,
   TangentMap dx_dx0 = TangentMap::Identity();
 
   // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](
-                       const auto & xx, auto & dd, double tt) { dd = f(tt, xx, bu(tt, xx)); };
+  const auto x_ode = [&f, &bu](const G & xx, Tangent & dd, double tt) {
+    dd = f(tt, xx, bu(tt, xx));
+  };
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
-    const auto [fcl, dr_fcl_dx] =
-      diff::dr([&](const auto & xx) { return f(tt, xx, bu(tt, xx)); }, wrt(x));
+    auto f_cl = [&](const auto & vx) {
+      using T = typename std::decay_t<decltype(vx)>::Scalar;
+      return f(T(tt), vx, bu(T(tt), vx));
+    };
+    const auto [fcl, dr_fcl_dx] = diff::dr(std::move(f_cl), wrt(x));
     dS_dt_v = (-G::ad(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
-  const auto [f0, d_f0_du] = diff::dr(std::bind(f, t, x, _1), wrt(u_lin));
+  const auto [f0, d_f0_du] = diff::dr(
+    [&](const auto & vu) {
+      using T = typename std::decay_t<decltype(vu)>::Scalar;
+      return f(T(t), x.template cast<T>(), vu);
+    },
+    wrt(u_lin));
 
-  QuadraticProgram<M, N> ret;
+  QuadraticProgram<-1, -1> ret;
+
+  ret.A.resize(M, N);
+  ret.l.resize(M);
+  ret.u.resize(M);
+
+  ret.P.resize(N, N);
+  ret.q.resize(N);
 
   // loop over constraint number
   for (auto k = 0u; k != K; ++k) {
@@ -163,7 +179,7 @@ auto asif_to_qp(const G & x0,
     const Eigen::Matrix<double, nh, nx> dh_dx0 = dh_dx * dx_dx0;
     ret.A.template block<nh, nu>(k * nh, 0)    = dh_dx0 * d_f0_du;
     ret.l.template segment<nh>(k * nh)         = -dh_dt - prm.alpha * hval - dh_dx0 * f0;
-    ret.u.template segment<nh>(k * nh).setZero();
+    ret.u.template segment<nh>(k * nh).setConstant(std::numeric_limits<double>::infinity());
 
     // integrate system and sensitivity forward until next constraint
     while (t < prm.tau * (k + 1)) {
@@ -173,16 +189,22 @@ auto asif_to_qp(const G & x0,
     }
   }
 
-  // set input constraints
-  ret.A.template block<K * nh, 1>(0, nu).setConstant(1);   // coeffs for delta (upper part)
-  ret.A.template block<nu, 1>(K * nh, nu).setConstant(0);  // coeffs for delta (lower part)
-  ret.A.template bottomRows<nu>().setIdentity();
-  ret.l.template tail<nu>().setConstant(-1);
-  ret.u.template tail<nu>().setConstant(1);
+  ret.A.template block<K * nh, 1>(0, nu).setConstant(1);
+
+  // identity matrix for inquality constraints
+  ret.A.template block<nu + 1, nu + 1>(K * nh, 0).setIdentity();
+
+  // upper and lower bounds on u
+  ret.l.template segment<nu>(K * nh, 0).setConstant(-1);
+  ret.u.template segment<nu>(K * nh, 0).setConstant(1);
+
+  // upper and lower bounds on delta
+  ret.l(K * nh + nu) = 0;
+  ret.u(K * nh + nu) = std::numeric_limits<double>::infinity();
 
   ret.P.setIdentity();
   ret.P(nu, nu)             = prm.relax_cost;
-  ret.q.template head<nu>() = (u_des - u_lin);
+  ret.q.template head<nu>() = (u_lin - u_des);
   ret.q(nu)                 = 0;
 
   return ret;
