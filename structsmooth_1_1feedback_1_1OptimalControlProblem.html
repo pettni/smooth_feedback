@@ -160,7 +160,7 @@ struct smooth::feedback::OptimalControlProblem&lt; G, U &gt;</h3>
   </dd>
 </dl>
 <p>The optimal control problem is </p><p class="formulaDsp">
-\[ \begin{cases} \min_{u(\cdot)} &amp; \int_{0}^T \left( (g(t) \ominus g_{des}(t))^T Q (g(t) \ominus g_{des}(t))^T + (u(t) \ominus u_{des}(t))^T R (u(t) \ominus u_{des}(t))^T \right) + (g(T) \ominus g_{des}(T))^T Q_T (g(T) \ominus g_{des}(T)) \\ \text{s.t.} &amp; \mathrm{d}^r g_t = f(g, u), \\ &amp; g(0) = x_0, \\ &amp; g(t) \ominus g_{min} \geq 0, \\ &amp; g_{max} \ominus g(t) \geq 0, \\ &amp; u(t) \ominus u_{min} \geq 0, \\ &amp; u_{max} \ominus u(t) \geq 0, \end{cases} \]
+\[ \begin{cases} \min_{u(\cdot)} &amp; \int_{0}^T \left( (g(t) \ominus g_{des}(t))^T Q (g(t) \ominus g_{des}(t))^T + (u(t) \ominus u_{des}(t))^T R (u(t) \ominus u_{des}(t))^T \right) + (g(T) \ominus g_{des}(T))^T Q_T (g(T) \ominus g_{des}(T)) \\ \text{s.t.} &amp; g(0) = x_0, \\ &amp; g(t) \ominus g_{min} \geq 0, \\ &amp; g_{max} \ominus g(t) \geq 0, \\ &amp; u(t) \ominus u_{min} \geq 0, \\ &amp; u_{max} \ominus u(t) \geq 0, \end{cases} \]
 </p>
 <p> where the cost matrices must be positive semi-definite. </p>
 

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['exitcode_201',['ExitCode',['../qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21',1,'smooth::feedback']]]
+  ['qpsolutionstatus_201',['QPSolutionStatus',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feb',1,'smooth::feedback']]]
 ];

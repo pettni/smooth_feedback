@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['scaling_186',['scaling',['../structsmooth_1_1feedback_1_1SolverParams.html#ac4900e7acecb59df18960a2b848e70ba',1,'smooth::feedback::SolverParams']]],
-  ['sigma_187',['sigma',['../structsmooth_1_1feedback_1_1SolverParams.html#a2da35f09aa6317d61ea6d7a145f88999',1,'smooth::feedback::SolverParams']]],
-  ['stop_5fcheck_5fiter_188',['stop_check_iter',['../structsmooth_1_1feedback_1_1SolverParams.html#a58508200877b66d1d3400e62d1b41bac',1,'smooth::feedback::SolverParams']]]
+  ['scaling_186',['scaling',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a376640aa39c3016d33ad922653236649',1,'smooth::feedback::QPSolverParams']]],
+  ['sigma_187',['sigma',['../structsmooth_1_1feedback_1_1QPSolverParams.html#af1bf675148e3597d0c7530a26a2e59c5',1,'smooth::feedback::QPSolverParams']]],
+  ['stop_5fcheck_5fiter_188',['stop_check_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a19bc1cf5805ff6505ca8b855650d1592',1,'smooth::feedback::QPSolverParams']]]
 ];

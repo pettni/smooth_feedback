@@ -89,28 +89,30 @@ $(function() {
 <code>#include &lt;smooth/diff.hpp&gt;</code><br />
 <code>#include &lt;smooth/spline/bezier.hpp&gt;</code><br />
 <code>#include &lt;smooth/tn.hpp&gt;</code><br />
+<code>#include &quot;common.hpp&quot;</code><br />
 <code>#include &quot;<a class="el" href="qp_8hpp_source.html">qp.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for mpc.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="mpc_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2mpc_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2mpc_8hpp" id="ainclude_2smooth_2feedback_2mpc_8hpp">
-<area shape="rect" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="184,5,351,47"/>
-<area shape="rect" title=" " alt="" coords="229,244,314,271"/>
-<area shape="rect" title=" " alt="" coords="130,169,192,196"/>
-<area shape="rect" title=" " alt="" coords="41,95,188,121"/>
-<area shape="rect" title=" " alt="" coords="212,95,323,121"/>
-<area shape="rect" title=" " alt="" coords="348,95,513,121"/>
-<area shape="rect" title=" " alt="" coords="537,95,641,121"/>
-<area shape="rect" href="qp_8hpp.html" title="Quadratic Programming." alt="" coords="666,95,726,121"/>
-<area shape="rect" title=" " alt="" coords="887,169,982,196"/>
-<area shape="rect" title=" " alt="" coords="853,244,952,271"/>
-<area shape="rect" title=" " alt="" coords="265,169,332,196"/>
-<area shape="rect" title=" " alt="" coords="356,169,428,196"/>
-<area shape="rect" title=" " alt="" coords="452,169,505,196"/>
-<area shape="rect" href="ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="529,169,684,196"/>
-<area shape="rect" href="ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="708,169,862,196"/>
-<area shape="rect" title=" " alt="" coords="568,244,645,271"/>
+<area shape="rect" title="Model&#45;Predictive Control (MPC) on Lie groups." alt="" coords="239,5,406,47"/>
+<area shape="rect" title=" " alt="" coords="171,244,256,271"/>
+<area shape="rect" title=" " alt="" coords="212,169,273,196"/>
+<area shape="rect" title=" " alt="" coords="32,169,179,196"/>
+<area shape="rect" title=" " alt="" coords="186,95,297,121"/>
+<area shape="rect" title=" " alt="" coords="321,95,487,121"/>
+<area shape="rect" title=" " alt="" coords="511,95,615,121"/>
+<area shape="rect" href="common_8hpp_source.html" title=" " alt="" coords="65,95,161,121"/>
+<area shape="rect" href="qp_8hpp.html" title="Quadratic Programming." alt="" coords="690,95,750,121"/>
+<area shape="rect" title=" " alt="" coords="829,169,923,196"/>
+<area shape="rect" title=" " alt="" coords="795,244,893,271"/>
+<area shape="rect" title=" " alt="" coords="999,169,1065,196"/>
+<area shape="rect" title=" " alt="" coords="297,169,369,196"/>
+<area shape="rect" title=" " alt="" coords="393,169,447,196"/>
+<area shape="rect" href="ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="471,169,625,196"/>
+<area shape="rect" href="ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="649,169,804,196"/>
+<area shape="rect" title=" " alt="" coords="509,244,587,271"/>
 </map>
 </div>
 </div>
@@ -126,7 +128,7 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">smooth::feedback::MPCParams</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC&lt; K, T, G, U, Dyn &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC&lt; K, T, G, U, Dyn, DiffType &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Model-Predictive Control (<a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a>) on Lie groups.  <a href="classsmooth_1_1feedback_1_1MPC.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -142,23 +144,23 @@ template&lt;std::size_t K, std::size_t nx, std::size_t nu&gt; </td></tr>
 <tr class="memitem:ab4b66e25020fd030a90ae6b63514095d"><td class="memTemplItemLeft" align="right" valign="top">constexpr std::array&lt; int, K *(nu+nx)&gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#ab4b66e25020fd030a90ae6b63514095d">smooth::feedback::mpc_nnz_pattern_P</a> ()</td></tr>
 <tr class="memdesc:ab4b66e25020fd030a90ae6b63514095d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate column-wise sparsity pattern of QP matrix P in <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem. <br /></td></tr>
 <tr class="separator:ab4b66e25020fd030a90ae6b63514095d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4123d2f9a95cab0f545889a9f9d55f7"><td class="memTemplParams" colspan="2">template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn &gt; </td></tr>
-<tr class="memitem:ae4123d2f9a95cab0f545889a9f9d55f7"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgramSparse&lt; double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#ae4123d2f9a95cab0f545889a9f9d55f7">smooth::feedback::ocp_to_qp</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, Dyn &amp;&amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin=LinearizationInfo&lt; G, U &gt;{})</td></tr>
-<tr class="memdesc:ae4123d2f9a95cab0f545889a9f9d55f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a> on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \).  <a href="mpc_8hpp.html#ae4123d2f9a95cab0f545889a9f9d55f7">More...</a><br /></td></tr>
-<tr class="separator:ae4123d2f9a95cab0f545889a9f9d55f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef8d61fa12eb80b9927db4a606c837f0"><td class="memTemplParams" colspan="2">template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT&gt; </td></tr>
+<tr class="memitem:aef8d61fa12eb80b9927db4a606c837f0"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgramSparse&lt; double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#aef8d61fa12eb80b9927db4a606c837f0">smooth::feedback::ocp_to_qp</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, const Dyn &amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin=LinearizationInfo&lt; G, U &gt;{})</td></tr>
+<tr class="memdesc:aef8d61fa12eb80b9927db4a606c837f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a> on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \).  <a href="mpc_8hpp.html#aef8d61fa12eb80b9927db4a606c837f0">More...</a><br /></td></tr>
+<tr class="separator:aef8d61fa12eb80b9927db4a606c837f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Model-Predictive Control (MPC) on Lie groups. </p>
 
 <p class="definition">Definition in file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="ae4123d2f9a95cab0f545889a9f9d55f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4123d2f9a95cab0f545889a9f9d55f7">&#9670;&nbsp;</a></span>ocp_to_qp()</h2>
+<a id="aef8d61fa12eb80b9927db4a606c837f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef8d61fa12eb80b9927db4a606c837f0">&#9670;&nbsp;</a></span>ocp_to_qp()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn &gt; </div>
+template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">QuadraticProgramSparse&lt;double&gt; smooth::feedback::ocp_to_qp </td>
@@ -169,7 +171,7 @@ template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Dyn &amp;&amp;&#160;</td>
+          <td class="paramtype">const Dyn &amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
         </tr>
         <tr>
@@ -193,30 +195,32 @@ template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn &gt; </div>
 <p> where the discrete time index \(k\) corresponds to time \(t_k = k \frac{T}{K} \) for \( k = 0, 1, \ldots, K \).</p>
 <p>The resulting QP has \( K \dim \mathfrak{g} + K \dim \mathfrak{u} \) variables and \( 2 K \dim \mathfrak{g} + K \dim \mathfrak{u} \) constraints.</p>
 <p>The QP inequalities constrain the variables so that the QP solution stays within the domain of validity of the linearization.</p>
-<dl class="section note"><dt>Note</dt><dd>Given a solution \((x^*, \mu^*)\) to the QuadraticProgram, the corresponding solution to the OptimalControlProblem is \( u^*(t) = u_{lin}(t) \oplus \mu^*(t) \) and the optimal trajectory is \( g^*(t) = g_{lin}(t) \oplus x^*(t) \).</dd>
-<dd>
-Constraints are added as \( g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus g_{lin} \) and similarly for the input. Beware of using constraints on non-Euclidean spaces.</dd>
-<dd>
-<code>f</code> must be differentiable with the default smooth::diff method. If using an automatic differentiation method this means that it must be templated on the scalar type.</dd></dl>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">K</td><td>number of discretization points. More points create a larger QP, but the distance \( T / K \) between points should be smaller than the smallest system time constant for adequate performance. </td></tr>
     <tr><td class="paramname">G</td><td>problem state group type \( \mathbb{G} \) </td></tr>
-    <tr><td class="paramname">U</td><td>problem input group type \( \mathbb{U} \)</td></tr>
+    <tr><td class="paramname">U</td><td>problem input group type \( \mathbb{U} \) </td></tr>
+    <tr><td class="paramname">Dyn</td><td>dynamics functor type </td></tr>
+    <tr><td class="paramname">DiffType</td><td>differentiation method to utilize</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">pbm</td><td>optimal control problem </td></tr>
-    <tr><td class="paramname">f</td><td>dynamics \( f : \mathbb{G} \times \mathbb{U} \rightarrow \mathbb{R}^{\dim \mathfrak g}\) s.t. \( \mathrm{d}^r g_t = f(g, u) \) </td></tr>
+    <tr><td class="paramname">f</td><td>dynamics \( f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow \mathbb{R}^{\dim \mathfrak g}\) s.t. \( \mathrm{d}^r g_t = f(t, g, u) \) </td></tr>
     <tr><td class="paramname">lin</td><td>linearization point, default is to linearize around Identity (LieGroup) / Zero (non-LieGroup manifold)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>QuadraticProgramSparse modeling the input optimal control problem. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>QuadraticProgramSparse modeling the input optimal control problem.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Given a solution \((x^*, \mu^*)\) to the QuadraticProgram, the corresponding solution to the OptimalControlProblem is \( u^*(t) = u_{lin}(t) \oplus \mu^*(t) \) and the optimal trajectory is \( g^*(t) = g_{lin}(t) \oplus x^*(t) \).</dd>
+<dd>
+Constraints are added as \( g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus g_{lin} \) and similarly for the input. Beware of using constraints on non-Euclidean spaces.</dd>
+<dd>
+<code>f</code> must be differentiable w.r.t. \( g \) and \( u \) with the default <code>smooth::diff</code> method (check <code>smooth::diff::DefaultType</code>). If using an automatic differentiation method this means that it must be templated on the scalar type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00223">223</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00224">224</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

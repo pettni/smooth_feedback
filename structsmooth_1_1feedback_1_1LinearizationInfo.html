@@ -92,7 +92,7 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a1214e70ce610cafba7b51c2bb9c830d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0f9b13db3a24f43a67b61b8fdc650d"><td class="memItemLeft" align="right" valign="top">std::function&lt; typename G::Tangent(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#a0b0f9b13db3a24f43a67b61b8fdc650d">dg</a></td></tr>
 <tr class="separator:a0b0f9b13db3a24f43a67b61b8fdc650d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad084e1f47c64feee186769e3bd834dcc"><td class="memItemLeft" align="right" valign="top">std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">u</a></td></tr>
+<tr class="memitem:ad084e1f47c64feee186769e3bd834dcc"><td class="memItemLeft" align="right" valign="top">std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">u</a> = [](double) -&gt; U { return identity&lt;U&gt;(); }</td></tr>
 <tr class="separator:ad084e1f47c64feee186769e3bd834dcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc0a39718ddcafe8b0b3395eb64691a9"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; double, G::SizeAtCompileTime, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#acc0a39718ddcafe8b0b3395eb64691a9">g_domain</a></td></tr>
 <tr class="memdesc:acc0a39718ddcafe8b0b3395eb64691a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Domain of validity of state linearization.  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#acc0a39718ddcafe8b0b3395eb64691a9">More...</a><br /></td></tr>
@@ -172,7 +172,7 @@ template&lt;LieGroup G, Manifold U&gt; </div>
 \[ \left\| g \ominus_r g_{lin} \right \| \leq \bar a. \]
 </p>
  
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00140">140</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00134">134</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -185,18 +185,11 @@ template&lt;LieGroup G, Manifold U&gt; </div>
 template&lt;LieGroup G, Manifold U&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::function&lt;U(double)&gt; <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">smooth::feedback::LinearizationInfo</a>&lt; G, U &gt;::u</td>
+          <td class="memname">std::function&lt;U(double)&gt; <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">smooth::feedback::LinearizationInfo</a>&lt; G, U &gt;::u = [](double) -&gt; U { return identity&lt;U&gt;(); }</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= [](double) -&gt; U {</div>
-<div class="line">    <span class="keywordflow">if</span> constexpr (LieGroup&lt;U&gt;) {</div>
-<div class="line">      <span class="keywordflow">return</span> U::Identity();</div>
-<div class="line">    } <span class="keywordflow">else</span> {</div>
-<div class="line">      <span class="keywordflow">return</span> U::Zero();</div>
-<div class="line">    }</div>
-<div class="line">  }</div>
-</div><!-- fragment --><p>input trajectory \(u_{lin}(t)\) to linearize around as a function \( \mathbb{R} \rightarrow G \) </p>
+<p>input trajectory \(u_{lin}(t)\) to linearize around as a function \( \mathbb{R} \rightarrow G \) </p>
 
 <p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00124">124</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
@@ -224,7 +217,7 @@ template&lt;LieGroup G, Manifold U&gt; </div>
 \[ \left\| u \ominus_r u_{lin} \right \| \leq \bar b. \]
 </p>
  
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00152">152</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00146">146</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

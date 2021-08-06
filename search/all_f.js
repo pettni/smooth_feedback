@@ -5,6 +5,6 @@ var searchData=
   ['udes_94',['udes',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f',1,'smooth::feedback::OptimalControlProblem']]],
   ['umax_95',['umax',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac963cb442a986c534539410d72696efa',1,'smooth::feedback::OptimalControlProblem']]],
   ['umin_96',['umin',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a1624e12b755acd35332b19cedad1ac05',1,'smooth::feedback::OptimalControlProblem']]],
-  ['unknown_97',['Unknown',['../qp_8hpp.html#a954b9ecf10d53d85469fd077c33cda21a88183b946cc5f0e8c96b2e66e1c74a7e',1,'smooth::feedback']]],
+  ['unknown_97',['Unknown',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feba88183b946cc5f0e8c96b2e66e1c74a7e',1,'smooth::feedback']]],
   ['update_98',['update',['../classsmooth_1_1feedback_1_1EKF.html#aa66ad26e4f2272fbdd40c9e1e59a81b6',1,'smooth::feedback::EKF']]]
 ];
