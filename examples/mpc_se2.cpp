@@ -59,7 +59,10 @@ int main()
   smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
 
   // set input bounds
-  mpc.set_ulim(Eigen::Vector2d(-0.2, -0.5), Eigen::Vector2d(0.5, 0.5));
+  mpc.set_ulim(smooth::feedback::OptimalControlBounds<Ud>{
+    .l = Eigen::Vector2d(-0.2, -0.5),
+    .u = Eigen::Vector2d(0.5, 0.5),
+  });
 
   // set weights
   Eigen::Matrix2d R = Eigen::Matrix2d::Identity();

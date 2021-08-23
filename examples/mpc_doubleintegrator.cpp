@@ -42,15 +42,20 @@ int main()
     typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
 
   // parameters
-  smooth::feedback::MPCParams prm{.T = 5,
-    .warmstart                       = true,
-    .relinearize_state_around_sol    = false,
-    .relinearize_input_around_sol    = false,
-    .iterative_relinearization       = 0};
+  smooth::feedback::MPCParams prm{
+    .T                            = 5,
+    .warmstart                    = true,
+    .relinearize_state_around_sol = false,
+    .relinearize_input_around_sol = false,
+    .iterative_relinearization    = 0,
+  };
 
   // create MPC object and set input bounds, and desired trajectories
   smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
-  mpc.set_ulim(Eigen::Matrix<double, 1, 1>(-0.5), Eigen::Matrix<double, 1, 1>(0.5));
+  mpc.set_ulim(smooth::feedback::OptimalControlBounds<Ud>{
+    .l = Eigen::Matrix<double, 1, 1>(-0.5),
+    .u = Eigen::Matrix<double, 1, 1>(0.5),
+  });
   mpc.set_input_cost(Eigen::Matrix<double, 1, 1>::Constant(0.1));
   mpc.set_running_state_cost(Eigen::Matrix<double, 2, 2>::Identity());
   mpc.set_final_state_cost(0.1 * Eigen::Matrix<double, 2, 2>::Identity());

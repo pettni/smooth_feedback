@@ -54,11 +54,8 @@ TEST(Mpc, OcpToQP)
   ocp.R << 9, 10, 9, 12;
   ocp.T = 0.1;
 
-  ocp.gmin = Eigen::Vector2d(-2, -3);
-  ocp.gmax = Eigen::Vector2d(2, 3);
-
-  ocp.umin = Eigen::Vector2d(-4, -5);
-  ocp.umax = Eigen::Vector2d(4, 5);
+  ocp.glim = smooth::feedback::OptimalControlBounds<G>{.l = Eigen::Vector2d(-2, -3), .u = Eigen::Vector2d(2, 3), };
+  ocp.ulim = smooth::feedback::OptimalControlBounds<U>{.l = Eigen::Vector2d(-4, -5), .u = Eigen::Vector2d(4, 5), };
 
   ocp.gdes = [&](double) -> G { return x_des; };
   ocp.udes = [&](double) -> U { return u_des; };
@@ -106,11 +103,11 @@ TEST(Mpc, OcpToQP)
   ASSERT_TRUE(test);
 
   for (auto k = 0; k != K; ++k) {
-    ASSERT_TRUE(qp.l.segment(2 * K + 2 * k, 2).isApprox(ocp.umin.value()));
-    ASSERT_TRUE(qp.u.segment(2 * K + 2 * k, 2).isApprox(ocp.umax.value()));
+    ASSERT_TRUE(qp.l.segment(2 * K + 2 * k, 2).isApprox(ocp.ulim.value().l));
+    ASSERT_TRUE(qp.u.segment(2 * K + 2 * k, 2).isApprox(ocp.ulim.value().u));
 
-    ASSERT_TRUE(qp.l.segment(4 * K + 2 * k, 2).isApprox(ocp.gmin.value().rn()));
-    ASSERT_TRUE(qp.u.segment(4 * K + 2 * k, 2).isApprox(ocp.gmax.value().rn()));
+    ASSERT_TRUE(qp.l.segment(4 * K + 2 * k, 2).isApprox(ocp.glim.value().l));
+    ASSERT_TRUE(qp.u.segment(4 * K + 2 * k, 2).isApprox(ocp.glim.value().u));
   }
 
   // CHECK P AND q

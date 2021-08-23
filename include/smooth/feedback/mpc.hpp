@@ -45,6 +45,24 @@
 namespace smooth::feedback {
 
 /**
+ * @brief Bounds for OptimalControlProblem.
+ *
+ * Bounds are of the form
+ *
+ * \f[
+ *   l \leq  A ( m \ominus e_M ) \leq u.
+ * \f]
+ */
+template<Manifold M>
+struct OptimalControlBounds
+{
+  static constexpr int n = M::SizeAtCompileTime;
+
+  Eigen::Matrix<double, -1, n> A = Eigen::Matrix<double, -1, n>::Identity(n, n);
+  Eigen::Matrix<double, -1, 1> l, u;
+};
+
+/**
  * @brief Optimal control problem defintiion.
  *
  * @tparam G State space Lie group.
@@ -84,17 +102,11 @@ struct OptimalControlProblem
   /// Desired input trajectory
   std::function<U(double)> udes = [](double) { return U::Identity(); };
 
-  ///@{
-  /// @brief Input bounds s.t. \f$ u_{min} \ominus e_U \leq u \ominus e_U \leq u_{max} \ominus e_U
-  /// \f$
-  std::optional<U> umin{}, umax{};
-  ///@}
+  /// Input bounds
+  std::optional<OptimalControlBounds<U>> ulim;
 
-  ///@{
-  /// @brief State bounds s.t. \f$ x_{min} \ominus e_G \leq g \ominus e_G \leq x_{max} \ominus e_G
-  /// \f$
-  std::optional<G> gmin{}, gmax{};
-  ///@}
+  /// State bounds
+  std::optional<OptimalControlBounds<G>> glim;
 
   /// Running state cost
   Eigen::Matrix<double, nx, nx> Q = Eigen::Matrix<double, nx, nx>::Identity();
@@ -149,19 +161,6 @@ struct LinearizationInfo
 };
 
 /**
- * @brief Calculate row-wise sparsity pattern of QP matrix A in MPC problem.
- */
-template<std::size_t K, std::size_t nx, std::size_t nu>
-constexpr std::array<int, K *(2 * nx + nu)> mpc_nnz_pattern_A()
-{
-  std::array<int, K *(2 * nx + nu)> ret{};
-  for (std::size_t i = 0u; i != nx; ++i) { ret[i] = 1 + nu; }
-  for (std::size_t i = nx; i != K * nx; ++i) { ret[i] = 1 + nx + nu; }
-  for (std::size_t i = K * nx; i != K * (2 * nx + nu); ++i) { ret[i] = 1; }
-  return ret;
-}
-
-/**
  * @brief Calculate column-wise sparsity pattern of QP matrix P in MPC problem.
  */
 template<std::size_t K, std::size_t nx, std::size_t nu>
@@ -209,8 +208,8 @@ constexpr std::array<int, K *(nu + nx)> mpc_nnz_pattern_P()
  * solution to the OptimalControlProblem is \f$ u^*(t) = u_{lin}(t) \oplus \mu^*(t) \f$ and the
  * optimal trajectory is \f$ g^*(t) = g_{lin}(t) \oplus x^*(t) \f$.
  *
- * @note Constraints are added as \f$ g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus g_{lin}
- * \f$ and similarly for the input. Beware of using constraints on non-Euclidean spaces.
+ * @note Constraints are added as \f$ A x \leq b - A \log g_{lin} \f$ and similarly for the input.
+ * Beware of using constraints on non-Euclidean spaces.
  *
  * @note \p f must be differentiable w.r.t. \f$ g \f$ and \f$ u \f$  with the default \p
  * smooth::diff method (check \p smooth::diff::DefaultType). If using an automatic differentiation
@@ -235,34 +234,53 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
   static constexpr int nU   = K * nu;
   static constexpr int nvar = nX + nU;
 
-  static constexpr int n_eq   = nX;  // equality constraints from dynamics
-  static constexpr int n_u_iq = nU;  // input bounds
-  static constexpr int n_x_iq = nX;  // state bounds
-  static constexpr int ncon   = n_eq + n_u_iq + n_x_iq;
+  static constexpr int n_eq = nX;  // equality constraints from dynamics
 
-  using AT = Eigen::Matrix<double, nx, nx>;
-  using BT = Eigen::Matrix<double, nx, nu>;
-  using ET = Eigen::Matrix<double, nx, 1>;
+  uint32_t n_u_iq = pbm.ulim ? pbm.ulim.value().A.rows() * K : 0;
+  uint32_t n_g_iq = pbm.glim ? pbm.glim.value().A.rows() * K : 0;
 
-  const double dt = pbm.T / static_cast<double>(K);
+  const uint32_t ncon = n_eq + n_u_iq + n_g_iq;
 
   QuadraticProgramSparse ret;
   ret.P.resize(nvar, nvar);
   ret.q.resize(nvar);
+
   ret.A.resize(ncon, nvar);
   ret.l.resize(ncon);
   ret.u.resize(ncon);
 
   // SET SPARSITY PATTERNS
 
-  static constexpr auto Ap = mpc_nnz_pattern_A<K, nx, nu>();
   static constexpr auto Pp = mpc_nnz_pattern_P<K, nx, nu>();
-  ret.A.reserve(Eigen::Map<const Eigen::Matrix<int, ncon, 1>>(Ap.data()));
   ret.P.reserve(Eigen::Map<const Eigen::Matrix<int, nvar, 1>>(Pp.data()));
+
+  Eigen::Matrix<int, -1, 1> Ap(ncon);
+  int Arow = 0;
+  Ap.segment(Arow, nx).setConstant(1 + nu);
+  Arow += nx;
+  Ap.segment(Arow, (K - 1) * nx).setConstant(1 + nu + nx);
+  Arow += (K - 1) * nx;
+  if (pbm.ulim) {
+    Ap.segment(Arow, n_u_iq).setConstant(nu);
+    Arow += n_u_iq;
+  }
+  if (pbm.glim) {
+    Ap.tail(n_g_iq).setConstant(nx);
+    Arow += n_g_iq;
+  }
+  ret.A.reserve(Ap);
+
+  const double dt = pbm.T / static_cast<double>(K);
 
   // DYNAMICS CONSTRAINTS
 
+  Arow = 0;
+
   for (auto k = 0u; k != K; ++k) {
+    using AT = Eigen::Matrix<double, nx, nx>;
+    using BT = Eigen::Matrix<double, nx, nu>;
+    using ET = Eigen::Matrix<double, nx, 1>;
+
     const double t = k * dt;
 
     // LINEARIZATION
@@ -329,59 +347,57 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
     }
   }
 
+  Arow += K * nx;
+
   // INPUT CONSTRAINTS
 
-  for (auto i = 0u; i != n_u_iq; ++i) { ret.A.insert(n_eq + i, i) = 1; }
-
-  if (pbm.umin) {
+  if (pbm.ulim) {
     for (auto k = 0u; k < K; ++k) {
-      ret.l.template segment<nu>(n_eq + k * nu) = pbm.umin.value() - lin.u(k * dt);
+      for (auto i = 0u; i != pbm.ulim.value().A.rows(); ++i) {
+        for (auto j = 0u; j != nu; ++j) {
+          ret.A.insert(Arow + k * nu + i, k * nu + j) = pbm.ulim.value().A(i, j);
+        }
+      }
+      ret.l.template segment<nu>(Arow + k * nu) =
+        pbm.ulim.value().l - pbm.ulim.value().A * (lin.u(k * dt) - identity<U>());
+      ret.u.template segment<nu>(Arow + k * nu) =
+        pbm.ulim.value().u - pbm.ulim.value().A * (lin.u(k * dt) - identity<U>());
     }
-  } else {
-    ret.l.template segment<nU>(n_eq).setConstant(-std::numeric_limits<double>::infinity());
-  }
-  if (pbm.umax) {
-    for (auto k = 0u; k < K; ++k) {
-      ret.u.template segment<nu>(n_eq + k * nu) = pbm.umax.value() - lin.u(k * dt);
-    }
-  } else {
-    ret.u.template segment<nU>(n_eq).setConstant(std::numeric_limits<double>::infinity());
+    Arow += n_u_iq;
   }
 
   // linearization bounds
-  for (auto k = 0u; k < K; ++k) {
+  /* for (auto k = 0u; k < K; ++k) {
     ret.l.template segment<nu>(n_eq + k * nu) =
       ret.l.template segment<nu>(n_eq + k * nu).cwiseMax(-lin.u_domain);
     ret.u.template segment<nu>(n_eq + k * nu) =
       ret.u.template segment<nu>(n_eq + k * nu).cwiseMin(lin.u_domain);
-  }
+  } */
 
   // STATE CONSTRAINTS
 
-  for (auto i = 0u; i != n_x_iq; ++i) { ret.A.insert(n_eq + n_u_iq + i, nU + i) = 1; }
-
-  if (pbm.gmin) {
-    for (auto k = 1u; k < K + 1; ++k) {
-      ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmin.value() - lin.g(k * dt);
+  if (pbm.glim) {
+    for (auto k = 1u; k != K + 1; ++k) {
+      for (auto i = 0u; i != pbm.glim.value().A.rows(); ++i) {
+        for (auto j = 0u; j != nx; ++j) {
+          ret.A.insert(Arow + (k - 1) * nx + i, nU + (k - 1) * nx + j) = pbm.glim.value().A(i, j);
+        }
+      }
+      ret.l.template segment<nx>(Arow + (k - 1) * nx) =
+        pbm.glim.value().l - pbm.glim.value().A * (lin.g(k * dt) - identity<G>());
+      ret.u.template segment<nx>(Arow + (k - 1) * nx) =
+        pbm.glim.value().u - pbm.glim.value().A * (lin.g(k * dt) - identity<G>());
     }
-  } else {
-    ret.l.template segment<nX>(n_eq + n_u_iq).setConstant(-std::numeric_limits<double>::infinity());
-  }
-  if (pbm.gmax) {
-    for (auto k = 1u; k < K + 1; ++k) {
-      ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) = pbm.gmax.value() - lin.g(k * dt);
-    }
-  } else {
-    ret.u.template segment<nX>(n_eq + n_u_iq).setConstant(std::numeric_limits<double>::infinity());
+    Arow += n_g_iq;
   }
 
   // linearization bounds
-  for (auto k = 1u; k < K + 1; ++k) {
+  /* for (auto k = 1u; k < K + 1; ++k) {
     ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) =
       ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx).cwiseMax(-lin.g_domain);
     ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) =
       ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx).cwiseMin(lin.g_domain);
-  }
+  } */
 
   // INPUT COSTS
 
@@ -645,13 +661,14 @@ public:
   }
 
   /**
+   * @brief Set state bounds.
+   */
+  void set_glim(const OptimalControlBounds<G> & lim) { ocp_.glim = lim; }
+
+  /**
    * @brief Set input bounds.
    */
-  void set_ulim(const U & umin, const U & umax)
-  {
-    ocp_.umin = umin;
-    ocp_.umax = umax;
-  }
+  void set_ulim(const OptimalControlBounds<U> & lim) { ocp_.ulim = lim; }
 
   /**
    * @brief Set the desired state and input trajectories (lvalue version).
