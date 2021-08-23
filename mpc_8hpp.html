@@ -120,6 +120,9 @@ Include dependency graph for mpc.hpp:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html">smooth::feedback::OptimalControlBounds&lt; M &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bounds for <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a>.  <a href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optimal control problem defintiion.  <a href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -134,11 +137,6 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ac712796a298cecdab047ddc4b06715b6"><td class="memTemplParams" colspan="2"><a id="ac712796a298cecdab047ddc4b06715b6"></a>
-template&lt;std::size_t K, std::size_t nx, std::size_t nu&gt; </td></tr>
-<tr class="memitem:ac712796a298cecdab047ddc4b06715b6"><td class="memTemplItemLeft" align="right" valign="top">constexpr std::array&lt; int, K *(2 *nx+nu)&gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#ac712796a298cecdab047ddc4b06715b6">smooth::feedback::mpc_nnz_pattern_A</a> ()</td></tr>
-<tr class="memdesc:ac712796a298cecdab047ddc4b06715b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate row-wise sparsity pattern of QP matrix A in <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem. <br /></td></tr>
-<tr class="separator:ac712796a298cecdab047ddc4b06715b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4b66e25020fd030a90ae6b63514095d"><td class="memTemplParams" colspan="2"><a id="ab4b66e25020fd030a90ae6b63514095d"></a>
 template&lt;std::size_t K, std::size_t nx, std::size_t nu&gt; </td></tr>
 <tr class="memitem:ab4b66e25020fd030a90ae6b63514095d"><td class="memTemplItemLeft" align="right" valign="top">constexpr std::array&lt; int, K *(nu+nx)&gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc_8hpp.html#ab4b66e25020fd030a90ae6b63514095d">smooth::feedback::mpc_nnz_pattern_P</a> ()</td></tr>
@@ -216,11 +214,11 @@ template&lt;std::size_t K, LieGroup G, Manifold U, typename Dyn , smooth::diff::
 <dl class="section return"><dt>Returns</dt><dd>QuadraticProgramSparse modeling the input optimal control problem.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Given a solution \((x^*, \mu^*)\) to the QuadraticProgram, the corresponding solution to the OptimalControlProblem is \( u^*(t) = u_{lin}(t) \oplus \mu^*(t) \) and the optimal trajectory is \( g^*(t) = g_{lin}(t) \oplus x^*(t) \).</dd>
 <dd>
-Constraints are added as \( g_{min} \ominus g_{lin} \leq x \leq g_{max} \ominus g_{lin} \) and similarly for the input. Beware of using constraints on non-Euclidean spaces.</dd>
+Constraints are added as \( A x \leq b - A \log g_{lin} \) and similarly for the input. Beware of using constraints on non-Euclidean spaces.</dd>
 <dd>
 <code>f</code> must be differentiable w.r.t. \( g \) and \( u \) with the default <code>smooth::diff</code> method (check <code>smooth::diff::DefaultType</code>). If using an automatic differentiation method this means that it must be templated on the scalar type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00224">224</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00223">223</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

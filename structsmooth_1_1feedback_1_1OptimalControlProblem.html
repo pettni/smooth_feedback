@@ -105,6 +105,14 @@ std::function&lt; G(double)&gt;&#160;</td><td class="memItemRight" valign="botto
 std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f">udes</a> = [](double) { return U::Identity(); }</td></tr>
 <tr class="memdesc:ad9562f86d56471566009f1cd9679740f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired input trajectory. <br /></td></tr>
 <tr class="separator:ad9562f86d56471566009f1cd9679740f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9e2f9052191801000a8fbc45d031b23"><td class="memItemLeft" align="right" valign="top"><a id="ac9e2f9052191801000a8fbc45d031b23"></a>
+std::optional&lt; <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html">OptimalControlBounds</a>&lt; U &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac9e2f9052191801000a8fbc45d031b23">ulim</a></td></tr>
+<tr class="memdesc:ac9e2f9052191801000a8fbc45d031b23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input bounds. <br /></td></tr>
+<tr class="separator:ac9e2f9052191801000a8fbc45d031b23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0121876f71ba645b67fc135a8e196b6"><td class="memItemLeft" align="right" valign="top"><a id="af0121876f71ba645b67fc135a8e196b6"></a>
+std::optional&lt; <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html">OptimalControlBounds</a>&lt; G &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#af0121876f71ba645b67fc135a8e196b6">glim</a></td></tr>
+<tr class="memdesc:af0121876f71ba645b67fc135a8e196b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">State bounds. <br /></td></tr>
+<tr class="separator:af0121876f71ba645b67fc135a8e196b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18104640f745da44e2e3f932aa4979dd"><td class="memItemLeft" align="right" valign="top"><a id="a18104640f745da44e2e3f932aa4979dd"></a>
 Eigen::Matrix&lt; double, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a510c443e209a42c5acc55add36acc0cb">nx</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a510c443e209a42c5acc55add36acc0cb">nx</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a18104640f745da44e2e3f932aa4979dd">Q</a> = Eigen::Matrix&lt;double, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a510c443e209a42c5acc55add36acc0cb">nx</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a510c443e209a42c5acc55add36acc0cb">nx</a>&gt;::Identity()</td></tr>
 <tr class="memdesc:a18104640f745da44e2e3f932aa4979dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Running state cost. <br /></td></tr>
@@ -117,24 +125,6 @@ Eigen::Matrix&lt; double, <a class="el" href="structsmooth_1_1feedback_1_1Optima
 Eigen::Matrix&lt; double, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae36fd67cbf94e702d9705671d7ca833d">nu</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae36fd67cbf94e702d9705671d7ca833d">nu</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#aa68e642bf9b7479ae6f7a29075d7af59">R</a> = Eigen::Matrix&lt;double, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae36fd67cbf94e702d9705671d7ca833d">nu</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae36fd67cbf94e702d9705671d7ca833d">nu</a>&gt;::Identity()</td></tr>
 <tr class="memdesc:aa68e642bf9b7479ae6f7a29075d7af59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Running input cost. <br /></td></tr>
 <tr class="separator:aa68e642bf9b7479ae6f7a29075d7af59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
-<tr class="memitem:a1624e12b755acd35332b19cedad1ac05"><td class="memItemLeft" align="right" valign="top"><a id="a1624e12b755acd35332b19cedad1ac05"></a>
-std::optional&lt; U &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a1624e12b755acd35332b19cedad1ac05">umin</a> {}</td></tr>
-<tr class="memdesc:a1624e12b755acd35332b19cedad1ac05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input bounds s.t. \( u_{min} \ominus e_U \leq u \ominus e_U \leq u_{max} \ominus e_U \). <br /></td></tr>
-<tr class="separator:a1624e12b755acd35332b19cedad1ac05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac963cb442a986c534539410d72696efa"><td class="memItemLeft" align="right" valign="top"><a id="ac963cb442a986c534539410d72696efa"></a>
-std::optional&lt; U &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac963cb442a986c534539410d72696efa">umax</a> {}</td></tr>
-<tr class="memdesc:ac963cb442a986c534539410d72696efa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input bounds s.t. \( u_{min} \ominus e_U \leq u \ominus e_U \leq u_{max} \ominus e_U \). <br /></td></tr>
-<tr class="separator:ac963cb442a986c534539410d72696efa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
-<tr class="memitem:aebc8a9e1f9e90705db4c74e9403980e3"><td class="memItemLeft" align="right" valign="top"><a id="aebc8a9e1f9e90705db4c74e9403980e3"></a>
-std::optional&lt; G &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#aebc8a9e1f9e90705db4c74e9403980e3">gmin</a> {}</td></tr>
-<tr class="memdesc:aebc8a9e1f9e90705db4c74e9403980e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">State bounds s.t. \( x_{min} \ominus e_G \leq g \ominus e_G \leq x_{max} \ominus e_G \). <br /></td></tr>
-<tr class="separator:aebc8a9e1f9e90705db4c74e9403980e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4220cd266875f6e9b8bcba808506210f"><td class="memItemLeft" align="right" valign="top"><a id="a4220cd266875f6e9b8bcba808506210f"></a>
-std::optional&lt; G &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a4220cd266875f6e9b8bcba808506210f">gmax</a> {}</td></tr>
-<tr class="memdesc:a4220cd266875f6e9b8bcba808506210f"><td class="mdescLeft">&#160;</td><td class="mdescRight">State bounds s.t. \( x_{min} \ominus e_G \leq g \ominus e_G \leq x_{max} \ominus e_G \). <br /></td></tr>
-<tr class="separator:a4220cd266875f6e9b8bcba808506210f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -164,7 +154,7 @@ struct smooth::feedback::OptimalControlProblem&lt; G, U &gt;</h3>
 </p>
 <p> where the cost matrices must be positive semi-definite. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00069">69</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00087">87</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/smooth/feedback/<a class="el" href="mpc_8hpp_source.html">mpc.hpp</a></li>
 </ul>

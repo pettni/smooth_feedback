@@ -1,12 +1,13 @@
 var searchData=
 [
-  ['scalar_76',['Scalar',['../classsmooth_1_1feedback_1_1EKF.html#abb95d648223dc54835f4762127c6a242',1,'smooth::feedback::EKF']]],
-  ['scale_5fqp_77',['scale_qp',['../qp_8hpp.html#aa790bef4513b4ac1815d67c8dbf9c026',1,'smooth::feedback::detail']]],
-  ['scaling_78',['scaling',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a376640aa39c3016d33ad922653236649',1,'smooth::feedback::QPSolverParams']]],
-  ['set_5ffinal_5fstate_5fcost_79',['set_final_state_cost',['../classsmooth_1_1feedback_1_1MPC.html#a9b4768340a7ba3472ed49f6d48497997',1,'smooth::feedback::MPC']]],
+  ['scalar_75',['Scalar',['../classsmooth_1_1feedback_1_1EKF.html#abb95d648223dc54835f4762127c6a242',1,'smooth::feedback::EKF']]],
+  ['scale_5fqp_76',['scale_qp',['../qp_8hpp.html#aa790bef4513b4ac1815d67c8dbf9c026',1,'smooth::feedback::detail']]],
+  ['scaling_77',['scaling',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a376640aa39c3016d33ad922653236649',1,'smooth::feedback::QPSolverParams']]],
+  ['set_5ffinal_5fstate_5fcost_78',['set_final_state_cost',['../classsmooth_1_1feedback_1_1MPC.html#a9b4768340a7ba3472ed49f6d48497997',1,'smooth::feedback::MPC']]],
+  ['set_5fglim_79',['set_glim',['../classsmooth_1_1feedback_1_1MPC.html#a29bda2d86aab38a580bd8d5aee54b37c',1,'smooth::feedback::MPC']]],
   ['set_5finput_5fcost_80',['set_input_cost',['../classsmooth_1_1feedback_1_1MPC.html#a12bab1c20319ff097a6566f8e23ef9a7',1,'smooth::feedback::MPC']]],
   ['set_5frunning_5fstate_5fcost_81',['set_running_state_cost',['../classsmooth_1_1feedback_1_1MPC.html#a08a6bef23633b3608888a35b046f3fe4',1,'smooth::feedback::MPC']]],
-  ['set_5fulim_82',['set_ulim',['../classsmooth_1_1feedback_1_1MPC.html#a6615b7916a8bf77f7be31e60d85d9a4c',1,'smooth::feedback::MPC']]],
+  ['set_5fulim_82',['set_ulim',['../classsmooth_1_1feedback_1_1MPC.html#a9d8e11e2df4f476cda0d0e54fd0145e7',1,'smooth::feedback::MPC']]],
   ['set_5fxudes_83',['set_xudes',['../classsmooth_1_1feedback_1_1MPC.html#a7e0ab2d45a9fcdc954dfa4c0b1b8bc83',1,'smooth::feedback::MPC::set_xudes(const std::function&lt; G(T)&gt; &amp;x_des, const std::function&lt; U(T)&gt; &amp;u_des)'],['../classsmooth_1_1feedback_1_1MPC.html#a21fa54ea469a5fdf1b66e757edfb9b89',1,'smooth::feedback::MPC::set_xudes(std::function&lt; G(T)&gt; &amp;&amp;x_des, std::function&lt; U(T)&gt; &amp;&amp;u_des)']]],
   ['sigma_84',['sigma',['../structsmooth_1_1feedback_1_1QPSolverParams.html#af1bf675148e3597d0c7530a26a2e59c5',1,'smooth::feedback::QPSolverParams']]],
   ['smooth_5ffeedback_3a_20control_20and_20estimation_20on_20lie_20groups_85',['smooth_feedback: Control and estimation on Lie groups',['../index.html',1,'']]],
