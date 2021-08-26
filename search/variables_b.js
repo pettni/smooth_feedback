@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['r_182',['R',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#aa68e642bf9b7479ae6f7a29075d7af59',1,'smooth::feedback::OptimalControlProblem']]],
-  ['relax_5fcost_183',['relax_cost',['../structsmooth_1_1feedback_1_1AsifParams.html#a26ef2ec3f08274f5d1fc1de6e1cb37ad',1,'smooth::feedback::AsifParams']]],
-  ['rho_184',['rho',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a12313e82b48be1c090051beefd1f2af7',1,'smooth::feedback::QPSolverParams']]]
+  ['q_180',['q',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#af9cfac2013f678eb683f2bf5fa8e5aee',1,'smooth::feedback::QuadraticProgram::q()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a7cff5c59c37d778e10785d29e7715989',1,'smooth::feedback::QuadraticProgramSparse::q()']]],
+  ['q_181',['Q',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a18104640f745da44e2e3f932aa4979dd',1,'smooth::feedback::OptimalControlProblem']]],
+  ['qp_182',['qp',['../structsmooth_1_1feedback_1_1MPCParams.html#a5fca7a42cfa6f39d314a0d3a6d207c99',1,'smooth::feedback::MPCParams']]],
+  ['qt_183',['QT',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#af638e433f7ac2f2cbe611c21569bc889',1,'smooth::feedback::OptimalControlProblem']]]
 ];

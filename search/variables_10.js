@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['warmstart_195',['warmstart',['../structsmooth_1_1feedback_1_1MPCParams.html#aac24fea108871e87d6789429fcfcb5cf',1,'smooth::feedback::MPCParams']]]
+  ['verbose_196',['verbose',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a91f39a442586243cd1acca803e3537fc',1,'smooth::feedback::QPSolverParams']]]
 ];
