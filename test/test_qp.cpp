@@ -44,10 +44,12 @@ TEST(QP, BasicStatic)
   auto sol = smooth::feedback::solve_qp(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::QPSolutionStatus::Optimal);
   ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(1, -0.25), tol));
+  ASSERT_NEAR(sol.objective, 1. / 2 - 4 - 1. / 32, tol);
 
   auto sol_hs = smooth::feedback::solve_qp(problem, prm, sol);
   ASSERT_EQ(sol_hs.code, smooth::feedback::QPSolutionStatus::Optimal);
   ASSERT_TRUE(sol_hs.primal.isApprox(Eigen::Vector2d(1, -0.25), tol));
+  ASSERT_NEAR(sol_hs.objective, 1. / 2 - 4 - 1. / 32, tol);
 }
 
 TEST(QP, BasicDynamic)
@@ -220,10 +222,12 @@ TEST(QP, PortfolioOptimization)
   auto sol = smooth::feedback::solve_qp(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::QPSolutionStatus::Optimal);
   ASSERT_TRUE(sol.primal.isApprox(answer, tol));
+  ASSERT_NEAR(sol.objective, 22634.417849884154 / 2, 5e-2);
 
   auto sol_hs = smooth::feedback::solve_qp(problem, prm, sol);
   ASSERT_EQ(sol_hs.code, smooth::feedback::QPSolutionStatus::Optimal);
   ASSERT_TRUE(sol_hs.primal.isApprox(answer, tol));
+  ASSERT_NEAR(sol_hs.objective, 22634.417849884154 / 2, 5e-2);
 }
 
 TEST(QP, PortfolioOptimizationSparse)
@@ -259,10 +263,12 @@ TEST(QP, PortfolioOptimizationSparse)
   auto sol = smooth::feedback::solve_qp(problem, prm);
   ASSERT_EQ(sol.code, smooth::feedback::QPSolutionStatus::Optimal);
   ASSERT_TRUE(sol.primal.isApprox(answer, tol));
+  ASSERT_NEAR(sol.objective, 22634.417849884154 / 2, 5e-2);
 
   auto sol_hs = smooth::feedback::solve_qp(problem, prm, sol);
   ASSERT_EQ(sol_hs.code, smooth::feedback::QPSolutionStatus::Optimal);
   ASSERT_TRUE(sol_hs.primal.isApprox(answer, tol));
+  ASSERT_NEAR(sol_hs.objective, 22634.417849884154 / 2, 5e-2);
 }
 
 TEST(QP, TwoDimensional)

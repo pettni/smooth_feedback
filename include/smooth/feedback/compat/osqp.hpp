@@ -22,8 +22,7 @@ namespace smooth::feedback {
 template<typename Problem>
 QPSolution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
   const QPSolverParams & prm,
-  std::optional<std::reference_wrapper<const QPSolution<-1, -1, double>>> warmstart =
-    {})
+  std::optional<std::reference_wrapper<const QPSolution<-1, -1, double>>> warmstart = {})
 {
   // Covert to sparse matrices with OSQP indexing
   Eigen::SparseMatrix<double, Eigen::ColMajor, c_int> P;
@@ -129,9 +128,10 @@ QPSolution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
     }
     }
 
-    ret.iter   = work->info->iter;
-    ret.primal = Eigen::Map<const Eigen::Matrix<double, -1, 1>>(work->solution->x, data->n);
-    ret.dual   = Eigen::Map<const Eigen::Matrix<double, -1, 1>>(work->solution->y, data->m);
+    ret.iter      = work->info->iter;
+    ret.primal    = Eigen::Map<const Eigen::Matrix<double, -1, 1>>(work->solution->x, data->n);
+    ret.dual      = Eigen::Map<const Eigen::Matrix<double, -1, 1>>(work->solution->y, data->m);
+    ret.objective = work->info->obj_val;
   }
 
   osqp_cleanup(work);

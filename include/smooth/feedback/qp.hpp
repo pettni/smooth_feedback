@@ -134,6 +134,8 @@ struct QPSolution
   Eigen::Matrix<Scalar, N, 1> primal;
   /// Dual vector
   Eigen::Matrix<Scalar, M, 1> dual;
+  /// Solution objective value
+  double objective;
 };
 
 /**
@@ -455,6 +457,7 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
   sol.primal = t_hat.template head<N>(n);
   for (Eigen::Index i = 0; i < nl; ++i) { sol.dual(LU_idx(i)) = t_hat(n + i); }
   for (Eigen::Index i = 0; i < nu; ++i) { sol.dual(LU_idx(nl + i)) = t_hat(n + nl + i); }
+  sol.objective = sol.primal.dot(0.5 * pbm.P * sol.primal + pbm.q);
 
   return true;
 }
@@ -756,10 +759,15 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
     }
   }
 
-  detail::qp_solution_t<Pbm> sol{.code = ret_code.value_or(QPSolutionStatus::MaxIterations),
-    .iter                        = iter,
-    .primal                      = std::move(x),
-    .dual                        = std::move(y)};
+  double obj = x.dot(0.5 * pbm.P * x + pbm.q);
+
+  detail::qp_solution_t<Pbm> sol{
+    .code      = ret_code.value_or(QPSolutionStatus::MaxIterations),
+    .iter      = iter,
+    .primal    = std::move(x),
+    .dual      = std::move(y),
+    .objective = obj,
+  };
 
   const auto t_iter = std::chrono::high_resolution_clock::now();
 
@@ -794,6 +802,7 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
   sol.primal.applyOnTheLeft(S.template head<N>(n).asDiagonal());
   sol.dual.applyOnTheLeft(S.template segment<M>(n, m).asDiagonal());
   sol.dual /= c;
+  sol.objective = sol.primal.dot(0.5 * pbm.P * sol.primal + pbm.q);
 
   if (prm.verbose) {
     using std::cout, std::left, std::right, std::setw, std::endl, std::chrono::microseconds;
