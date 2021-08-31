@@ -26,10 +26,8 @@
 #ifndef SMOOTH__FEEDBACK__EKF_HPP_
 #define SMOOTH__FEEDBACK__EKF_HPP_
 
-#include <boost/numeric/odeint.hpp>
-
 #include <Eigen/Cholesky>
-
+#include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/concepts.hpp>
 #include <smooth/diff.hpp>
@@ -128,16 +126,16 @@ public:
   /**
    * @brief Update EKF with a measurement \f$y = h(x) + w\f$ where \f$w \sim \mathcal N(0, R)\f$.
    *
-   * @param h measurement function \f$h : \mathbb{G} \rightarrow \mathbb{R}^{n_y}\f$
-   * @param y measurement value (size \f$n_y \times 1\f$)
-   * @param R measurement covariance (size \f$n_y \times n_y\f$)
+   * @param h measurement function \f$ h : \mathbb{G} \rightarrow \mathbb{Y} \f$
+   * @param y measurement value \f$ y \in \mathbb{Y} \f$
+   * @param R measurement covariance (size \f$ \dim \mathbb{Y} \times \dim \mathbb{Y} \f$)
    *
    * @note The function h must be differentiable using the desired method.
    *
    * @note Only the upper triangular part of \f$R\f$ is used
    */
-  template<typename F, typename YDer, typename RDev>
-  void update(F && h, const Eigen::MatrixBase<YDer> & y, const Eigen::MatrixBase<RDev> & R)
+  template<typename F, typename RDev, Manifold Y = std::invoke_result_t<F, G>>
+  void update(F && h, const Y & y, const Eigen::MatrixBase<RDev> & R)
   {
     const auto [hval, H] = diff::dr<DiffType>(h, wrt(g_hat_));
 
