@@ -56,10 +56,15 @@ namespace smooth::feedback {
 template<Manifold M>
 struct OptimalControlBounds
 {
+  /// Dimensionality
   static constexpr int n = M::SizeAtCompileTime;
 
+  /// Transformation matrix
   Eigen::Matrix<double, -1, n> A = Eigen::Matrix<double, -1, n>::Identity(n, n);
-  Eigen::Matrix<double, -1, 1> l, u;
+  /// Lower bound
+  Eigen::Matrix<double, -1, 1> l
+  /// Upper bound
+  Eigen::Matrix<double, -1, 1> u;
 };
 
 /**
@@ -434,6 +439,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
   return ret;
 }
 
+/**
+ * @brief Parameters for MPC
+ */
 struct MPCParams
 {
   /// MPC horizon (seconds)
@@ -447,12 +455,12 @@ struct MPCParams
   bool warmstart{true};
 
   /**
-   * @brief
+   * @brief Relinearize the problem around state solution after each solve.
    */
   bool relinearize_state_around_sol{false};
 
   /**
-   * @brief
+   * @brief Relinearize the problem around input solution after each solve.
    */
   bool relinearize_input_around_sol{false};
 
@@ -510,8 +518,7 @@ public:
    *
    * @param f callable object that represents dynamics \f$ \mathrm{d}^r x_t = f(f, x, u) \f$ as a
    * function \f$ f : T \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
-   * @param t time horizon
-   * @param qp_prm optional parameters for the QP solver (see solve_qp())
+   * @param prm MPC parameters
    *
    * @note \f$ f \f$ is copied/moved into the class. In order to modify the dynamics from the
    * outside the type Dyn can be created to contain references to outside objects that are

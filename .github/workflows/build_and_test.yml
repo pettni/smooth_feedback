@@ -40,10 +40,10 @@ jobs:
 
     - name: Install Eigen 3.4
       run: |
-        git clone --branch 3.4.0 git@gitlab.com:libeigen/eigen.git ${{ github.workspace }}/deps/eigen
+        git clone --branch 3.4.0 https://gitlab.com/libeigen/eigen.git ${{ github.workspace }}/deps/eigen
         cmake \
           -S ${{ github.workspace }}/deps/eigen \
-          -B ${{ github.workspace }}/deps/eigen/build \
+          -B ${{ github.workspace }}/deps/eigen/build
         cmake --build ${{ github.workspace }}/deps/eigen/build
         sudo cmake --install ${{ github.workspace }}/deps/eigen/build
 
@@ -106,10 +106,10 @@ jobs:
 
     - name: Install Eigen 3.4
       run: |
-        git clone --branch 3.4.0 git@gitlab.com:libeigen/eigen.git ${{ github.workspace }}/deps/eigen
+        git clone --branch 3.4.0 https://gitlab.com/libeigen/eigen.git ${{ github.workspace }}/deps/eigen
         cmake \
           -S ${{ github.workspace }}/deps/eigen \
-          -B ${{ github.workspace }}/deps/eigen/build \
+          -B ${{ github.workspace }}/deps/eigen/build
         cmake --build ${{ github.workspace }}/deps/eigen/build
         sudo cmake --install ${{ github.workspace }}/deps/eigen/build
 

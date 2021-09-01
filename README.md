@@ -11,7 +11,7 @@ Tool collection for control and estimation on Lie groups leveraging the
 ## Control on Lie groups
 
 These controllers are implemented for systems with dynamics on the form
-![](https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(t, \mathbf{x},&space;\mathbf{u}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}.) 
+![](https://latex.codecogs.com/png.image?\dpi{110}&space;\mathrm{d}^r&space;\mathbf{x}_t&space;=&space;f(t,&space;\mathbf{x},&space;\mathbf{u}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}) where `X` is a `smooth::LieGroup` and `U` is a `smooth::Manifold`. 
 
 Nonlinearities are handled via linearization around a reference point or trajectory. For group-linear dynamics
 this automatically results in a linear system in the tangent space, in which case these algorithms are expected
@@ -52,8 +52,9 @@ to work very well.
 ## Filtering on Lie groups
 
 Filters take system models on the form
-![](https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(t, \mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U},) 
-to use it in a feedback loop for a controlled system use partial application:
+![](https://latex.codecogs.com/png.image?\dpi{110}&space;\mathrm{d}^r&space;\mathbf{x}_t&space;=&space;f(t,&space;\mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X}) where `X` is a `smooth::LieGroup`.
+
+To use in a feedback loop for a controlled system use partial application:
 ```cpp
 // controlled system dynamics dr x_t = f(t, x, u)
 const auto f = [] (const auto & t, const auto & x, const auto & g) -> Tangent { ... };
