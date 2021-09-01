@@ -33,6 +33,7 @@
 
 #include <Eigen/Core>
 
+// \cond
 using lapack_int = int;
 
 extern "C" void ssytrf_(char const * uplo,
@@ -72,6 +73,7 @@ extern "C" void dsytrs_(char const * uplo,
   double * B,
   lapack_int const * ldb,
   lapack_int * info);
+// \endcond
 
 namespace smooth::feedback::detail {
 
