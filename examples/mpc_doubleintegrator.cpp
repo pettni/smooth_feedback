@@ -41,13 +41,7 @@ int main()
     typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
 
   // parameters
-  smooth::feedback::MPCParams prm{
-    .T                            = 5,
-    .warmstart                    = true,
-    .relinearize_state_around_sol = false,
-    .relinearize_input_around_sol = false,
-    .iterative_relinearization    = 0,
-  };
+  smooth::feedback::MPCParams prm{.T = 5};
 
   // create MPC object and set input bounds, and desired trajectories
   smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);

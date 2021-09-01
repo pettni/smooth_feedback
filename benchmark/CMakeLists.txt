@@ -13,4 +13,4 @@ PRIVATE
   Matplot++::matplot
   osqp::osqpstatic
 )
-target_compile_options(bench PRIVATE -march=native -mtune=native -O3 -DNDEBUG)
+target_compile_options(bench PRIVATE -Wall -Wextra -Wpedantic -march=native -mtune=native -O3 -DNDEBUG)

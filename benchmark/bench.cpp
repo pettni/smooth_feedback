@@ -10,208 +10,237 @@
 #include "smooth_bench.hpp"
 
 DEFINE_uint64(batch, 10, "Size of each batch");
+DEFINE_uint64(min_size, 4, "Minimal problem size");
+DEFINE_uint64(max_size, 15, "Maximal problem size");
+DEFINE_uint64(m_multiple, 1, "Number of inequalities as multiple of size");
 DEFINE_bool(verbose, false, "Print per problem information");
 
-struct SuiteResult
+void compare_results(const std::string & a_name,
+  const BatchResult & a,
+  const std::string & b_name,
+  const BatchResult & b)
 {
-  std::size_t num_total       = 0;
-  std::size_t num_valid       = 0;
-  std::size_t num_a           = 0;
-  std::size_t num_b           = 0;
-  double total_a_duration     = 0.;
-  double total_b_duration     = 0.;
-  double total_duration_ratio = 1.;
+  assert(a.results.size() == b.results.size());
+
+  std::size_t N = a.results.size();
+
+  std::size_t N_optim           = 0;
+  double total_optim_duration_a = 0;
+  double total_optim_duration_b = 0;
+
+  double total_duration_ratio = 1;
   double min_duration_ratio   = std::numeric_limits<double>::infinity();
-  double max_duration_ratio   = 0.;
-  double total_primal_diff    = 0.;
-  double total_obj_impr       = 0.;
-  double min_primal_diff      = std::numeric_limits<double>::infinity();
-  double max_primal_diff      = 0.;
-  double worst_obj_impr       = std::numeric_limits<double>::infinity();
-  double best_obj_impr        = 0.;
-};
+  double max_duration_ratio   = 0;
 
-void compareRuns(SuiteResult & res, const BatchResult & a, const BatchResult & b)
-{
-  const auto & [a_p, a_v] = a.batch;
-  const auto & [b_p, b_v] = b.batch;
+  double total_primal_diff = 0;
+  double min_primal_diff   = std::numeric_limits<double>::infinity();
+  double max_primal_diff   = 0;
 
-  if (a_v.size() != b_v.size()) { throw std::runtime_error("different bach sizes"); }
+  std::size_t N_pinfeas           = 0;
+  double total_pinfeas_duration_a = 0;
+  double total_pinfeas_duration_b = 0;
 
-  for (auto i = 0u; i != a_v.size(); ++i) {
-    if ((a_p[i].qp.u - b_p[i].qp.u).norm() > 1e-6) { throw std::runtime_error("Problem mismatch"); }
+  std::size_t N_dinfeas           = 0;
+  double total_dinfeas_duration_a = 0;
+  double total_dinfeas_duration_b = 0;
+
+  std::cout << "-----------------------------------------------------------------" << std::endl;
+  std::cout << a_name << " (A) vs. " << b_name << " (B)" << std::endl;
+  std::cout << "-----------------------------------------------------------------" << std::endl;
+
+  for (auto i = 0u; i != N; ++i) {
+    const auto & a_res = a.results[i];
+    const auto & b_res = b.results[i];
+
+    double duration_a = std::chrono::duration<double>(a_res.dt).count();
+    double duration_b = std::chrono::duration<double>(b_res.dt).count();
+
     if (FLAGS_verbose) {
-      std::cout << "-----------------------------------------------------------------" << std::endl;
+      using std::cout, std::setw, std::endl;
+      cout << "Details for problem " << i << endl;
+
+      cout << setw(30) << a_name + " code " << static_cast<int>(a_res.status) << endl;
+      cout << setw(30) << b_name + " code " << static_cast<int>(b_res.status) << endl;
+
+      cout << setw(30) << a_name + " duration " << duration_a << endl;
+      cout << setw(30) << b_name + " duration " << duration_b << endl;
+
+      cout << setw(30) << a_name + " iterations " << a_res.iter << endl;
+      cout << setw(30) << b_name + " iterations " << b_res.iter << endl;
+
+      cout << setw(30) << a_name + " solution " << a_res.solution.transpose() << endl;
+      cout << setw(30) << b_name + " solution " << b_res.solution.transpose() << endl;
+
+      cout << setw(30) << a_name + " objective " << a_res.objective << endl;
+      cout << setw(30) << b_name + " objective " << b_res.objective << endl << endl;
     }
 
-    if (a_v[i].has_value()) {
-      auto a_dur = std::chrono::duration<double>(a_v[i]->dt).count();
-      res.total_a_duration += a_dur;
-      ++res.num_a;
-      if (FLAGS_verbose) {
-        std::cout << "A: " << std::endl;
-        std::cout << std::setw(20) << "  Time: " << a_dur << std::endl;
-        std::cout << std::setw(20) << "  Iter: " << a_v[i]->iter << std::endl;
-        std::cout << std::setw(20) << "  Primal: " << a_v[i]->solution.transpose() << std::endl;
-        std::cout << std::setw(20) << "  Obj: " << a_v[i]->objective << std::endl;
-      }
-    }
+    double duration_ratio = duration_a / duration_b;
 
-    if (b_v[i].has_value()) {
-      auto b_dur = std::chrono::duration<double>(b_v[i]->dt).count();
-      res.total_b_duration += b_dur;
-      ++res.num_b;
+    if (a_res.status == smooth::feedback::QPSolutionStatus::Optimal
+        && b_res.status == smooth::feedback::QPSolutionStatus::Optimal) {
+      ++N_optim;
 
-      if (FLAGS_verbose) {
-        std::cout << "B: " << std::endl;
-        std::cout << std::setw(20) << "  Time: " << b_dur << std::endl;
-        std::cout << std::setw(20) << "  Iter: " << b_v[i]->iter << std::endl;
-        std::cout << std::setw(20) << "  Primal: " << b_v[i]->solution.transpose() << std::endl;
-        std::cout << std::setw(20) << "  Obj: " << b_v[i]->objective << std::endl;
-      }
-    }
-    if (b_v[i] && a_v[i]) {
-      ++res.num_valid;
+      double primal_diff = (b_res.solution - a_res.solution).norm();
 
-      double primal_diff = (b_v[i]->solution - a_v[i]->solution).norm();
-      double obj_improvement =
-        (a_v[i]->objective - b_v[i]->objective) / std::max(abs(a_v[i]->objective), 1e-3);
-      double duration_ratio = std::chrono::duration<double>(b_v[i]->dt).count()
-                            / std::chrono::duration<double>(a_v[i]->dt).count();
+      total_optim_duration_a += duration_a;
+      total_optim_duration_b += duration_b;
 
-      if (FLAGS_verbose) {
-        std::cout << std::setw(20) << "Primal Difference: " << primal_diff << std::endl;
-        std::cout << std::setw(20) << "Object Ratio: " << obj_improvement << std::endl;
-        std::cout << std::setw(20) << "Time Difference: " << duration_ratio << std::endl;
-      }
+      total_duration_ratio *= duration_ratio;
+      min_duration_ratio = std::min(duration_ratio, min_duration_ratio);
+      max_duration_ratio = std::max(duration_ratio, max_duration_ratio);
 
-      res.total_duration_ratio += duration_ratio;
-      res.min_duration_ratio = std::min(duration_ratio, res.min_duration_ratio);
-      res.max_duration_ratio = std::max(duration_ratio, res.max_duration_ratio);
-      res.total_primal_diff += primal_diff;
-      res.min_primal_diff = std::min(res.min_primal_diff, primal_diff);
-      res.max_primal_diff = std::max(primal_diff, res.max_primal_diff);
-      res.total_obj_impr += obj_improvement;
-      res.worst_obj_impr = std::min(res.worst_obj_impr, obj_improvement);
-      res.best_obj_impr  = std::max(res.best_obj_impr, obj_improvement);
+      total_primal_diff += primal_diff;
+      min_primal_diff = std::min(primal_diff, min_primal_diff);
+      max_primal_diff = std::max(primal_diff, max_primal_diff);
+    } else if (a_res.status == smooth::feedback::QPSolutionStatus::PrimalInfeasible
+               && b_res.status == smooth::feedback::QPSolutionStatus::PrimalInfeasible) {
+      ++N_pinfeas;
+      total_pinfeas_duration_a += duration_a;
+      total_pinfeas_duration_b += duration_b;
+    } else if (a_res.status == smooth::feedback::QPSolutionStatus::DualInfeasible
+               && b_res.status == smooth::feedback::QPSolutionStatus::DualInfeasible) {
+      ++N_dinfeas;
+      total_dinfeas_duration_a += duration_a;
+      total_dinfeas_duration_b += duration_b;
     }
   }
 
   using std::cout, std::setw, std::endl;
 
-  // clang-format off
-  cout << setw(30) << "Num Problems"          << a_v.size() << endl;
-  cout << setw(30) << "Num A"                 << res.num_a << endl;
-  cout << setw(30) << "Num B"                 << res.num_b << endl;
+  cout << setw(30) << "Total number of problems: " << N << endl;
 
-  cout << setw(30) << "Avg Duration A"        << res.total_a_duration / std::max<int>(res.num_a, 1) << endl;
-  cout << setw(30) << "Avg Duration B"        << res.total_b_duration / std::max<int>(res.num_b, 1) << endl;
-  cout << setw(30) << "Avg Duration Ratio"    << res.total_duration_ratio / std::max<int>(1, res.num_valid) << endl;
-  cout << setw(30) << "Min Duration Ratio"    << res.min_duration_ratio << endl;
-  cout << setw(30) << "Max Duration Ratio"    << res.max_duration_ratio << endl;
+  cout << setw(30) << a_name + " optimal:" << a.num_optimal << endl;
+  cout << setw(30) << b_name + " optimal:" << b.num_optimal << endl;
+  cout << setw(30) << "both optimal: " << N_optim << endl;
 
-  cout << setw(30) << "Avg Primal Diff"       << res.total_primal_diff / std::max<int>(1, res.num_valid) << endl;
-  cout << setw(30) << "Min Primal Diff"       << res.min_primal_diff << endl;
-  cout << setw(30) << "Max Primal Diff"       << res.max_primal_diff << endl;
+  cout << setw(30) << a_name + " avg duration: " << total_optim_duration_a / N_optim << endl;
+  cout << setw(30) << b_name + " avg duration: " << total_optim_duration_b / N_optim << endl;
 
-  cout << setw(30) << "Avg Obj Improvement"   << res.total_obj_impr / std::max<int>(1, res.num_valid) << endl;
-  cout << setw(30) << "Worst Obj Improvement" << res.worst_obj_impr << endl;
-  cout << setw(30) << "Best Obj Improvement"  << res.best_obj_impr << endl;
-  // clang-format onf
+  cout << setw(30) << "Avg duration ratio " << std::pow(total_duration_ratio, 1. / N_optim) << endl;
+  cout << setw(30) << "Min duration ratio " << min_duration_ratio << endl;
+  cout << setw(30) << "Max duration ratio " << max_duration_ratio << endl;
+
+  cout << setw(30) << "Avg primal diff " << total_primal_diff / N_optim << endl;
+  cout << setw(30) << "Min primal diff " << min_primal_diff << endl;
+  cout << setw(30) << "Max primal diff " << max_primal_diff << endl;
 }
+
+struct PlotData
+{
+  double density;
+  std::vector<int> size;
+  std::vector<double> time_smooth_s, time_smooth_d, time_osqp;
+};
 
 int main(int argc, char ** argv)
 {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  constexpr auto startN = 4;
-  constexpr auto maxN   = 31;
-  constexpr auto lenN   = maxN - startN;
 
   constexpr std::array<double, 3> D = {0.15, 0.5, 1.};
 
-  using ResultMap =
-    std::unordered_map<std::string, std::array<std::array<SuiteResult, lenN>, D.size()>>;
+  std::default_random_engine rng(5);
 
-  ResultMap allResults;
-  static_for<startN, maxN>()([&](auto i) {
-    constexpr auto N = i.value;
-    constexpr auto M = N;
+  smooth::feedback::QPSolverParams prm{};
+  prm.eps_abs  = 1e-6;
+  prm.eps_rel  = 1e-6;
+  prm.polish   = true;
+  prm.max_iter = 10000;
 
-    for (auto j = 0u; j < D.size(); ++j) {
+  std::vector<PlotData> plot_data;
+
+  for (auto density : D) {
+    PlotData data;
+    data.density = density;
+    for (auto n = FLAGS_min_size; n <= FLAGS_max_size; ++n) {
+      std::size_t m = FLAGS_m_multiple * n;
+
       std::default_random_engine gen1, gen2;
 
+      // generate sparse problems
+      std::vector<smooth::feedback::QuadraticProgram<-1, -1>> qp_list;
+      std::vector<smooth::feedback::QuadraticProgramSparse<double>> qp_sparse_list;
+
+      std::generate_n(
+        std::back_inserter(qp_list), FLAGS_batch, [&]() { return random_qp(m, n, density, rng); });
+
+      std::transform(
+        qp_list.begin(), qp_list.end(), std::back_inserter(qp_sparse_list), [](const auto & qp) {
+          return qp_dense_to_sparse(qp);
+        });
+
+      auto smooth_d_res =
+        solve_batch<SmoothWrapper<smooth::feedback::QuadraticProgram<-1, -1>>>(qp_list, prm);
+
+      auto smooth_s_res =
+        solve_batch<SmoothWrapper<smooth::feedback::QuadraticProgramSparse<double>>>(
+          qp_sparse_list, prm);
+
+      auto osqp_res = solve_batch<OsqpWrapper<smooth::feedback::QuadraticProgramSparse<double>>>(
+        qp_sparse_list, prm);
+
       std::cout << "#################################################################" << std::endl;
       std::cout << "#################################################################" << std::endl;
-      std::cout << "Variables: " << N << std::endl;
-      std::cout << "Constraints: " << M << std::endl;
-      std::cout << "Density: " << D[j] << std::endl;
+      std::cout << "Variables: " << n << std::endl;
+      std::cout << "Constraints: " << m << std::endl;
+      std::cout << "Density: " << density << std::endl;
       std::cout << "#################################################################" << std::endl;
       std::cout << "#################################################################" << std::endl;
 
-      std::cout << "-----------------------------------------------------------------" << std::endl;
-      std::cout << "OSQP" << std::endl;
-      std::cout << "-----------------------------------------------------------------" << std::endl;
+      compare_results("smooth-d", smooth_d_res, "osqp", osqp_res);
+      compare_results("smooth-s", smooth_s_res, "osqp", osqp_res);
 
-      std::srand(1);
-      auto osqp_res = BenchSuite<OsqpWrapper, M, N>(gen1, FLAGS_batch, D[j]);
+      // calculate average solution times for problems that were solved by all methods
+      std::size_t N_tot = 0;
 
-      std::cout << "-----------------------------------------------------------------" << std::endl;
-      std::cout << "SMOOTH" << std::endl;
-      std::cout << "-----------------------------------------------------------------" << std::endl;
-
-      std::srand(1);
-      auto smooth_res = BenchSuite<SmoothWrapper, M, N>(gen2, FLAGS_batch, D[j]);
-
-      auto keys = osqp_res.first;
-      for (auto & k : keys) {
-        if (allResults.find(k) == allResults.end()) {
-          allResults.emplace(
-            std::make_pair(k, std::array<std::array<SuiteResult, lenN>, D.size()>{}));
-          allResults[k][j] = std::array<SuiteResult, lenN>{};
+      std::chrono::nanoseconds time_smooth_s(0);
+      std::chrono::nanoseconds time_smooth_d(0);
+      std::chrono::nanoseconds time_osqp(0);
+      for (auto i = 0u; i != FLAGS_batch; ++i) {
+        if (smooth_d_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal
+            && smooth_s_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal
+            && osqp_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal) {
+          ++N_tot;
+          time_smooth_s += smooth_s_res.results[i].dt;
+          time_smooth_d += smooth_d_res.results[i].dt;
+          time_osqp += osqp_res.results[i].dt;
         }
-        std::cout << "###############################################################" << std::endl;
-        std::cout << k << std::endl;
-        std::cout << "###############################################################" << std::endl;
-        auto osqp_k   = osqp_res.second[k];
-        auto smooth_k = smooth_res.second[k];
-        compareRuns(allResults[k][j][i - startN], osqp_k, smooth_k);
       }
-    }
-  });
 
-  auto idxView = std::views::iota(startN, maxN);
-  std::vector<int> idxVec(idxView.begin(), idxView.end());
-
-  for (auto i = 0u; i < D.size(); ++i) {
-    auto h  = matplot::figure();
-    auto ax = h->current_axes();
-    ax->hold(matplot::on);
-
-    std::vector<std::string> legends;
-
-    for (const auto & [name, result] : allResults) {
-      std::array<double, lenN> aAvgDur, bAvgDur;
-      std::transform(
-        result[i].begin(), result[i].end(), aAvgDur.begin(), [](const SuiteResult & s) -> double {
-          return s.total_a_duration / std::max<int>(1, s.num_a);
-        });
-      std::transform(
-        result[i].begin(), result[i].end(), bAvgDur.begin(), [](const SuiteResult & s) -> double {
-          return s.total_b_duration / std::max<int>(1, s.num_b);
-        });
-
-      ax->plot(idxVec, aAvgDur)->line_width(3);
-      legends.push_back("OSQP " + name);
-
-      ax->plot(idxVec, bAvgDur)->line_width(3);
-      legends.push_back("Smooth " + name);
+      data.size.push_back(n);
+      data.time_smooth_s.push_back(
+        std::chrono::duration_cast<std::chrono::duration<double>>(time_smooth_s).count() / N_tot);
+      data.time_smooth_d.push_back(
+        std::chrono::duration_cast<std::chrono::duration<double>>(time_smooth_d).count() / N_tot);
+      data.time_osqp.push_back(
+        std::chrono::duration_cast<std::chrono::duration<double>>(time_osqp).count() / N_tot);
     }
 
-    ax->xlabel("Number of Variables");
-    ax->title("Density " + std::to_string(D[i]));
-    ax->ylabel("Avg Duration (s)");
-    ax->legend(legends);
+    plot_data.push_back(data);
+  };
+
+  auto h = matplot::figure(true);
+  matplot::tiledlayout(3, 1);
+
+  for (const PlotData & data : plot_data) {
+    matplot::nexttile();
+    matplot::hold(matplot::on);
+    matplot::plot(data.size, data.time_osqp, "-o")->line_width(3);
+    matplot::plot(data.size, data.time_smooth_d, "-o")->line_width(3);
+    matplot::plot(data.size, data.time_smooth_s, "-o")->line_width(3);
+    matplot::xticks({});
+    matplot::xlim({static_cast<double>(FLAGS_min_size), static_cast<double>(FLAGS_max_size)});
+
+    matplot::title("Density " + std::to_string(data.density));
+    matplot::ylabel("Avg Duration (s)");
+    auto l = matplot::legend({"osqp", "smooth-d", "smooth-s"});
+    l->location(matplot::legend::general_alignment::topleft);
   }
 
-  matplot::show();
+  matplot::xticks({static_cast<double>(FLAGS_min_size)});
+  matplot::xticks(matplot::automatic);
+
+  h->draw();
+  h->size(1920, 1080);
+  h->show();
 }
