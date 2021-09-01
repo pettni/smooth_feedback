@@ -3,7 +3,7 @@
 <package format="3">
   <name>smooth_feedback</name>
   <version>0.0.1</version>
-  <description>Control theory on Lie groups</description>
+  <description>Control and estimation on Lie groups</description>
 
   <author>Petter Nilsson</author>
   <maintainer email="pettni@umich.edu">Petter Nilsson</maintainer>
@@ -14,6 +14,8 @@
   <depend>smooth</depend>
 
   <buildtool_depend>cmake</buildtool_depend>
+
+  <test_depend>gtest</test_depend>
 
   <export>
     <build_type>cmake</build_type>

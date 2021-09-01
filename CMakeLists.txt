@@ -11,12 +11,6 @@ option(BUILD_BENCHMARK "Build the benchmarks." OFF)
 include(CTest)
 include(GoogleTest)
 
-if(${CMAKE_VERSION} VERSION_LESS "3.18")
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindLAPACK.cmake)
-else()
-  include(FindLAPACK)
-endif()
-
 find_package(Boost REQUIRED)
 find_package(LAPACK REQUIRED)
 find_package(smooth REQUIRED)
@@ -34,9 +28,14 @@ INTERFACE
 target_link_libraries(feedback
 INTERFACE
   Boost::headers
-  LAPACK::LAPACK
   smooth::smooth
 )
+
+if(${CMAKE_VERSION} VERSION_LESS "3.18")
+  target_link_libraries(feedback INTERFACE ${LAPACK_LIBRARIES})
+else()
+  target_link_libraries(feedback INTERFACE LAPACK::LAPACK)
+endif()
 
 # ---------------------------------------------------------------------------------------
 # EXAMPLES
@@ -95,14 +94,6 @@ configure_package_config_file(
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
   INSTALL_DESTINATION ${export_dest_dir}
 )
-
-# Install other cmake files
-if(${CMAKE_VERSION} VERSION_LESS "3.18")
-  install(
-    FILES        cmake/FindLAPACK.cmake
-    DESTINATION  ${export_dest_dir}
-  )
-endif()
 
 # Generate VERSION file
 write_basic_package_version_file(
