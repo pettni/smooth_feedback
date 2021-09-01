@@ -83,8 +83,19 @@ Control on Lie groups</h1>
 Proportional-Derivative Control: A classic, now on Lie groups</h2>
 <ul>
 <li>Model-free</li>
+<li>Assumes that inputs control body acceleration. See <code>examples/pid_se2.cpp</code> for an example of allocating PID inputs to actuators.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md3"></a>
+<p><b>Example</b> PID controller on SE(2)</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedpack/pid.hpp&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID&lt;std::chrono::duration&lt;double&gt;</a>, smooth::SE2d&gt; pid;</div>
+<div class="line"> </div>
+<div class="line">smooth::SE2d x;     <span class="comment">// current state</span></div>
+<div class="line">Eigen::Vector3d v;  <span class="comment">// current body velocity</span></div>
+<div class="line"> </div>
+<div class="line">Eigen::Vector3d u = pid(1s, x, v);</div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1PID_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a></div><div class="ttdoc">Proportional-Integral-Derivative controller for Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="pid_8hpp_source.html#l00061">pid.hpp:62</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3"></a>
 Lie group Model-Predictive Control: When more look-ahead is needed</h2>
 <ul>
 <li>Templated on the dynamical model</li>

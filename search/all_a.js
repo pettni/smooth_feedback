@@ -1,7 +1,7 @@
 var searchData=
 [
   ['p_51',['P',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#a0f23929c20ff8fd2c8ee6ca09b057e13',1,'smooth::feedback::QuadraticProgram::P()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a8da2f569b867c08ee44ef5220e22b248',1,'smooth::feedback::QuadraticProgramSparse::P()']]],
-  ['pid_52',['PID',['../classsmooth_1_1feedback_1_1PID.html#ad951a23ef9d14267c247f2e378057e56',1,'smooth::feedback::PID::PID()'],['../classsmooth_1_1feedback_1_1PID.html',1,'smooth::feedback::PID&lt; T, G &gt;']]],
+  ['pid_52',['PID',['../classsmooth_1_1feedback_1_1PID.html#aa5de7b5c7935a2b6db8add2d00a47998',1,'smooth::feedback::PID::PID(const PIDParams &amp;prm=PIDParams{}) noexcept'],['../classsmooth_1_1feedback_1_1PID.html#ad36e4bccc9ad61d5050495a893f66500',1,'smooth::feedback::PID::PID(const PID &amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#ab1076ca62fa37eb2286153bacecdcfe6',1,'smooth::feedback::PID::PID(PID &amp;&amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html',1,'smooth::feedback::PID&lt; T, G &gt;']]],
   ['pidparams_53',['PIDParams',['../structsmooth_1_1feedback_1_1PIDParams.html',1,'smooth::feedback']]],
   ['polish_54',['polish',['../structsmooth_1_1feedback_1_1QPSolverParams.html#aa5a9bda5887e5eec02c9bdfdad3b1a7a',1,'smooth::feedback::QPSolverParams']]],
   ['polish_5fiter_55',['polish_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#aca78531f868b99ab481bcf3146b3ecfe',1,'smooth::feedback::QPSolverParams']]],
