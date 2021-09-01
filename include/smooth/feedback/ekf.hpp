@@ -54,10 +54,12 @@ template<LieGroup G,
 class EKF
 {
 public:
+  static_assert(G::SizeAtCompileTime > 0, "State space dimension must be static");
+
   //! Scalar type for computations.
   using Scalar = typename G::Scalar;
   //! Degrees of freedom.
-  using CovT = Eigen::Matrix<Scalar, G::Dof, G::Dof>;
+  using CovT = Eigen::Matrix<Scalar, G::SizeAtCompileTime, G::SizeAtCompileTime>;
 
   /**
    * @brief Reset the state of the EKF.
@@ -146,7 +148,7 @@ public:
         .template triangularView<Eigen::Upper>();
 
     // solve for Kalman gain
-    const Eigen::Matrix<Scalar, G::Dof, Ny> K =
+    const Eigen::Matrix<Scalar, G::SizeAtCompileTime, Ny> K =
       S.template selfadjointView<Eigen::Upper>().ldlt().solve(H * P_).transpose();
 
     // update estimate and covariance

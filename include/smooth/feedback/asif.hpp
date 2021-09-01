@@ -123,6 +123,10 @@ auto asif_to_qp(const G & x0,
   static constexpr int nu = U::SizeAtCompileTime;
   static constexpr int nh = std::invoke_result_t<SafeSet, double, G>::SizeAtCompileTime;
 
+  static_assert(nx > 0, "State space dimension must be static");
+  static_assert(nu > 0, "Input space dimension must be static");
+  static_assert(nh > 0, "Safe set dimension must be static");
+
   euler<G, double, Tangent, double, vector_space_algebra> state_stepper{};
   euler<TangentMap, double, TangentMap, double, vector_space_algebra> sensi_stepper{};
 
@@ -195,8 +199,8 @@ auto asif_to_qp(const G & x0,
   ret.A.template block<nu + 1, nu + 1>(K * nh, 0).setIdentity();
 
   // upper and lower bounds on u
-  ret.l.template segment<nu>(K * nh, 0).setConstant(-1);
-  ret.u.template segment<nu>(K * nh, 0).setConstant(1);
+  ret.l.template segment<nu>(K * nh).setConstant(-1);
+  ret.u.template segment<nu>(K * nh).setConstant(1);
 
   // upper and lower bounds on delta
   ret.l(K * nh + nu) = 0;

@@ -47,18 +47,6 @@ jobs:
         cmake --build ${{ github.workspace }}/deps/eigen/build
         sudo cmake --install ${{ github.workspace }}/deps/eigen/build
 
-    - name: Install autodiff
-      run: |
-        git clone https://github.com/autodiff/autodiff.git ${{ github.workspace }}/deps/autodiff
-        cmake \
-          -S ${{ github.workspace }}/deps/autodiff \
-          -B ${{ github.workspace }}/deps/autodiff/build \
-          -DAUTODIFF_BUILD_EXAMPLES=OFF \
-          -DAUTODIFF_BUILD_TESTS=OFF \
-          -DAUTODIFF_BUILD_PYTHON=OFF
-        cmake --build ${{ github.workspace }}/deps/autodiff/build
-        sudo cmake --install ${{ github.workspace }}/deps/autodiff/build
-
     - name: Install smooth
       run: |
         git clone https://github.com/pettni/smooth.git ${{ github.workspace }}/deps/smooth
@@ -112,18 +100,6 @@ jobs:
           -B ${{ github.workspace }}/deps/eigen/build
         cmake --build ${{ github.workspace }}/deps/eigen/build
         sudo cmake --install ${{ github.workspace }}/deps/eigen/build
-
-    - name: Install autodiff
-      run: |
-        git clone https://github.com/autodiff/autodiff.git ${{ github.workspace }}/deps/autodiff
-        cmake \
-          -S ${{ github.workspace }}/deps/autodiff \
-          -B ${{ github.workspace }}/deps/autodiff/build \
-          -DAUTODIFF_BUILD_EXAMPLES=OFF \
-          -DAUTODIFF_BUILD_TESTS=OFF \
-          -DAUTODIFF_BUILD_PYTHON=OFF
-        cmake --build ${{ github.workspace }}/deps/autodiff/build
-        sudo cmake --install ${{ github.workspace }}/deps/autodiff/build
 
     - name: Install smooth
       run: |

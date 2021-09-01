@@ -235,6 +235,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
   static constexpr int nx = G::SizeAtCompileTime;
   static constexpr int nu = U::SizeAtCompileTime;
 
+  static_assert(nx > 0, "State space dimension must be static");
+  static_assert(nu > 0, "Input space dimension must be static");
+
   static constexpr int nX   = K * nx;
   static constexpr int nU   = K * nu;
   static constexpr int nvar = nX + nU;
