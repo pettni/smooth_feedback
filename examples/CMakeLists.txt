@@ -1,13 +1,13 @@
 find_package(autodiff REQUIRED)
 
 add_executable(mpc_doubleintegrator mpc_doubleintegrator.cpp)
-target_link_libraries(mpc_doubleintegrator autodiff::autodiff lapacke feedback)
+target_link_libraries(mpc_doubleintegrator autodiff::autodiff feedback)
 
 add_executable(asif_doubleintegrator asif_doubleintegrator.cpp)
-target_link_libraries(asif_doubleintegrator autodiff::autodiff lapacke feedback)
+target_link_libraries(asif_doubleintegrator autodiff::autodiff feedback)
 
 add_executable(mpc_se2 mpc_se2.cpp)
-target_link_libraries(mpc_se2 autodiff::autodiff lapacke feedback)
+target_link_libraries(mpc_se2 autodiff::autodiff feedback)
 
 add_executable(snippets snippets.cpp)
 target_link_libraries(snippets feedback)

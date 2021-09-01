@@ -11,7 +11,14 @@ option(BUILD_BENCHMARK "Build the benchmarks." OFF)
 include(CTest)
 include(GoogleTest)
 
+if(${CMAKE_VERSION} VERSION_LESS "3.18")
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindLAPACK.cmake)
+else()
+  include(FindLAPACK)
+endif()
+
 find_package(Boost REQUIRED)
+find_package(LAPACK REQUIRED)
 find_package(smooth REQUIRED)
 
 # ---------------------------------------------------------------------------------------
@@ -27,6 +34,7 @@ INTERFACE
 target_link_libraries(feedback
 INTERFACE
   Boost::headers
+  LAPACK::LAPACK
   smooth::smooth
 )
 
@@ -88,6 +96,14 @@ configure_package_config_file(
   INSTALL_DESTINATION ${export_dest_dir}
 )
 
+# Install other cmake files
+if(${CMAKE_VERSION} VERSION_LESS "3.18")
+  install(
+    FILES        cmake/FindLAPACK.cmake
+    DESTINATION  ${export_dest_dir}
+  )
+endif()
+
 # Generate VERSION file
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Version.cmake
@@ -121,14 +137,14 @@ if(BUILD_TESTING)
   gtest_discover_tests(test_ekf)
 
   add_executable(test_mpc test/test_mpc.cpp)
-  target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff lapacke)
+  target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff)
   gtest_discover_tests(test_mpc)
 
   add_executable(test_ldlt test/test_ldlt.cpp)
-  target_link_libraries(test_ldlt PRIVATE feedback lapacke GTest::Main)
+  target_link_libraries(test_ldlt PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_ldlt)
 
   add_executable(test_qp test/test_qp.cpp)
-  target_link_libraries(test_qp PRIVATE feedback lapacke GTest::Main)
+  target_link_libraries(test_qp PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_qp)
 endif()

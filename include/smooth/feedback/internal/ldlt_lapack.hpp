@@ -23,12 +23,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP
-#define SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP
+#ifndef SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_
+#define SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_
 
 #include <Eigen/Core>
 
-#include <lapacke.h>
+#include <lapack.h>
 
 /**
  * @file
@@ -41,15 +41,15 @@ namespace smooth::feedback::detail {
 template<typename Scalar>
 struct lapack_xsytr
 {
-  static constexpr auto factor = &LAPACKE_ssytrf_work;
-  static constexpr auto solve  = &LAPACKE_ssytrs_work;
+  static constexpr auto factor = &LAPACK_ssytrf;
+  static constexpr auto solve  = &LAPACK_ssytrs;
 };
 
 template<>
 struct lapack_xsytr<double>
 {
-  static constexpr auto factor = &LAPACKE_dsytrf_work;
-  static constexpr auto solve  = &LAPACKE_dsytrs_work;
+  static constexpr auto factor = &LAPACK_dsytrf;
+  static constexpr auto solve  = &LAPACK_dsytrs;
 };
 // \endcond
 
@@ -58,8 +58,7 @@ struct lapack_xsytr<double>
  * symmetric linear systems of equations.
  */
 template<typename Scalar, Eigen::Index N>
-  requires std::is_same_v<Scalar, float> || std::is_same_v<Scalar, double>
-class LDLTLapack
+  requires std::is_same_v<Scalar, float> || std::is_same_v<Scalar, double> class LDLTLapack
 {
 public:
   /**
@@ -78,14 +77,13 @@ public:
     static constexpr lapack_int LWORK = N == -1 ? -1 : 3 * N;
     Eigen::Matrix<Scalar, LWORK, 1> work(3 * AF_.cols());
 
-    info_ = (*lapack_xsytr<Scalar>::factor)(LAPACK_COL_MAJOR,
-      'U',
-      AF_.cols(),
-      AF_.data(),
-      AF_.rows(),
-      IPIV_.data(),
-      work.data(),
-      work.size());
+    static constexpr char U = 'U';
+    const lapack_int n      = AF_.cols();
+    const lapack_int lda    = AF_.rows();
+    const lapack_int lwork  = work.size();
+
+    (*lapack_xsytr<Scalar>::factor)(
+      &U, &n, AF_.data(), &lda, IPIV_.data(), work.data(), &lwork, &info_);
   }
 
   /// Default copy constructor
@@ -129,15 +127,13 @@ public:
    */
   inline void solve_inplace(Eigen::Matrix<Scalar, N, 1> & b)
   {
-    info_ = (*lapack_xsytr<Scalar>::solve)(LAPACK_COL_MAJOR,
-      'U',
-      AF_.cols(),
-      1,
-      AF_.data(),
-      AF_.rows(),
-      IPIV_.data(),
-      b.data(),
-      AF_.rows());
+    static constexpr char U         = 'U';
+    static constexpr lapack_int one = 1;
+    const lapack_int n              = AF_.cols();
+    const lapack_int lda            = AF_.rows();
+
+    (*lapack_xsytr<Scalar>::solve)(
+      &U, &n, &one, AF_.data(), &lda, IPIV_.data(), b.data(), &lda, &info_);
   }
 
   /**
@@ -162,4 +158,4 @@ private:
 
 }  // namespace smooth::feedback::detail
 
-#endif  // SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP
+#endif  // SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_
