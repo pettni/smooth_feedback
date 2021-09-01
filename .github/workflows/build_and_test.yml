@@ -35,9 +35,17 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
         libboost-dev \
-        libeigen3-dev \
         libgtest-dev \
-        liblapacke-dev
+        liblapack-dev
+
+    - name: Install Eigen 3.4
+      run: |
+        git clone --branch 3.4.0 git@gitlab.com:libeigen/eigen.git ${{ github.workspace }}/deps/eigen
+        cmake \
+          -S ${{ github.workspace }}/deps/eigen \
+          -B ${{ github.workspace }}/deps/eigen/build \
+        cmake --build ${{ github.workspace }}/deps/eigen/build
+        sudo cmake --install ${{ github.workspace }}/deps/eigen/build
 
     - name: Install autodiff
       run: |
@@ -93,9 +101,17 @@ jobs:
         sudo apt-get install -y --no-install-recommends \
         lcov \
         libboost-dev \
-        libeigen3-dev \
         libgtest-dev \
-        liblapacke-dev
+        liblapack-dev
+
+    - name: Install Eigen 3.4
+      run: |
+        git clone --branch 3.4.0 git@gitlab.com:libeigen/eigen.git ${{ github.workspace }}/deps/eigen
+        cmake \
+          -S ${{ github.workspace }}/deps/eigen \
+          -B ${{ github.workspace }}/deps/eigen/build \
+        cmake --build ${{ github.workspace }}/deps/eigen/build
+        sudo cmake --install ${{ github.workspace }}/deps/eigen/build
 
     - name: Install autodiff
       run: |
