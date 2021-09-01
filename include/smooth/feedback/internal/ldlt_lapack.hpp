@@ -26,14 +26,52 @@
 #ifndef SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_
 #define SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_
 
-#include <Eigen/Core>
-
-#include <lapack.h>
-
 /**
  * @file
  * @brief Wrapper for lapack ldlt routines
  */
+
+#include <Eigen/Core>
+
+using lapack_int = int;
+
+extern "C" void ssytrf_(char const * uplo,
+  lapack_int const * n,
+  float * A,
+  lapack_int const * lda,
+  lapack_int * ipiv,
+  float * work,
+  lapack_int const * lwork,
+  lapack_int * info);
+
+extern "C" void ssytrs_(char const * uplo,
+  lapack_int const * n,
+  lapack_int const * nrhs,
+  float const * A,
+  lapack_int const * lda,
+  lapack_int const * ipiv,
+  float * B,
+  lapack_int const * ldb,
+  lapack_int * info);
+
+extern "C" void dsytrf_(char const * uplo,
+  lapack_int const * n,
+  double * A,
+  lapack_int const * lda,
+  lapack_int * ipiv,
+  double * work,
+  lapack_int const * lwork,
+  lapack_int * info);
+
+extern "C" void dsytrs_(char const * uplo,
+  lapack_int const * n,
+  lapack_int const * nrhs,
+  double const * A,
+  lapack_int const * lda,
+  lapack_int const * ipiv,
+  double * B,
+  lapack_int const * ldb,
+  lapack_int * info);
 
 namespace smooth::feedback::detail {
 
@@ -41,15 +79,15 @@ namespace smooth::feedback::detail {
 template<typename Scalar>
 struct lapack_xsytr
 {
-  static constexpr auto factor = &LAPACK_ssytrf;
-  static constexpr auto solve  = &LAPACK_ssytrs;
+  static constexpr auto factor = &ssytrf_;
+  static constexpr auto solve  = &ssytrs_;
 };
 
 template<>
 struct lapack_xsytr<double>
 {
-  static constexpr auto factor = &LAPACK_dsytrf;
-  static constexpr auto solve  = &LAPACK_dsytrs;
+  static constexpr auto factor = &dsytrf_;
+  static constexpr auto solve  = &dsytrs_;
 };
 // \endcond
 

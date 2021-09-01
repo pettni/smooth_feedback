@@ -62,7 +62,7 @@ struct OptimalControlBounds
   /// Transformation matrix
   Eigen::Matrix<double, -1, n> A = Eigen::Matrix<double, -1, n>::Identity(n, n);
   /// Lower bound
-  Eigen::Matrix<double, -1, 1> l
+  Eigen::Matrix<double, -1, 1> l;
   /// Upper bound
   Eigen::Matrix<double, -1, 1> u;
 };
