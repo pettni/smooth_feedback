@@ -239,7 +239,7 @@ template<typename Scalar,
   template<typename, typename>
   typename Solver>
 BatchResult RandomBatch(std::default_random_engine & gen,
-  const smooth::feedback::SolverParams & prm,
+  const smooth::feedback::QPSolverParams & prm,
   const std::size_t n,
   const double density = 1.)
 {
@@ -271,7 +271,7 @@ template<typename Scalar,
   template<typename, typename>
   typename Solver>
 BatchResult RandomBatch(
-  const BatchResult & src, const smooth::feedback::SolverParams & prm, const std::size_t n)
+  const BatchResult & src, const smooth::feedback::QPSolverParams & prm, const std::size_t n)
 {
   TrialVec results;
   double avg_duration = 0.;
@@ -296,7 +296,7 @@ template<template<typename, typename> typename Solver, Eigen::Index M, Eigen::In
 std::pair<std::vector<std::string>, std::unordered_map<std::string, BatchResult>> BenchSuite(
   std::default_random_engine & gen, const int n, const double d)
 {
-  smooth::feedback::SolverParams prm{};
+  smooth::feedback::QPSolverParams prm{};
   prm.eps_abs  = 1e-6;
   prm.eps_rel  = 1e-6;
   prm.polish   = true;
