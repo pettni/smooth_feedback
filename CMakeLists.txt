@@ -137,4 +137,8 @@ if(BUILD_TESTING)
   add_executable(test_qp test/test_qp.cpp)
   target_link_libraries(test_qp PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_qp)
+
+  add_executable(test_pid test/test_pid.cpp)
+  target_link_libraries(test_pid PRIVATE feedback GTest::Main)
+  gtest_discover_tests(test_pid)
 endif()

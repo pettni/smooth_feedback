@@ -20,6 +20,20 @@ to work very well.
 ### Proportional-Derivative Control: A classic, now on Lie groups
 
 * Model-free
+* Assumes that inputs control body acceleration. See `examples/pid_se2.cpp` for an example of allocating PID inputs to actuators.
+
+**Example** PID controller on SE(2)
+
+```cpp
+#include <smooth/feedpack/pid.hpp>
+
+smooth::feedback::PID<std::chrono::duration<double>, smooth::SE2d> pid;
+
+smooth::SE2d x;     // current state
+Eigen::Vector3d v;  // current body velocity
+
+Eigen::Vector3d u = pid(1s, x, v);
+```
 
 ### Lie group Model-Predictive Control: When more look-ahead is needed
 
