@@ -1,5 +1,4 @@
 #include <boost/numeric/odeint.hpp>
-#include <smooth/compat/autodiff.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/tn.hpp>

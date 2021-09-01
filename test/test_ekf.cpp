@@ -27,7 +27,6 @@
 
 #include <unsupported/Eigen/MatrixFunctions>
 
-#include <smooth/compat/autodiff.hpp>
 #include <smooth/feedback/ekf.hpp>
 #include <smooth/so3.hpp>
 #include <smooth/tn.hpp>

@@ -9,9 +9,8 @@
   <maintainer email="pettni@umich.edu">Petter Nilsson</maintainer>
   <license>MIT</license>
 
-  <depend>autodiff</depend>
   <depend>boost</depend>
-  <depend>liblapacke-dev</depend>
+  <depend>liblapack-dev</depend>
   <depend>smooth</depend>
 
   <buildtool_depend>cmake</buildtool_depend>

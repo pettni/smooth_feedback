@@ -1,5 +1,4 @@
 #include <boost/numeric/odeint.hpp>
-#include <smooth/compat/autodiff.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/asif.hpp>
 
@@ -43,7 +42,7 @@ int main()
     // .verbose = true,
     .scaling = true,
     // .max_time = std::chrono::microseconds(100),
-    .polish  = true,
+    .polish = true,
   };
 
   // dynamics

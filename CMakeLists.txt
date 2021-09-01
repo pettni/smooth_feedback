@@ -124,20 +124,19 @@ install(
 
 if(BUILD_TESTING)
   find_package(GTest REQUIRED)
-  find_package(autodiff REQUIRED)
 
   add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
   add_executable(test_asif test/test_asif.cpp)
-  target_link_libraries(test_asif PRIVATE feedback GTest::Main autodiff::autodiff)
+  target_link_libraries(test_asif PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_asif)
 
   add_executable(test_ekf test/test_ekf.cpp)
-  target_link_libraries(test_ekf PRIVATE feedback GTest::Main autodiff::autodiff)
+  target_link_libraries(test_ekf PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_ekf)
 
   add_executable(test_mpc test/test_mpc.cpp)
-  target_link_libraries(test_mpc PRIVATE feedback GTest::Main autodiff::autodiff)
+  target_link_libraries(test_mpc PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_mpc)
 
   add_executable(test_ldlt test/test_ldlt.cpp)
