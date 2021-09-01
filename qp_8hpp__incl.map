@@ -1,13 +1,12 @@
 <map id="include/smooth/feedback/qp.hpp" name="include/smooth/feedback/qp.hpp">
 <area shape="rect" id="node1" title="Quadratic Programming." alt="" coords="257,5,424,47"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,95,100,121"/>
-<area shape="rect" id="node3" title=" " alt="" coords="351,169,450,196"/>
+<area shape="rect" id="node3" title=" " alt="" coords="321,169,419,196"/>
 <area shape="rect" id="node4" title=" " alt="" coords="175,95,237,121"/>
 <area shape="rect" id="node5" title=" " alt="" coords="261,95,327,121"/>
 <area shape="rect" id="node6" title=" " alt="" coords="351,95,423,121"/>
 <area shape="rect" id="node7" title=" " alt="" coords="447,95,501,121"/>
 <area shape="rect" id="node8" href="$ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="703,95,858,121"/>
-<area shape="rect" id="node11" href="$ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="525,95,679,121"/>
-<area shape="rect" id="node9" title=" " alt="" coords="686,169,771,196"/>
-<area shape="rect" id="node10" title=" " alt="" coords="796,169,867,196"/>
+<area shape="rect" id="node10" href="$ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="525,95,679,121"/>
+<area shape="rect" id="node9" title=" " alt="" coords="738,169,823,196"/>
 </map>

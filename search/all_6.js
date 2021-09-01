@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['l_26',['l',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#abb1555f458de94ff6c13ff522fa1ad58',1,'smooth::feedback::QuadraticProgram::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a59fa967c2807534e8f749993b4c82d9d',1,'smooth::feedback::QuadraticProgramSparse::l()']]],
+  ['l_26',['l',['../structsmooth_1_1feedback_1_1OptimalControlBounds.html#acecd36d18ca3fa368a9ff8102a777ef2',1,'smooth::feedback::OptimalControlBounds::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgram.html#abb1555f458de94ff6c13ff522fa1ad58',1,'smooth::feedback::QuadraticProgram::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a59fa967c2807534e8f749993b4c82d9d',1,'smooth::feedback::QuadraticProgramSparse::l()']]],
   ['ldlt_5flapack_2ehpp_27',['ldlt_lapack.hpp',['../ldlt__lapack_8hpp.html',1,'']]],
   ['ldlt_5fnnz_28',['ldlt_nnz',['../ldlt__sparse_8hpp.html#a794050c36b77750bcc97e4cd68181001',1,'smooth::feedback::detail']]],
   ['ldlt_5fsparse_2ehpp_29',['ldlt_sparse.hpp',['../ldlt__sparse_8hpp.html',1,'']]],

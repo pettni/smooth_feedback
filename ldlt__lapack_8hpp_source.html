@@ -105,96 +105,134 @@ $(function() {
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#ifndef SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#define SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;Eigen/Core&gt;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;lapack.h&gt;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">namespace </span>smooth::feedback::detail {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">// \cond</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Scalar&gt;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">struct </span>lapack_xsytr</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;{</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> factor = &amp;LAPACK_ssytrf;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> solve  = &amp;LAPACK_ssytrs;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;};</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">template</span>&lt;&gt;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">struct </span>lapack_xsytr&lt;double&gt;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;{</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> factor = &amp;LAPACK_dsytrf;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> solve  = &amp;LAPACK_dsytrs;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;};</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment">// \endcond</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Scalar, Eigen::Index N&gt;</div>
-<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">   61</a></span>&#160;  requires std::is_same_v&lt;Scalar, float&gt; || std::is_same_v&lt;Scalar, double&gt; <span class="keyword">class </span><a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;{</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a8d80ff7602f1d84fb06fda08b73722f8">   74</a></span>&#160;  <span class="keyword">inline</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a8d80ff7602f1d84fb06fda08b73722f8">LDLTLapack</a>(Eigen::Matrix&lt;Scalar, N, N, Eigen::ColMajor&gt; &amp;&amp; A)</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;      : AF_(std::move(A)), IPIV_(AF_.cols())</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;  {</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">static</span> constexpr lapack_int LWORK = N == -1 ? -1 : 3 * N;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    Eigen::Matrix&lt;Scalar, LWORK, 1&gt; work(3 * AF_.cols());</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">char</span> U = <span class="charliteral">&#39;U&#39;</span>;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">const</span> lapack_int n      = AF_.cols();</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">const</span> lapack_int lda    = AF_.rows();</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">const</span> lapack_int lwork  = work.size();</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    (*lapack_xsytr&lt;Scalar&gt;::factor)(</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;      &amp;U, &amp;n, AF_.data(), &amp;lda, IPIV_.data(), work.data(), &amp;lwork, &amp;info_);</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#aa932dd4ec34af71264e3689f8a26afc0">   90</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#aa932dd4ec34af71264e3689f8a26afc0">LDLTLapack</a>(<span class="keyword">const</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#acdf9f2a789ea530e8c24cc2b6a03770f">   92</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp; <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#acdf9f2a789ea530e8c24cc2b6a03770f">operator=</a>(<span class="keyword">const</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a6cee1de10cc138887ff8ea0b861b6167">   94</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a6cee1de10cc138887ff8ea0b861b6167">LDLTLapack</a>(<a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a0b75419ad7bc215ed87468420ba7e77e">   96</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp; <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a0b75419ad7bc215ed87468420ba7e77e">operator=</a>(<a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a97fc9efa34746c8365acac3efdc0eb92">  106</a></span>&#160;  <span class="keyword">inline</span> <span class="keywordtype">int</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a97fc9efa34746c8365acac3efdc0eb92">info</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> info_; }</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> Derived&gt;</div>
-<div class="line"><a name="l00119"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#af78ecb41485e7f7f1d6261b6369bf4d3">  119</a></span>&#160;  <span class="keyword">inline</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#af78ecb41485e7f7f1d6261b6369bf4d3">LDLTLapack</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt; &amp; A)</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;      : <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a>(Eigen::Matrix&lt;Scalar, N, N&gt;(A))</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;  {}</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &lt;Eigen/Core&gt;</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">using</span> lapack_int = int;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> <span class="keywordtype">void</span> ssytrf_(<span class="keywordtype">char</span> <span class="keyword">const</span> * uplo,</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;  lapack_int <span class="keyword">const</span> * n,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;  <span class="keywordtype">float</span> * A,</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;  lapack_int <span class="keyword">const</span> * lda,</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;  lapack_int * ipiv,</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;  <span class="keywordtype">float</span> * work,</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;  lapack_int <span class="keyword">const</span> * lwork,</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  lapack_int * info);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> <span class="keywordtype">void</span> ssytrs_(<span class="keywordtype">char</span> <span class="keyword">const</span> * uplo,</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;  lapack_int <span class="keyword">const</span> * n,</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;  lapack_int <span class="keyword">const</span> * nrhs,</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;  <span class="keywordtype">float</span> <span class="keyword">const</span> * A,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;  lapack_int <span class="keyword">const</span> * lda,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;  lapack_int <span class="keyword">const</span> * ipiv,</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;  <span class="keywordtype">float</span> * B,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  lapack_int <span class="keyword">const</span> * ldb,</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;  lapack_int * info);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> <span class="keywordtype">void</span> dsytrf_(<span class="keywordtype">char</span> <span class="keyword">const</span> * uplo,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  lapack_int <span class="keyword">const</span> * n,</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;  <span class="keywordtype">double</span> * A,</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  lapack_int <span class="keyword">const</span> * lda,</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;  lapack_int * ipiv,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;  <span class="keywordtype">double</span> * work,</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  lapack_int <span class="keyword">const</span> * lwork,</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;  lapack_int * info);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> <span class="keywordtype">void</span> dsytrs_(<span class="keywordtype">char</span> <span class="keyword">const</span> * uplo,</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;  lapack_int <span class="keyword">const</span> * n,</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;  lapack_int <span class="keyword">const</span> * nrhs,</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;  <span class="keywordtype">double</span> <span class="keyword">const</span> * A,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;  lapack_int <span class="keyword">const</span> * lda,</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;  lapack_int <span class="keyword">const</span> * ipiv,</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;  <span class="keywordtype">double</span> * B,</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;  lapack_int <span class="keyword">const</span> * ldb,</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;  lapack_int * info);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="keyword">namespace </span>smooth::feedback::detail {</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="comment">// \cond</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Scalar&gt;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">struct </span>lapack_xsytr</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;{</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> factor = &amp;ssytrf_;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> solve  = &amp;ssytrs_;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;};</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">template</span>&lt;&gt;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="keyword">struct </span>lapack_xsytr&lt;double&gt;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;{</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> factor = &amp;dsytrf_;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;  <span class="keyword">static</span> constexpr <span class="keyword">auto</span> solve  = &amp;dsytrs_;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;};</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="comment">// \endcond</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Scalar, Eigen::Index N&gt;</div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">   99</a></span>&#160;  requires std::is_same_v&lt;Scalar, float&gt; || std::is_same_v&lt;Scalar, double&gt; <span class="keyword">class </span><a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;{</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00112"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a8d80ff7602f1d84fb06fda08b73722f8">  112</a></span>&#160;  <span class="keyword">inline</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a8d80ff7602f1d84fb06fda08b73722f8">LDLTLapack</a>(Eigen::Matrix&lt;Scalar, N, N, Eigen::ColMajor&gt; &amp;&amp; A)</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;      : AF_(std::move(A)), IPIV_(AF_.cols())</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;  {</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">static</span> constexpr lapack_int LWORK = N == -1 ? -1 : 3 * N;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    Eigen::Matrix&lt;Scalar, LWORK, 1&gt; work(3 * AF_.cols());</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">char</span> U = <span class="charliteral">&#39;U&#39;</span>;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">const</span> lapack_int n      = AF_.cols();</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keyword">const</span> lapack_int lda    = AF_.rows();</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">const</span> lapack_int lwork  = work.size();</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">  128</a></span>&#160;  <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">solve_inplace</a>(Eigen::Matrix&lt;Scalar, N, 1&gt; &amp; b)</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;  {</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">char</span> U         = <span class="charliteral">&#39;U&#39;</span>;</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keyword">static</span> constexpr lapack_int one = 1;</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keyword">const</span> lapack_int n              = AF_.cols();</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">const</span> lapack_int lda            = AF_.rows();</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    (*lapack_xsytr&lt;Scalar&gt;::solve)(</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;      &amp;U, &amp;n, &amp;one, AF_.data(), &amp;lda, IPIV_.data(), b.data(), &amp;lda, &amp;info_);</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;  }</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160; </div>
-<div class="line"><a name="l00146"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#ac20fea4805898c3e3069863e3cf4e756">  146</a></span>&#160;  <span class="keyword">inline</span> Eigen::Matrix&lt;Scalar, N, 1&gt; <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#ac20fea4805898c3e3069863e3cf4e756">solve</a>(<span class="keyword">const</span> Eigen::Matrix&lt;Scalar, N, 1&gt; &amp; b)</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;  {</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    Eigen::Matrix&lt;Scalar, N, 1&gt; x = b;</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">solve_inplace</a>(x);</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keywordflow">return</span> x;</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;  }</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;  lapack_int info_;</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;  Eigen::Matrix&lt;Scalar, N, N, Eigen::ColMajor&gt; AF_;</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;  Eigen::Matrix&lt;lapack_int, N, 1&gt; IPIV_;</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;};</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;}  <span class="comment">// namespace smooth::feedback::detail</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    (*lapack_xsytr&lt;Scalar&gt;::factor)(</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;      &amp;U, &amp;n, AF_.data(), &amp;lda, IPIV_.data(), work.data(), &amp;lwork, &amp;info_);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;  }</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#aa932dd4ec34af71264e3689f8a26afc0">  128</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#aa932dd4ec34af71264e3689f8a26afc0">LDLTLapack</a>(<span class="keyword">const</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00130"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#acdf9f2a789ea530e8c24cc2b6a03770f">  130</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp; <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#acdf9f2a789ea530e8c24cc2b6a03770f">operator=</a>(<span class="keyword">const</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a6cee1de10cc138887ff8ea0b861b6167">  132</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a6cee1de10cc138887ff8ea0b861b6167">LDLTLapack</a>(<a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;&amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00134"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a0b75419ad7bc215ed87468420ba7e77e">  134</a></span>&#160;  <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp; <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a0b75419ad7bc215ed87468420ba7e77e">operator=</a>(<a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a> &amp;&amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00144"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a97fc9efa34746c8365acac3efdc0eb92">  144</a></span>&#160;  <span class="keyword">inline</span> <span class="keywordtype">int</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a97fc9efa34746c8365acac3efdc0eb92">info</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> info_; }</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> Derived&gt;</div>
+<div class="line"><a name="l00157"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#af78ecb41485e7f7f1d6261b6369bf4d3">  157</a></span>&#160;  <span class="keyword">inline</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#af78ecb41485e7f7f1d6261b6369bf4d3">LDLTLapack</a>(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt; &amp; A)</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;      : <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">LDLTLapack</a>(Eigen::Matrix&lt;Scalar, N, N&gt;(A))</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;  {}</div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_</span></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">smooth::feedback::detail::LDLTLapack</a></div><div class="ttdoc">Wrapper for LAPACKE xSYTRF / xSYTRS routines for factorizing and solving symmetric linear systems of ...</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00061">ldlt_lapack.hpp:62</a></div></div>
+<div class="line"><a name="l00166"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">  166</a></span>&#160;  <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">solve_inplace</a>(Eigen::Matrix&lt;Scalar, N, 1&gt; &amp; b)</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;  {</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">char</span> U         = <span class="charliteral">&#39;U&#39;</span>;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="keyword">static</span> constexpr lapack_int one = 1;</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keyword">const</span> lapack_int n              = AF_.cols();</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keyword">const</span> lapack_int lda            = AF_.rows();</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    (*lapack_xsytr&lt;Scalar&gt;::solve)(</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;      &amp;U, &amp;n, &amp;one, AF_.data(), &amp;lda, IPIV_.data(), b.data(), &amp;lda, &amp;info_);</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;  }</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
+<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#ac20fea4805898c3e3069863e3cf4e756">  184</a></span>&#160;  <span class="keyword">inline</span> Eigen::Matrix&lt;Scalar, N, 1&gt; <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#ac20fea4805898c3e3069863e3cf4e756">solve</a>(<span class="keyword">const</span> Eigen::Matrix&lt;Scalar, N, 1&gt; &amp; b)</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;  {</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    Eigen::Matrix&lt;Scalar, N, 1&gt; x = b;</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <a class="code" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">solve_inplace</a>(x);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keywordflow">return</span> x;</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;  }</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;  lapack_int info_;</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;  Eigen::Matrix&lt;Scalar, N, N, Eigen::ColMajor&gt; AF_;</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;  Eigen::Matrix&lt;lapack_int, N, 1&gt; IPIV_;</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;};</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;}  <span class="comment">// namespace smooth::feedback::detail</span></div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160; </div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// SMOOOTH__FEEDBACK__INTERNAL__LDLT_LAPACK_HPP_</span></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">smooth::feedback::detail::LDLTLapack</a></div><div class="ttdoc">Wrapper for LAPACKE xSYTRF / xSYTRS routines for factorizing and solving symmetric linear systems of ...</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00099">ldlt_lapack.hpp:100</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a0b75419ad7bc215ed87468420ba7e77e"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a0b75419ad7bc215ed87468420ba7e77e">smooth::feedback::detail::LDLTLapack::operator=</a></div><div class="ttdeci">LDLTLapack &amp; operator=(LDLTLapack &amp;&amp;)=default</div><div class="ttdoc">Default move assignment.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a5e89791eb9b05169fb0b88a4a4c3da31"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">smooth::feedback::detail::LDLTLapack::solve_inplace</a></div><div class="ttdeci">void solve_inplace(Eigen::Matrix&lt; Scalar, N, 1 &gt; &amp;b)</div><div class="ttdoc">Solve linear symmetric system of equations in-place.</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00128">ldlt_lapack.hpp:128</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a5e89791eb9b05169fb0b88a4a4c3da31"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a5e89791eb9b05169fb0b88a4a4c3da31">smooth::feedback::detail::LDLTLapack::solve_inplace</a></div><div class="ttdeci">void solve_inplace(Eigen::Matrix&lt; Scalar, N, 1 &gt; &amp;b)</div><div class="ttdoc">Solve linear symmetric system of equations in-place.</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00166">ldlt_lapack.hpp:166</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a6cee1de10cc138887ff8ea0b861b6167"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a6cee1de10cc138887ff8ea0b861b6167">smooth::feedback::detail::LDLTLapack::LDLTLapack</a></div><div class="ttdeci">LDLTLapack(LDLTLapack &amp;&amp;)=default</div><div class="ttdoc">Default move constructor.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a8d80ff7602f1d84fb06fda08b73722f8"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a8d80ff7602f1d84fb06fda08b73722f8">smooth::feedback::detail::LDLTLapack::LDLTLapack</a></div><div class="ttdeci">LDLTLapack(Eigen::Matrix&lt; Scalar, N, N, Eigen::ColMajor &gt; &amp;&amp;A)</div><div class="ttdoc">Factorize symmetric  to enable solving .</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00074">ldlt_lapack.hpp:74</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a97fc9efa34746c8365acac3efdc0eb92"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a97fc9efa34746c8365acac3efdc0eb92">smooth::feedback::detail::LDLTLapack::info</a></div><div class="ttdeci">int info() const</div><div class="ttdoc">Factorization status.</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00106">ldlt_lapack.hpp:106</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a8d80ff7602f1d84fb06fda08b73722f8"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a8d80ff7602f1d84fb06fda08b73722f8">smooth::feedback::detail::LDLTLapack::LDLTLapack</a></div><div class="ttdeci">LDLTLapack(Eigen::Matrix&lt; Scalar, N, N, Eigen::ColMajor &gt; &amp;&amp;A)</div><div class="ttdoc">Factorize symmetric  to enable solving .</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00112">ldlt_lapack.hpp:112</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_a97fc9efa34746c8365acac3efdc0eb92"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a97fc9efa34746c8365acac3efdc0eb92">smooth::feedback::detail::LDLTLapack::info</a></div><div class="ttdeci">int info() const</div><div class="ttdoc">Factorization status.</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00144">ldlt_lapack.hpp:144</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_aa932dd4ec34af71264e3689f8a26afc0"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#aa932dd4ec34af71264e3689f8a26afc0">smooth::feedback::detail::LDLTLapack::LDLTLapack</a></div><div class="ttdeci">LDLTLapack(const LDLTLapack &amp;)=default</div><div class="ttdoc">Default copy constructor.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_ac20fea4805898c3e3069863e3cf4e756"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#ac20fea4805898c3e3069863e3cf4e756">smooth::feedback::detail::LDLTLapack::solve</a></div><div class="ttdeci">Eigen::Matrix&lt; Scalar, N, 1 &gt; solve(const Eigen::Matrix&lt; Scalar, N, 1 &gt; &amp;b)</div><div class="ttdoc">Solve linear symmetric system of equations.</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00146">ldlt_lapack.hpp:146</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_ac20fea4805898c3e3069863e3cf4e756"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#ac20fea4805898c3e3069863e3cf4e756">smooth::feedback::detail::LDLTLapack::solve</a></div><div class="ttdeci">Eigen::Matrix&lt; Scalar, N, 1 &gt; solve(const Eigen::Matrix&lt; Scalar, N, 1 &gt; &amp;b)</div><div class="ttdoc">Solve linear symmetric system of equations.</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00184">ldlt_lapack.hpp:184</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_acdf9f2a789ea530e8c24cc2b6a03770f"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#acdf9f2a789ea530e8c24cc2b6a03770f">smooth::feedback::detail::LDLTLapack::operator=</a></div><div class="ttdeci">LDLTLapack &amp; operator=(const LDLTLapack &amp;)=default</div><div class="ttdoc">Default copy assignment.</div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_af78ecb41485e7f7f1d6261b6369bf4d3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#af78ecb41485e7f7f1d6261b6369bf4d3">smooth::feedback::detail::LDLTLapack::LDLTLapack</a></div><div class="ttdeci">LDLTLapack(const Eigen::MatrixBase&lt; Derived &gt; &amp;A)</div><div class="ttdoc">Factorize symmetric  to enable solving .</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00119">ldlt_lapack.hpp:119</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1detail_1_1LDLTLapack_html_af78ecb41485e7f7f1d6261b6369bf4d3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#af78ecb41485e7f7f1d6261b6369bf4d3">smooth::feedback::detail::LDLTLapack::LDLTLapack</a></div><div class="ttdeci">LDLTLapack(const Eigen::MatrixBase&lt; Derived &gt; &amp;A)</div><div class="ttdoc">Factorize symmetric  to enable solving .</div><div class="ttdef"><b>Definition:</b> <a href="ldlt__lapack_8hpp_source.html#l00157">ldlt_lapack.hpp:157</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

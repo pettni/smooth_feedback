@@ -74,7 +74,9 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">ldlt_lapack.hpp File Reference</div>  </div>
 </div><!--header-->
@@ -83,15 +85,13 @@ $(function() {
 <p>Wrapper for lapack ldlt routines.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;Eigen/Core&gt;</code><br />
-<code>#include &lt;lapack.h&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for ldlt_lapack.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="ldlt__lapack_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2internal_2ldlt__lapack_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2internal_2ldlt__lapack_8hpp" id="ainclude_2smooth_2feedback_2internal_2ldlt__lapack_8hpp">
-<area shape="rect" title="Wrapper for lapack ldlt routines." alt="" coords="15,5,182,47"/>
-<area shape="rect" title=" " alt="" coords="5,95,91,121"/>
-<area shape="rect" title=" " alt="" coords="115,95,186,121"/>
+<area shape="rect" title="Wrapper for lapack ldlt routines." alt="" coords="5,5,172,47"/>
+<area shape="rect" title=" " alt="" coords="46,95,131,121"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -114,6 +114,27 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html">smooth::feedback::detail::LDLTLapack&lt; Scalar, N &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper for LAPACKE xSYTRF / xSYTRS routines for factorizing and solving symmetric linear systems of equations.  <a href="classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:a1fb6675d9f62d12722e8d2d5718177f4"><td class="memItemLeft" align="right" valign="top"><a id="a1fb6675d9f62d12722e8d2d5718177f4"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>lapack_int</b> = int</td></tr>
+<tr class="separator:a1fb6675d9f62d12722e8d2d5718177f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a95753f70179e226b2993822c3b40dc94"><td class="memItemLeft" align="right" valign="top"><a id="a95753f70179e226b2993822c3b40dc94"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ssytrf_</b> (char const *uplo, lapack_int const *n, float *A, lapack_int const *lda, lapack_int *ipiv, float *work, lapack_int const *lwork, lapack_int *info)</td></tr>
+<tr class="separator:a95753f70179e226b2993822c3b40dc94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77633213e0d7c7d163d62d35118abd1c"><td class="memItemLeft" align="right" valign="top"><a id="a77633213e0d7c7d163d62d35118abd1c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ssytrs_</b> (char const *uplo, lapack_int const *n, lapack_int const *nrhs, float const *A, lapack_int const *lda, lapack_int const *ipiv, float *B, lapack_int const *ldb, lapack_int *info)</td></tr>
+<tr class="separator:a77633213e0d7c7d163d62d35118abd1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d6a492e5c1a2996f8e3774b975d26f2"><td class="memItemLeft" align="right" valign="top"><a id="a8d6a492e5c1a2996f8e3774b975d26f2"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dsytrf_</b> (char const *uplo, lapack_int const *n, double *A, lapack_int const *lda, lapack_int *ipiv, double *work, lapack_int const *lwork, lapack_int *info)</td></tr>
+<tr class="separator:a8d6a492e5c1a2996f8e3774b975d26f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbf838a36db60ad85cf38243e5052e23"><td class="memItemLeft" align="right" valign="top"><a id="afbf838a36db60ad85cf38243e5052e23"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dsytrs_</b> (char const *uplo, lapack_int const *n, lapack_int const *nrhs, double const *A, lapack_int const *lda, lapack_int const *ipiv, double *B, lapack_int const *ldb, lapack_int *info)</td></tr>
+<tr class="separator:afbf838a36db60ad85cf38243e5052e23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Wrapper for lapack ldlt routines. </p>
