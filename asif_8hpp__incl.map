@@ -1,6 +1,6 @@
 <map id="include/smooth/feedback/asif.hpp" name="include/smooth/feedback/asif.hpp">
 <area shape="rect" id="node1" title="Active Set Invariance Filtering (ASIF) on Lie groups." alt="" coords="357,5,524,47"/>
-<area shape="rect" id="node2" title=" " alt="" coords="368,244,454,271"/>
+<area shape="rect" id="node2" title=" " alt="" coords="370,244,455,271"/>
 <area shape="rect" id="node3" title=" " alt="" coords="37,95,204,121"/>
 <area shape="rect" id="node4" title=" " alt="" coords="228,95,402,121"/>
 <area shape="rect" id="node5" title=" " alt="" coords="331,169,478,196"/>
@@ -15,5 +15,5 @@
 <area shape="rect" id="node14" title=" " alt="" coords="774,169,827,196"/>
 <area shape="rect" id="node15" href="$ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="851,169,1006,196"/>
 <area shape="rect" id="node17" href="$ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="1030,169,1184,196"/>
-<area shape="rect" id="node16" title=" " alt="" coords="890,244,967,271"/>
+<area shape="rect" id="node16" title=" " alt="" coords="893,244,964,271"/>
 </map>
