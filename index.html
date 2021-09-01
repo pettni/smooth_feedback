@@ -77,7 +77,7 @@ $(function() {
 <p>Tool collection for control and estimation on Lie groups leveraging the <a href="https://github.com/pettni/smooth/">smooth</a> library.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 Control on Lie groups</h1>
-<p>These controllers are implemented for systems with dynamics on the form <img src="https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(t, \mathbf{x},&space;\mathbf{u}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}." alt="" class="inline"/></p>
+<p>These controllers are implemented for systems with dynamics on the form <img src="https://latex.codecogs.com/png.image?\dpi{110}&space;\mathrm{d}^r&space;\mathbf{x}_t&space;=&space;f(t,&space;\mathbf{x},&space;\mathbf{u}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}" alt="" class="inline"/> where <code>X</code> is a <code>smooth::LieGroup</code> and <code>U</code> is a <code>smooth::Manifold</code>.</p>
 <p>Nonlinearities are handled via linearization around a reference point or trajectory. For group-linear dynamics this automatically results in a linear system in the tangent space, in which case these algorithms are expected to work very well.</p>
 <h2><a class="anchor" id="autotoc_md2"></a>
 Proportional-Derivative Control: A classic, now on Lie groups</h2>
@@ -105,7 +105,8 @@ Active Set Invariance: Don't collide with stuff</h2>
 <div class="ttc" id="aasif_8hpp_html"><div class="ttname"><a href="asif_8hpp.html">asif.hpp</a></div><div class="ttdoc">Active Set Invariance Filtering (ASIF) on Lie groups.</div></div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md6"></a>
 Filtering on Lie groups</h1>
-<p>Filters take system models on the form <img src="https://latex.codecogs.com/png.latex?\mathrm{d}^r&space;f_\mathbf{x}&space;=&space;f(t, \mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}," alt="" class="inline"/> to use it in a feedback loop for a controlled system use partial application: </p><div class="fragment"><div class="line"><span class="comment">// controlled system dynamics dr x_t = f(t, x, u)</span></div>
+<p>Filters take system models on the form <img src="https://latex.codecogs.com/png.image?\dpi{110}&space;\mathrm{d}^r&space;\mathbf{x}_t&space;=&space;f(t,&space;\mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X}" alt="" class="inline"/> where <code>X</code> is a <code>smooth::LieGroup</code>.</p>
+<p>To use in a feedback loop for a controlled system use partial application: </p><div class="fragment"><div class="line"><span class="comment">// controlled system dynamics dr x_t = f(t, x, u)</span></div>
 <div class="line"><span class="keyword">const</span> <span class="keyword">auto</span> f = [] (<span class="keyword">const</span> <span class="keyword">auto</span> &amp; t, <span class="keyword">const</span> <span class="keyword">auto</span> &amp; x, <span class="keyword">const</span> <span class="keyword">auto</span> &amp; g) -&gt; Tangent { ... };</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// variable that holds current input</span></div>

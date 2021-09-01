@@ -90,19 +90,18 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:acbd612f62b20171d672c6527967e101a"><td class="memItemLeft" align="right" valign="top"><a id="acbd612f62b20171d672c6527967e101a"></a>
-Eigen::Matrix&lt; double, -1, n &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>A</b> = Eigen::Matrix&lt;double, -1, n&gt;::Identity(n, n)</td></tr>
+Eigen::Matrix&lt; double, -1, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a6e54562c5704b467fdf9f2500ba04226">n</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#acbd612f62b20171d672c6527967e101a">A</a> = Eigen::Matrix&lt;double, -1, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a6e54562c5704b467fdf9f2500ba04226">n</a>&gt;::Identity(<a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a6e54562c5704b467fdf9f2500ba04226">n</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a6e54562c5704b467fdf9f2500ba04226">n</a>)</td></tr>
+<tr class="memdesc:acbd612f62b20171d672c6527967e101a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transformation matrix. <br /></td></tr>
 <tr class="separator:acbd612f62b20171d672c6527967e101a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acecd36d18ca3fa368a9ff8102a777ef2"><td class="memItemLeft" align="right" valign="top"><a id="acecd36d18ca3fa368a9ff8102a777ef2"></a>
-Eigen::Matrix&lt; double, -1, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>l</b></td></tr>
-<tr class="separator:acecd36d18ca3fa368a9ff8102a777ef2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7e7dbb18d5b75750298dd968be80307"><td class="memItemLeft" align="right" valign="top"><a id="ab7e7dbb18d5b75750298dd968be80307"></a>
-Eigen::Matrix&lt; double, -1, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>u</b></td></tr>
-<tr class="separator:ab7e7dbb18d5b75750298dd968be80307"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a6d4f958e65591dfa22ddcd9e307fd8"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; double, -1, 1 &gt; l Eigen::Matrix&lt; double, -1, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a1a6d4f958e65591dfa22ddcd9e307fd8">u</a></td></tr>
+<tr class="memdesc:a1a6d4f958e65591dfa22ddcd9e307fd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lower bound.  <a href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a1a6d4f958e65591dfa22ddcd9e307fd8">More...</a><br /></td></tr>
+<tr class="separator:a1a6d4f958e65591dfa22ddcd9e307fd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a6e54562c5704b467fdf9f2500ba04226"><td class="memItemLeft" align="right" valign="top"><a id="a6e54562c5704b467fdf9f2500ba04226"></a>
-static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>n</b> = M::SizeAtCompileTime</td></tr>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a6e54562c5704b467fdf9f2500ba04226">n</a> = M::SizeAtCompileTime</td></tr>
+<tr class="memdesc:a6e54562c5704b467fdf9f2500ba04226"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dimensionality. <br /></td></tr>
 <tr class="separator:a6e54562c5704b467fdf9f2500ba04226"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -116,7 +115,29 @@ struct smooth::feedback::OptimalControlBounds&lt; M &gt;</h3>
 </p>
  
 <p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00057">57</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a1a6d4f958e65591dfa22ddcd9e307fd8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a6d4f958e65591dfa22ddcd9e307fd8">&#9670;&nbsp;</a></span>u</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Manifold M&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Eigen::Matrix&lt;double, -1, 1&gt; l Eigen::Matrix&lt;double, -1, 1&gt; <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html">smooth::feedback::OptimalControlBounds</a>&lt; M &gt;::u</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Lower bound. </p>
+<p>Upper bound </p>
+
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00067">67</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/smooth/feedback/<a class="el" href="mpc_8hpp_source.html">mpc.hpp</a></li>
 </ul>
 </div><!-- contents -->

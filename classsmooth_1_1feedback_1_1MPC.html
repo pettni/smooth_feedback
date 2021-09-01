@@ -186,9 +186,9 @@ class smooth::feedback::MPC&lt; K, T, G, U, Dyn, DiffType &gt;</h3>
   </dd>
 </dl>
 <p>This <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> class keeps and repeatedly solves an internal <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> that is updated to track a time-dependent trajectory defined through <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a7e0ab2d45a9fcdc954dfa4c0b1b8bc83" title="Set the desired state and input trajectories (lvalue version).">set_xudes()</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>If the <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem is nonlinear a good (re-)linearization policy is required for good performance. See <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a> for various options. If none of the options are enabled it is up to the user to update the linearizaiton in an appropriate way, or make sure that the problem is linear. The linearization point can be manually updated via the <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a719d13ac9b950fb58ace2cedfa751501" title="Access the linearization.">linearization()</a> member functions. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>If the <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem is nonlinear a good (re-)linearization policy is required for good performance. See <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html" title="Parameters for MPC.">MPCParams</a> for various options. If none of the options are enabled it is up to the user to update the linearizaiton in an appropriate way, or make sure that the problem is linear. The linearization point can be manually updated via the <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a719d13ac9b950fb58ace2cedfa751501" title="Access the linearization.">linearization()</a> member functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00505">505</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00513">513</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5fd6248bd39beaaa5a2050a1cd96a7b2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5fd6248bd39beaaa5a2050a1cd96a7b2">&#9670;&nbsp;</a></span>MPC()</h2>
@@ -230,14 +230,13 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn , s
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">f</td><td>callable object that represents dynamics \( \mathrm{d}^r x_t = f(f, x, u) \) as a function \( f : T \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \). </td></tr>
-    <tr><td class="paramname">t</td><td>time horizon </td></tr>
-    <tr><td class="paramname">qp_prm</td><td>optional parameters for the QP solver (see <a class="el" href="qp_8hpp.html#a2151e5a179ada80d491aaaa0e0e88479" title="Solve a quadratic program using the operator splitting approach.">solve_qp()</a>)</td></tr>
+    <tr><td class="paramname">prm</td><td><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> parameters</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>\( f \) is copied/moved into the class. In order to modify the dynamics from the outside the type Dyn can be created to contain references to outside objects that are updated by the user. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00520">520</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00527">527</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -311,7 +310,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn , s
 <p>If MPCParams::relinearization_interval is set to a value \( I &gt; 0 \), an internal counter is maintained that relinearizes the problem at every \( I \) calls to this function.</p>
 <p>If <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a5432f8148094c33975b0bc9e720a1bf0" title="Iterative relinearization.">MPCParams::iterative_relinearization</a> is set to a value \( I &gt; 0 \), this function checks up to \( I \) times whether the solution touches the linearization domain, and relinearizes and re-solves if that is the case. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00558">558</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00565">565</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -351,7 +350,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00732">732</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00739">739</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -391,7 +390,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00743">743</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00750">750</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -431,7 +430,7 @@ template&lt;typename D1 &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00721">721</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00728">728</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -481,7 +480,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn , s
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00682">682</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00689">689</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -530,7 +529,7 @@ template&lt;std::size_t K, typename T , LieGroup G, Manifold U, typename Dyn , s
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00693">693</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00700">700</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
