@@ -26,6 +26,7 @@
 #include <smooth/bundle.hpp>
 #include <smooth/feedback/ekf.hpp>
 #include <smooth/feedback/mpc.hpp>
+#include <smooth/feedback/pid.hpp>
 #include <smooth/feedback/qp.hpp>
 #include <smooth/se2.hpp>
 
@@ -115,10 +116,8 @@ void mpc_snippet()
   smooth::feedback::MPC<50, Time, X<double>, U<double>, decltype(f)> mpc(f, prm);
 
   // set desired state and input trajectories for MPC to track
-  mpc.set_xudes(
-    [](Time t) -> X<double> { return X<double>::Identity(); },
-    [](Time T) -> U<double> { return U<double>::Zero(); }
-  );
+  mpc.set_xudes([](Time t) -> X<double> { return X<double>::Identity(); },
+    [](Time T) -> U<double> { return U<double>::Zero(); });
 
   // calculate control input for current time t and current state x
   Time t(0);
@@ -127,12 +126,31 @@ void mpc_snippet()
   mpc(u, t, x);
 }
 
+void pid_snippet()
+{
+  smooth::feedback::PID<Time, smooth::SE2d> pid;
+
+  // set desired motion as a function Time -> (position, velocity, acceleration)
+  pid.set_xdes([](Time Time) -> std::tuple<smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d> {
+    return std::make_tuple(
+      smooth::SE2d::Identity(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+  });
+
+  Time t(1);          // current time
+  smooth::SE2d x;     // current state
+  Eigen::Vector3d v;  // current body velocity
+
+  Eigen::Vector3d u = pid(t, x, v);
+}
+
 int main()
 {
   std::cout << "RUNNING EKF" << std::endl;
   ekf_snippet();
-  std::cout << "RUNNING QP" << std::endl;
-  qp_snippet();
   std::cout << "RUNNING MPC" << std::endl;
   mpc_snippet();
+  std::cout << "RUNNING PID" << std::endl;
+  pid_snippet();
+  std::cout << "RUNNING QP" << std::endl;
+  qp_snippet();
 }

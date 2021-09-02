@@ -27,12 +27,19 @@ to work very well.
 ```cpp
 #include <smooth/feedpack/pid.hpp>
 
-smooth::feedback::PID<std::chrono::duration<double>, smooth::SE2d> pid;
+smooth::feedback::PID<Time, smooth::SE2d> pid;
 
+// set desired motion as a function Time -> (position, velocity, acceleration)
+pid.set_xdes([](Time Time) -> std::tuple<smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d> {
+  return std::make_tuple(
+    smooth::SE2d::Identity(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+});
+
+Time t(1);          // current time
 smooth::SE2d x;     // current state
 Eigen::Vector3d v;  // current body velocity
 
-Eigen::Vector3d u = pid(1s, x, v);
+Eigen::Vector3d u = pid(t, x, v);
 ```
 
 ### Lie group Model-Predictive Control: When more look-ahead is needed
@@ -161,7 +168,7 @@ a QP solver is included.
 * Eigen lazy evaluations enable fast SIMD in the compiled assembly.
 
 Preliminary results suggest that the performance compares favorably to the original OSQP implementation.
-The plot below compares solution times for square QPs over three different levels of sparsity (lower is better). Although the `smooth` sparse (smooth-s) solver is consistently faster than the `smooth` dense (smooth-d) and osqp solvers, it currently appears to be slightly less robust than the other methods on ill-conditioned problems. 
+The plot below compares solution times (lower is better) for square QPs over three different levels of sparsity. Although the `smooth` sparse (smooth-s) solver is consistently faster than the `smooth` dense (smooth-d) and osqp solvers, it currently appears to be slightly less robust than the other methods on ill-conditioned problems. 
 
 ![](media/qp_benchmarks.png)
 

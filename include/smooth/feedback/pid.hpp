@@ -51,17 +51,16 @@ struct PIDParams
  * This controller is designed for a system
  * \f[
  * \begin{aligned}
- *   \mathrm{d}^r \mathbf{x}_t & = \mathbf{v}, \\
- *   \dot r & = u,
- * \end{aligned}
- * \f]
- * i.e. the input is the body acceleration.
+ *   \mathrm{d}^r \mathbf{x}_t & = \mathbf{v}, \quad \mathbf{x} \in \mathbb{G}, \mathbf{v} \in
+ * \mathbb{R}^{\dim \mathbb{G}} \\ \frac{\mathrm{d}}{\mathrm{d}t} {\mathbf{v}} & = \mathbf{u}, \quad
+ * \mathbf{u} \in \mathbb{R}^{\dim \mathbb{G}} \end{aligned} \f] i.e. the input is the body
+ * acceleration.
  */
 template<typename T, LieGroup G>
 class PID
 {
 public:
-  /// Desired trajectory must return position, velocity, and acceleration
+  /// Desired trajectory consists of position, velocity, and acceleration
   using TrajectoryReturnT = std::tuple<G, typename G::Tangent, typename G::Tangent>;
 
   /**
@@ -69,7 +68,8 @@ public:
    *
    * @param prm parameters
    *
-   * The proportional and derivative gains are set to 1, and the integral gains are set to 0.
+   * At construction the proportional and derivative gains are set to 1, and the integral gains are
+   * set to 0.
    */
   inline PID(const PIDParams & prm = PIDParams{}) noexcept : prm_(prm) {}
 
@@ -142,17 +142,26 @@ public:
     set_xdes([c = c, t0 = t0](T t) -> TrajectoryReturnT {
       typename G::Tangent vel, acc;
       double t_curve = std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count();
-      G g            = c.eval(t_curve, vel, acc);
-      return TrajectoryReturnT(std::move(g), std::move(vel), std::move(acc));
+      G x            = c.eval(t_curve, vel, acc);
+      return TrajectoryReturnT(std::move(x), std::move(vel), std::move(acc));
     });
   }
 
   /**
    * @brief Set desired trajectory.
    *
-   * The trajectory is a function from time to (position, velocity, acceleration). For a constant
-   * reference target the last two members can be set to zero. To track a time-dependent trajectory
-   * consider using \p smooth::Curve to construct the desired trajectory.
+   * The trajectory is a function from time to (position, velocity, acceleration). To track a
+   * time-dependent trajectory consider using \p smooth::Curve and \ref set_xdes(T, const
+   * smooth::Curve<G> &) to set the desired trajectory.
+   *
+   * For a constant reference target the velocity and acceleration should be constantly zero.
+   *
+   * @note For best performance the trajectory should be dynamically consistent, i.e.
+   * \f[
+   *   \mathrm{d}^r \mathbf{x}_t = \mathbf{v}, \\
+   *   \frac{\mathrm{d}}{\mathrm{d}t} \mathbf{v} = \mathbf{a},
+   * \f]
+   * where (x, v, a) is the (position, velocity, acceleration)-tuple returned by the trajectory.
    */
   inline void set_xdes(const std::function<TrajectoryReturnT(T)> & f)
   {
@@ -169,14 +178,13 @@ public:
    * @brief Calculate control input
    *
    * @param t current time
-   * @param g current state
+   * @param x current state
    * @param v current body velocity
    */
-  typename G::Tangent operator()(const T & t, const G & g, const typename G::Tangent & v)
+  inline typename G::Tangent operator()(const T & t, const G & x, const typename G::Tangent & v)
   {
     const auto [g_des, v_des, a_des] = x_des_(t);
-
-    const typename G::Tangent g_err = g_des - g;
+    const typename G::Tangent g_err = g_des - x;
 
     if (t_last && t > t_last.value()) {
       // update integral state
