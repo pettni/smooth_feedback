@@ -91,7 +91,7 @@ $(function() {
 Public Types</h2></td></tr>
 <tr class="memitem:ad8cf7e5d90bed51be83e44a2c101ad66"><td class="memItemLeft" align="right" valign="top"><a id="ad8cf7e5d90bed51be83e44a2c101ad66"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad8cf7e5d90bed51be83e44a2c101ad66">TrajectoryReturnT</a> = std::tuple&lt; G, typename G::Tangent, typename G::Tangent &gt;</td></tr>
-<tr class="memdesc:ad8cf7e5d90bed51be83e44a2c101ad66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired trajectory must return position, velocity, and acceleration. <br /></td></tr>
+<tr class="memdesc:ad8cf7e5d90bed51be83e44a2c101ad66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired trajectory consists of position, velocity, and acceleration. <br /></td></tr>
 <tr class="separator:ad8cf7e5d90bed51be83e44a2c101ad66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -160,9 +160,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a2fba8feacf4a71ebf942bc733d1f3a8e">set_xdes</a> (std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad8cf7e5d90bed51be83e44a2c101ad66">TrajectoryReturnT</a>(T)&gt; &amp;&amp;f)</td></tr>
 <tr class="memdesc:a2fba8feacf4a71ebf942bc733d1f3a8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory (rvalue version). <br /></td></tr>
 <tr class="separator:a2fba8feacf4a71ebf942bc733d1f3a8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36f4d4822107f3fc401b7298620eca3a"><td class="memItemLeft" align="right" valign="top">G::Tangent&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a36f4d4822107f3fc401b7298620eca3a">operator()</a> (const T &amp;t, const G &amp;g, const typename G::Tangent &amp;v)</td></tr>
-<tr class="memdesc:a36f4d4822107f3fc401b7298620eca3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate control input.  <a href="classsmooth_1_1feedback_1_1PID.html#a36f4d4822107f3fc401b7298620eca3a">More...</a><br /></td></tr>
-<tr class="separator:a36f4d4822107f3fc401b7298620eca3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02f9a9ecd7d9bc3fba03f5f9b6d56ace"><td class="memItemLeft" align="right" valign="top">G::Tangent&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a02f9a9ecd7d9bc3fba03f5f9b6d56ace">operator()</a> (const T &amp;t, const G &amp;x, const typename G::Tangent &amp;v)</td></tr>
+<tr class="memdesc:a02f9a9ecd7d9bc3fba03f5f9b6d56ace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate control input.  <a href="classsmooth_1_1feedback_1_1PID.html#a02f9a9ecd7d9bc3fba03f5f9b6d56ace">More...</a><br /></td></tr>
+<tr class="separator:a02f9a9ecd7d9bc3fba03f5f9b6d56ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename T, LieGroup G&gt;<br />
@@ -177,11 +177,11 @@ class smooth::feedback::PID&lt; T, G &gt;</h3>
   </dd>
 </dl>
 <p>This controller is designed for a system </p><p class="formulaDsp">
-\[ \begin{aligned} \mathrm{d}^r \mathbf{x}_t &amp; = \mathbf{v}, \\ \dot r &amp; = u, \end{aligned} \]
+\[ \begin{aligned} \mathrm{d}^r \mathbf{x}_t &amp; = \mathbf{v}, \quad \mathbf{x} \in \mathbb{G}, \mathbf{v} \in \mathbb{R}^{\dim \mathbb{G}} \\ \frac{\mathrm{d}}{\mathrm{d}t} {\mathbf{v}} &amp; = \mathbf{u}, \quad \mathbf{u} \in \mathbb{R}^{\dim \mathbb{G}} \end{aligned} \]
 </p>
 <p> i.e. the input is the body acceleration. </p>
 
-<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00061">61</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00060">60</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aa5de7b5c7935a2b6db8add2d00a47998"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa5de7b5c7935a2b6db8add2d00a47998">&#9670;&nbsp;</a></span>PID()</h2>
@@ -216,15 +216,15 @@ template&lt;typename T , LieGroup G&gt; </div>
   </table>
   </dd>
 </dl>
-<p>The proportional and derivative gains are set to 1, and the integral gains are set to 0. </p>
+<p>At construction the proportional and derivative gains are set to 1, and the integral gains are set to 0. </p>
 
 <p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00074">74</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a36f4d4822107f3fc401b7298620eca3a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36f4d4822107f3fc401b7298620eca3a">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="a02f9a9ecd7d9bc3fba03f5f9b6d56ace"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02f9a9ecd7d9bc3fba03f5f9b6d56ace">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -244,7 +244,7 @@ template&lt;typename T , LieGroup G&gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const G &amp;&#160;</td>
-          <td class="paramname"><em>g</em>, </td>
+          <td class="paramname"><em>x</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -269,13 +269,13 @@ template&lt;typename T , LieGroup G&gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">t</td><td>current time </td></tr>
-    <tr><td class="paramname">g</td><td>current state </td></tr>
+    <tr><td class="paramname">x</td><td>current state </td></tr>
     <tr><td class="paramname">v</td><td>current body velocity </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00175">175</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00184">184</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 
 </div>
 </div>
@@ -306,9 +306,14 @@ template&lt;typename T , LieGroup G&gt; </div>
 </div><div class="memdoc">
 
 <p>Set desired trajectory. </p>
-<p>The trajectory is a function from time to (position, velocity, acceleration). For a constant reference target the last two members can be set to zero. To track a time-dependent trajectory consider using <code>smooth::Curve</code> to construct the desired trajectory. </p>
+<p>The trajectory is a function from time to (position, velocity, acceleration). To track a time-dependent trajectory consider using <code>smooth::Curve</code> and <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">set_xdes</a>(T, const smooth::Curve&lt;G&gt; &amp;) to set the desired trajectory.</p>
+<p>For a constant reference target the velocity and acceleration should be constantly zero.</p>
+<dl class="section note"><dt>Note</dt><dd>For best performance the trajectory should be dynamically consistent, i.e. <p class="formulaDsp">
+\[ \mathrm{d}^r \mathbf{x}_t = \mathbf{v}, \\ \frac{\mathrm{d}}{\mathrm{d}t} \mathbf{v} = \mathbf{a}, \]
+</p>
+ where (x, v, a) is the (position, velocity, acceleration)-tuple returned by the trajectory. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00157">157</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00166">166</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 
 </div>
 </div>

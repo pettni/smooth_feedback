@@ -88,13 +88,21 @@ Proportional-Derivative Control: A classic, now on Lie groups</h2>
 <p><b>Example</b> PID controller on SE(2)</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedpack/pid.hpp&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID&lt;std::chrono::duration&lt;double&gt;</a>, smooth::SE2d&gt; pid;</div>
+<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID&lt;Time, smooth::SE2d&gt;</a> pid;</div>
 <div class="line"> </div>
+<div class="line"><span class="comment">// set desired motion as a function Time -&gt; (position, velocity, acceleration)</span></div>
+<div class="line">pid.<a class="code" href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">set_xdes</a>([](Time Time) -&gt; std::tuple&lt;smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d&gt; {</div>
+<div class="line">  <span class="keywordflow">return</span> std::make_tuple(</div>
+<div class="line">    smooth::SE2d::Identity(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());</div>
+<div class="line">});</div>
+<div class="line"> </div>
+<div class="line">Time t(1);          <span class="comment">// current time</span></div>
 <div class="line">smooth::SE2d x;     <span class="comment">// current state</span></div>
 <div class="line">Eigen::Vector3d v;  <span class="comment">// current body velocity</span></div>
 <div class="line"> </div>
-<div class="line">Eigen::Vector3d u = pid(1s, x, v);</div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1PID_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a></div><div class="ttdoc">Proportional-Integral-Derivative controller for Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="pid_8hpp_source.html#l00061">pid.hpp:62</a></div></div>
+<div class="line">Eigen::Vector3d u = pid(t, x, v);</div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1PID_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a></div><div class="ttdoc">Proportional-Integral-Derivative controller for Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="pid_8hpp_source.html#l00060">pid.hpp:61</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1PID_html_a26592d43e8511f07fa4a5d64a744b426"><div class="ttname"><a href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">smooth::feedback::PID::set_xdes</a></div><div class="ttdeci">void set_xdes(T t0, const smooth::Curve&lt; G &gt; &amp;c)</div><div class="ttdoc">Set desired trajectory as a smooth::Curve.</div><div class="ttdef"><b>Definition:</b> <a href="pid_8hpp_source.html#l00140">pid.hpp:140</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md3"></a>
 Lie group Model-Predictive Control: When more look-ahead is needed</h2>
 <ul>
@@ -209,7 +217,7 @@ smooth::feedback::solve_qp: Fast QP Solver in pure Eigen</h2>
 <li>For both dense and sparse problems.</li>
 <li>Eigen lazy evaluations enable fast SIMD in the compiled assembly.</li>
 </ul>
-<p>Preliminary results suggest that the performance compares favorably to the original OSQP implementation. The plot below compares solution times for square QPs over three different levels of sparsity (lower is better). Although the <code>smooth</code> sparse (smooth-s) solver is consistently faster than the <code>smooth</code> dense (smooth-d) and osqp solvers, it currently appears to be slightly less robust than the other methods on ill-conditioned problems.</p>
+<p>Preliminary results suggest that the performance compares favorably to the original OSQP implementation. The plot below compares solution times (lower is better) for square QPs over three different levels of sparsity. Although the <code>smooth</code> sparse (smooth-s) solver is consistently faster than the <code>smooth</code> dense (smooth-d) and osqp solvers, it currently appears to be slightly less robust than the other methods on ill-conditioned problems.</p>
 <p><img src="qp_benchmarks.png" alt="" class="inline"/></p>
 <p>The results are generated from the benchmarking program in <code>benchmark/</code>.</p>
 <p><b>Example</b>: Define and solve a dynamically sized dense quadratic program.</p>
