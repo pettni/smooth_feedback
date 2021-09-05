@@ -294,7 +294,7 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
 
     const auto [flin, df_xu] = diff::dr<DiffType>(
       [&f, &t]<typename T>(const CastT<T, G> & vx,
-        const CastT<T, U> & vu) -> Eigen::Matrix<T, Nx, 1> { return f(T(t), vx, vu); },
+        const CastT<T, U> & vu) -> Eigen::Matrix<T, Nx, 1> { return f(t, vx, vu); },
       wrt(xl, ul));
 
     // cltv system \dot x = At x(t) + Bt u(t) + Et
@@ -568,7 +568,7 @@ public:
     std::optional<std::reference_wrapper<std::vector<U>>> u_traj = std::nullopt,
     std::optional<std::reference_wrapper<std::vector<G>>> x_traj = std::nullopt)
   {
-    using std::chrono::nanoseconds;
+    using std::chrono::duration, std::chrono::nanoseconds;
 
     static constexpr int Nx = Dof<G>;
     static constexpr int Nu = Dof<U>;
@@ -578,10 +578,10 @@ public:
     ocp_.x0   = g;
     ocp_.T    = prm_.T;
     ocp_.gdes = [this, &t](double t_loc) -> G {
-      return x_des_(t + duration_cast<nanoseconds>(std::chrono::duration<double>(t_loc)));
+      return x_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
     };
     ocp_.udes = [this, &t](double t_loc) -> U {
-      return u_des_(t + duration_cast<nanoseconds>(std::chrono::duration<double>(t_loc)));
+      return u_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
     };
 
     // linearize around desired trajectory
@@ -601,8 +601,9 @@ public:
     const double dt = ocp_.T / static_cast<double>(K);
 
     // define dynamics in "MPC time"
-    const auto dyn = [this, &t](double t_loc, const auto & vx, const auto & vu) {
-      return dyn_(t + duration_cast<nanoseconds>(std::chrono::duration<double>(t_loc)), vx, vu);
+    const auto dyn = [this, &t]<typename S>(
+                       double t_loc, const CastT<S, G> & vx, const CastT<S, U> & vu) {
+      return dyn_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
     };
 
     const auto qp = ocp_to_qp<K, G, U, decltype(dyn), DiffType>(ocp_, dyn, lin_);
