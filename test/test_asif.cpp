@@ -46,22 +46,13 @@ TEST(Asif, Basic)
     return Eigen::Matrix<T, 2, 1>(-0.1, 1);
   };
 
-  smooth::SE2d x0 = smooth::SE2d::Random();
+  smooth::feedback::ASIFProblem<smooth::SE2d, Eigen::Vector2d> pbm{
+    .x0    = smooth::SE2d::Random(),
+    .u_des = Eigen::Vector2d::Zero(),
+  };
+  smooth::feedback::ASIFtoQPParams prm{};
 
-  smooth::feedback::AsifParams prm;
+  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, Eigen::Vector2d>(pbm, f, h, bu, prm);
 
-  Eigen::Vector2d u = Eigen::Vector2d::Zero();
-
-  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, Eigen::Vector2d>(x0, u, f, h, bu, prm);
-
-  std::cout << "A" << std::endl;
-  std::cout << qp.A << std::endl;
-  std::cout << "lu" << std::endl;
-  std::cout << qp.l.transpose() << std::endl;
-  std::cout << qp.u.transpose() << std::endl;
-
-  std::cout << "P" << std::endl;
-  std::cout << qp.P << std::endl;
-  std::cout << "q" << std::endl;
-  std::cout << qp.q.transpose() << std::endl;
+  // TODO check qp...
 }

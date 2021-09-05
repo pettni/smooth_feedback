@@ -4,8 +4,8 @@ target_link_libraries(asif_doubleintegrator feedback)
 add_executable(mpc_doubleintegrator mpc_doubleintegrator.cpp)
 target_link_libraries(mpc_doubleintegrator feedback)
 
-add_executable(mpc_se2 mpc_se2.cpp)
-target_link_libraries(mpc_se2 feedback)
+add_executable(mpc_asif_vehicle mpc_asif_vehicle.cpp)
+target_link_libraries(mpc_asif_vehicle feedback)
 
 add_executable(pid_se2 pid_se2.cpp)
 target_link_libraries(pid_se2 feedback)
@@ -22,8 +22,8 @@ if(${Matplot++_FOUND})
   target_compile_definitions(mpc_doubleintegrator PRIVATE ENABLE_PLOTTING)
   target_link_libraries(mpc_doubleintegrator Matplot++::matplot)
 
-  target_compile_definitions(mpc_se2 PRIVATE ENABLE_PLOTTING)
-  target_link_libraries(mpc_se2 Matplot++::matplot)
+  target_compile_definitions(mpc_asif_vehicle PRIVATE ENABLE_PLOTTING)
+  target_link_libraries(mpc_asif_vehicle Matplot++::matplot)
 
   target_compile_definitions(pid_se2 PRIVATE ENABLE_PLOTTING)
   target_link_libraries(pid_se2 Matplot++::matplot)

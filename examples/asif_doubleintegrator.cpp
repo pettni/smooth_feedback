@@ -33,13 +33,19 @@ int main()
   Gd g(-5, 1);
   Ud udes = Ud(1), u;
 
-  smooth::feedback::AsifParams prm{.alpha = 1, .tau = 0.01, .dt = 0.01, .relax_cost = 500};
-
-  smooth::feedback::QPSolverParams qpprm{
-    // .verbose = true,
-    .scaling = true,
-    // .max_time = std::chrono::microseconds(100),
-    .polish = true,
+  smooth::feedback::ASIFParams prm{
+    .T = 0.5,
+    .asif =
+      {
+        .alpha      = 1,
+        .dt         = 0.01,
+        .relax_cost = 500,
+      },
+    .qp =
+      {
+        .scaling = true,
+        .polish  = true,
+      },
   };
 
   // dynamics
@@ -48,29 +54,34 @@ int main()
   };
 
   // safety set
-  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 2, 1> {
+  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Vector2<T> {
     return {T(3) - g(0), T(1.5) - g(1)};
   };
 
   // backup controller
   auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
 
+  // input constraints
+  smooth::feedback::OptimalControlBounds<Ud> ulim{
+    .A = Eigen::Matrix<double, 1, 1>(1),
+    .l = Eigen::Matrix<double, 1, 1>(-1),
+    .u = Eigen::Matrix<double, 1, 1>(1),
+  };
+
+  smooth::feedback::ASIF<nAsif, Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(f, h, bu, ulim, prm);
+
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
   const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) { d = f(t, x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
 
-  std::optional<smooth::feedback::QPSolution<-1, -1, double>> sol;
-
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 10s; t += 50ms) {
-    auto qp = smooth::feedback::asif_to_qp<nAsif>(g, udes, f, h, bu, prm);
-    sol     = smooth::feedback::solve_qp(qp, qpprm, sol);
+    u         = udes;
+    auto code = asif(u, 0, g);
 
-    u = sol.value().primal.head<1>();
-
-    if (sol.value().code != smooth::feedback::QPSolutionStatus::Optimal) {
-      std::cerr << "Solver failed with code " << static_cast<int>(sol.value().code) << std::endl;
+    if (code != smooth::feedback::QPSolutionStatus::Optimal) {
+      std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
     }
 
     // store data

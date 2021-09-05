@@ -30,6 +30,14 @@
  * @file
  * @brief Model-Predictive Control (MPC) on Lie groups.
  */
+  /* ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
+  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l;  //  - pbm.ulim.A * (u_lin - Identity<U>());
+  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u;  //  - pbm.ulim.A * (u_lin - Identity<U>());
+
+  // upper and lower bounds on delta
+  ret.A(K * nh + nu_ineq, nu) = 1;
+  ret.l(K * nh + nu_ineq)     = 0;
+  ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity(); */
 
 #include <Eigen/Core>
 
@@ -57,12 +65,15 @@ struct OptimalControlBounds
   /// Dimensionality
   static constexpr int N = Dof<M>;
 
+  /// Dimensionality (only dynamic for now)
+  static constexpr int NumCon = -1;
+
   /// Transformation matrix
-  Eigen::Matrix<double, -1, N> A = Eigen::Matrix<double, -1, N>::Identity(N, N);
+  Eigen::Matrix<double, NumCon, N> A = Eigen::Matrix<double, NumCon, N>::Identity(N, N);
   /// Lower bound
-  Eigen::Matrix<double, -1, 1> l;
+  Eigen::Matrix<double, NumCon, 1> l = Eigen::Matrix<double, NumCon, 1>::Constant(N, -1);
   /// Upper bound
-  Eigen::Matrix<double, -1, 1> u;
+  Eigen::Matrix<double, NumCon, 1> u = Eigen::Matrix<double, NumCon, 1>::Constant(N, 1);
 };
 
 /**

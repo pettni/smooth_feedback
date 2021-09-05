@@ -38,26 +38,43 @@
 #include <smooth/diff.hpp>
 #include <smooth/lie_group.hpp>
 
+#include "mpc.hpp"
 #include "qp.hpp"
 
 namespace smooth::feedback {
 
 /**
+ * @brief Active set invariance problem
+ */
+template<LieGroup G, Manifold U>
+struct ASIFProblem
+{
+  /// time horizon
+  double T{1};
+
+  /// initial state
+  G x0 = Identity<G>();
+
+  /// desired input
+  U u_des = Identity<U>();
+
+  /// input bounds
+  OptimalControlBounds<U> ulim{};
+};
+
+/**
  * @brief Parameters for asif_to_qp
  */
-struct AsifParams
+struct ASIFtoQPParams
 {
   /// Barrier function time constant
-  float alpha = 1.;
+  double alpha{1};
 
-  /// time between barrier constraints
-  float tau = 1;
-
-  /// integration time step (must be smaller or equal to tau)
-  float dt = 0.1;
+  /// maximal integration time step
+  double dt{0.1};
 
   /// relaxation cost
-  float relax_cost = 100;
+  double relax_cost{100};
 };
 
 /**
@@ -83,7 +100,7 @@ struct AsifParams
  * A solution \f$ \mu^* \f$ to the QuadraticProgram corresponds to an input \f$ u_{lin} \oplus \mu^*
  * \f$ applied to the system.
  *
- * @tparam K number of constraints (\p AsifParams::tau controls time between constraints)
+ * @tparam K number of constraints (\p ASIFtoQPParams::tau controls time between constraints)
  * @tparam G state Lie group type \f$\mathbb{G}\f$
  * @tparam U input Lie group type \f$\mathbb{G}\f$
  *
@@ -99,17 +116,21 @@ struct AsifParams
  *
  * @return QuadraticProgram modeling the ASIF filtering problem
  *
+ * \note Differentiability requirements:
+ *   * f differentiable w.r.t. x and u
+ *   * h differentiable w.r.t. t and x
+ *   * bu differentiable w.r.t. x
+ *
  * \note For the common case of \f$ U = \mathbb{R}^n \f$ and control-affine dynamics on the form \f$
  * f(t, x, u) = f_x(t, x) + f_u(t, x) u \f$, the linearization point \f$u_{lin}\f$ can safely be
  * left to the default value.
  */
 template<std::size_t K, LieGroup G, Manifold U, typename Dyn, typename SafeSet, typename BackupU>
-auto asif_to_qp(const G & x0,
-  const U & u_des,
+auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   Dyn && f,
   SafeSet && h,
   BackupU && bu,
-  const AsifParams & prm,
+  const ASIFtoQPParams & prm,
   const U & u_lin = Identity<U>())
 {
   using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
@@ -126,12 +147,16 @@ auto asif_to_qp(const G & x0,
   euler<G, double, Tangent<G>, double, vector_space_algebra> state_stepper{};
   euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
 
-  static constexpr int M = K * nh + nu + 1;
+  const int nu_ineq = pbm.ulim.A.rows();
+
+  const int M            = K * nh + nu_ineq + 1;
   static constexpr int N = nu + 1;
 
   // iteration variables
+  const double tau     = pbm.T / static_cast<double>(K);
+  const double dt      = std::min<double>(prm.dt, tau);
   double t             = 0;
-  G x                  = x0;
+  G x                  = pbm.x0;
   TangentMap<G> dx_dx0 = TangentMap<G>::Identity();
 
   // define ODEs for closed-loop dynamics and its sensitivity
@@ -173,33 +198,111 @@ auto asif_to_qp(const G & x0,
     ret.u.template segment<nh>(k * nh).setConstant(std::numeric_limits<double>::infinity());
 
     // integrate system and sensitivity forward until next constraint
-    while (t < prm.tau * (k + 1)) {
-      state_stepper.do_step(x_ode, x, t, prm.dt);
-      sensi_stepper.do_step(dx_dx0_ode, dx_dx0, t, prm.dt);
-      t += std::min(prm.dt, prm.tau);
+    double dt_act = std::min(dt, tau * (k + 1) - t);
+    while (t < tau * (k + 1)) {
+      state_stepper.do_step(x_ode, x, t, dt_act);
+      sensi_stepper.do_step(dx_dx0_ode, dx_dx0, t, dt_act);
+      t += dt_act;
     }
   }
 
+  // relaxation of barrier constraints
   ret.A.template block<K * nh, 1>(0, nu).setConstant(1);
 
-  // identity matrix for inquality constraints
-  ret.A.template block<nu + 1, nu + 1>(K * nh, 0).setIdentity();
-
-  // upper and lower bounds on u
-  ret.l.template segment<nu>(K * nh).setConstant(-1);
-  ret.u.template segment<nu>(K * nh).setConstant(1);
+  // input bounds
+  ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
+  ret.A.block(K * nh, nu, nu_ineq, 1).setZero();
+  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l - pbm.ulim.A * (u_lin - Identity<U>());
+  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u - pbm.ulim.A * (u_lin - Identity<U>());
 
   // upper and lower bounds on delta
-  ret.l(K * nh + nu) = 0;
-  ret.u(K * nh + nu) = std::numeric_limits<double>::infinity();
+  ret.A.row(K * nh + nu_ineq).setZero();
+  ret.A(K * nh + nu_ineq, nu) = 1;
+  ret.l(K * nh + nu_ineq)     = 0;
+  ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity();
 
   ret.P.setIdentity();
   ret.P(nu, nu)             = prm.relax_cost;
-  ret.q.template head<nu>() = (u_lin - u_des);
+  ret.q.template head<nu>() = (u_lin - pbm.u_des);
   ret.q(nu)                 = 0;
 
   return ret;
 }
+
+struct ASIFParams
+{
+  /// Horizon
+  double T{1};
+  /// ASIF algorithm parameters
+  ASIFtoQPParams asif;
+  /// QP solver parameters
+  QPSolverParams qp;
+};
+
+template<std::size_t K,
+  LieGroup G,
+  Manifold U,
+  typename Dyn,
+  typename SS,
+  typename BU,
+  smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT>
+class ASIF
+{
+public:
+  ASIF(
+    Dyn && f, SS && h, BU && bu, OptimalControlBounds<U> && ulim, ASIFParams && prm = ASIFParams{})
+      : f_(std::move(f)), h_(std::move(h)), bu_(std::move(bu)), ulim_(std::move(ulim)), prm_(prm)
+  {}
+
+  ASIF(const Dyn & f,
+    const SS & h,
+    const BU & bu,
+    const OptimalControlBounds<U> & ulim,
+    const ASIFParams & prm = ASIFParams{})
+      : ASIF(Dyn(f), SS(h), BU(bu), OptimalControlBounds<U>(ulim), ASIFParams(prm))
+  {}
+
+  QPSolutionStatus operator()(U & u, double t, const G & g)
+  {
+    using std::chrono::duration, std::chrono::nanoseconds;
+
+    auto f = [this, &t]<typename T>(T t_loc, const CastT<T, G> & vx, const CastT<T, U> & vu) {
+      return f_(T(t) + t_loc, vx, vu);
+    };
+    auto h = [this, &t]<typename T>(
+               T t_loc, const CastT<T, G> & vx) { return h_(T(t) + t_loc, vx); };
+    auto bu = [this, &t]<typename T>(
+                T t_loc, const CastT<T, G> & vx) { return bu_(T(t) + t_loc, vx); };
+
+    ASIFProblem<G, U> pbm{
+      .T     = prm_.T,
+      .x0    = g,
+      .u_des = u,
+      .ulim  = ulim_,
+    };
+
+    const U u_lin = u;
+
+    auto qp  = smooth::feedback::asif_to_qp<K>(pbm, f, h, bu, prm_.asif, u_lin);
+    auto sol = smooth::feedback::solve_qp(qp, prm_.qp, warmstart_);
+
+    u = rplus(u_lin, sol.primal.template head<Dof<U>>());
+
+    if (sol.code == QPSolutionStatus::Optimal) { warmstart_ = sol; }
+    return sol.code;
+  }
+
+private:
+  Dyn f_;
+  SS h_;
+  BU bu_;
+
+  OptimalControlBounds<U> ulim_;
+
+  ASIFParams prm_;
+
+  std::optional<QPSolution<-1, -1, double>> warmstart_;
+};
 
 }  // namespace smooth::feedback
 

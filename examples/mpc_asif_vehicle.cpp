@@ -1,6 +1,7 @@
 #include <boost/numeric/odeint.hpp>
 #include <smooth/bundle.hpp>
 #include <smooth/compat/odeint.hpp>
+#include <smooth/feedback/asif.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 
@@ -19,6 +20,9 @@ template<typename T>
 using G = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
 template<typename T>
 using U = Eigen::Matrix<T, 2, 1>;
+
+template<typename T>
+using Uasif = Eigen::Matrix<T, 1, 1>;
 
 using Gd = G<double>;
 using Ud = U<double>;
@@ -44,25 +48,48 @@ int main()
       x.template part<1>().x(),
       x.template part<1>().y(),
       x.template part<1>().z(),
-      -T(0.2) * x.template part<1>().x() + u(0),
+      -T(0.2) * x.template part<1>().x() + u.x(),
       T(0),
-      -T(0.4) * x.template part<1>().z() + u(1),
+      -T(0.4) * x.template part<1>().z() + u.y(),
     };
   };
 
-  // create MPC object
-  smooth::feedback::MPCParams prm{.T = T,
-    .warmstart                       = true,
-    .relinearize_state_around_sol    = false,
-    .relinearize_input_around_sol    = false,
-    .iterative_relinearization       = 0};
+  // asif dynamics
+  auto f_asif = []<typename T>(T, const G<T> & x, const Uasif<T> & u) -> smooth::Tangent<G<T>> {
+    return {
+      x.template part<1>().x(),
+      x.template part<1>().y(),
+      x.template part<1>().z(),
+      0,
+      T(0),
+      -T(0.4) * x.template part<1>().z() + u.x(),
+    };
+  };
+
+  // Input bounds
+  const smooth::feedback::OptimalControlBounds<Ud> ulim{
+    .l = Eigen::Vector2d(-0.2, -0.5),
+    .u = Eigen::Vector2d(0.5, 0.5),
+  };
+
+  const smooth::feedback::OptimalControlBounds<Uasif<double>> ulim_asif{
+    .l = Eigen::Matrix<double, 1, 1>(-0.5),
+    .u = Eigen::Matrix<double, 1, 1>(0.5),
+  };
+
+  // SET UP MPC
+
+  smooth::feedback::MPCParams prm{
+    .T                            = T,
+    .warmstart                    = true,
+    .relinearize_state_around_sol = false,
+    .relinearize_input_around_sol = false,
+    .iterative_relinearization    = 0,
+  };
   smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
 
   // set input bounds
-  mpc.set_ulim(smooth::feedback::OptimalControlBounds<Ud>{
-    .l = Eigen::Vector2d(-0.2, -0.5),
-    .u = Eigen::Vector2d(0.5, 0.5),
-  });
+  mpc.set_ulim(ulim);
 
   // set weights
   Eigen::Matrix2d R = Eigen::Matrix2d::Identity();
@@ -79,6 +106,33 @@ int main()
   auto udes = [](Time t) -> Ud { return Ud::Zero(); };
   mpc.set_xudes(xdes, udes);
 
+  // SET UP ASIF
+
+  // safe set
+  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 1, 1> {
+    Eigen::Vector2<T> dir = g.template part<0>().r2() - Eigen::Vector2<T>{-2.5, 0};
+    Eigen::Vector2d e_dir = dir.template cast<double>().normalized();
+    return Eigen::Matrix<T, 1, 1>(dir.dot(e_dir) - 0.5);
+  };
+
+  // backup controller
+  auto bu = []<typename T>(T, const G<T> & g) -> Uasif<T> {
+    return Uasif<T>(-0.5);
+  };
+
+  smooth::feedback::ASIFParams asif_prm{
+    .T = T,
+    .asif =
+      {
+        .alpha      = 1,
+        .dt         = 0.05,
+        .relax_cost = 10,
+      },
+  };
+
+  smooth::feedback::ASIF<nMpc, Gd, Uasif<double>, decltype(f_asif), decltype(h), decltype(bu)> asif(
+    f_asif, h, bu, ulim_asif, asif_prm);
+
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
   const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
@@ -87,10 +141,18 @@ int main()
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 30s; t += 50ms) {
     // compute MPC input
-    auto code = mpc(u, t, g);
-    if (code != smooth::feedback::QPSolutionStatus::Optimal) {
-      std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
+    auto mpc_code = mpc(u, t, g);
+    if (mpc_code != smooth::feedback::QPSolutionStatus::Optimal) {
+      std::cerr << "MPC failed with mpc_code " << static_cast<int>(mpc_code) << std::endl;
     }
+
+    // filter input with ASIF
+    Uasif<double> steering = u.tail(1);
+    auto asif_code = asif(steering, 0, g);
+    if (asif_code != smooth::feedback::QPSolutionStatus::Optimal) {
+      std::cerr << "ASIF solver failed with asif_code " << static_cast<int>(asif_code) << std::endl;
+    }
+    u.tail(1) = steering;
 
     // store data
     tvec.push_back(duration_cast<Time>(t).count());
