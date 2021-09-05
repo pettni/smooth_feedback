@@ -87,7 +87,7 @@ TEST(PID, SetDesiredCurve)
     typename smooth::SE2d::Tangent u = pid(1s, g, v);
 
     Eigen::Vector3d v_des, a_des;
-    auto g_des = c.eval(0.5, v_des, a_des);
+    auto g_des = c(0.5, v_des, a_des);
 
     Eigen::Vector3d u_expected = a_des + 3 * (v_des - v) + 2 * (g_des - g);
 

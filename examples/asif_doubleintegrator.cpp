@@ -14,14 +14,12 @@ using namespace boost::numeric::odeint;
 using Time = std::chrono::duration<double>;
 
 template<typename T>
-using G = smooth::T2<T>;
+using G = Eigen::Matrix<T, 2, 1>;
 template<typename T>
 using U = Eigen::Matrix<T, 1, 1>;
 
 using Gd = G<double>;
 using Ud = U<double>;
-
-using Tangentd = typename Gd::Tangent;
 
 int main()
 {
@@ -32,8 +30,7 @@ int main()
   static constexpr int nAsif = 50;
 
   // system variables
-  Gd g;
-  g.rn() << -5, 1;
+  Gd g(-5, 1);
   Ud udes = Ud(1), u;
 
   smooth::feedback::AsifParams prm{.alpha = 1, .tau = 0.01, .dt = 0.01, .relax_cost = 500};
@@ -46,20 +43,21 @@ int main()
   };
 
   // dynamics
-  auto f = []<typename T>(T, const G<T> & x, const U<T> & u) ->
-    typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
+  auto f = []<typename T>(T, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+    return {x(1), u(0)};
+  };
 
   // safety set
   auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 2, 1> {
-    return Eigen::Matrix<T, 2, 1>(3, 1.5) - Eigen::Matrix<T, 2, 1>(g.rn());
+    return {T(3) - g(0), T(1.5) - g(1)};
   };
 
   // backup controller
-  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return Eigen::Matrix<T, 1, 1>(-0.6); };
+  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
 
   // prepare for integrating the closed-loop system
-  runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(t, x, u); };
+  runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) { d = f(t, x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   std::optional<smooth::feedback::QPSolution<-1, -1, double>> sol;
@@ -77,8 +75,8 @@ int main()
 
     // store data
     tvec.push_back(duration_cast<Time>(t).count());
-    xvec.push_back(g.rn().x());
-    vvec.push_back(g.rn().y());
+    xvec.push_back(g.x());
+    vvec.push_back(g.y());
     uvec.push_back(u(0));
 
     // step dynamics

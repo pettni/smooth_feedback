@@ -32,21 +32,22 @@ int main()
   double T                  = 5;
 
   // system variables
-  Gd g;
-  g.setIdentity();
+  Gd g = Gd::Identity();
   Ud u;
 
   // body velocity of desired trajectory
-  Eigen::Vector3d vdes(1, 0, 0.4);
+  Eigen::Vector3d vdes{1, 0, 0.4};
 
   // dynamics
-  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> typename G<T>::Tangent {
-    typename G<T>::Tangent ret;
-    ret.template head<3>() = x.template part<1>();
-    ret(3)                 = -T(0.2) * x.template part<1>().x() + u(0);
-    ret(4)                 = T(0);
-    ret(5)                 = -T(0.4) * x.template part<1>().z() + u(1);
-    return ret;
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+    return {
+      x.template part<1>().x(),
+      x.template part<1>().y(),
+      x.template part<1>().z(),
+      -T(0.2) * x.template part<1>().x() + u(0),
+      T(0),
+      -T(0.4) * x.template part<1>().z() + u(1),
+    };
   };
 
   // create MPC object

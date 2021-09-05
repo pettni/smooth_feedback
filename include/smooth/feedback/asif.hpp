@@ -35,10 +35,8 @@
 #include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
 
-#include <smooth/concepts.hpp>
 #include <smooth/diff.hpp>
-
-#include "common.hpp"
+#include <smooth/lie_group.hpp>
 
 #include "qp.hpp"
 
@@ -112,53 +110,43 @@ auto asif_to_qp(const G & x0,
   SafeSet && h,
   BackupU && bu,
   const AsifParams & prm,
-  const U & u_lin = identity<U>())
+  const U & u_lin = Identity<U>())
 {
   using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
   using std::placeholders::_1;
-  using Tangent    = typename G::Tangent;
-  using TangentMap = typename G::TangentMap;
 
-  static constexpr int nx = G::SizeAtCompileTime;
-  static constexpr int nu = U::SizeAtCompileTime;
+  static constexpr int nx = Dof<G>;
+  static constexpr int nu = Dof<U>;
   static constexpr int nh = std::invoke_result_t<SafeSet, double, G>::SizeAtCompileTime;
 
   static_assert(nx > 0, "State space dimension must be static");
   static_assert(nu > 0, "Input space dimension must be static");
   static_assert(nh > 0, "Safe set dimension must be static");
 
-  euler<G, double, Tangent, double, vector_space_algebra> state_stepper{};
-  euler<TangentMap, double, TangentMap, double, vector_space_algebra> sensi_stepper{};
+  euler<G, double, Tangent<G>, double, vector_space_algebra> state_stepper{};
+  euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
 
   static constexpr int M = K * nh + nu + 1;
   static constexpr int N = nu + 1;
 
   // iteration variables
-  double t          = 0;
-  G x               = x0;
-  TangentMap dx_dx0 = TangentMap::Identity();
+  double t             = 0;
+  G x                  = x0;
+  TangentMap<G> dx_dx0 = TangentMap<G>::Identity();
 
   // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](const G & xx, Tangent & dd, double tt) {
-    dd = f(tt, xx, bu(tt, xx));
-  };
+  const auto x_ode = [&f, &bu](
+                       const G & xx, Tangent<G> & dd, double tt) { dd = f(tt, xx, bu(tt, xx)); };
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
-    auto f_cl = [&](const auto & vx) {
-      using T = typename std::decay_t<decltype(vx)>::Scalar;
-      return f(T(tt), vx, bu(T(tt), vx));
-    };
+    auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
     const auto [fcl, dr_fcl_dx] = diff::dr(std::move(f_cl), wrt(x));
-    dS_dt_v = (-G::ad(fcl) + dr_fcl_dx) * S_v;
+    dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
   const auto [f0, d_f0_du] = diff::dr(
-    [&](const auto & vu) {
-      using T = typename std::decay_t<decltype(vu)>::Scalar;
-      return f(T(t), x.template cast<T>(), vu);
-    },
-    wrt(u_lin));
+    [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(u_lin));
 
   QuadraticProgram<-1, -1> ret;
 
@@ -172,9 +160,8 @@ auto asif_to_qp(const G & x0,
   // loop over constraint number
   for (auto k = 0u; k != K; ++k) {
     // differentiate barrier function w.r.t. x
-    Eigen::Matrix<double, 1, 1> tvec(t);
-    const auto [hval, dh_dtx] =
-      diff::dr([&h](const auto & vt, const auto & vx) { return h(vt(0), vx); }, wrt(tvec, x));
+    const auto [hval, dh_dtx] = diff::dr(
+      [&h]<typename T>(const T & vt, const CastT<T, G> & vx) { return h(vt, vx); }, wrt(t, x));
 
     const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
     const Eigen::Matrix<double, nh, nx> dh_dx = dh_dtx.template rightCols<nx>();

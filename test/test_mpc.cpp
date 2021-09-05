@@ -35,7 +35,7 @@ using std::chrono::nanoseconds;
 
 TEST(Mpc, OcpToQP)
 {
-  using G = smooth::T2d;
+  using G = Eigen::Vector2d;
   using U = Eigen::Vector2d;
 
   static constexpr int K = 3;
@@ -53,14 +53,20 @@ TEST(Mpc, OcpToQP)
   ocp.R << 9, 10, 9, 12;
   ocp.T = 0.1;
 
-  ocp.glim = smooth::feedback::OptimalControlBounds<G>{.l = Eigen::Vector2d(-2, -3), .u = Eigen::Vector2d(2, 3), };
-  ocp.ulim = smooth::feedback::OptimalControlBounds<U>{.l = Eigen::Vector2d(-4, -5), .u = Eigen::Vector2d(4, 5), };
+  ocp.glim = smooth::feedback::OptimalControlBounds<G>{
+    .l = Eigen::Vector2d(-2, -3),
+    .u = Eigen::Vector2d(2, 3),
+  };
+  ocp.ulim = smooth::feedback::OptimalControlBounds<U>{
+    .l = Eigen::Vector2d(-4, -5),
+    .u = Eigen::Vector2d(4, 5),
+  };
 
   ocp.gdes = [&](double) -> G { return x_des; };
   ocp.udes = [&](double) -> U { return u_des; };
 
-  auto dyn = [&]<typename T>(double, const smooth::T2<T> & x, const Eigen::Matrix<T, 2, 1> & u) {
-    return A * x.rn() + B * u;
+  auto dyn = [&]<typename T>(double, const Eigen::Vector2<T> & x, const Eigen::Vector2<T> & u) {
+    return A * x + B * u;
   };
 
   auto qp = smooth::feedback::ocp_to_qp<K, G, U>(ocp, dyn);
@@ -133,33 +139,12 @@ TEST(Mpc, OcpToQP)
   ASSERT_TRUE(test);
 }
 
-TEST(Mpc, BasicLieInput)
-{
-  using Time = nanoseconds;
-
-  auto f = []<typename T>(Time, const smooth::SE2<T> &, const smooth::T2<T> & u) {
-    return Eigen::Matrix<T, 3, 1>(u.rn()(0), T(0), u.rn()(1));
-  };
-
-  smooth::feedback::MPC<3, Time, smooth::SE2d, smooth::T2d, decltype(f)> mpc(
-    std::move(f), smooth::feedback::MPCParams{});
-  mpc.set_xudes(
-    [](Time t) -> smooth::SE2d {
-      double t_dbl = std::chrono::duration_cast<std::chrono::duration<double>>(t).count();
-      return smooth::SE2<double>::exp(t_dbl * Eigen::Vector3d(0.2, 0.1, -0.1));
-    },
-    [](Time) -> smooth::T2d { return smooth::T2d::Identity(); });
-
-  smooth::T2d u;
-  ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random()));
-}
-
 TEST(Mpc, BasicEigenInput)
 {
   using Time = std::chrono::duration<double>;
 
-  auto f = []<typename T>(Time, const smooth::SE2<T> &, const Eigen::Matrix<T, 2, 1> & u) {
-    return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
+  auto f = []<typename T>(Time, const smooth::SE2<T> &, const Eigen::Vector2<T> & u) {
+    return Eigen::Vector3<T>(u(0), T(0), u(1));
   };
 
   smooth::feedback::MPC<3, Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(
@@ -179,8 +164,8 @@ TEST(Mpc, BasicEigenInputClock)
 {
   using Time = std::chrono::steady_clock::time_point;
 
-  auto f = []<typename T>(Time, const smooth::SE2<T> &, const Eigen::Matrix<T, 2, 1> & u) {
-    return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
+  auto f = []<typename T>(Time, const smooth::SE2<T> &, const Eigen::Vector2<T> & u) {
+    return Eigen::Vector3<T>(u(0), T(0), u(1));
   };
 
   smooth::feedback::MPC<3, Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(

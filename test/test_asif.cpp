@@ -27,7 +27,6 @@
 
 #include <smooth/feedback/asif.hpp>
 #include <smooth/se2.hpp>
-#include <smooth/tn.hpp>
 
 template<typename T>
 using G = smooth::SE2<T>;
@@ -37,13 +36,15 @@ using U = Eigen::Matrix<T, 2, 1>;
 
 TEST(Asif, Basic)
 {
-  const auto f = []<typename T>(T, const G<T> &, const U<T> & u) {
+  const auto f = []<typename T>(T, const G<T> &, const U<T> & u) -> Eigen::Matrix<T, 3, 1> {
     return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
   };
 
-  const auto h = []<typename T>(T, const G<T> & g) { return g.r2(); };
+  const auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 2, 1> { return g.r2(); };
 
-  const auto bu = []<typename T>(T, const G<T> &) { return Eigen::Matrix<T, 2, 1>(-0.1, 1); };
+  const auto bu = []<typename T>(T, const G<T> &) -> Eigen::Matrix<T, 2, 1> {
+    return Eigen::Matrix<T, 2, 1>(-0.1, 1);
+  };
 
   smooth::SE2d x0 = smooth::SE2d::Random();
 

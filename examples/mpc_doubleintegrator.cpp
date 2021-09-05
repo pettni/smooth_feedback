@@ -1,7 +1,6 @@
 #include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/mpc.hpp>
-#include <smooth/tn.hpp>
 
 #include <chrono>
 
@@ -15,14 +14,12 @@ using namespace boost::numeric::odeint;
 using Time = std::chrono::duration<double>;
 
 template<typename T>
-using G = smooth::T2<T>;
+using G = Eigen::Vector2<T>;
 template<typename T>
 using U = Eigen::Matrix<T, 1, 1>;
 
 using Gd = G<double>;
 using Ud = U<double>;
-
-using Tangentd = typename Gd::Tangent;
 
 int main()
 {
@@ -37,8 +34,9 @@ int main()
   Ud u;
 
   // dynamics
-  auto f = []<typename T>(Time, const G<T> & x, const U<T> u) ->
-    typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> u) -> smooth::Tangent<G<T>> {
+    return {x(1), u(0)};
+  };
 
   // parameters
   smooth::feedback::MPCParams prm{.T = 5};
@@ -50,14 +48,19 @@ int main()
     .u = Eigen::Matrix<double, 1, 1>(0.5),
   });
   mpc.set_input_cost(Eigen::Matrix<double, 1, 1>::Constant(0.1));
-  mpc.set_running_state_cost(Eigen::Matrix<double, 2, 2>::Identity());
-  mpc.set_final_state_cost(0.1 * Eigen::Matrix<double, 2, 2>::Identity());
-  mpc.set_xudes([](Time t) -> Gd { return Gd(Eigen::Vector2d(-0.5 * sin(0.3 * t.count()), 0)); },
+  mpc.set_running_state_cost(Eigen::Matrix2d::Identity());
+  mpc.set_final_state_cost(0.1 * Eigen::Matrix2d::Identity());
+  mpc.set_xudes(
+    [](Time t) -> Gd {
+      return {-0.5 * sin(0.3 * t.count()), 0};
+    },
     [](Time) -> Ud { return Ud::Zero(); });
 
   // prepare for integrating the closed-loop system
-  runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
+  runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) -> void {
+    d = f(Time(t), x, u);
+  };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
@@ -70,8 +73,8 @@ int main()
 
     // store data
     tvec.push_back(duration_cast<Time>(t).count());
-    xvec.push_back(g.rn().x());
-    vvec.push_back(g.rn().y());
+    xvec.push_back(g.x());
+    vvec.push_back(g.y());
     uvec.push_back(u(0));
 
     // step dynamics

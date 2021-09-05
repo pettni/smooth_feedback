@@ -34,12 +34,10 @@
 #include <Eigen/Core>
 
 #include <chrono>
-#include <smooth/concepts.hpp>
 #include <smooth/diff.hpp>
+#include <smooth/lie_group.hpp>
 #include <smooth/spline/bezier.hpp>
-#include <smooth/tn.hpp>
 
-#include "common.hpp"
 #include "qp.hpp"
 
 namespace smooth::feedback {
@@ -57,10 +55,10 @@ template<Manifold M>
 struct OptimalControlBounds
 {
   /// Dimensionality
-  static constexpr int n = M::SizeAtCompileTime;
+  static constexpr int N = Dof<M>;
 
   /// Transformation matrix
-  Eigen::Matrix<double, -1, n> A = Eigen::Matrix<double, -1, n>::Identity(n, n);
+  Eigen::Matrix<double, -1, N> A = Eigen::Matrix<double, -1, N>::Identity(N, N);
   /// Lower bound
   Eigen::Matrix<double, -1, 1> l;
   /// Upper bound
@@ -92,20 +90,20 @@ template<LieGroup G, Manifold U>
 struct OptimalControlProblem
 {
   /// State tangent dimension
-  static constexpr Eigen::Index nx = G::SizeAtCompileTime;
+  static constexpr Eigen::Index Nx = Dof<G>;
   /// Input tangent dimension
-  static constexpr Eigen::Index nu = U::SizeAtCompileTime;
+  static constexpr Eigen::Index Nu = Dof<U>;
 
   /// Initial state
-  G x0 = G::Identity();
+  G x0 = Identity<G>();
 
   /// Time horizon
   double T{1};
 
   /// Desired state trajectory
-  std::function<G(double)> gdes = [](double) { return G::Identity(); };
+  std::function<G(double)> gdes = [](double) { return Identity<G>(); };
   /// Desired input trajectory
-  std::function<U(double)> udes = [](double) { return U::Identity(); };
+  std::function<U(double)> udes = [](double) { return Identity<U>(); };
 
   /// Input bounds
   std::optional<OptimalControlBounds<U>> ulim;
@@ -114,11 +112,11 @@ struct OptimalControlProblem
   std::optional<OptimalControlBounds<G>> glim;
 
   /// Running state cost
-  Eigen::Matrix<double, nx, nx> Q = Eigen::Matrix<double, nx, nx>::Identity();
+  Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
   /// Final state cost
-  Eigen::Matrix<double, nx, nx> QT = Eigen::Matrix<double, nx, nx>::Identity();
+  Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
   /// Running input cost
-  Eigen::Matrix<double, nu, nu> R = Eigen::Matrix<double, nu, nu>::Identity();
+  Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
 };
 
 /**
@@ -131,14 +129,13 @@ struct LinearizationInfo
 {
   /// state trajectory \f$g_{lin}(t)\f$ to linearize around as a function \f$ \mathbb{R} \rightarrow
   /// G \f$
-  std::function<G(double)> g = [](double) -> G { return G::Identity(); };
+  std::function<G(double)> g = [](double) -> G { return Identity<G>(); };
   /// state trajectory derivative \f$\mathrm{d}^r (g_{lin})_t\f$ to linearize around as a function
   /// \f$ \mathbb{R} \rightarrow \mathbb{R}^{\dim \mathfrak g} \f$
-  std::function<typename G::Tangent(double)> dg = [](double) ->
-    typename G::Tangent { return G::Tangent::Zero(); };
+  std::function<Tangent<G>(double)> dg = [](double) -> Tangent<G> { return Tangent<G>::Zero(); };
   /// input trajectory \f$u_{lin}(t)\f$ to linearize around as a function \f$ \mathbb{R} \rightarrow
   /// G \f$
-  std::function<U(double)> u = [](double) -> U { return identity<U>(); };
+  std::function<U(double)> u = [](double) -> U { return Identity<U>(); };
 
   /**
    * @brief Domain of validity of state linearization
@@ -148,9 +145,8 @@ struct LinearizationInfo
    *   \left\| g \ominus_r g_{lin} \right \| \leq \bar a.
    * \f]
    */
-  Eigen::Matrix<double, G::SizeAtCompileTime, 1> g_domain =
-    Eigen::Matrix<double, G::SizeAtCompileTime, 1>::Constant(
-      std::numeric_limits<double>::infinity());
+  Eigen::Matrix<double, Dof<G>, 1> g_domain =
+    Eigen::Matrix<double, Dof<G>, 1>::Constant(std::numeric_limits<double>::infinity());
 
   /**
    * @brief Domain of validity of input linearization
@@ -160,20 +156,19 @@ struct LinearizationInfo
    *   \left\| u \ominus_r u_{lin} \right \| \leq \bar b.
    * \f]
    */
-  Eigen::Matrix<double, U::SizeAtCompileTime, 1> u_domain =
-    Eigen::Matrix<double, U::SizeAtCompileTime, 1>::Constant(
-      std::numeric_limits<double>::infinity());
+  Eigen::Matrix<double, Dof<U>, 1> u_domain =
+    Eigen::Matrix<double, Dof<U>, 1>::Constant(std::numeric_limits<double>::infinity());
 };
 
 /**
  * @brief Calculate column-wise sparsity pattern of QP matrix P in MPC problem.
  */
-template<std::size_t K, std::size_t nx, std::size_t nu>
-constexpr std::array<int, K *(nu + nx)> mpc_nnz_pattern_P()
+template<std::size_t K, std::size_t Nx, std::size_t Nu>
+constexpr std::array<int, K *(Nu + Nx)> mpc_nnz_pattern_P()
 {
-  std::array<int, K *(nx + nu)> ret{};
-  for (std::size_t i = 0u; i != K * nu; ++i) { ret[i] = nu; }
-  for (std::size_t i = K * nu; i != K * (nu + nx); ++i) { ret[i] = nx; }
+  std::array<int, K *(Nx + Nu)> ret{};
+  for (std::size_t i = 0u; i != K * Nu; ++i) { ret[i] = Nu; }
+  for (std::size_t i = K * Nu; i != K * (Nu + Nx); ++i) { ret[i] = Nx; }
   return ret;
 }
 
@@ -232,17 +227,17 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
   using std::placeholders::_1;
 
   // problem info
-  static constexpr int nx = G::SizeAtCompileTime;
-  static constexpr int nu = U::SizeAtCompileTime;
+  static constexpr int Nx = Dof<G>;
+  static constexpr int Nu = Dof<U>;
 
-  static_assert(nx > 0, "State space dimension must be static");
-  static_assert(nu > 0, "Input space dimension must be static");
+  static_assert(Nx > 0, "State space dimension must be static");
+  static_assert(Nu > 0, "Input space dimension must be static");
 
-  static constexpr int nX   = K * nx;
-  static constexpr int nU   = K * nu;
-  static constexpr int nvar = nX + nU;
+  static constexpr int NX   = K * Nx;
+  static constexpr int NU   = K * Nu;
+  static constexpr int nvar = NX + NU;
 
-  static constexpr int n_eq = nX;  // equality constraints from dynamics
+  static constexpr int n_eq = NX;  // equality constraints from dynamics
 
   uint32_t n_u_iq = pbm.ulim ? pbm.ulim.value().A.rows() * K : 0;
   uint32_t n_g_iq = pbm.glim ? pbm.glim.value().A.rows() * K : 0;
@@ -259,21 +254,21 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
 
   // SET SPARSITY PATTERNS
 
-  static constexpr auto Pp = mpc_nnz_pattern_P<K, nx, nu>();
+  static constexpr auto Pp = mpc_nnz_pattern_P<K, Nx, Nu>();
   ret.P.reserve(Eigen::Map<const Eigen::Matrix<int, nvar, 1>>(Pp.data()));
 
   Eigen::Matrix<int, -1, 1> Ap(ncon);
   int Arow = 0;
-  Ap.segment(Arow, nx).setConstant(1 + nu);
-  Arow += nx;
-  Ap.segment(Arow, (K - 1) * nx).setConstant(1 + nu + nx);
-  Arow += (K - 1) * nx;
+  Ap.segment(Arow, Nx).setConstant(1 + Nu);
+  Arow += Nx;
+  Ap.segment(Arow, (K - 1) * Nx).setConstant(1 + Nu + Nx);
+  Arow += (K - 1) * Nx;
   if (pbm.ulim) {
-    Ap.segment(Arow, n_u_iq).setConstant(nu);
+    Ap.segment(Arow, n_u_iq).setConstant(Nu);
     Arow += n_u_iq;
   }
   if (pbm.glim) {
-    Ap.tail(n_g_iq).setConstant(nx);
+    Ap.tail(n_g_iq).setConstant(Nx);
     Arow += n_g_iq;
   }
   ret.A.reserve(Ap);
@@ -285,9 +280,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
   Arow = 0;
 
   for (auto k = 0u; k != K; ++k) {
-    using AT = Eigen::Matrix<double, nx, nx>;
-    using BT = Eigen::Matrix<double, nx, nu>;
-    using ET = Eigen::Matrix<double, nx, 1>;
+    using AT = Eigen::Matrix<double, Nx, Nx>;
+    using BT = Eigen::Matrix<double, Nx, Nu>;
+    using ET = Eigen::Matrix<double, Nx, 1>;
 
     const double t = k * dt;
 
@@ -298,11 +293,13 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
     const auto ul  = lin.u(t);
 
     const auto [flin, df_xu] = diff::dr<DiffType>(
-      [&f, &t](const auto & vx, const auto & vu) { return f(t, vx, vu); }, wrt(xl, ul));
+      [&f, &t]<typename T>(const CastT<T, G> & vx,
+        const CastT<T, U> & vu) -> Eigen::Matrix<T, Nx, 1> { return f(T(t), vx, vu); },
+      wrt(xl, ul));
 
     // cltv system \dot x = At x(t) + Bt u(t) + Et
-    const AT At = (-0.5 * G::ad(flin) - 0.5 * G::ad(dxl) + df_xu.template leftCols<nx>());
-    const BT Bt = df_xu.template rightCols<nu>();
+    const AT At = (-0.5 * ad<G>(flin) - 0.5 * ad<G>(dxl) + df_xu.template leftCols<Nx>());
+    const BT Bt = df_xu.template rightCols<Nu>();
     const ET Et = flin - dxl;
 
     // TIME DISCRETIZATION
@@ -322,64 +319,64 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
       // x(1) - B u(0) = A x0 + E
 
       // identity matrix on x(1)
-      for (auto i = 0u; i != nx; ++i) { ret.A.insert(nx * k + i, nU + nx * k + i) = 1; }
+      for (auto i = 0u; i != Nx; ++i) { ret.A.insert(Nx * k + i, NU + Nx * k + i) = 1; }
 
       // B matrix on u(0)
-      for (auto i = 0u; i != nx; ++i) {
-        for (auto j = 0u; j != nu; ++j) { ret.A.insert(nx * k + i, nu * k + j) = -Bk(i, j); }
+      for (auto i = 0u; i != Nx; ++i) {
+        for (auto j = 0u; j != Nu; ++j) { ret.A.insert(Nx * k + i, Nu * k + j) = -Bk(i, j); }
       }
 
-      ret.u.template segment<nx>(nx * k) = Ak * (pbm.x0 - lin.g(t)) + Ek;
-      ret.l.template segment<nx>(nx * k) = ret.u.template segment<nx>(nx * k);
+      ret.u.template segment<Nx>(Nx * k) = Ak * (pbm.x0 - lin.g(t)) + Ek;
+      ret.l.template segment<Nx>(Nx * k) = ret.u.template segment<Nx>(Nx * k);
 
     } else {
       // x(k+1) - A x(k) - B u(k) = E
 
       // identity matrix on x(k+1)
-      for (auto i = 0u; i != nx; ++i) { ret.A.insert(nx * k + i, nU + nx * k + i) = 1; }
+      for (auto i = 0u; i != Nx; ++i) { ret.A.insert(Nx * k + i, NU + Nx * k + i) = 1; }
 
       // A matrix on x(k)
-      for (auto i = 0u; i != nx; ++i) {
-        for (auto j = 0u; j != nx; ++j) {
-          ret.A.insert(nx * k + i, nU + nx * (k - 1) + j) = -Ak(i, j);
+      for (auto i = 0u; i != Nx; ++i) {
+        for (auto j = 0u; j != Nx; ++j) {
+          ret.A.insert(Nx * k + i, NU + Nx * (k - 1) + j) = -Ak(i, j);
         }
       }
 
       // B matrix on u(k)
-      for (auto i = 0u; i != nx; ++i) {
-        for (auto j = 0u; j != nu; ++j) { ret.A.insert(nx * k + i, nu * k + j) = -Bk(i, j); }
+      for (auto i = 0u; i != Nx; ++i) {
+        for (auto j = 0u; j != Nu; ++j) { ret.A.insert(Nx * k + i, Nu * k + j) = -Bk(i, j); }
       }
 
-      ret.u.template segment<nx>(nx * k) = Ek;
-      ret.l.template segment<nx>(nx * k) = Ek;
+      ret.u.template segment<Nx>(Nx * k) = Ek;
+      ret.l.template segment<Nx>(Nx * k) = Ek;
     }
   }
 
-  Arow += K * nx;
+  Arow += K * Nx;
 
   // INPUT CONSTRAINTS
 
   if (pbm.ulim) {
     for (auto k = 0u; k < K; ++k) {
       for (auto i = 0u; i != pbm.ulim.value().A.rows(); ++i) {
-        for (auto j = 0u; j != nu; ++j) {
-          ret.A.insert(Arow + k * nu + i, k * nu + j) = pbm.ulim.value().A(i, j);
+        for (auto j = 0u; j != Nu; ++j) {
+          ret.A.insert(Arow + k * Nu + i, k * Nu + j) = pbm.ulim.value().A(i, j);
         }
       }
-      ret.l.template segment<nu>(Arow + k * nu) =
-        pbm.ulim.value().l - pbm.ulim.value().A * (lin.u(k * dt) - identity<U>());
-      ret.u.template segment<nu>(Arow + k * nu) =
-        pbm.ulim.value().u - pbm.ulim.value().A * (lin.u(k * dt) - identity<U>());
+      ret.l.template segment<Nu>(Arow + k * Nu) =
+        pbm.ulim.value().l - pbm.ulim.value().A * (lin.u(k * dt) - Identity<U>());
+      ret.u.template segment<Nu>(Arow + k * Nu) =
+        pbm.ulim.value().u - pbm.ulim.value().A * (lin.u(k * dt) - Identity<U>());
     }
     Arow += n_u_iq;
   }
 
   // linearization bounds
   /* for (auto k = 0u; k < K; ++k) {
-    ret.l.template segment<nu>(n_eq + k * nu) =
-      ret.l.template segment<nu>(n_eq + k * nu).cwiseMax(-lin.u_domain);
-    ret.u.template segment<nu>(n_eq + k * nu) =
-      ret.u.template segment<nu>(n_eq + k * nu).cwiseMin(lin.u_domain);
+    ret.l.template segment<Nu>(n_eq + k * Nu) =
+      ret.l.template segment<Nu>(n_eq + k * Nu).cwiseMax(-lin.u_domain);
+    ret.u.template segment<Nu>(n_eq + k * Nu) =
+      ret.u.template segment<Nu>(n_eq + k * Nu).cwiseMin(lin.u_domain);
   } */
 
   // STATE CONSTRAINTS
@@ -387,54 +384,54 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
   if (pbm.glim) {
     for (auto k = 1u; k != K + 1; ++k) {
       for (auto i = 0u; i != pbm.glim.value().A.rows(); ++i) {
-        for (auto j = 0u; j != nx; ++j) {
-          ret.A.insert(Arow + (k - 1) * nx + i, nU + (k - 1) * nx + j) = pbm.glim.value().A(i, j);
+        for (auto j = 0u; j != Nx; ++j) {
+          ret.A.insert(Arow + (k - 1) * Nx + i, NU + (k - 1) * Nx + j) = pbm.glim.value().A(i, j);
         }
       }
-      ret.l.template segment<nx>(Arow + (k - 1) * nx) =
-        pbm.glim.value().l - pbm.glim.value().A * (lin.g(k * dt) - identity<G>());
-      ret.u.template segment<nx>(Arow + (k - 1) * nx) =
-        pbm.glim.value().u - pbm.glim.value().A * (lin.g(k * dt) - identity<G>());
+      ret.l.template segment<Nx>(Arow + (k - 1) * Nx) =
+        pbm.glim.value().l - pbm.glim.value().A * (lin.g(k * dt) - Identity<G>());
+      ret.u.template segment<Nx>(Arow + (k - 1) * Nx) =
+        pbm.glim.value().u - pbm.glim.value().A * (lin.g(k * dt) - Identity<G>());
     }
     Arow += n_g_iq;
   }
 
   // linearization bounds
   /* for (auto k = 1u; k < K + 1; ++k) {
-    ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) =
-      ret.l.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx).cwiseMax(-lin.g_domain);
-    ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx) =
-      ret.u.template segment<nx>(n_eq + n_u_iq + (k - 1) * nx).cwiseMin(lin.g_domain);
+    ret.l.template segment<Nx>(n_eq + n_u_iq + (k - 1) * Nx) =
+      ret.l.template segment<Nx>(n_eq + n_u_iq + (k - 1) * Nx).cwiseMax(-lin.g_domain);
+    ret.u.template segment<Nx>(n_eq + n_u_iq + (k - 1) * Nx) =
+      ret.u.template segment<Nx>(n_eq + n_u_iq + (k - 1) * Nx).cwiseMin(lin.g_domain);
   } */
 
   // INPUT COSTS
 
   for (auto k = 0u; k < K; ++k) {
-    for (auto i = 0u; i != nu; ++i) {
-      for (auto j = 0u; j != nu; ++j) { ret.P.insert(k * nu + i, k * nu + j) = pbm.R(i, j) * dt; }
+    for (auto i = 0u; i != Nu; ++i) {
+      for (auto j = 0u; j != Nu; ++j) { ret.P.insert(k * Nu + i, k * Nu + j) = pbm.R(i, j) * dt; }
     }
-    ret.q.template segment<nu>(k * nu) = pbm.R * (lin.u(k * dt) - pbm.udes(k * dt)) * dt;
+    ret.q.template segment<Nu>(k * Nu) = pbm.R * (lin.u(k * dt) - pbm.udes(k * dt)) * dt;
   }
 
   // STATE COSTS
 
   // intermediate states x(1) ... x(K-1)
   for (auto k = 1u; k < K; ++k) {
-    for (auto i = 0u; i != nx; ++i) {
-      for (auto j = 0u; j != nx; ++j) {
-        ret.P.insert(nU + (k - 1) * nx + i, nU + (k - 1) * nx + j) = pbm.Q(i, j) * dt;
+    for (auto i = 0u; i != Nx; ++i) {
+      for (auto j = 0u; j != Nx; ++j) {
+        ret.P.insert(NU + (k - 1) * Nx + i, NU + (k - 1) * Nx + j) = pbm.Q(i, j) * dt;
       }
     }
-    ret.q.template segment<nx>(nU + (k - 1) * nx) = pbm.Q * (lin.g(k * dt) - pbm.gdes(k * dt)) * dt;
+    ret.q.template segment<Nx>(NU + (k - 1) * Nx) = pbm.Q * (lin.g(k * dt) - pbm.gdes(k * dt)) * dt;
   }
 
   // last state x(K) ~ x(T)
-  for (auto i = 0u; i != nx; ++i) {
-    for (auto j = 0u; j != nx; ++j) {
-      ret.P.insert(nU + (K - 1) * nx + i, nU + (K - 1) * nx + j) = pbm.QT(i, j);
+  for (auto i = 0u; i != Nx; ++i) {
+    for (auto j = 0u; j != Nx; ++j) {
+      ret.P.insert(NU + (K - 1) * Nx + i, NU + (K - 1) * Nx + j) = pbm.QT(i, j);
     }
   }
-  ret.q.template segment<nx>(nU + (K - 1) * nx) = pbm.QT * (lin.g(pbm.T) - pbm.gdes(pbm.T));
+  ret.q.template segment<Nx>(NU + (K - 1) * Nx) = pbm.QT * (lin.g(pbm.T) - pbm.gdes(pbm.T));
 
   ret.A.makeCompressed();
   ret.P.makeCompressed();
@@ -573,9 +570,9 @@ public:
   {
     using std::chrono::nanoseconds;
 
-    static constexpr int nx = G::SizeAtCompileTime;
-    static constexpr int nu = U::SizeAtCompileTime;
-    static constexpr int nU = K * nu;
+    static constexpr int Nx = Dof<G>;
+    static constexpr int Nu = Dof<U>;
+    static constexpr int NU = K * Nu;
 
     // update problem with funcitons defined in "MPC time"
     ocp_.x0   = g;
@@ -591,11 +588,10 @@ public:
     if (!prm_.relinearize_input_around_sol || relinearize_around_desired_) { lin_.u = ocp_.udes; }
     if (!prm_.relinearize_state_around_sol || relinearize_around_desired_) {
       lin_.g  = ocp_.gdes;
-      lin_.dg = [this](double t) -> typename G::Tangent {
+      lin_.dg = [this](double t) -> Tangent<G> {
         // need numerical derivative here since gdes is not templated...
-        Eigen::Matrix<double, 1, 1> tvec(t);
         auto [gv, dg] = diff::dr<diff::Type::NUMERICAL>(
-          [this](const auto & v) { return lin_.g(v.x()); }, wrt(tvec));
+          [this]<typename S>(const S & t_var) -> CastT<S, G> { return lin_.g(t_var); }, wrt(t));
         return dg;
       };
     }
@@ -617,8 +613,8 @@ public:
       bool touches = false;
       for (int k = 0; !touches && k != K; ++k) {
         // clang-format off
-        if (((1. - 1e-6) * lin_.u_domain - sol.primal.template segment<nu>(     k * nu).cwiseAbs()).minCoeff() < 0) { touches = true; }
-        if (((1. - 1e-6) * lin_.g_domain - sol.primal.template segment<nx>(nU + k * nx).cwiseAbs()).minCoeff() < 0) { touches = true; }
+        if (((1. - 1e-6) * lin_.u_domain - sol.primal.template segment<Nu>(     k * Nu).cwiseAbs()).minCoeff() < 0) { touches = true; }
+        if (((1. - 1e-6) * lin_.g_domain - sol.primal.template segment<Nx>(NU + k * Nx).cwiseAbs()).minCoeff() < 0) { touches = true; }
         // clang-format on
       }
       if (touches) {
@@ -635,13 +631,13 @@ public:
     }
 
     // output result
-    u = lin_.u(0) + sol.primal.template head<nu>();
+    u = lin_.u(0) + sol.primal.template head<Nu>();
 
     // output solution trajectories
     if (u_traj.has_value()) {
       u_traj.value().get().resize(K);
       for (auto i = 0u; i < K; ++i) {
-        u_traj.value().get()[i] = lin_.u(i * dt) + sol.primal.template segment<nu>(i * nu);
+        u_traj.value().get()[i] = lin_.u(i * dt) + sol.primal.template segment<Nu>(i * Nu);
       }
     }
 
@@ -650,7 +646,7 @@ public:
       x_traj.value().get()[0] = ocp_.x0;
       for (auto i = 1u; i < K + 1; ++i) {
         x_traj.value().get()[i] =
-          lin_.g(i * dt) + sol.primal.template segment<nx>(nU + (i - 1) * nx);
+          lin_.g(i * dt) + sol.primal.template segment<Nx>(NU + (i - 1) * Nx);
       }
     }
 
@@ -760,9 +756,9 @@ public:
    */
   void relinearize_state_around_sol(const QPSolution<-1, -1, double> & sol)
   {
-    static constexpr int nx = G::SizeAtCompileTime;
-    static constexpr int nu = U::SizeAtCompileTime;
-    static constexpr int nU = K * nu;
+    static constexpr int Nx = Dof<G>;
+    static constexpr int Nu = Dof<U>;
+    static constexpr int NU = K * Nu;
     const double dt         = ocp_.T / static_cast<double>(K);
 
     // STATE LINEARIZATION
@@ -773,14 +769,14 @@ public:
 
     for (auto k = 1u; k != K + 1; ++k) {
       tt[k] = dt * k;
-      gg[k] = lin_.g(k * dt) + sol.primal.template segment<nx>(nU + (k - 1) * nx);
+      gg[k] = lin_.g(k * dt) + sol.primal.template segment<Nx>(NU + (k - 1) * Nx);
     }
 
     auto g_spline = smooth::fit_cubic_bezier(tt, gg);
-    lin_.g        = [g_spline = g_spline](double t) -> G { return g_spline.eval(t); };
-    lin_.dg       = [g_spline = std::move(g_spline)](double t) -> typename G::Tangent {
-      typename G::Tangent ret;
-      g_spline.eval(t, ret);
+    lin_.g        = [g_spline = g_spline](double t) -> G { return g_spline(t); };
+    lin_.dg       = [g_spline = std::move(g_spline)](double t) -> Tangent<G> {
+      Tangent<G> ret;
+      g_spline(t, ret);
       return ret;
     };
   }
@@ -790,32 +786,19 @@ public:
    */
   void relinearize_input_around_sol(const QPSolution<-1, -1, double> & sol)
   {
-    static constexpr int nu = U::SizeAtCompileTime;
+    static constexpr int Nu = Dof<U>;
     const double dt         = ocp_.T / static_cast<double>(K);
 
-    if constexpr (LieGroup<U>) {
-      std::vector<double> tt(K);
-      std::vector<U> uu(K);
+    std::vector<double> tt(K);
+    std::vector<U> uu(K);
 
-      for (auto k = 0u; k != K; ++k) {
-        tt[k] = k * dt;
-        uu[k] = lin_.u(k * dt) + sol.primal.template segment<nu>(k * nu);
-      }
-
-      auto u_spline = smooth::fit_linear_bezier(tt, uu);
-      lin_.u        = [u_spline = std::move(u_spline)](double t) -> U { return u_spline.eval(t); };
-    } else {
-      std::vector<double> tt(K);
-      std::vector<smooth::Tn<U::SizeAtCompileTime, double>> uu(K);
-
-      for (auto k = 0u; k != K; ++k) {
-        tt[k] = k * dt;
-        uu[k] = lin_.u(k * dt) + sol.primal.template segment<nu>(k * nu);
-      }
-
-      auto u_spline = smooth::fit_linear_bezier(tt, uu);
-      lin_.u = [u_spline = std::move(u_spline)](double t) -> U { return u_spline.eval(t).rn(); };
+    for (auto k = 0u; k != K; ++k) {
+      tt[k] = k * dt;
+      uu[k] = lin_.u(k * dt) + sol.primal.template segment<Nu>(k * Nu);
     }
+
+    auto u_spline = smooth::fit_linear_bezier(tt, uu);
+    lin_.u        = [u_spline = std::move(u_spline)](double t) -> U { return u_spline(t); };
   }
 
 private:
@@ -829,8 +812,8 @@ private:
 
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
 
-  std::function<G(T)> x_des_ = [](T) -> G { return G::Identity(); };
-  std::function<U(T)> u_des_ = [](T) -> U { return identity<U>(); };
+  std::function<G(T)> x_des_ = [](T) -> G { return Identity<G>(); };
+  std::function<U(T)> u_des_ = [](T) -> U { return Identity<U>(); };
 };
 
 }  // namespace smooth::feedback

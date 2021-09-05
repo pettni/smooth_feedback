@@ -26,7 +26,7 @@
 #ifndef SMOOTH__FEEDBACK__PID_HPP_
 #define SMOOTH__FEEDBACK__PID_HPP_
 
-#include <smooth/concepts.hpp>
+#include <smooth/lie_group.hpp>
 #include <smooth/spline/curve.hpp>
 
 #include <chrono>
@@ -45,7 +45,7 @@ struct PIDParams
 /**
  * @brief Proportional-Integral-Derivative controller for Lie groups.
  *
- * @tparam T time type, must be a std::chrono::duration-like
+ * @tparam Time time type, must be a std::chrono::duration-like
  * @tparam G state space LieGroup type
  *
  * This controller is designed for a system
@@ -56,12 +56,12 @@ struct PIDParams
  * \mathbf{u} \in \mathbb{R}^{\dim \mathbb{G}} \end{aligned} \f] i.e. the input is the body
  * acceleration.
  */
-template<typename T, LieGroup G>
+template<typename Time, LieGroup G>
 class PID
 {
 public:
   /// Desired trajectory consists of position, velocity, and acceleration
-  using TrajectoryReturnT = std::tuple<G, typename G::Tangent, typename G::Tangent>;
+  using TrajectoryReturnT = std::tuple<G, Tangent<G>, Tangent<G>>;
 
   /**
    * @brief Create a PID controller
@@ -137,12 +137,17 @@ public:
    * @param c desired trajectory as a smooth::Curve
    * @param t0 curve initial time s.t. the desired position at time t is equal to c(t - t0)
    */
-  inline void set_xdes(T t0, const smooth::Curve<G> & c)
+  inline void set_xdes(Time t0, const smooth::Curve<G> & c) { set_xdes(t0, smooth::Curve<G>(c)); }
+
+  /**
+   * @brief Set desired trajectory as a smooth::Curve (rvalue version)
+   */
+  inline void set_xdes(Time t0, smooth::Curve<G> && c)
   {
-    set_xdes([c = c, t0 = t0](T t) -> TrajectoryReturnT {
-      typename G::Tangent vel, acc;
+    set_xdes([t0 = std::move(t0), c = std::move(c)](Time t) -> TrajectoryReturnT {
+      Tangent<G> vel, acc;
       double t_curve = std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count();
-      G x            = c.eval(t_curve, vel, acc);
+      G x            = c(t_curve, vel, acc);
       return TrajectoryReturnT(std::move(x), std::move(vel), std::move(acc));
     });
   }
@@ -151,7 +156,7 @@ public:
    * @brief Set desired trajectory.
    *
    * The trajectory is a function from time to (position, velocity, acceleration). To track a
-   * time-dependent trajectory consider using \p smooth::Curve and \ref set_xdes(T, const
+   * time-dependent trajectory consider using \p smooth::Curve and \ref set_xdes(Time, const
    * smooth::Curve<G> &) to set the desired trajectory.
    *
    * For a constant reference target the velocity and acceleration should be constantly zero.
@@ -163,7 +168,7 @@ public:
    * \f]
    * where (x, v, a) is the (position, velocity, acceleration)-tuple returned by the trajectory.
    */
-  inline void set_xdes(const std::function<TrajectoryReturnT(T)> & f)
+  inline void set_xdes(const std::function<TrajectoryReturnT(Time)> & f)
   {
     auto f_copy = f;
     set_xdes(std::move(f_copy));
@@ -172,7 +177,7 @@ public:
   /**
    * @brief Set desired trajectory (rvalue version).
    */
-  inline void set_xdes(std::function<TrajectoryReturnT(T)> && f) { x_des_ = std::move(f); }
+  inline void set_xdes(std::function<TrajectoryReturnT(Time)> && f) { x_des_ = std::move(f); }
 
   /**
    * @brief Calculate control input
@@ -181,10 +186,10 @@ public:
    * @param x current state
    * @param v current body velocity
    */
-  inline typename G::Tangent operator()(const T & t, const G & x, const typename G::Tangent & v)
+  inline Tangent<G> operator()(const Time & t, const G & x, const Tangent<G> & v)
   {
     const auto [g_des, v_des, a_des] = x_des_(t);
-    const typename G::Tangent g_err = g_des - x;
+    const Tangent<G> g_err           = g_des - x;
 
     if (t_last && t > t_last.value()) {
       // update integral state
@@ -202,17 +207,17 @@ private:
   PIDParams prm_;
 
   // gains
-  typename G::Tangent kd_ = G::Tangent::Ones();
-  typename G::Tangent kp_ = G::Tangent::Ones();
-  typename G::Tangent ki_ = G::Tangent::Zero();
+  Tangent<G> kd_ = Tangent<G>::Ones();
+  Tangent<G> kp_ = Tangent<G>::Ones();
+  Tangent<G> ki_ = Tangent<G>::Zero();
 
   // integral state
-  std::optional<T> t_last;
-  typename G::Tangent i_err_ = G::Tangent::Zero();
+  std::optional<Time> t_last;
+  Tangent<G> i_err_ = Tangent<G>::Zero();
 
   // desired trajectory
-  std::function<TrajectoryReturnT(T)> x_des_ = [](T) -> TrajectoryReturnT {
-    return TrajectoryReturnT(G::Identity(), G::Tangent::Zero(), G::Tangent::Zero());
+  std::function<TrajectoryReturnT(Time)> x_des_ = [](Time) -> TrajectoryReturnT {
+    return TrajectoryReturnT(Identity<G>(), Tangent<G>::Zero(), Tangent<G>::Zero());
   };
 };
 
