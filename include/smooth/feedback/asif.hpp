@@ -58,6 +58,9 @@ struct ASIFProblem
   /// desired input
   U u_des = Identity<U>();
 
+  /// weights on desired input
+  Eigen::Matrix<double, Dof<U>, 1> u_des_weights = Eigen::Matrix<double, Dof<U>, 1>::Ones();
+
   /// input bounds
   OptimalControlBounds<U> ulim{};
 };
@@ -221,18 +224,26 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   ret.l(K * nh + nu_ineq)     = 0;
   ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity();
 
-  ret.P.setIdentity();
-  ret.P(nu, nu)             = prm.relax_cost;
+  ret.P.template block<nu, nu>(0, 0) = pbm.u_des_weights.asDiagonal();
+  ret.P.template block<nu, 1>(0, nu).setZero();
   ret.q.template head<nu>() = (u_lin - pbm.u_des);
-  ret.q(nu)                 = 0;
+
+  ret.P.row(nu).setZero();
+  ret.P(nu, nu) = prm.relax_cost;
+  ret.q(nu)     = 0;
 
   return ret;
 }
 
+template<Manifold U>
 struct ASIFParams
 {
   /// Horizon
   double T{1};
+  /// Weights on desired input
+  Eigen::Matrix<double, Dof<U>, 1> u_weight = Eigen::Matrix<double, Dof<U>, 1>::Ones();
+  /// Input bounds
+  OptimalControlBounds<U> u_lim{};
   /// ASIF algorithm parameters
   ASIFtoQPParams asif;
   /// QP solver parameters
@@ -249,17 +260,12 @@ template<std::size_t K,
 class ASIF
 {
 public:
-  ASIF(
-    Dyn && f, SS && h, BU && bu, OptimalControlBounds<U> && ulim, ASIFParams && prm = ASIFParams{})
-      : f_(std::move(f)), h_(std::move(h)), bu_(std::move(bu)), ulim_(std::move(ulim)), prm_(prm)
+  ASIF(Dyn && f, SS && h, BU && bu, ASIFParams<U> && prm = ASIFParams<U>{})
+      : f_(std::move(f)), h_(std::move(h)), bu_(std::move(bu)), prm_(prm)
   {}
 
-  ASIF(const Dyn & f,
-    const SS & h,
-    const BU & bu,
-    const OptimalControlBounds<U> & ulim,
-    const ASIFParams & prm = ASIFParams{})
-      : ASIF(Dyn(f), SS(h), BU(bu), OptimalControlBounds<U>(ulim), ASIFParams(prm))
+  ASIF(const Dyn & f, const SS & h, const BU & bu, const ASIFParams<U> & prm = ASIFParams<U>{})
+      : ASIF(Dyn(f), SS(h), BU(bu), ASIFParams<U>(prm))
   {}
 
   QPSolutionStatus operator()(U & u, double t, const G & g)
@@ -275,10 +281,11 @@ public:
                 T t_loc, const CastT<T, G> & vx) { return bu_(T(t) + t_loc, vx); };
 
     ASIFProblem<G, U> pbm{
-      .T     = prm_.T,
-      .x0    = g,
-      .u_des = u,
-      .ulim  = ulim_,
+      .T             = prm_.T,
+      .x0            = g,
+      .u_des         = u,
+      .u_des_weights = prm_.u_weight,
+      .ulim          = ulim_,
     };
 
     const U u_lin = u;
@@ -299,7 +306,7 @@ private:
 
   OptimalControlBounds<U> ulim_;
 
-  ASIFParams prm_;
+  ASIFParams<U> prm_;
 
   std::optional<QPSolution<-1, -1, double>> warmstart_;
 };
