@@ -29,8 +29,9 @@ using Tangentd = typename Gd::Tangent;
 int main()
 {
   // number of MPC discretization points steps
-  static constexpr int nMpc = 50;
-  double T                  = 5;
+  static constexpr int nMpc  = 50;
+  static constexpr int nAsif = 100;
+  double T                   = 5;
 
   // system variables
   Gd g = Gd::Identity();
@@ -99,9 +100,9 @@ int main()
 
   // safe set
   auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 1, 1> {
-    const Eigen::Vector2<T> dir = g.template part<0>().r2() - Eigen::Vector2<T>{-2.5, 0};
+    const Eigen::Vector2<T> dir = g.template part<0>().r2() - Eigen::Vector2<T>{-2.3, 0};
     const Eigen::Vector2d e_dir = dir.template cast<double>().normalized();
-    return Eigen::Matrix<T, 1, 1>(dir.dot(e_dir) - 0.5);
+    return Eigen::Matrix<T, 1, 1>(dir.dot(e_dir) - 0.6);
   };
 
   // backup controller
@@ -110,29 +111,34 @@ int main()
   };
 
   smooth::feedback::ASIFParams<Ud> asif_prm{
-    .T        = T,
-    .u_weight = Eigen::Vector2d{100, 1},
+    .T        = T / 2,
+    .u_weight = Eigen::Vector2d{10, 1},
     .u_lim    = ulim,
     .asif =
       {
         .alpha      = 10,
-        .dt         = 0.05,
-        .relax_cost = 10,
+        .dt         = 0.01,
+        .relax_cost = 100,
+      },
+    .qp =
+      {
+        .polish = false,
       },
   };
 
-  smooth::feedback::ASIF<nMpc, Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
+  smooth::feedback::ASIF<nAsif, Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
     f_asif, h, bu, asif_prm);
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
   const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
-  std::vector<double> tvec, xvec, yvec, u1vec, u2vec;
+  std::vector<double> tvec, xvec, yvec, u1vec, u2vec, u1mpcvec, u2mpcvec;
 
   // integrate closed-loop system
-  for (std::chrono::milliseconds t = 0s; t < 30s; t += 50ms) {
+  for (std::chrono::milliseconds t = 0s; t < 30s; t += 25ms) {
     // compute MPC input
     auto mpc_code = mpc(u, t, g);
+    Ud u_mpc      = u;
     if (mpc_code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "MPC failed with mpc_code " << static_cast<int>(mpc_code) << std::endl;
     }
@@ -148,6 +154,8 @@ int main()
     xvec.push_back(g.template part<0>().r2().x());
     yvec.push_back(g.template part<0>().r2().y());
 
+    u1mpcvec.push_back(u_mpc(0));
+    u2mpcvec.push_back(u_mpc(1));
     u1vec.push_back(u(0));
     u2vec.push_back(u(1));
 
@@ -171,9 +179,11 @@ int main()
   matplot::figure();
   matplot::hold(matplot::on);
   matplot::title("Inputs");
-  matplot::plot(tvec, u1vec)->line_width(2);
-  matplot::plot(tvec, u2vec)->line_width(2);
-  matplot::legend({"u1", "u2"});
+  matplot::plot(tvec, u1vec, "r")->line_width(2);
+  matplot::plot(tvec, u2vec, "b")->line_width(2);
+  matplot::plot(tvec, u1mpcvec, "--r")->line_width(2);
+  matplot::plot(tvec, u2mpcvec, "--b")->line_width(2);
+  matplot::legend({"u1", "u2", "u1des", "u2des"});
 
   matplot::show();
 #else

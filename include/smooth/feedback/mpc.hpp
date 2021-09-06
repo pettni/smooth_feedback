@@ -30,14 +30,14 @@
  * @file
  * @brief Model-Predictive Control (MPC) on Lie groups.
  */
-  /* ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
-  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l;  //  - pbm.ulim.A * (u_lin - Identity<U>());
-  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u;  //  - pbm.ulim.A * (u_lin - Identity<U>());
+/* ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
+ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l;  //  - pbm.ulim.A * (u_lin - Identity<U>());
+ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u;  //  - pbm.ulim.A * (u_lin - Identity<U>());
 
-  // upper and lower bounds on delta
-  ret.A(K * nh + nu_ineq, nu) = 1;
-  ret.l(K * nh + nu_ineq)     = 0;
-  ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity(); */
+// upper and lower bounds on delta
+ret.A(K * nh + nu_ineq, nu) = 1;
+ret.l(K * nh + nu_ineq)     = 0;
+ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity(); */
 
 #include <Eigen/Core>
 
@@ -112,9 +112,9 @@ struct OptimalControlProblem
   double T{1};
 
   /// Desired state trajectory
-  std::function<G(double)> gdes = [](double) { return Identity<G>(); };
+  std::function<G(double)> gdes = [](double) -> G { return Identity<G>(); };
   /// Desired input trajectory
-  std::function<U(double)> udes = [](double) { return Identity<U>(); };
+  std::function<U(double)> udes = [](double) -> U { return Identity<U>(); };
 
   /// Input bounds
   std::optional<OptimalControlBounds<U>> ulim;
@@ -337,7 +337,7 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
         for (auto j = 0u; j != Nu; ++j) { ret.A.insert(Nx * k + i, Nu * k + j) = -Bk(i, j); }
       }
 
-      ret.u.template segment<Nx>(Nx * k) = Ak * (pbm.x0 - lin.g(t)) + Ek;
+      ret.u.template segment<Nx>(Nx * k) = Ak * rminus(pbm.x0, lin.g(t)) + Ek;
       ret.l.template segment<Nx>(Nx * k) = ret.u.template segment<Nx>(Nx * k);
 
     } else {
@@ -375,9 +375,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
         }
       }
       ret.l.template segment<Nu>(Arow + k * Nu) =
-        pbm.ulim.value().l - pbm.ulim.value().A * (lin.u(k * dt) - Identity<U>());
+        pbm.ulim.value().l - pbm.ulim.value().A * rminus(lin.u(k * dt), Identity<U>());
       ret.u.template segment<Nu>(Arow + k * Nu) =
-        pbm.ulim.value().u - pbm.ulim.value().A * (lin.u(k * dt) - Identity<U>());
+        pbm.ulim.value().u - pbm.ulim.value().A * rminus(lin.u(k * dt), Identity<U>());
     }
     Arow += n_u_iq;
   }
@@ -400,9 +400,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
         }
       }
       ret.l.template segment<Nx>(Arow + (k - 1) * Nx) =
-        pbm.glim.value().l - pbm.glim.value().A * (lin.g(k * dt) - Identity<G>());
+        pbm.glim.value().l - pbm.glim.value().A * rminus(lin.g(k * dt), Identity<G>());
       ret.u.template segment<Nx>(Arow + (k - 1) * Nx) =
-        pbm.glim.value().u - pbm.glim.value().A * (lin.g(k * dt) - Identity<G>());
+        pbm.glim.value().u - pbm.glim.value().A * rminus(lin.g(k * dt), Identity<G>());
     }
     Arow += n_g_iq;
   }
@@ -421,7 +421,7 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
     for (auto i = 0u; i != Nu; ++i) {
       for (auto j = 0u; j != Nu; ++j) { ret.P.insert(k * Nu + i, k * Nu + j) = pbm.R(i, j) * dt; }
     }
-    ret.q.template segment<Nu>(k * Nu) = pbm.R * (lin.u(k * dt) - pbm.udes(k * dt)) * dt;
+    ret.q.template segment<Nu>(k * Nu) = pbm.R * rminus(lin.u(k * dt), pbm.udes(k * dt)) * dt;
   }
 
   // STATE COSTS
@@ -433,7 +433,8 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
         ret.P.insert(NU + (k - 1) * Nx + i, NU + (k - 1) * Nx + j) = pbm.Q(i, j) * dt;
       }
     }
-    ret.q.template segment<Nx>(NU + (k - 1) * Nx) = pbm.Q * (lin.g(k * dt) - pbm.gdes(k * dt)) * dt;
+    ret.q.template segment<Nx>(NU + (k - 1) * Nx) =
+      pbm.Q * rminus(lin.g(k * dt), pbm.gdes(k * dt)) * dt;
   }
 
   // last state x(K) ~ x(T)
@@ -442,7 +443,7 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
       ret.P.insert(NU + (K - 1) * Nx + i, NU + (K - 1) * Nx + j) = pbm.QT(i, j);
     }
   }
-  ret.q.template segment<Nx>(NU + (K - 1) * Nx) = pbm.QT * (lin.g(pbm.T) - pbm.gdes(pbm.T));
+  ret.q.template segment<Nx>(NU + (K - 1) * Nx) = pbm.QT * rminus(lin.g(pbm.T), pbm.gdes(pbm.T));
 
   ret.A.makeCompressed();
   ret.P.makeCompressed();

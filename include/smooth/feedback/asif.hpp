@@ -128,12 +128,18 @@ struct ASIFtoQPParams
  * f(t, x, u) = f_x(t, x) + f_u(t, x) u \f$, the linearization point \f$u_{lin}\f$ can safely be
  * left to the default value.
  */
-template<std::size_t K, LieGroup G, Manifold U, typename Dyn, typename SafeSet, typename BackupU>
+template<std::size_t K,
+  LieGroup G,
+  Manifold U,
+  typename Dyn,
+  typename SafeSet,
+  typename BackupU,
+  smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT>
 auto asif_to_qp(const ASIFProblem<G, U> & pbm,
+  const ASIFtoQPParams & prm,
   Dyn && f,
   SafeSet && h,
   BackupU && bu,
-  const ASIFtoQPParams & prm,
   const U & u_lin = Identity<U>())
 {
   using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
@@ -168,12 +174,12 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
     auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
-    const auto [fcl, dr_fcl_dx] = diff::dr(std::move(f_cl), wrt(x));
+    const auto [fcl, dr_fcl_dx] = diff::dr<DiffType>(std::move(f_cl), wrt(x));
     dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
-  const auto [f0, d_f0_du] = diff::dr(
+  const auto [f0, d_f0_du] = diff::dr<DiffType>(
     [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(u_lin));
 
   QuadraticProgram<-1, -1> ret;
@@ -188,7 +194,7 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   // loop over constraint number
   for (auto k = 0u; k != K; ++k) {
     // differentiate barrier function w.r.t. x
-    const auto [hval, dh_dtx] = diff::dr(
+    const auto [hval, dh_dtx] = diff::dr<DiffType>(
       [&h]<typename T>(const T & vt, const CastT<T, G> & vx) { return h(vt, vx); }, wrt(t, x));
 
     const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
@@ -215,8 +221,8 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   // input bounds
   ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
   ret.A.block(K * nh, nu, nu_ineq, 1).setZero();
-  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l - pbm.ulim.A * (u_lin - Identity<U>());
-  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u - pbm.ulim.A * (u_lin - Identity<U>());
+  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l - pbm.ulim.A * rminus(u_lin, Identity<U>());
+  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u - pbm.ulim.A * rminus(u_lin, Identity<U>());
 
   // upper and lower bounds on delta
   ret.A.row(K * nh + nu_ineq).setZero();
@@ -226,7 +232,7 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
 
   ret.P.template block<nu, nu>(0, 0) = pbm.u_des_weights.asDiagonal();
   ret.P.template block<nu, 1>(0, nu).setZero();
-  ret.q.template head<nu>() = (u_lin - pbm.u_des);
+  ret.q.template head<nu>() = pbm.u_des_weights.cwiseProduct(rminus(u_lin, pbm.u_des));
 
   ret.P.row(nu).setZero();
   ret.P(nu, nu) = prm.relax_cost;
@@ -288,12 +294,12 @@ public:
       .ulim          = ulim_,
     };
 
-    const U u_lin = u;
-
-    auto qp  = smooth::feedback::asif_to_qp<K>(pbm, f, h, bu, prm_.asif, u_lin);
+    auto qp =
+      smooth::feedback::asif_to_qp<K, G, U, decltype(f), decltype(h), decltype(bu), DiffType>(
+        pbm, prm_.asif, std::move(f), std::move(h), std::move(bu), u);
     auto sol = smooth::feedback::solve_qp(qp, prm_.qp, warmstart_);
 
-    u = rplus(u_lin, sol.primal.template head<Dof<U>>());
+    u = rplus(u, sol.primal.template head<Dof<U>>());
 
     if (sol.code == QPSolutionStatus::Optimal) { warmstart_ = sol; }
     return sol.code;

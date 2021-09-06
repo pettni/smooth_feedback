@@ -33,8 +33,14 @@ int main()
   Gd g(-5, 1);
   Ud udes = Ud(1), u;
 
-  smooth::feedback::ASIFParams prm{
+  smooth::feedback::ASIFParams<Ud> prm{
     .T = 0.5,
+    .u_lim =
+      {
+        .A = Eigen::Matrix<double, 1, 1>(1),
+        .l = Eigen::Matrix<double, 1, 1>(-1),
+        .u = Eigen::Matrix<double, 1, 1>(1),
+      },
     .asif =
       {
         .alpha      = 1,
@@ -61,14 +67,7 @@ int main()
   // backup controller
   auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
 
-  // input constraints
-  smooth::feedback::OptimalControlBounds<Ud> ulim{
-    .A = Eigen::Matrix<double, 1, 1>(1),
-    .l = Eigen::Matrix<double, 1, 1>(-1),
-    .u = Eigen::Matrix<double, 1, 1>(1),
-  };
-
-  smooth::feedback::ASIF<nAsif, Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(f, h, bu, ulim, prm);
+  smooth::feedback::ASIF<nAsif, Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(f, h, bu, prm);
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
@@ -88,7 +87,7 @@ int main()
     tvec.push_back(duration_cast<Time>(t).count());
     xvec.push_back(g.x());
     vvec.push_back(g.y());
-    uvec.push_back(u(0));
+    uvec.push_back(u.x());
 
     // step dynamics
     stepper.do_step(ode, g, 0, 0.05);

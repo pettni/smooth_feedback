@@ -52,7 +52,7 @@ TEST(Asif, Basic)
   };
   smooth::feedback::ASIFtoQPParams prm{};
 
-  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, Eigen::Vector2d>(pbm, f, h, bu, prm);
+  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, Eigen::Vector2d>(pbm, prm, f, h, bu);
 
   // TODO check qp...
 }
