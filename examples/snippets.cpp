@@ -24,6 +24,7 @@
 // SOFTWARE.
 
 #include <smooth/bundle.hpp>
+#include <smooth/feedback/asif.hpp>
 #include <smooth/feedback/ekf.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/feedback/pid.hpp>
@@ -143,14 +144,41 @@ void pid_snippet()
   Eigen::Vector3d u = pid(t, x, v);
 }
 
+void asif_snippet()
+{
+  // define dynamics
+  auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
+    typename X<T>::Tangent dx_dt;
+    dx_dt.template head<3>() = x.template part<1>();
+    dx_dt.template tail<3>() << -T(0.2) * x.template part<1>().x() + u(0), T(0),
+      -T(0.4) * x.template part<1>().z() + u(1);
+    return dx_dt;
+  };
+
+  // define safety set { x : h(x) >= 0 }
+  auto h = []<typename T>(T, const X<T> & x) -> Eigen::Vector3<T> {
+    return x.template part<0>().log() - Eigen::Vector3<T>(0.2, 0.2, 0.2);
+  };
+
+  // backup controller
+  auto bu = []<typename T>(T, const X<T> &) -> U<T> { return U<T>(1, 1); };
+
+  using ASIF =
+    smooth::feedback::ASIFilter<100, X<double>, U<double>, decltype(f), decltype(h), decltype(bu)>;
+
+  ASIF asif(f, h, bu);
+
+  U<double> u = U<double>::Zero();
+  double t    = 0;
+  X<double> x = X<double>::Random();
+  auto code   = asif(u, 0, x);
+}
+
 int main()
 {
-  std::cout << "RUNNING EKF" << std::endl;
   ekf_snippet();
-  std::cout << "RUNNING MPC" << std::endl;
   mpc_snippet();
-  std::cout << "RUNNING PID" << std::endl;
   pid_snippet();
-  std::cout << "RUNNING QP" << std::endl;
   qp_snippet();
+  asif_snippet();
 }
