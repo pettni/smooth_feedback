@@ -28,7 +28,7 @@
 
 /**
  * @file
- * @brief Active Set Invariance Filtering (ASIF) on Lie groups.
+ * @brief Active Set Invariance (ASI) filtering on Lie groups.
  */
 
 #include <Eigen/Core>
@@ -44,7 +44,17 @@
 namespace smooth::feedback {
 
 /**
- * @brief Active set invariance problem
+ * @brief Active set invariance problem definition.
+ *
+ * The active set invariance problem is
+ * \f[
+ * \begin{cases}
+ *  \min_u        & (u \ominus u_{des})' W_u (u \ominus u_{des})  \\
+ *  \text{s.t.}   & x(0) = x_0 \\
+ *                & h(x(t)) \geq 0, \quad t \in [0, T]    \\
+ * \end{cases}
+ * \f]
+ * for a system \f$ \mathrm{d}^r x_t = f(x(t), u(t)) \f$.
  */
 template<LieGroup G, Manifold U>
 struct ASIFProblem
@@ -59,7 +69,7 @@ struct ASIFProblem
   U u_des = Identity<U>();
 
   /// weights on desired input
-  Eigen::Matrix<double, Dof<U>, 1> u_des_weights = Eigen::Matrix<double, Dof<U>, 1>::Ones();
+  Eigen::Matrix<double, Dof<U>, 1> W_u = Eigen::Matrix<double, Dof<U>, 1>::Ones();
 
   /// input bounds
   OptimalControlBounds<U> ulim{};
@@ -70,7 +80,7 @@ struct ASIFProblem
  */
 struct ASIFtoQPParams
 {
-  /// Barrier function time constant
+  /// barrier function time constant s.t. \f$ \dot h - \alpha h \geq 0 \f$.
   double alpha{1};
 
   /// maximal integration time step
@@ -81,7 +91,7 @@ struct ASIFtoQPParams
 };
 
 /**
- * @brief Convert an active set invariance problem to a QuadraticProgram.
+ * @brief Convert a ASIFProblem to a QuadraticProgram.
  *
  * The objective is to impose constraints on the current input \f$ u \f$ of a system \f$
  * \mathrm{d}^r x_t = f(x, u) \f$ s.t.
@@ -104,25 +114,26 @@ struct ASIFtoQPParams
  * \f$ applied to the system.
  *
  * @tparam K number of constraints (\p ASIFtoQPParams::tau controls time between constraints)
- * @tparam G state Lie group type \f$\mathbb{G}\f$
- * @tparam U input Lie group type \f$\mathbb{G}\f$
+ * @tparam G state LieGroup type \f$\mathbb{G}\f$
+ * @tparam U input Manifold type \f$\mathbb{G}\f$
  *
- * @param x0 current state of the system
- * @param u_des desired system input
+ * @param pbm problem definition
+ * @param prm algorithm parameters
  * @param f system model \f$f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
  * \mathbb{R}^{\dim \mathfrak g}\f$ s.t. \f$ \mathrm{d}^r x_t = f(t, x, u) \f$
  * @param h safe set \f$h : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{n_h}\f$ s.t. \f$
  * S(t) = \{ h(t, x) \geq 0 \} \f$ denotes the safe set at time \f$ t \f$
  * @param bu backup controller \f$ub : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U} \f$
- * @param prm asif parameters
  * @param u_lin input to linearize around (defaults to identity)
  *
- * @return QuadraticProgram modeling the ASIF filtering problem
- *
- * \note Differentiability requirements:
- *   * f differentiable w.r.t. x and u
+ * \note The algorithm relies on automatic differentiation. The following supplied functions must be
+ * differentiable (i.e. be templated on the scalar type if an automatic differentiation method is
+ * selected):
+ *   * \p f differentiable w.r.t. x and u
  *   * h differentiable w.r.t. t and x
  *   * bu differentiable w.r.t. x
+ *
+ * @return QuadraticProgram modeling the ASIF filtering problem
  *
  * \note For the common case of \f$ U = \mathbb{R}^n \f$ and control-affine dynamics on the form \f$
  * f(t, x, u) = f_x(t, x) + f_u(t, x) u \f$, the linearization point \f$u_{lin}\f$ can safely be
@@ -230,9 +241,9 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   ret.l(K * nh + nu_ineq)     = 0;
   ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity();
 
-  ret.P.template block<nu, nu>(0, 0) = pbm.u_des_weights.asDiagonal();
+  ret.P.template block<nu, nu>(0, 0) = pbm.W_u.asDiagonal();
   ret.P.template block<nu, 1>(0, nu).setZero();
-  ret.q.template head<nu>() = pbm.u_des_weights.cwiseProduct(rminus(u_lin, pbm.u_des));
+  ret.q.template head<nu>() = pbm.W_u.cwiseProduct(rminus(u_lin, pbm.u_des));
 
   ret.P.row(nu).setZero();
   ret.P(nu, nu) = prm.relax_cost;
@@ -241,8 +252,11 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   return ret;
 }
 
+/**
+ * @brief ASIFilter filter parameters
+ */
 template<Manifold U>
-struct ASIFParams
+struct ASIFilterParams
 {
   /// Horizon
   double T{1};
@@ -250,12 +264,19 @@ struct ASIFParams
   Eigen::Matrix<double, Dof<U>, 1> u_weight = Eigen::Matrix<double, Dof<U>, 1>::Ones();
   /// Input bounds
   OptimalControlBounds<U> u_lim{};
-  /// ASIF algorithm parameters
+  /// ASIFilter algorithm parameters
   ASIFtoQPParams asif;
   /// QP solver parameters
   QPSolverParams qp;
 };
 
+/**
+ * @brief ASI Filter
+ *
+ * Thin wrapper around asif_to_qp() and solve_qp() that keeps track of the most
+ * recent solution for warmstarting, and facilitates working with time-varying
+ * problems.
+ */
 template<std::size_t K,
   LieGroup G,
   Manifold U,
@@ -263,17 +284,42 @@ template<std::size_t K,
   typename SS,
   typename BU,
   smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT>
-class ASIF
+class ASIFilter
 {
 public:
-  ASIF(Dyn && f, SS && h, BU && bu, ASIFParams<U> && prm = ASIFParams<U>{})
+  /**
+   * @brief Construct an ASI filter
+   *
+   * @param f dynamics as function \f$ \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
+   * \mathbb{R}^{\dim \mathbb{G}} \f$
+   * @param h safety set definition as function \f$ \mathbb{G} \rightarrow \mathbb{R}^{n_h} \f$
+   * @param bu backup controller as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U} \f$
+   * @param prm filter parameters
+   *
+   * @note These functions are defined in global time. As opposed to MPC the time
+   * variable must be a \p double since differentiation of bu w.r.t. t is required.
+   */
+  ASIFilter(const Dyn & f,
+    const SS & h,
+    const BU & bu,
+    const ASIFilterParams<U> & prm = ASIFilterParams<U>{})
+      : ASIFilter(Dyn(f), SS(h), BU(bu), ASIFilterParams<U>(prm))
+  {}
+
+  /**
+   * @brief Construct an ASI filter (rvalue version).
+   */
+  ASIFilter(Dyn && f, SS && h, BU && bu, ASIFilterParams<U> && prm = ASIFilterParams<U>{})
       : f_(std::move(f)), h_(std::move(h)), bu_(std::move(bu)), prm_(prm)
   {}
 
-  ASIF(const Dyn & f, const SS & h, const BU & bu, const ASIFParams<U> & prm = ASIFParams<U>{})
-      : ASIF(Dyn(f), SS(h), BU(bu), ASIFParams<U>(prm))
-  {}
-
+  /**
+   * @brief Filter an input
+   *
+   * @param[in, out] u desired input in, filter output out
+   * @param[in] t current global time
+   * @param[in] g current state
+   */
   QPSolutionStatus operator()(U & u, double t, const G & g)
   {
     using std::chrono::duration, std::chrono::nanoseconds;
@@ -287,11 +333,11 @@ public:
                 T t_loc, const CastT<T, G> & vx) { return bu_(T(t) + t_loc, vx); };
 
     ASIFProblem<G, U> pbm{
-      .T             = prm_.T,
-      .x0            = g,
-      .u_des         = u,
-      .u_des_weights = prm_.u_weight,
-      .ulim          = ulim_,
+      .T     = prm_.T,
+      .x0    = g,
+      .u_des = u,
+      .W_u   = prm_.u_weight,
+      .ulim  = ulim_,
     };
 
     auto qp =
@@ -312,7 +358,7 @@ private:
 
   OptimalControlBounds<U> ulim_;
 
-  ASIFParams<U> prm_;
+  ASIFilterParams<U> prm_;
 
   std::optional<QPSolution<-1, -1, double>> warmstart_;
 };

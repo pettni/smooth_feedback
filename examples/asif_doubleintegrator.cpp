@@ -33,7 +33,7 @@ int main()
   Gd g(-5, 1);
   Ud udes = Ud(1), u;
 
-  smooth::feedback::ASIFParams<Ud> prm{
+  smooth::feedback::ASIFilterParams<Ud> prm{
     .T = 0.5,
     .u_lim =
       {
@@ -45,12 +45,11 @@ int main()
       {
         .alpha      = 1,
         .dt         = 0.01,
-        .relax_cost = 500,
+        .relax_cost = 100,
       },
     .qp =
       {
-        .scaling = true,
-        .polish  = true,
+        .polish = false,
       },
   };
 
@@ -67,7 +66,8 @@ int main()
   // backup controller
   auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
 
-  smooth::feedback::ASIF<nAsif, Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(f, h, bu, prm);
+  smooth::feedback::ASIFilter<nAsif, Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(
+    f, h, bu, prm);
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};

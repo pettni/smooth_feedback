@@ -110,7 +110,7 @@ int main()
     return {0.2 * g.template part<1>().x(), -0.5};
   };
 
-  smooth::feedback::ASIFParams<Ud> asif_prm{
+  smooth::feedback::ASIFilterParams<Ud> asif_prm{
     .T        = T / 2,
     .u_weight = Eigen::Vector2d{10, 1},
     .u_lim    = ulim,
@@ -126,7 +126,7 @@ int main()
       },
   };
 
-  smooth::feedback::ASIF<nAsif, Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
+  smooth::feedback::ASIFilter<nAsif, Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
     f_asif, h, bu, asif_prm);
 
   // prepare for integrating the closed-loop system
