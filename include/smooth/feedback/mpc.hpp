@@ -101,12 +101,15 @@ struct OptimalControlProblem
 template<LieGroup G, Manifold U>
 struct LinearizationInfo
 {
-  /// state linearization trajectory \f$ g_{lin}: \mathbb{R} \rightarrow G \f$
-  std::function<G(double)> g;
-  /// state linearization derivative \f$ \mathrm{d}^r (g_{lin})_t\f : \mathbb{R} \rightarrow
-  /// \mathbb{R}^{\dim \mathfrak g} \f$
-  std::function<Tangent<G>(double)> dg;
-  /// input linearization trajectory \f$ u_{lin}(t) :  \mathbb{R} \rightarrow / G \f$
+  /**
+   * @brief state linearization trajectory with first derivative
+   * \f$ g_{lin}: \mathbb{R} \rightarrow (G, T / G) \f$
+   */
+  std::function<std::pair<G, Tangent<G>>(double)> g;
+
+  /**
+   * @brief input linearization trajectory \f$ u_{lin}(t) :  \mathbb{R} \rightarrow / G \f$
+   */
   std::function<U(double)> u;
 
   /**
@@ -242,8 +245,6 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   const double dt = pbm.T / static_cast<double>(K);
 
-  // DYNAMICS CONSTRAINTS
-
   Arow = 0;
 
   for (auto k = 0u; k != K; ++k) {
@@ -255,8 +256,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
     // LINEARIZATION
 
-    const auto xl            = lin.g(t);
-    const auto dxl           = lin.dg(t);
+    const auto [xl, dxl]     = lin.g(t);
     const auto ul            = lin.u(t);
     const auto f_t           = [&f, &t]<typename T>(const CastT<T, G> & vx,
                        const CastT<T, U> & vu) -> Eigen::Matrix<T, Nx, 1> { return f(t, vx, vu); };
@@ -291,7 +291,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
         for (auto j = 0u; j != Nu; ++j) { ret.A.insert(Nx * k + i, Nu * k + j) = -Bk(i, j); }
       }
 
-      ret.u.template segment<Nx>(Nx * k) = Ak * rminus(pbm.x0, lin.g(t)) + Ek;
+      ret.u.template segment<Nx>(Nx * k) = Ak * rminus(pbm.x0, xl) + Ek;
       ret.l.template segment<Nx>(Nx * k) = ret.u.template segment<Nx>(Nx * k);
     } else {
       // x(k+1) - A x(k) - B u(k) = E
@@ -353,9 +353,9 @@ QuadraticProgramSparse<double> ocp_to_qp(
         }
       }
       ret.l.template segment<Nx>(Arow + (k - 1) * Nx) =
-        pbm.glim.value().l - pbm.glim.value().A * rminus(lin.g(k * dt), pbm.glim.value().c);
+        pbm.glim.value().l - pbm.glim.value().A * rminus(lin.g(k * dt).first, pbm.glim.value().c);
       ret.u.template segment<Nx>(Arow + (k - 1) * Nx) =
-        pbm.glim.value().u - pbm.glim.value().A * rminus(lin.g(k * dt), pbm.glim.value().c);
+        pbm.glim.value().u - pbm.glim.value().A * rminus(lin.g(k * dt).first, pbm.glim.value().c);
     }
     Arow += n_g_iq;
   }
@@ -387,7 +387,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
       }
     }
     ret.q.template segment<Nx>(NU + (k - 1) * Nx) =
-      pbm.Q * rminus(lin.g(k * dt), pbm.gdes(k * dt)) * dt;
+      pbm.Q * rminus(lin.g(k * dt).first, pbm.gdes(k * dt)) * dt;
   }
 
   // last state x(K) ~ x(T)
@@ -396,7 +396,8 @@ QuadraticProgramSparse<double> ocp_to_qp(
       ret.P.insert(NU + (K - 1) * Nx + i, NU + (K - 1) * Nx + j) = pbm.QT(i, j);
     }
   }
-  ret.q.template segment<Nx>(NU + (K - 1) * Nx) = pbm.QT * rminus(lin.g(pbm.T), pbm.gdes(pbm.T));
+  ret.q.template segment<Nx>(NU + (K - 1) * Nx) =
+    pbm.QT * rminus(lin.g(pbm.T).first, pbm.gdes(pbm.T));
 
   ret.A.makeCompressed();
   ret.P.makeCompressed();
@@ -411,17 +412,14 @@ struct MPCParams
 {
   /// MPC horizon (seconds)
   double T{1};
-
   /**
    * @brief Enable warmstarting.
    */
   bool warmstart{true};
-
   /**
    * @brief Relinearize the problem around solution after each solve.
    */
   bool relinearize_around_solution{false};
-
   /**
    * @brief Iterative relinearization.
    *
@@ -436,7 +434,6 @@ struct MPCParams
    * @note Requires LinearizationInfo::g_domain to be set to an appropriate value.
    */
   uint32_t iterative_relinearization{0};
-
   /**
    * @brief QP solvers parameters.
    */
@@ -537,7 +534,7 @@ public:
     ocp_.x0   = g;
     ocp_.T    = prm_.T;
     ocp_.gdes = [this, &t](double t_loc) -> G {
-      return x_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
+      return x_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc))).first;
     };
     ocp_.udes = [this, &t](double t_loc) -> U {
       return u_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
@@ -546,12 +543,8 @@ public:
     // linearize around desired trajectory
     if (relinearize_around_desired_) { lin_.u = ocp_.udes; }
     if (!prm_.relinearize_around_solution || relinearize_around_desired_) {
-      lin_.g  = ocp_.gdes;
-      lin_.dg = [this](double t) -> Tangent<G> {
-        // need numerical derivative here since gdes is not templated...
-        auto [gv, dg] = diff::dr<diff::Type::NUMERICAL>(
-          [this]<typename S>(const S & t_var) -> CastT<S, G> { return lin_.g(t_var); }, wrt(t));
-        return dg;
+      lin_.g = [this, &t](double t_loc) -> std::pair<G, Tangent<G>> {
+        return x_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
       };
     }
 
@@ -602,7 +595,7 @@ public:
       x_traj.value().get()[0] = ocp_.x0;
       for (auto i = 1u; i < K + 1; ++i) {
         x_traj.value().get()[i] =
-          lin_.g(i * dt) + sol.primal.template segment<Nx>(NU + (i - 1) * Nx);
+          lin_.g(i * dt).first + sol.primal.template segment<Nx>(NU + (i - 1) * Nx);
       }
     }
 
@@ -647,21 +640,26 @@ public:
   void set_udes(std::function<U(T)> && u_des) { u_des_ = std::move(u_des); };
 
   /**
-   * @brief Set the desired state trajectory (lvalue version).
+   * @brief Set the desired state trajectory by providing value and derivative (lvalue version).
    *
    * @note If MPCParams::relinearize_on_new_desired is set this triggers a relinearization around
    * the desired trajectories at the next call to operator()().
    *
-   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
+   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow (G,
+   * \mathbb{R}^{\dim G} \f$
    */
-  void set_xdes(const std::function<G(T)> & x_des) { set_xdes(std::function<G(T)>(x_des)); };
+  void set_xdes(const std::function<std::pair<G, Tangent<G>>(T)> & x_des)
+  {
+    set_xdes(std::function<std::pair<G, Tangent<G>>(T)>(x_des));
+  };
 
   /**
-   * @brief Set the desired state trajectory (rvalue version).
+   * @brief Set the desired state trajectory by providing value and derivative (rvalue version).
    *
-   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
+   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow (G,
+   * \mathbb{R}^{\dim G} \f$ std::pair<G, Tangent<G>> \f$
    */
-  void set_xdes(std::function<G(T)> && x_des)
+  void set_xdes(std::function<std::pair<G, Tangent<G>>(T)> && x_des)
   {
     x_des_                      = std::move(x_des);
     relinearize_around_desired_ = true;
@@ -723,15 +721,14 @@ public:
 
     for (auto k = 1u; k != K + 1; ++k) {
       tt[k] = dt * k;
-      gg[k] = lin_.g(k * dt) + sol.primal.template segment<Nx>(NU + (k - 1) * Nx);
+      gg[k] = lin_.g(k * dt).first + sol.primal.template segment<Nx>(NU + (k - 1) * Nx);
     }
 
     auto g_spline = smooth::fit_cubic_bezier(tt, gg);
-    lin_.g        = [g_spline = g_spline](double t) -> G { return g_spline(t); };
-    lin_.dg       = [g_spline = std::move(g_spline)](double t) -> Tangent<G> {
-      Tangent<G> ret;
-      g_spline(t, ret);
-      return ret;
+    lin_.g        = [g_spline = std::move(g_spline)](double t) -> std::pair<G, Tangent<G>> {
+      Tangent<G> dg;
+      auto g = g_spline(t, dg);
+      return std::make_pair(g, dg);
     };
   }
 
@@ -746,7 +743,7 @@ private:
 
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
 
-  std::function<G(T)> x_des_;
+  std::function<std::pair<G, Tangent<G>>(T)> x_des_;
   std::function<U(T)> u_des_;
 };
 

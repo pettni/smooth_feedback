@@ -117,7 +117,12 @@ void mpc_snippet()
   smooth::feedback::MPC<50, Time, X<double>, U<double>, decltype(f)> mpc(f, prm);
 
   // set desired state and input trajectories for MPC to track
-  mpc.set_xdes([](Time t) -> X<double> { return X<double>::Identity(); });
+  mpc.set_xdes([](Time t) -> std::pair<X<double>, smooth::Tangent<X<double>>> {
+    return {
+      X<double>::Identity(),
+      smooth::Tangent<X<double>>::Zero(),
+    };
+  });
   mpc.set_udes([](Time T) -> U<double> { return U<double>::Zero(); });
 
   // calculate control input for current time t and current state x

@@ -40,9 +40,6 @@ TEST(Mpc, OcpToQP)
 
   static constexpr int K = 3;
 
-  Eigen::Matrix2d A = Eigen::Matrix2d::Random();
-  Eigen::Matrix2d B = Eigen::Matrix2d::Random();
-
   Eigen::Vector2d x_des = Eigen::Vector2d::Random();
   Eigen::Vector2d u_des = Eigen::Vector2d::Random();
 
@@ -69,11 +66,17 @@ TEST(Mpc, OcpToQP)
   };
 
   smooth::feedback::LinearizationInfo<G, U> lin{
-    .g  = [](double) -> G { return G::Zero(); },
-    .dg = [](double) -> G { return G::Zero(); },
-    .u  = [](double) -> G { return U::Zero(); },
+    .g = [](double) -> std::pair<G, smooth::Tangent<G>> {
+      return {
+        G::Zero(),
+        smooth::Tangent<G>::Zero(),
+      };
+    },
+    .u = [](double) -> U { return U::Zero(); },
   };
 
+  Eigen::Matrix2d A = Eigen::Matrix2d::Random();
+  Eigen::Matrix2d B = Eigen::Matrix2d::Random();
   auto dyn = [&]<typename T>(double, const Eigen::Vector2<T> & x, const Eigen::Vector2<T> & u) {
     return A * x + B * u;
   };
@@ -161,9 +164,12 @@ TEST(Mpc, BasicEigenInput)
       .iterative_relinearization = 5,
     });
 
-  mpc.set_xdes([](Time t) -> smooth::SE2d {
+  mpc.set_xdes([](Time t) -> std::pair<smooth::SE2d, Eigen::Vector3d> {
     double t_dbl = std::chrono::duration_cast<Time>(t).count();
-    return smooth::SE2<double>::exp(t_dbl * Eigen::Vector3d(0.2, 0.1, -0.1));
+    return {
+      smooth::SE2<double>::exp(t_dbl * Eigen::Vector3d(0.2, 0.1, -0.1)),
+      Eigen::Vector3d(0.2, 0.1, -0.1),
+    };
   });
   mpc.set_udes([](Time) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
 
@@ -171,23 +177,3 @@ TEST(Mpc, BasicEigenInput)
   ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random()));
 }
 
-TEST(Mpc, BasicEigenInputClock)
-{
-  using Time = std::chrono::steady_clock::time_point;
-
-  auto f = []<typename T>(Time, const smooth::SE2<T> &, const Eigen::Vector2<T> & u) {
-    return Eigen::Vector3<T>(u(0), T(0), u(1));
-  };
-
-  smooth::feedback::MPC<3, Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(
-    std::move(f), smooth::feedback::MPCParams{});
-
-  mpc.set_xdes(
-    [](Time) -> smooth::SE2d { return smooth::SE2<double>::exp(Eigen::Vector3d(0.2, 0.1, -0.1)); });
-  mpc.set_udes([](Time) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
-
-  std::chrono::steady_clock clock;
-
-  Eigen::Vector2d u;
-  ASSERT_NO_THROW(mpc(u, clock.now(), smooth::SE2d::Random()));
-}

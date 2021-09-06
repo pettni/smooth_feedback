@@ -90,9 +90,14 @@ int main()
   mpc.set_final_state_cost(0.1 * Q);
 
   // set desired trajectory
-  auto xdes = [&vdes](Time t) -> Gd {
-    return Gd(
-      smooth::SE2d(smooth::SO2d(M_PI_2), Eigen::Vector2d(2.5, 0)) + (t.count() * vdes), vdes);
+  auto xdes = [&vdes](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
+    Eigen::Matrix<double, 6, 1> v;
+    v.head(3) = vdes;
+    v.tail(3).setZero();
+    return {
+      Gd(smooth::SE2d(smooth::SO2d(M_PI_2), Eigen::Vector2d(2.5, 0)) + (t.count() * vdes), vdes),
+      v,
+    };
   };
   mpc.set_xdes(xdes);
   mpc.set_udes([](Time t) -> Ud { return Ud::Zero(); });
@@ -170,9 +175,10 @@ int main()
   matplot::title("Path");
 
   matplot::plot(xvec, yvec)->line_width(2);
-  matplot::plot(
-    matplot::transform(tvec, [&](auto t) { return xdes(Time(t)).template part<0>().r2().x(); }),
-    matplot::transform(tvec, [&](auto t) { return xdes(Time(t)).template part<0>().r2().y(); }),
+  matplot::plot(matplot::transform(
+                  tvec, [&](auto t) { return xdes(Time(t)).first.template part<0>().r2().x(); }),
+    matplot::transform(
+      tvec, [&](auto t) { return xdes(Time(t)).first.template part<0>().r2().y(); }),
     "k--")
     ->line_width(2);
   matplot::legend({"actual", "desired"});
