@@ -51,21 +51,22 @@ TEST(Asif, Basic)
     return Eigen::Matrix<T, 2, 1>(-0.1, 1);
   };
 
-  smooth::feedback::ASIFProblem<smooth::SE2d, Eigen::Vector2d> pbm{.x0 = smooth::SE2d::Random(),
-    .u_des                                                             = Eigen::Vector2d::Zero(),
-    .ulim                                                              = {
-      .A = Eigen::Matrix<double, 3, 2>{{1, 0}, {0, 1}, {1, 1}},
-      .l = Eigen::Vector3d{-1, -1, -1},
-      .u = Eigen::Vector3d{1, 1, 1},
-    }};
+  smooth::feedback::ASIFProblem<smooth::SE2d, Eigen::Vector2d> pbm{
+    .x0    = smooth::SE2d::Random(),
+    .u_des = Eigen::Vector2d{0.5, 0.5},
+    .ulim =
+      {
+        .A = Eigen::Matrix<double, 2, 2>{{1, 0}, {0, 1}},
+        .c = U1<double>::Zero(),
+        .l = Eigen::Vector2d{-1, -1},
+        .u = Eigen::Vector2d{1, 1},
+      },
+  };
   smooth::feedback::ASIFtoQPParams prm{};
 
   int niq = pbm.ulim.A.rows();
 
-  Eigen::Vector2d ulin(0.5, 0.5);
-
-  auto qp =
-    smooth::feedback::asif_to_qp<K, smooth::SE2d, Eigen::Vector2d>(pbm, prm, f, h, bu, ulin);
+  auto qp = smooth::feedback::asif_to_qp<K, G<double>, U1<double>>(pbm, prm, f, h, bu);
 
   ASSERT_EQ(qp.P.rows(), Nu + 1);
   ASSERT_EQ(qp.P.cols(), Nu + 1);
@@ -87,8 +88,8 @@ TEST(Asif, Basic)
 
   ASSERT_EQ(qp.u.head(Nh * K).minCoeff(), std::numeric_limits<double>::infinity());
 
-  ASSERT_TRUE(qp.l.segment(Nh * K, niq).isApprox(pbm.ulim.l - pbm.ulim.A * ulin));
-  ASSERT_TRUE(qp.u.segment(Nh * K, niq).isApprox(pbm.ulim.u - pbm.ulim.A * ulin));
+  ASSERT_TRUE(qp.l.segment(Nh * K, niq).isApprox(pbm.ulim.l - pbm.ulim.A * pbm.u_des));
+  ASSERT_TRUE(qp.u.segment(Nh * K, niq).isApprox(pbm.ulim.u - pbm.ulim.A * pbm.u_des));
 
   ASSERT_EQ(qp.l(Nh * K + niq), 0);
   ASSERT_EQ(qp.u(Nh * K + niq), std::numeric_limits<double>::infinity());

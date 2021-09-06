@@ -43,18 +43,16 @@ int main()
 
   // create MPC object and set input bounds, and desired trajectories
   smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
-  mpc.set_ulim(smooth::feedback::OptimalControlBounds<Ud>{
+  mpc.set_ulim(smooth::feedback::ManifoldBounds<Ud>{
+    .c = Ud::Zero(),
     .l = Eigen::Matrix<double, 1, 1>(-0.5),
     .u = Eigen::Matrix<double, 1, 1>(0.5),
   });
   mpc.set_input_cost(Eigen::Matrix<double, 1, 1>::Constant(0.1));
   mpc.set_running_state_cost(Eigen::Matrix2d::Identity());
   mpc.set_final_state_cost(0.1 * Eigen::Matrix2d::Identity());
-  mpc.set_xudes(
-    [](Time t) -> Gd {
-      return {-0.5 * sin(0.3 * t.count()), 0};
-    },
-    [](Time) -> Ud { return Ud::Zero(); });
+  mpc.set_xdes([](Time t) -> Gd { return {-0.5 * sin(0.3 * t.count()), 0}; });
+  mpc.set_udes([](Time) -> Ud { return Ud::Zero(); });
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};

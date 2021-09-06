@@ -30,14 +30,6 @@
  * @file
  * @brief Model-Predictive Control (MPC) on Lie groups.
  */
-/* ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
-ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l;  //  - pbm.ulim.A * (u_lin - Identity<U>());
-ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u;  //  - pbm.ulim.A * (u_lin - Identity<U>());
-
-// upper and lower bounds on delta
-ret.A(K * nh + nu_ineq, nu) = 1;
-ret.l(K * nh + nu_ineq)     = 0;
-ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity(); */
 
 #include <Eigen/Core>
 
@@ -46,35 +38,10 @@ ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity(); */
 #include <smooth/lie_group.hpp>
 #include <smooth/spline/bezier.hpp>
 
+#include "common.hpp"
 #include "qp.hpp"
 
 namespace smooth::feedback {
-
-/**
- * @brief Bounds for OptimalControlProblem.
- *
- * Bounds are of the form
- *
- * \f[
- *   l \leq  A ( m \ominus e_M ) \leq u.
- * \f]
- */
-template<Manifold M>
-struct OptimalControlBounds
-{
-  /// Dimensionality
-  static constexpr int N = Dof<M>;
-
-  /// Dimensionality (only dynamic for now)
-  static constexpr int NumCon = -1;
-
-  /// Transformation matrix
-  Eigen::Matrix<double, NumCon, N> A = Eigen::Matrix<double, NumCon, N>::Identity(N, N);
-  /// Lower bound
-  Eigen::Matrix<double, NumCon, 1> l = Eigen::Matrix<double, NumCon, 1>::Constant(N, -1);
-  /// Upper bound
-  Eigen::Matrix<double, NumCon, 1> u = Eigen::Matrix<double, NumCon, 1>::Constant(N, 1);
-};
 
 /**
  * @brief Optimal control problem defintiion.
@@ -87,12 +54,10 @@ struct OptimalControlBounds
  *   \begin{cases}
  *    \min_{u(\cdot)} & \int_{0}^T \left( (g(t) \ominus g_{des}(t))^T Q (g(t) \ominus g_{des}(t))^T
  *     + (u(t) \ominus u_{des}(t))^T R (u(t) \ominus u_{des}(t))^T \right)
- *     + (g(T) \ominus g_{des}(T))^T Q_T (g(T) \ominus g_{des}(T)) \\
- *     \text{s.t.}    & g(0) = x_0,                  \\
- *                    & g(t) \ominus g_{min} \geq 0, \\
- *                    & g_{max} \ominus g(t) \geq 0, \\
- *                    & u(t) \ominus u_{min} \geq 0, \\
- *                    & u_{max} \ominus u(t) \geq 0,
+ *     + (g(T) \ominus g_{des}(T))^T Q_T (g(T) \ominus g_{des}(T))               \\
+ *    \text{s.t.}    & g(0) = x_0,                                               \\
+ *                    & l_G \leq A_G (g(t) \ominus c_G) \leq u_G,                \\
+ *                    & l_U \leq A_U (u(t) \ominus c_U) \leq u_U,
  *   \end{cases}
  * \f]
  * where the cost matrices must be positive semi-definite.
@@ -106,21 +71,19 @@ struct OptimalControlProblem
   static constexpr Eigen::Index Nu = Dof<U>;
 
   /// Initial state
-  G x0 = Identity<G>();
-
+  G x0;
   /// Time horizon
   double T{1};
 
   /// Desired state trajectory
-  std::function<G(double)> gdes = [](double) -> G { return Identity<G>(); };
+  std::function<G(double)> gdes;
   /// Desired input trajectory
-  std::function<U(double)> udes = [](double) -> U { return Identity<U>(); };
+  std::function<U(double)> udes;
 
   /// Input bounds
-  std::optional<OptimalControlBounds<U>> ulim;
-
+  std::optional<ManifoldBounds<U>> ulim;
   /// State bounds
-  std::optional<OptimalControlBounds<G>> glim;
+  std::optional<ManifoldBounds<G>> glim;
 
   /// Running state cost
   Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
@@ -138,15 +101,13 @@ struct OptimalControlProblem
 template<LieGroup G, Manifold U>
 struct LinearizationInfo
 {
-  /// state trajectory \f$g_{lin}(t)\f$ to linearize around as a function \f$ \mathbb{R} \rightarrow
-  /// G \f$
-  std::function<G(double)> g = [](double) -> G { return Identity<G>(); };
-  /// state trajectory derivative \f$\mathrm{d}^r (g_{lin})_t\f$ to linearize around as a function
-  /// \f$ \mathbb{R} \rightarrow \mathbb{R}^{\dim \mathfrak g} \f$
-  std::function<Tangent<G>(double)> dg = [](double) -> Tangent<G> { return Tangent<G>::Zero(); };
-  /// input trajectory \f$u_{lin}(t)\f$ to linearize around as a function \f$ \mathbb{R} \rightarrow
-  /// G \f$
-  std::function<U(double)> u = [](double) -> U { return Identity<U>(); };
+  /// state linearization trajectory \f$ g_{lin}: \mathbb{R} \rightarrow G \f$
+  std::function<G(double)> g;
+  /// state linearization derivative \f$ \mathrm{d}^r (g_{lin})_t\f : \mathbb{R} \rightarrow
+  /// \mathbb{R}^{\dim \mathfrak g} \f$
+  std::function<Tangent<G>(double)> dg;
+  /// input linearization trajectory \f$ u_{lin}(t) :  \mathbb{R} \rightarrow / G \f$
+  std::function<U(double)> u;
 
   /**
    * @brief Domain of validity of state linearization
@@ -205,7 +166,7 @@ constexpr std::array<int, K *(Nu + Nx)> mpc_nnz_pattern_P()
  * @tparam G problem state group type \f$ \mathbb{G} \f$
  * @tparam U problem input group type \f$ \mathbb{U} \f$
  * @tparam Dyn dynamics functor type
- * @tparam DiffType differentiation method to utilize
+ * @tparam DT differentiation method to utilize
  *
  * @param pbm optimal control problem
  * @param f dynamics \f$ f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
@@ -219,21 +180,16 @@ constexpr std::array<int, K *(Nu + Nx)> mpc_nnz_pattern_P()
  * solution to the OptimalControlProblem is \f$ u^*(t) = u_{lin}(t) \oplus \mu^*(t) \f$ and the
  * optimal trajectory is \f$ g^*(t) = g_{lin}(t) \oplus x^*(t) \f$.
  *
- * @note Constraints are added as \f$ A x \leq b - A \log g_{lin} \f$ and similarly for the input.
+ * @note Constraints are added as \f$ A x \leq b - A (g_{lin} - c) \f$ and similarly for the input.
  * Beware of using constraints on non-Euclidean spaces.
  *
  * @note \p f must be differentiable w.r.t. \f$ g \f$ and \f$ u \f$  with the default \p
  * smooth::diff method (check \p smooth::diff::DefaultType). If using an automatic differentiation
  * method this means that it must be templated on the scalar type.
  */
-template<std::size_t K,
-  LieGroup G,
-  Manifold U,
-  typename Dyn,
-  smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT>
-QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm,
-  const Dyn & f,
-  const LinearizationInfo<G, U> & lin = LinearizationInfo<G, U>{})
+template<std::size_t K, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+QuadraticProgramSparse<double> ocp_to_qp(
+  const OptimalControlProblem<G, U> & pbm, const Dyn & f, const LinearizationInfo<G, U> & lin)
 {
   using std::placeholders::_1;
 
@@ -299,17 +255,15 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
 
     // LINEARIZATION
 
-    const auto xl  = lin.g(t);
-    const auto dxl = lin.dg(t);
-    const auto ul  = lin.u(t);
-
-    const auto [flin, df_xu] = diff::dr<DiffType>(
-      [&f, &t]<typename T>(const CastT<T, G> & vx,
-        const CastT<T, U> & vu) -> Eigen::Matrix<T, Nx, 1> { return f(t, vx, vu); },
-      wrt(xl, ul));
+    const auto xl            = lin.g(t);
+    const auto dxl           = lin.dg(t);
+    const auto ul            = lin.u(t);
+    const auto f_t           = [&f, &t]<typename T>(const CastT<T, G> & vx,
+                       const CastT<T, U> & vu) -> Eigen::Matrix<T, Nx, 1> { return f(t, vx, vu); };
+    const auto [flin, df_xu] = diff::dr<DT>(f_t, wrt(xl, ul));
 
     // cltv system \dot x = At x(t) + Bt u(t) + Et
-    const AT At = (-0.5 * ad<G>(flin) - 0.5 * ad<G>(dxl) + df_xu.template leftCols<Nx>());
+    const AT At = -0.5 * ad<G>(flin) - 0.5 * ad<G>(dxl) + df_xu.template leftCols<Nx>();
     const BT Bt = df_xu.template rightCols<Nu>();
     const ET Et = flin - dxl;
 
@@ -339,7 +293,6 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
 
       ret.u.template segment<Nx>(Nx * k) = Ak * rminus(pbm.x0, lin.g(t)) + Ek;
       ret.l.template segment<Nx>(Nx * k) = ret.u.template segment<Nx>(Nx * k);
-
     } else {
       // x(k+1) - A x(k) - B u(k) = E
 
@@ -375,9 +328,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
         }
       }
       ret.l.template segment<Nu>(Arow + k * Nu) =
-        pbm.ulim.value().l - pbm.ulim.value().A * rminus(lin.u(k * dt), Identity<U>());
+        pbm.ulim.value().l - pbm.ulim.value().A * rminus(lin.u(k * dt), pbm.ulim.value().c);
       ret.u.template segment<Nu>(Arow + k * Nu) =
-        pbm.ulim.value().u - pbm.ulim.value().A * rminus(lin.u(k * dt), Identity<U>());
+        pbm.ulim.value().u - pbm.ulim.value().A * rminus(lin.u(k * dt), pbm.ulim.value().c);
     }
     Arow += n_u_iq;
   }
@@ -400,9 +353,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
         }
       }
       ret.l.template segment<Nx>(Arow + (k - 1) * Nx) =
-        pbm.glim.value().l - pbm.glim.value().A * rminus(lin.g(k * dt), Identity<G>());
+        pbm.glim.value().l - pbm.glim.value().A * rminus(lin.g(k * dt), pbm.glim.value().c);
       ret.u.template segment<Nx>(Arow + (k - 1) * Nx) =
-        pbm.glim.value().u - pbm.glim.value().A * rminus(lin.g(k * dt), Identity<G>());
+        pbm.glim.value().u - pbm.glim.value().A * rminus(lin.g(k * dt), pbm.glim.value().c);
     }
     Arow += n_g_iq;
   }
@@ -461,20 +414,13 @@ struct MPCParams
 
   /**
    * @brief Enable warmstarting.
-   *
-   * @warning MPCParams::warmstart should not be enabled together with frequent relinearization.
    */
   bool warmstart{true};
 
   /**
-   * @brief Relinearize the problem around state solution after each solve.
+   * @brief Relinearize the problem around solution after each solve.
    */
-  bool relinearize_state_around_sol{false};
-
-  /**
-   * @brief Relinearize the problem around input solution after each solve.
-   */
-  bool relinearize_input_around_sol{false};
+  bool relinearize_around_solution{false};
 
   /**
    * @brief Iterative relinearization.
@@ -482,13 +428,12 @@ struct MPCParams
    * If this is set to a positive number an iterative procedure is used:
    *
    *  1. Solve problem at current linearization
-   *  2. If solution does not touch linearization bounds g_bound / u_bound, stop
+   *  2. If solution does not touch linearization bounds g_bound, stop
    *  3. Else relinearize around solution and go to 1
    *
    * This process is repeated at most MPCParams::iterative_relinearization times.
    *
-   * @note Requires LinearizationInfo::g_domain and LinearizationInfo::u_domain to be
-   * set to appropriate values.
+   * @note Requires LinearizationInfo::g_domain to be set to an appropriate value.
    */
   uint32_t iterative_relinearization{0};
 
@@ -506,7 +451,7 @@ struct MPCParams
  * @tparam G state space LieGroup type
  * @tparam U input space Manifold type
  * @tparam Dyn callable type that represents dynamics
- * @tparam DiffType differentiation method
+ * @tparam DT differentiation method
  *
  * This MPC class keeps and repeatedly solves an internal OptimalControlProblem that is updated to
  * track a time-dependent trajectory defined through set_xudes().
@@ -521,7 +466,7 @@ template<std::size_t K,
   LieGroup G,
   Manifold U,
   typename Dyn,
-  smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT>
+  diff::Type DT = diff::Type::DEFAULT>
 class MPC
 {
 public:
@@ -556,6 +501,8 @@ public:
 
   /**
    * @brief Solve MPC problem and return input.
+   *
+   * @warn set_xdes() and set_udes() must be called before calling this function for the first time.
    *
    * @param[out] u resulting input
    * @param[in] t current time
@@ -597,8 +544,8 @@ public:
     };
 
     // linearize around desired trajectory
-    if (!prm_.relinearize_input_around_sol || relinearize_around_desired_) { lin_.u = ocp_.udes; }
-    if (!prm_.relinearize_state_around_sol || relinearize_around_desired_) {
+    if (relinearize_around_desired_) { lin_.u = ocp_.udes; }
+    if (!prm_.relinearize_around_solution || relinearize_around_desired_) {
       lin_.g  = ocp_.gdes;
       lin_.dg = [this](double t) -> Tangent<G> {
         // need numerical derivative here since gdes is not templated...
@@ -618,24 +565,21 @@ public:
       return dyn_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
     };
 
-    const auto qp = ocp_to_qp<K, G, U, decltype(dyn), DiffType>(ocp_, dyn, lin_);
+    const auto qp = ocp_to_qp<K, G, U, decltype(dyn), DT>(ocp_, dyn, lin_);
     auto sol      = solve_qp(qp, prm_.qp, warmstart_);
 
     for (auto i = 0u; i < prm_.iterative_relinearization; ++i) {
       // check if solution touches linearization domain
       bool touches = false;
-      for (int k = 0; !touches && k != K; ++k) {
+      for (auto k = 0u; !touches && k < K; ++k) {
         // clang-format off
-        if (((1. - 1e-6) * lin_.u_domain - sol.primal.template segment<Nu>(     k * Nu).cwiseAbs()).minCoeff() < 0) { touches = true; }
         if (((1. - 1e-6) * lin_.g_domain - sol.primal.template segment<Nx>(NU + k * Nx).cwiseAbs()).minCoeff() < 0) { touches = true; }
         // clang-format on
       }
       if (touches) {
         // relinearize around solution and solve again
-        relinearize_state_around_sol(sol);
-        relinearize_input_around_sol(sol);
-
-        const auto qp = ocp_to_qp<K, G, U, decltype(dyn), DiffType>(ocp_, dyn, lin_);
+        relinearize_around_sol(sol);
+        const auto qp = ocp_to_qp<K, G, U, decltype(dyn), DT>(ocp_, dyn, lin_);
         sol           = solve_qp(qp, prm_.qp, warmstart_);
       } else {
         // solution seems fine
@@ -653,7 +597,6 @@ public:
         u_traj.value().get()[i] = lin_.u(i * dt) + sol.primal.template segment<Nu>(i * Nu);
       }
     }
-
     if (x_traj.has_value()) {
       x_traj.value().get().resize(K + 1);
       x_traj.value().get()[0] = ocp_.x0;
@@ -665,15 +608,15 @@ public:
 
     // update linearization for next iteration
     if (sol.code == QPSolutionStatus::Optimal) {
-      if (prm_.relinearize_input_around_sol) relinearize_input_around_sol(sol);
-      if (prm_.relinearize_state_around_sol) relinearize_state_around_sol(sol);
+      if (prm_.relinearize_around_solution) relinearize_around_sol(sol);
     }
 
     // save solution for warmstart
-    if (prm_.warmstart
-        && (sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime
-            || sol.code == QPSolutionStatus::MaxIterations)) {
-      warmstart_ = sol;  // store successful solution for later warmstart
+    if (prm_.warmstart) {
+      if (sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime
+          || sol.code == QPSolutionStatus::MaxIterations) {
+        warmstart_ = sol;
+      }
     }
 
     return sol.code;
@@ -682,49 +625,47 @@ public:
   /**
    * @brief Set state bounds.
    */
-  void set_glim(const OptimalControlBounds<G> & lim) { ocp_.glim = lim; }
+  void set_glim(const ManifoldBounds<G> & lim) { ocp_.glim = lim; }
 
   /**
    * @brief Set input bounds.
    */
-  void set_ulim(const OptimalControlBounds<U> & lim) { ocp_.ulim = lim; }
+  void set_ulim(const ManifoldBounds<U> & lim) { ocp_.ulim = lim; }
 
   /**
-   * @brief Set the desired state and input trajectories (lvalue version).
+   * @brief Set the desired input trajectory (lvalue version).
+   *
+   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
+   */
+  void set_udes(const std::function<U(T)> & u_des) { set_xudes(std::function<U(T)>(u_des)); };
+
+  /**
+   * @brief Set the desired input trajectory (rvalue version).
+   *
+   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
+   */
+  void set_udes(std::function<U(T)> && u_des) { u_des_ = std::move(u_des); };
+
+  /**
+   * @brief Set the desired state trajectory (lvalue version).
    *
    * @note If MPCParams::relinearize_on_new_desired is set this triggers a relinearization around
    * the desired trajectories at the next call to operator()().
    *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
-   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
    */
-  void set_xudes(const std::function<G(T)> & x_des, const std::function<U(T)> & u_des)
-  {
-    set_xudes(std::function<G(T)>(x_des), std::function<U(T)>(u_des));
-  };
+  void set_xdes(const std::function<G(T)> & x_des) { set_xdes(std::function<G(T)>(x_des)); };
 
   /**
-   * @brief Set the desired state and input trajectories (rvalue version).
+   * @brief Set the desired state trajectory (rvalue version).
    *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow G \f$
-   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
    */
-  void set_xudes(std::function<G(T)> && x_des, std::function<U(T)> && u_des)
+  void set_xdes(std::function<G(T)> && x_des)
   {
     x_des_                      = std::move(x_des);
-    u_des_                      = std::move(u_des);
     relinearize_around_desired_ = true;
   };
-
-  /**
-   * @brief Access the linearization.
-   */
-  LinearizationInfo<G, U> & linearization() { return lin_; }
-
-  /**
-   * @brief Const access the linearization.
-   */
-  const LinearizationInfo<G, U> & linearization() const { return lin_; }
 
   /**
    * @brief Reset initial guess for next iteration to zero.
@@ -767,7 +708,7 @@ public:
   /**
    * @brief Relinearize state around a solution.
    */
-  void relinearize_state_around_sol(const QPSolution<-1, -1, double> & sol)
+  void relinearize_around_sol(const QPSolution<-1, -1, double> & sol)
   {
     static constexpr int Nx = Dof<G>;
     static constexpr int Nu = Dof<U>;
@@ -794,39 +735,19 @@ public:
     };
   }
 
-  /**
-   * @brief Relinearize input around a solution.
-   */
-  void relinearize_input_around_sol(const QPSolution<-1, -1, double> & sol)
-  {
-    static constexpr int Nu = Dof<U>;
-    const double dt         = ocp_.T / static_cast<double>(K);
-
-    std::vector<double> tt(K);
-    std::vector<U> uu(K);
-
-    for (auto k = 0u; k != K; ++k) {
-      tt[k] = k * dt;
-      uu[k] = lin_.u(k * dt) + sol.primal.template segment<Nu>(k * Nu);
-    }
-
-    auto u_spline = smooth::fit_linear_bezier(tt, uu);
-    lin_.u        = [u_spline = std::move(u_spline)](double t) -> U { return u_spline(t); };
-  }
-
 private:
   MPCParams prm_{};
   Dyn dyn_{};
 
-  OptimalControlProblem<G, U> ocp_{};
+  OptimalControlProblem<G, U> ocp_;
 
   bool relinearize_around_desired_{false};
   LinearizationInfo<G, U> lin_{};
 
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
 
-  std::function<G(T)> x_des_ = [](T) -> G { return Identity<G>(); };
-  std::function<U(T)> u_des_ = [](T) -> U { return Identity<U>(); };
+  std::function<G(T)> x_des_;
+  std::function<U(T)> u_des_;
 };
 
 }  // namespace smooth::feedback

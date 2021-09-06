@@ -38,7 +38,7 @@
 #include <smooth/diff.hpp>
 #include <smooth/lie_group.hpp>
 
-#include "mpc.hpp"
+#include "common.hpp"
 #include "qp.hpp"
 
 namespace smooth::feedback {
@@ -61,18 +61,14 @@ struct ASIFProblem
 {
   /// time horizon
   double T{1};
-
   /// initial state
-  G x0 = Identity<G>();
-
+  G x0;
   /// desired input
-  U u_des = Identity<U>();
-
+  U u_des;
   /// weights on desired input
   Eigen::Matrix<double, Dof<U>, 1> W_u = Eigen::Matrix<double, Dof<U>, 1>::Ones();
-
   /// input bounds
-  OptimalControlBounds<U> ulim{};
+  ManifoldBounds<U> ulim{};
 };
 
 /**
@@ -82,10 +78,8 @@ struct ASIFtoQPParams
 {
   /// barrier function time constant s.t. \f$ \dot h - \alpha h \geq 0 \f$.
   double alpha{1};
-
   /// maximal integration time step
   double dt{0.1};
-
   /// relaxation cost
   double relax_cost{100};
 };
@@ -107,10 +101,10 @@ struct ASIFtoQPParams
  * \f[
  *  \begin{cases}
  *   \min_{\mu}  & \left\| u - u_{des} \right\|^2 \\
- *   \text{s.t.} & \text{constraint above holds for } u = u_{lin} + \mu
+ *   \text{s.t.} & \text{constraint above holds for } u = u_{des} + \mu
  *   \end{cases}
  * \f]
- * A solution \f$ \mu^* \f$ to the QuadraticProgram corresponds to an input \f$ u_{lin} \oplus \mu^*
+ * A solution \f$ \mu^* \f$ to the QuadraticProgram corresponds to an input \f$ u_{des} \oplus \mu^*
  * \f$ applied to the system.
  *
  * @tparam K number of constraints (\p ASIFtoQPParams::tau controls time between constraints)
@@ -124,7 +118,6 @@ struct ASIFtoQPParams
  * @param h safe set \f$h : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{n_h}\f$ s.t. \f$
  * S(t) = \{ h(t, x) \geq 0 \} \f$ denotes the safe set at time \f$ t \f$
  * @param bu backup controller \f$ub : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U} \f$
- * @param u_lin input to linearize around (defaults to identity)
  *
  * \note The algorithm relies on automatic differentiation. The following supplied functions must be
  * differentiable (i.e. be templated on the scalar type if an automatic differentiation method is
@@ -134,10 +127,6 @@ struct ASIFtoQPParams
  *   * bu differentiable w.r.t. x
  *
  * @return QuadraticProgram modeling the ASIF filtering problem
- *
- * \note For the common case of \f$ U = \mathbb{R}^n \f$ and control-affine dynamics on the form \f$
- * f(t, x, u) = f_x(t, x) + f_u(t, x) u \f$, the linearization point \f$u_{lin}\f$ can safely be
- * left to the default value.
  */
 template<std::size_t K,
   LieGroup G,
@@ -145,13 +134,9 @@ template<std::size_t K,
   typename Dyn,
   typename SafeSet,
   typename BackupU,
-  smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT>
-auto asif_to_qp(const ASIFProblem<G, U> & pbm,
-  const ASIFtoQPParams & prm,
-  Dyn && f,
-  SafeSet && h,
-  BackupU && bu,
-  const U & u_lin = Identity<U>())
+  diff::Type DT = diff::Type::DEFAULT>
+auto asif_to_qp(
+  const ASIFProblem<G, U> & pbm, const ASIFtoQPParams & prm, Dyn && f, SafeSet && h, BackupU && bu)
 {
   using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
   using std::placeholders::_1;
@@ -167,10 +152,9 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   euler<G, double, Tangent<G>, double, vector_space_algebra> state_stepper{};
   euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
 
-  const int nu_ineq = pbm.ulim.A.rows();
-
-  const int M            = K * nh + nu_ineq + 1;
-  static constexpr int N = nu + 1;
+  static constexpr int nu_ineq = decltype(pbm.ulim)::NumCon;
+  static constexpr int M       = K * nh + nu_ineq + 1;
+  static constexpr int N       = nu + 1;
 
   // iteration variables
   const double tau     = pbm.T / static_cast<double>(K);
@@ -185,13 +169,13 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
     auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
-    const auto [fcl, dr_fcl_dx] = diff::dr<DiffType>(std::move(f_cl), wrt(x));
+    const auto [fcl, dr_fcl_dx] = diff::dr<DT>(std::move(f_cl), wrt(x));
     dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
-  const auto [f0, d_f0_du] = diff::dr<DiffType>(
-    [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(u_lin));
+  const auto [f0, d_f0_du] = diff::dr<DT>(
+    [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(pbm.u_des));
 
   QuadraticProgram<-1, -1> ret;
 
@@ -205,7 +189,7 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   // loop over constraint number
   for (auto k = 0u; k != K; ++k) {
     // differentiate barrier function w.r.t. x
-    const auto [hval, dh_dtx] = diff::dr<DiffType>(
+    const auto [hval, dh_dtx] = diff::dr<DT>(
       [&h]<typename T>(const T & vt, const CastT<T, G> & vx) { return h(vt, vx); }, wrt(t, x));
 
     const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
@@ -232,8 +216,8 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
   // input bounds
   ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
   ret.A.block(K * nh, nu, nu_ineq, 1).setZero();
-  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l - pbm.ulim.A * rminus(u_lin, Identity<U>());
-  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u - pbm.ulim.A * rminus(u_lin, Identity<U>());
+  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l - pbm.ulim.A * rminus(pbm.u_des, pbm.ulim.c);
+  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u - pbm.ulim.A * rminus(pbm.u_des, pbm.ulim.c);
 
   // upper and lower bounds on delta
   ret.A.row(K * nh + nu_ineq).setZero();
@@ -243,7 +227,7 @@ auto asif_to_qp(const ASIFProblem<G, U> & pbm,
 
   ret.P.template block<nu, nu>(0, 0) = pbm.W_u.asDiagonal();
   ret.P.template block<nu, 1>(0, nu).setZero();
-  ret.q.template head<nu>() = pbm.W_u.cwiseProduct(rminus(u_lin, pbm.u_des));
+  ret.q.template head<nu>().setZero();
 
   ret.P.row(nu).setZero();
   ret.P(nu, nu) = prm.relax_cost;
@@ -263,7 +247,7 @@ struct ASIFilterParams
   /// Weights on desired input
   Eigen::Matrix<double, Dof<U>, 1> u_weight = Eigen::Matrix<double, Dof<U>, 1>::Ones();
   /// Input bounds
-  OptimalControlBounds<U> u_lim{};
+  ManifoldBounds<U> u_lim{};
   /// ASIFilter algorithm parameters
   ASIFtoQPParams asif;
   /// QP solver parameters
@@ -283,7 +267,7 @@ template<std::size_t K,
   typename Dyn,
   typename SS,
   typename BU,
-  smooth::diff::Type DiffType = smooth::diff::Type::DEFAULT>
+  diff::Type DT = diff::Type::DEFAULT>
 class ASIFilter
 {
 public:
@@ -293,7 +277,8 @@ public:
    * @param f dynamics as function \f$ \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
    * \mathbb{R}^{\dim \mathbb{G}} \f$
    * @param h safety set definition as function \f$ \mathbb{G} \rightarrow \mathbb{R}^{n_h} \f$
-   * @param bu backup controller as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U} \f$
+   * @param bu backup controller as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U}
+   * \f$
    * @param prm filter parameters
    *
    * @note These functions are defined in global time. As opposed to MPC the time
@@ -340,10 +325,9 @@ public:
       .ulim  = ulim_,
     };
 
-    auto qp =
-      smooth::feedback::asif_to_qp<K, G, U, decltype(f), decltype(h), decltype(bu), DiffType>(
-        pbm, prm_.asif, std::move(f), std::move(h), std::move(bu), u);
-    auto sol = smooth::feedback::solve_qp(qp, prm_.qp, warmstart_);
+    auto qp = feedback::asif_to_qp<K, G, U, decltype(f), decltype(h), decltype(bu), DT>(
+      pbm, prm_.asif, std::move(f), std::move(h), std::move(bu));
+    auto sol = feedback::solve_qp(qp, prm_.qp, warmstart_);
 
     u = rplus(u, sol.primal.template head<Dof<U>>());
 
@@ -356,7 +340,7 @@ private:
   SS h_;
   BU bu_;
 
-  OptimalControlBounds<U> ulim_;
+  ManifoldBounds<U> ulim_;
 
   ASIFilterParams<U> prm_;
 

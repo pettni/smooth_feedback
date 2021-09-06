@@ -65,7 +65,8 @@ int main()
   };
 
   // Input bounds
-  const smooth::feedback::OptimalControlBounds<Ud> ulim{
+  const smooth::feedback::ManifoldBounds<Ud> ulim{
+    .c = Ud::Zero(),
     .l = Eigen::Vector2d(-0.2, -0.5),
     .u = Eigen::Vector2d(0.5, 0.5),
   };
@@ -93,8 +94,8 @@ int main()
     return Gd(
       smooth::SE2d(smooth::SO2d(M_PI_2), Eigen::Vector2d(2.5, 0)) + (t.count() * vdes), vdes);
   };
-  auto udes = [](Time t) -> Ud { return Ud::Zero(); };
-  mpc.set_xudes(xdes, udes);
+  mpc.set_xdes(xdes);
+  mpc.set_udes([](Time t) -> Ud { return Ud::Zero(); });
 
   // SET UP ASIF
 
