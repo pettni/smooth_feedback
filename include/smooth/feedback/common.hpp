@@ -37,8 +37,6 @@ namespace smooth::feedback {
  * \f[
  *   l \leq  A ( m \ominus c ) \leq u.
  * \f]
- *
- * @warning As there are no defaults all fields must be specified.
  */
 template<Manifold M>
 struct ManifoldBounds
@@ -46,14 +44,16 @@ struct ManifoldBounds
   /// Dimensionality
   static constexpr int N = Dof<M>;
 
+  static_assert(N > 0, "Dynamic size not supported");
+
   /// Transformation matrix
-  Eigen::Matrix<double, -1, N> A;
+  Eigen::Matrix<double, -1, N> A{Eigen::Matrix<double, -1, N>::Zero(0, N)};
   /// Nominal point in constraint set.
-  M c;
+  M c{Default<M>()};
   /// Lower bound
-  Eigen::Matrix<double, -1, 1> l;
+  Eigen::VectorXd l{Eigen::VectorXd::Constant(0, -std::numeric_limits<double>::infinity())};
   /// Upper bound
-  Eigen::Matrix<double, -1, 1> u;
+  Eigen::VectorXd u{Eigen::VectorXd::Constant(0, std::numeric_limits<double>::infinity())};
 };
 
 }  // namespace smooth::feedback

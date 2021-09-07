@@ -72,28 +72,38 @@ struct OptimalControlProblem
 
   /// Time horizon
   double T{1};
-  /// Initial state (must be defined)
-  G x0;
+  /// Initial state
+  G x0{Default<G>()};
 
-  /// Desired input trajectory (must be defined)
-  std::function<U(double)> udes;
-  /// Desired state trajectory (must be defined)
-  std::function<G(double)> gdes;
+  /// Desired input trajectory
+  std::function<U(double)> udes{
+    [](double) -> U { return Default<U>(); },
+  };
+  /// Desired state trajectory
+  std::function<G(double)> gdes{
+    [](double) -> G { return Default<G>(); },
+  };
 
-  /// Input bounds (optional)
-  std::optional<ManifoldBounds<U>> ulim{};
-  /// State bounds (optional)
-  std::optional<ManifoldBounds<G>> glim{};
+  /// Input bounds
+  ManifoldBounds<U> ulim{};
+  /// State bounds
+  ManifoldBounds<G> glim{};
 
   /// MPC weights struct
   struct Weights
   {
     /// Running state cost
-    Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
+    Eigen::Matrix<double, Nx, Nx> Q{
+      Eigen::Matrix<double, Nx, Nx>::Identity(),
+    };
     /// Final state cost
-    Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
+    Eigen::Matrix<double, Nx, Nx> QT{
+      Eigen::Matrix<double, Nx, Nx>::Identity(),
+    };
     /// Running input cost
-    Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
+    Eigen::Matrix<double, Nu, Nu> R{
+      Eigen::Matrix<double, Nu, Nu>::Identity(),
+    };
   };
 
   /// MPC weights values
@@ -102,8 +112,6 @@ struct OptimalControlProblem
 
 /**
  * @brief Struct to define a linearization point.
- *
- * Default constructor linearizes around Identity (LieGroup) or Zero (non-LieGroup Manifold)
  */
 template<LieGroup G, Manifold U>
 struct LinearizationInfo
@@ -112,12 +120,18 @@ struct LinearizationInfo
    * @brief state linearization trajectory with first derivative
    * \f$ g_{lin}: \mathbb{R} \rightarrow (G, T / G) \f$
    */
-  std::function<std::pair<G, Tangent<G>>(double)> g;
+  std::function<std::pair<G, Tangent<G>>(double)> g{
+    [](double) -> std::pair<G, Tangent<G>> {
+      return {Default<G>(), Tangent<G>::Zero()};
+    },
+  };
 
   /**
    * @brief input linearization trajectory \f$ u_{lin}(t) :  \mathbb{R} \rightarrow / G \f$
    */
-  std::function<U(double)> u;
+  std::function<U(double)> u{
+    [](double) -> U { return Default<U>(); },
+  };
 
   /**
    * @brief Domain of validity of state linearization
@@ -127,8 +141,9 @@ struct LinearizationInfo
    *   \left\| g \ominus_r g_{lin} \right \| \leq \bar a.
    * \f]
    */
-  Eigen::Matrix<double, Dof<G>, 1> g_domain =
-    Eigen::Matrix<double, Dof<G>, 1>::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Matrix<double, Dof<G>, 1> g_domain{
+    Eigen::Matrix<double, Dof<G>, 1>::Constant(std::numeric_limits<double>::infinity()),
+  };
 };
 
 namespace detail {
@@ -139,8 +154,8 @@ namespace detail {
  *
  * Constraints:
  *  - Dynamics constraints            (K * Nx)
- *  - Input constraints               (Nu_ineq * Nu)  [optional]
- *  - State constraints               (Nx_ineq * Nx)  [optional]
+ *  - Input constraints               (Nu_ineq * Nu)
+ *  - State constraints               (Nx_ineq * Nx)
  *  - State linearization constraints (K * Nu)        [optional]
  *
  * @param pbm OptimalControlProblem definition.
@@ -160,13 +175,13 @@ QuadraticProgramSparse<double> ocp_to_qp_allocate(
   static_assert(Nx > 0, "State space dimension must be static");
   static_assert(Nu > 0, "Input space dimension must be static");
 
-  const int n_eq      = K * Nx;
-  const int n_u_iq    = pbm.ulim ? pbm.ulim.value().A.rows() * K : 0;
-  const int n_g_iq    = pbm.glim ? pbm.glim.value().A.rows() * K : 0;
-  const int n_glin_iq = lin_con ? K * Nu : 0;
+  const uint32_t n_eq     = K * Nx;
+  const uint32_t NU_iq    = K * pbm.ulim.A.rows();
+  const uint32_t NX_iq    = K * pbm.glim.A.rows();
+  const uint32_t NXLIN_iq = lin_con ? K * Nu : 0;
 
-  const int nvar = K * Nx + K * Nu;
-  const int ncon = n_eq + n_u_iq + n_g_iq + n_glin_iq;
+  const uint32_t nvar = K * Nx + K * Nu;
+  const uint32_t ncon = n_eq + NU_iq + NX_iq + NXLIN_iq;
 
   QuadraticProgramSparse qp;
 
@@ -198,15 +213,15 @@ QuadraticProgramSparse<double> ocp_to_qp_allocate(
   Arow += (K - 1) * Nx;
 
   // input constraints
-  if (n_u_iq > 0) { Ap.segment(Arow, n_u_iq).setConstant(Nu); }
-  Arow += n_u_iq;
+  if (NU_iq > 0) { Ap.segment(Arow, NU_iq).setConstant(Nu); }
+  Arow += NU_iq;
 
   // state constraints
-  if (n_g_iq > 0) { Ap.segment(Arow, n_g_iq).setConstant(Nx); }
-  Arow += n_g_iq;
+  if (NX_iq > 0) { Ap.segment(Arow, NX_iq).setConstant(Nx); }
+  Arow += NX_iq;
 
   // state linearization constraints
-  if (n_glin_iq > 0) { Ap.segment(Arow, n_glin_iq).setConstant(1); }
+  if (NXLIN_iq > 0) { Ap.segment(Arow, NXLIN_iq).setConstant(1); }
 
   qp.P.reserve(Pp);
   qp.A.reserve(Ap);
@@ -233,10 +248,10 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   static_assert(Nx > 0, "State space dimension must be static");
   static_assert(Nu > 0, "Input space dimension must be static");
 
-  bool lin_con = lin.g_domain.minCoeff() < std::numeric_limits<double>::infinity();
+  const bool lin_con = lin.g_domain.minCoeff() < std::numeric_limits<double>::infinity();
 
-  const uint32_t Nu_iq    = pbm.ulim ? pbm.ulim.value().A.rows() : 0;
-  const uint32_t Nx_iq    = pbm.glim ? pbm.glim.value().A.rows() : 0;
+  const uint32_t Nu_iq    = pbm.ulim.A.rows();
+  const uint32_t Nx_iq    = pbm.glim.A.rows();
   const uint32_t Nxlin_iq = lin_con ? Nx : 0;
 
   const double dt = pbm.T / static_cast<double>(K);
@@ -323,31 +338,30 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
     for (auto k = 0u; k < K; ++k) {
       for (auto i = 0u; i != Nu_iq; ++i) {
         for (auto j = 0u; j != Nu; ++j) {
-          qp.A.coeffRef(Arow + k * Nu_iq + i, k * Nu + j) = pbm.ulim.value().A(i, j);
+          qp.A.coeffRef(Arow + k * Nu_iq + i, k * Nu + j) = pbm.ulim.A(i, j);
         }
       }
-      qp.l.template segment(Arow + k * Nu_iq, Nu_iq) =
-        pbm.ulim.value().l - pbm.ulim.value().A * rminus(lin.u(k * dt), pbm.ulim.value().c);
-      qp.u.template segment(Arow + k * Nu_iq, Nu_iq) =
-        pbm.ulim.value().u - pbm.ulim.value().A * rminus(lin.u(k * dt), pbm.ulim.value().c);
+      // clang-format off
+      qp.l.segment(Arow + k * Nu_iq, Nu_iq) = pbm.ulim.l - pbm.ulim.A * rminus(lin.u(k * dt), pbm.ulim.c);
+      qp.u.segment(Arow + k * Nu_iq, Nu_iq) = pbm.ulim.u - pbm.ulim.A * rminus(lin.u(k * dt), pbm.ulim.c);
+      // clang-format on
     }
   }
   Arow += K * Nu_iq;
 
   // STATE CONSTRAINTS
 
-  if (Nx_iq) {
+  if (Nx_iq > 0) {
     for (auto k = 1u; k != K + 1; ++k) {
       for (auto i = 0u; i != Nx_iq; ++i) {
         for (auto j = 0u; j != Nx; ++j) {
-          qp.A.coeffRef(Arow + (k - 1) * Nx_iq + i, NU + (k - 1) * Nx + j) =
-            pbm.glim.value().A(i, j);
+          qp.A.coeffRef(Arow + (k - 1) * Nx_iq + i, NU + (k - 1) * Nx + j) = pbm.glim.A(i, j);
         }
       }
-      qp.l.template segment(Arow + (k - 1) * Nx_iq, Nx_iq) =
-        pbm.glim.value().l - pbm.glim.value().A * rminus(lin.g(k * dt).first, pbm.glim.value().c);
-      qp.u.template segment(Arow + (k - 1) * Nx_iq, Nx_iq) =
-        pbm.glim.value().u - pbm.glim.value().A * rminus(lin.g(k * dt).first, pbm.glim.value().c);
+      // clang-format off
+      qp.l.segment(Arow + (k - 1) * Nx_iq, Nx_iq) = pbm.glim.l - pbm.glim.A * rminus(lin.g(k * dt).first, pbm.glim.c);
+      qp.u.segment(Arow + (k - 1) * Nx_iq, Nx_iq) = pbm.glim.u - pbm.glim.A * rminus(lin.g(k * dt).first, pbm.glim.c);
+      // clang-format on
     }
   }
   Arow += K * Nx_iq;
@@ -359,8 +373,8 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
       for (auto i = 0u; i != Nxlin_iq; ++i) {
         qp.A.coeffRef(Arow + (k - 1) * Nxlin_iq + i, NU + (k - 1) * Nx + i) = 1.;
       }
-      qp.l.template segment(Arow + (k - 1) * Nxlin_iq, Nxlin_iq) = -lin.g_domain;
-      qp.u.template segment(Arow + (k - 1) * Nxlin_iq, Nxlin_iq) = lin.g_domain;
+      qp.l.segment(Arow + (k - 1) * Nxlin_iq, Nxlin_iq) = -lin.g_domain;
+      qp.u.segment(Arow + (k - 1) * Nxlin_iq, Nxlin_iq) = lin.g_domain;
     }
   }
   Arow += K * Nxlin_iq;
@@ -377,8 +391,7 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
         qp.P.coeffRef(k * Nu + i, k * Nu + j) = pbm.weights.R(i, j) * dt;
       }
     }
-    qp.q.template segment<Nu>(k * Nu) =
-      pbm.weights.R * rminus(lin.u(k * dt), pbm.udes(k * dt)) * dt;
+    qp.q.segment(k * Nu, Nu) = pbm.weights.R * rminus(lin.u(k * dt), pbm.udes(k * dt)) * dt;
   }
 
   // STATE COSTS
@@ -390,7 +403,7 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
         qp.P.coeffRef(NU + (k - 1) * Nx + i, NU + (k - 1) * Nx + j) = pbm.weights.Q(i, j) * dt;
       }
     }
-    qp.q.template segment<Nx>(NU + (k - 1) * Nx) =
+    qp.q.segment(NU + (k - 1) * Nx, Nx) =
       pbm.weights.Q * rminus(lin.g(k * dt).first, pbm.gdes(k * dt)) * dt;
   }
 
@@ -400,7 +413,7 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
       qp.P.coeffRef(NU + (K - 1) * Nx + i, NU + (K - 1) * Nx + j) = pbm.weights.QT(i, j);
     }
   }
-  qp.q.template segment<Nx>(NU + (K - 1) * Nx) =
+  qp.q.segment(NU + (K - 1) * Nx, Nx) =
     pbm.weights.QT * rminus(lin.g(pbm.T).first, pbm.gdes(pbm.T));
 }
 
@@ -478,14 +491,14 @@ struct MPCParams
   typename OptimalControlProblem<G, U>::Weights weights{};
 
   /**
-   * @brief State bounds (optional)
+   * @brief State bounds
    */
-  std::optional<ManifoldBounds<G>> glim{};
+  ManifoldBounds<G> glim{};
 
   /**
-   * @brief Input bounds (optional)
+   * @brief Input bounds
    */
-  std::optional<ManifoldBounds<U>> ulim{};
+  ManifoldBounds<U> ulim{};
 
   /**
    * @brief Enable warmstarting
@@ -777,7 +790,7 @@ public:
 
 private:
   // parameters
-  const MPCParams<G, U> prm_{};
+  MPCParams<G, U> prm_{};
 
   // dynamics description
   Dyn dyn_{};
@@ -796,8 +809,10 @@ private:
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
 
   // desired state (pos + vel) and input trajectories
-  std::function<std::pair<G, Tangent<G>>(T)> x_des_;
-  std::function<U(T)> u_des_;
+  std::function<std::pair<G, Tangent<G>>(T)> x_des_ = [](T) -> std::pair<G, Tangent<G>> {
+    return {Default<G>(), Tangent<G>::Zero()};
+  };
+  std::function<U(T)> u_des_ = [](T) -> U { return Default<U>(); };
 };
 
 }  // namespace smooth::feedback

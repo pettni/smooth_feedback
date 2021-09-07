@@ -164,7 +164,7 @@ public:
 
 private:
   // filter estimate and covariance
-  G g_hat_ = Identity<G>();
+  G g_hat_ = Default<G>();
   CovT P_  = CovT::Identity();
 
   // steppers for numerical ODE solutions

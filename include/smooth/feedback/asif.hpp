@@ -62,11 +62,11 @@ struct ASIFProblem
   /// time horizon
   double T{1};
   /// initial state
-  G x0;
+  G x0{Default<G>()};
   /// desired input
-  U u_des;
+  U u_des{Default<U>()};
   /// weights on desired input
-  Eigen::Matrix<double, Dof<U>, 1> W_u = Eigen::Matrix<double, Dof<U>, 1>::Ones();
+  Eigen::Matrix<double, Dof<U>, 1> W_u{Eigen::Matrix<double, Dof<U>, 1>::Ones()};
   /// input bounds
   ManifoldBounds<U> ulim{};
 };
@@ -291,7 +291,7 @@ struct ASIFilterParams
   /// Time horizon
   double T{1};
   /// Weights on desired input
-  Eigen::Matrix<double, Dof<U>, 1> u_weight = Eigen::Matrix<double, Dof<U>, 1>::Ones();
+  Eigen::Matrix<double, Dof<U>, 1> u_weight{Eigen::Matrix<double, Dof<U>, 1>::Ones()};
   /// Input bounds
   ManifoldBounds<U> ulim{};
   /// ASIFilter algorithm parameters
@@ -391,11 +391,8 @@ private:
   BU bu_;
 
   QuadraticProgram<-1, -1, double> qp_;
-
   ManifoldBounds<U> ulim_;
-
   ASIFilterParams<U> prm_;
-
   std::optional<QPSolution<-1, -1, double>> warmstart_;
 };
 
