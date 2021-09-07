@@ -180,14 +180,13 @@ Active Set Invariance</h2>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md5"></a>
 Estimation on Lie groups</h1>
 <p>Estimators take system models on the form <img src="https://latex.codecogs.com/png.image?\dpi{110}&space;\mathrm{d}^r&space;\mathbf{x}_t&space;=&space;f(t,&space;\mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X}" alt="" class="inline"/> where <code>X</code> is a <code>smooth::LieGroup</code>, and measurements on the form <img src="https://latex.codecogs.com/png.image?\dpi{110}&space;\mathbf{y}&space;=&space;h(\mathbf{x})&space;\oplus_r&space;w,&space;\;&space;w&space;\in&space;\mathcal&space;N(0,&space;R)" alt="" class="inline"/>.</p>
-<p>To use in a feedback loop for a controlled system use partial application: </p><div class="fragment"><div class="line"><span class="comment">// controlled system dynamics dr x_t = f(t, x, u)</span></div>
-<div class="line"><span class="keyword">const</span> <span class="keyword">auto</span> f = [] (<span class="keyword">const</span> <span class="keyword">auto</span> &amp; t, <span class="keyword">const</span> <span class="keyword">auto</span> &amp; x, <span class="keyword">const</span> <span class="keyword">auto</span> &amp; g) -&gt; Tangent { ... };</div>
-<div class="line"> </div>
-<div class="line"><span class="comment">// variable that holds current input</span></div>
+<p>To use in a feedback loop for a controlled system use partial application: </p><div class="fragment"><div class="line"><span class="comment">// variable that holds current input</span></div>
 <div class="line">U u;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// closed-loop dynamics dr x_t = f(t, x) to use in the estimators</span></div>
-<div class="line"><span class="keyword">const</span> <span class="keyword">auto</span> f_cl = [&amp;f, &amp;u] (<span class="keyword">const</span> <span class="keyword">auto</span> &amp; t, <span class="keyword">const</span> <span class="keyword">auto</span> &amp; x) -&gt; Tangent { <span class="keywordflow">return</span> f(t, x, u); };</div>
+<div class="line"><span class="keyword">const</span> <span class="keyword">auto</span> dyn_cl = [&amp;dyn, &amp;u]&lt;<span class="keyword">typename</span> T&gt; (Time t, <span class="keyword">const</span> X&lt;T&gt; &amp; x) -&gt; smooth::Tangent&lt;X&lt;T&gt;&gt; { </div>
+<div class="line">  <span class="keywordflow">return</span> dyn(t, x, u.template cast&lt;T&gt;()); </div>
+<div class="line">};</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md6"></a>
 smooth::feedback::EKF: The only Kalman filter you need in 63 lines of code</h2>
 <ul>
