@@ -74,12 +74,34 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_README"></a> <a href="https://github.com/pettni/lie/actions/workflows/build_and_test.yml"><img src="https://img.shields.io/github/workflow/status/pettni/smooth_feedback/build_and_test/master?style=flat-square" alt="CI Build and Test" class="inline"/></a> <a href="https://codecov.io/gh/pettni/smooth_feedback"><img src="https://img.shields.io/codecov/c/gh/pettni/smooth_feedback/master?style=flat-square" alt="Code coverage" class="inline"/></a> <a href="https://github.com/pettni/smooth_feedback/blob/master/LICENSE"><img src="https://img.shields.io/github/license/pettni/smooth_feedback.svg?style=flat-square" alt="License" style="pointer-events: none;" class="inline"/></a></p>
+<ul>
+<li>Requirements: C++20, Eigen 3.4, <a href="https://github.com/pettni/smooth/">smooth</a></li>
+<li><a href="https://pettni.github.io/smooth_feedback">Documentation</a></li>
+</ul>
 <p>Tool collection for control and estimation on Lie groups leveraging the <a href="https://github.com/pettni/smooth/">smooth</a> library.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 Control on Lie groups</h1>
 <p>These controllers are implemented for systems with dynamics on the form <img src="https://latex.codecogs.com/png.image?\dpi{110}&space;\mathrm{d}^r&space;\mathbf{x}_t&space;=&space;f(t,&space;\mathbf{x},&space;\mathbf{u}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X},&space;\mathbf{u}&space;\in&space;\mathbb{U}" alt="" class="inline"/> where <code>X</code> is a <code>smooth::LieGroup</code> and <code>U</code> is a <code>smooth::Manifold</code>.</p>
-<p>Nonlinearities are handled via linearization around a reference point or trajectory. For group-linear dynamics this automatically results in a linear system in the tangent space, in which case these algorithms are expected to work very well.</p>
-<h2><a class="anchor" id="autotoc_md2"></a>
+<p>Nonlinearities are handled via linearization around a reference point or trajectory. For group-linear dynamics this automatically results in a linear system in the tangent space, in which case these algorithms are expected to work very well. Linearization is done via automatic differentiation. For this to work with the most performant methods (e.g. [autodiff][autodiff-link]) the functions must be templated on the scalar type. A dynamical system on SE(2) x R3 that supports automatic differentiation can be defined via a lambda function: </p><div class="fragment"><div class="line"><span class="comment">// Time type</span></div>
+<div class="line"><span class="keyword">using</span> Time = std::chrono::duration&lt;double&gt;;</div>
+<div class="line"><span class="comment">// State space (must be a smooth::LieGroup)</span></div>
+<div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><span class="keyword">using</span> X = smooth::Bundle&lt;smooth::SE2&lt;T&gt;, Eigen::Matrix&lt;T, 3, 1&gt;&gt;;</div>
+<div class="line"><span class="comment">// Input space (must be a smooth::Manifold)</span></div>
+<div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><span class="keyword">using</span> U = Eigen::Matrix&lt;T, 2, 1&gt;;</div>
+<div class="line"> </div>
+<div class="line"><span class="keyword">auto</span> dyn = []&lt;<span class="keyword">typename</span> T&gt;(Time, <span class="keyword">const</span> X&lt;T&gt; &amp; x, <span class="keyword">const</span> U&lt;T&gt; &amp; u) -&gt; smooth::Tangent&lt;X&lt;T&gt;&gt; {</div>
+<div class="line">  <span class="keywordflow">return</span> smooth::Tangent&lt;X&lt;T&gt;&gt;{</div>
+<div class="line">    x.template part&lt;1&gt;().x(),</div>
+<div class="line">    x.template part&lt;1&gt;().y(),</div>
+<div class="line">    x.template part&lt;1&gt;().z(),</div>
+<div class="line">    -T(0.2) * x.template part&lt;1&gt;().x() + u(0),</div>
+<div class="line">    T(0),</div>
+<div class="line">    -T(0.4) * x.template part&lt;1&gt;().z() + u(1),</div>
+<div class="line">  };</div>
+<div class="line">};</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md2"></a>
 PID Control: A classic, now on Lie groups</h2>
 <ul>
 <li>Model-free</li>
@@ -90,15 +112,18 @@ PID Control: A classic, now on Lie groups</h2>
 <div class="line"> </div>
 <div class="line"><a class="code" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID&lt;Time, smooth::SE2d&gt;</a> pid;</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// set desired motion as a function Time -&gt; (position, velocity, acceleration)</span></div>
+<div class="line"><span class="comment">// set desired motion</span></div>
 <div class="line">pid.<a class="code" href="classsmooth_1_1feedback_1_1PID.html#a9d2362c536efdadf9052d814f83bd34b">set_xdes</a>([](Time Time) -&gt; std::tuple&lt;smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d&gt; {</div>
-<div class="line">  <span class="keywordflow">return</span> std::make_tuple(</div>
-<div class="line">    smooth::SE2d::Identity(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());</div>
+<div class="line">  <span class="keywordflow">return</span> {</div>
+<div class="line">    smooth::SE2d::Identity(),  <span class="comment">// position</span></div>
+<div class="line">    Eigen::Vector3d::Zero(),   <span class="comment">// velocity (right derivative of position w.r.t. t)</span></div>
+<div class="line">    Eigen::Vector3d::Zero(),   <span class="comment">// acceleration (second right derivative of position w.r.t. t)</span></div>
+<div class="line">  };</div>
 <div class="line">});</div>
 <div class="line"> </div>
-<div class="line">Time t(1);          <span class="comment">// current time</span></div>
-<div class="line">smooth::SE2d x;     <span class="comment">// current state</span></div>
-<div class="line">Eigen::Vector3d v;  <span class="comment">// current body velocity</span></div>
+<div class="line">Time t            = Time(1);                    <span class="comment">// current time</span></div>
+<div class="line">smooth::SE2d x    = smooth::SE2d::Random();     <span class="comment">// current state</span></div>
+<div class="line">Eigen::Vector3d v = Eigen::Vector3d::Random();  <span class="comment">// current body velocity</span></div>
 <div class="line"> </div>
 <div class="line">Eigen::Vector3d u = pid(t, x, v);</div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1PID_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a></div><div class="ttdoc">Proportional-Integral-Derivative controller for Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="pid_8hpp_source.html#l00060">pid.hpp:61</a></div></div>
@@ -106,76 +131,51 @@ PID Control: A classic, now on Lie groups</h2>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md3"></a>
 Model-Predictive Control: When more look-ahead is needed</h2>
 <ul>
-<li>Templated on the dynamical model</li>
-<li>Automatic linearization and time discretization of nonlinear dynamics</li>
+<li>Automatic linearization and time discretization of nonlinear continuous dynamics</li>
 <li>Define state and input reference trajectories via arbitrary functions <code>T -&gt; X</code> and <code>T -&gt; U</code> for a time type T</li>
 </ul>
-<p><b>Example</b>: MPC on SE(2) x R3 (see <code>examples/mpc_se2.cpp</code>)</p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/bundle.hpp&gt;</span></div>
-<div class="line"><span class="preprocessor">#include &lt;smooth/se2.hpp&gt;</span></div>
-<div class="line"><span class="preprocessor">#include &lt;smooth/feedback/mpc.hpp&gt;</span></div>
+<p><b>Example</b>: Model-predictive control on <code>dyn</code> defined above (see also <code>examples/mpc_asif_se2.cpp</code>)</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedback/mpc.hpp&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><span class="keyword">using</span> X = smooth::Bundle&lt;smooth::SE2&lt;T&gt;, Eigen::Matrix&lt;T, 3, 1&gt;&gt;;</div>
-<div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><span class="keyword">using</span> U    = Eigen::Matrix&lt;T, 2, 1&gt;;</div>
-<div class="line"><span class="keyword">using</span> Time = std::chrono::duration&lt;double&gt;;</div>
+<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC&lt;Time, X&lt;double&gt;</a>, U&lt;double&gt;, decltype(dyn)&gt; mpc(dyn, {.T = 5, .K = 50});</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// dynamics</span></div>
-<div class="line"><span class="keyword">auto</span> f = []&lt;<span class="keyword">typename</span> T&gt;(Time, <span class="keyword">const</span> X&lt;T&gt; &amp; x, <span class="keyword">const</span> U&lt;T&gt; &amp; u) -&gt; <span class="keyword">typename</span> X&lt;T&gt;::Tangent {</div>
-<div class="line">  <span class="keyword">typename</span> X&lt;T&gt;::Tangent dx_dt;</div>
-<div class="line">  dx_dt.template head&lt;3&gt;() = x.template part&lt;1&gt;();</div>
-<div class="line">  dx_dt.template tail&lt;3&gt;() &lt;&lt; -T(0.2) * x.template part&lt;1&gt;().x() + u(0), T(0),</div>
-<div class="line">    -T(0.4) * x.template part&lt;1&gt;().z() + u(1);</div>
-<div class="line">  <span class="keywordflow">return</span> dx_dt;</div>
-<div class="line">};</div>
+<div class="line"><span class="comment">// set desired input and state trajectories</span></div>
+<div class="line">mpc.<a class="code" href="classsmooth_1_1feedback_1_1MPC.html#aac12d2706acc4452872787ea56ace9e3">set_udes</a>([]&lt;<span class="keyword">typename</span> T&gt;(T t) -&gt; U&lt;T&gt; { <span class="keywordflow">return</span> U&lt;T&gt;::Zero(); });</div>
+<div class="line">mpc.set_xdes([]&lt;<span class="keyword">typename</span> T&gt;(T t) -&gt; X&lt;T&gt; { <span class="keywordflow">return</span> X&lt;T&gt;::Identity(); });</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// create MPC object</span></div>
-<div class="line"><a class="code" href="structsmooth_1_1feedback_1_1MPCParams.html">smooth::feedback::MPCParams</a> prm{.<a class="code" href="structsmooth_1_1feedback_1_1MPCParams.html#af5f181b92332704866601ee61e5174fa">T</a> = 5};</div>
-<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC&lt;50, Time, X&lt;double&gt;</a>, U&lt;double&gt;, decltype(f)&gt; mpc(f, prm);</div>
-<div class="line"> </div>
-<div class="line"><span class="comment">// set desired state and input trajectories for MPC to track</span></div>
-<div class="line">mpc.set_xudes(</div>
-<div class="line">  [](Time t) -&gt; X&lt;double&gt; { <span class="keywordflow">return</span> X&lt;double&gt;::Identity(); },</div>
-<div class="line">  [](Time T) -&gt; U&lt;double&gt; { <span class="keywordflow">return</span> U&lt;double&gt;::Zero(); }</div>
-<div class="line">);</div>
-<div class="line"> </div>
-<div class="line"><span class="comment">// calculate control input for current time t and current state x</span></div>
 <div class="line">Time t(0);</div>
 <div class="line">X&lt;double&gt; x = X&lt;double&gt;::Identity();</div>
-<div class="line">U&lt;double&gt; u;</div>
-<div class="line"><span class="keyword">auto</span> qp_status = mpc(u, t, x);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// get control input for time t and state x</span></div>
+<div class="line"><span class="keyword">auto</span> [u, code] = mpc(t, x);</div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00120">mpc.hpp:121</a></div></div>
-<div class="ttc" id="astructsmooth_1_1feedback_1_1MPCParams_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1MPCParams.html">smooth::feedback::MPCParams</a></div><div class="ttdoc">Parameters for MPC.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00037">mpc.hpp:38</a></div></div>
-<div class="ttc" id="astructsmooth_1_1feedback_1_1MPCParams_html_af5f181b92332704866601ee61e5174fa"><div class="ttname"><a href="structsmooth_1_1feedback_1_1MPCParams.html#af5f181b92332704866601ee61e5174fa">smooth::feedback::MPCParams::T</a></div><div class="ttdeci">double T</div><div class="ttdoc">MPC time horizon (seconds)</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00042">mpc.hpp:42</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_aac12d2706acc4452872787ea56ace9e3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#aac12d2706acc4452872787ea56ace9e3">smooth::feedback::MPC::set_udes</a></div><div class="ttdeci">void set_udes(std::function&lt; U(Time)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired input trajectory (absolute time)</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00271">mpc.hpp:271</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md4"></a>
 Active Set Invariance</h2>
 <ul>
+<li>Automatic differentiation of nonlinear continuous dynamics and constraints</li>
 <li>Minimally invasive filtering of a control input in order to enforce state constraints</li>
-<li>Model-based, uses automatic differentiation of dynamics and constraints</li>
 <li>Theory (non-Lie group case) is described in e.g. <a href="https://thesis.library.caltech.edu/13771/1/My_Thesis.pdf">Thomas Gurriet's Ph.D. thesis</a></li>
 </ul>
-<p><b>Example</b>:</p>
+<p><b>Example</b>: Safety filtering on <code>dyn</code> as defined above.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedback/asif.hpp&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// define dynamics</span></div>
-<div class="line"><span class="keyword">auto</span> f = []&lt;<span class="keyword">typename</span> T&gt;(T, <span class="keyword">const</span> X&lt;T&gt; &amp; x, <span class="keyword">const</span> U&lt;T&gt; &amp; u) -&gt; smooth::Tangent&lt;X&lt;T&gt;&gt; { <span class="comment">/* ... */</span> };</div>
+<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1ASIFilter.html">smooth::feedback::ASIFilter&lt;Time, X&lt;double&gt;</a>, U&lt;double&gt;, decltype(dyn)&gt; asif(dyn);</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// define safety set { x : h(x) &gt;= 0 }</span></div>
-<div class="line"><span class="keyword">auto</span> h = []&lt;<span class="keyword">typename</span> T&gt;(T, <span class="keyword">const</span> X&lt;T&gt; &amp; x) -&gt; Eigen::Vector3&lt;T&gt; { <span class="comment">/* ... */</span>};</div>
+<div class="line"><span class="comment">// safety set S(t) = { x : h(t, x) &gt;= 0 }</span></div>
+<div class="line"><span class="keyword">auto</span> h = []&lt;<span class="keyword">typename</span> T&gt;(T, <span class="keyword">const</span> X&lt;T&gt; &amp; x) -&gt; Eigen::Matrix&lt;T, 1, 1&gt; {</div>
+<div class="line">  <span class="keywordflow">return</span> Eigen::Matrix&lt;T, 1, 1&gt;(x.template part&lt;0&gt;().r2().x() - T(0.2));</div>
+<div class="line">};</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// backup controller</span></div>
-<div class="line"><span class="keyword">auto</span> bu = []&lt;<span class="keyword">typename</span> T&gt;(T, <span class="keyword">const</span> X&lt;T&gt; &amp;) -&gt; U&lt;T&gt; { <span class="comment">/* ... */</span>  };</div>
+<div class="line"><span class="keyword">auto</span> bu = []&lt;<span class="keyword">typename</span> T&gt;(T, <span class="keyword">const</span> X&lt;T&gt; &amp;) -&gt; U&lt;T&gt; { <span class="keywordflow">return</span> U&lt;T&gt;(1, 1); };</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// create ASI filter</span></div>
-<div class="line"><span class="keyword">using</span> ASIF = <a class="code" href="classsmooth_1_1feedback_1_1ASIFilter.html">smooth::feedback::ASIFilter&lt;100, X&lt;double&gt;</a>, U&lt;double&gt;, decltype(f), decltype(h), decltype(bu)&gt;;</div>
-<div class="line">ASIF asif(f, h, bu);</div>
+<div class="line">Time t          = Time(1);</div>
+<div class="line">X&lt;double&gt; x     = X&lt;double&gt;::Random();</div>
+<div class="line">U&lt;double&gt; u_des = U&lt;double&gt;::Zero();</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// filter an input u at time t and state x</span></div>
-<div class="line">U&lt;double&gt; u = U&lt;double&gt;::Zero();</div>
-<div class="line"><span class="keywordtype">double</span> t    = 0;</div>
-<div class="line">X&lt;double&gt; x = X&lt;double&gt;::Random();</div>
-<div class="line"><span class="keyword">auto</span> code   = asif(u, 0, x);</div>
+<div class="line"><span class="comment">// get control input for time t, state x, and reference input u_des</span></div>
+<div class="line"><span class="keyword">auto</span> [u_asif, code] = asif(t, x, u_des, h, bu);</div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1ASIFilter_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1ASIFilter.html">smooth::feedback::ASIFilter</a></div><div class="ttdoc">ASI Filter.</div><div class="ttdef"><b>Definition:</b> <a href="asif_8hpp_source.html#l00063">asif.hpp:64</a></div></div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md5"></a>
 Estimation on Lie groups</h1>
@@ -196,26 +196,25 @@ smooth::feedback::EKF: The only Kalman filter you need in 63 lines of code</h2>
 <li>Reduces to <a href="https://en.wikipedia.org/wiki/Kalman_filter">standard Kalman filter (KF)</a> for linear models on Rn</li>
 <li>Reduces to <a href="https://en.wikipedia.org/wiki/Invariant_extended_Kalman_filter">Invariant Extended Kalman Filter (IEKF)</a> for group-linear models on Lie groups</li>
 </ul>
-<p><b>Example: localization with a known 2D landmark</b></p>
+<p><b>Example: localization with a known 2D landmark</b> with the system <code>dyn</code> defined above</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedback/ekf.hpp&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF&lt;smooth::SE2d&gt;</a> ekf;</div>
-<div class="line"> </div>
-<div class="line"><span class="comment">// motion model</span></div>
-<div class="line"><span class="keyword">auto</span> f = []&lt;<span class="keyword">typename</span> T&gt;(double, <span class="keyword">const</span> smooth::SE2&lt;T&gt; &amp;) -&gt; <span class="keyword">typename</span> smooth::SE2&lt;T&gt;::Tangent {</div>
-<div class="line">  <span class="keywordflow">return</span> <span class="keyword">typename</span> smooth::SE2&lt;T&gt;::Tangent(0.4, 0.01, 0.1);</div>
-<div class="line">};</div>
+<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF&lt;X&lt;double&gt;</a>&gt; ekf;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// measurement model</span></div>
 <div class="line">Eigen::Vector2d landmark(1, 1);</div>
-<div class="line"><span class="keyword">auto</span> h = [&amp;landmark]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> smooth::SE2&lt;T&gt; &amp; x) -&gt; Eigen::Matrix&lt;T, 2, 1&gt; {</div>
-<div class="line">  <span class="keywordflow">return</span> x.inverse() * landmark;</div>
+<div class="line"><span class="keyword">auto</span> h = [&amp;landmark]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> X&lt;T&gt; &amp; x) -&gt; Eigen::Matrix&lt;T, 2, 1&gt; {</div>
+<div class="line">  <span class="keywordflow">return</span> x.template part&lt;0&gt;().inverse() * landmark;</div>
 <div class="line">};</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// PREDICT STEP: propagate estimator over time</span></div>
-<div class="line">ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">predict</a>(f,</div>
-<div class="line">  Eigen::Matrix3d::Identity(),  <span class="comment">// motion covariance Q</span></div>
-<div class="line">  1.                            <span class="comment">// time step length</span></div>
+<div class="line"><span class="comment">// PREDICT STEP: propagate filter over time</span></div>
+<div class="line">U&lt;double&gt; u = U&lt;double&gt;::Random();</div>
+<div class="line"><span class="comment">// closed-loop dynamics</span></div>
+<div class="line"><span class="keyword">auto</span> f_cl = [&amp;u]&lt;<span class="keyword">typename</span> T&gt;(T t, <span class="keyword">const</span> X&lt;T&gt; &amp; x) { <span class="keywordflow">return</span> dyn(Time(t), x, u.template cast&lt;T&gt;()); };</div>
+<div class="line"> </div>
+<div class="line">ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">predict</a>(f_cl,</div>
+<div class="line">  Eigen::Matrix&lt;double, 6, 6&gt;::Identity(),  <span class="comment">// motion covariance Q</span></div>
+<div class="line">  1.                                        <span class="comment">// time step length</span></div>
 <div class="line">);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// UPDATE STEP: register a measurement of the known landmark</span></div>
@@ -225,11 +224,13 @@ smooth::feedback::EKF: The only Kalman filter you need in 63 lines of code</h2>
 <div class="line">);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// access estimate</span></div>
-<div class="line">std::cout &lt;&lt; ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9195311596dd7eb2d0cbcc9dff2f7ca3">estimate</a>() &lt;&lt; std::endl;</div>
+<div class="line"><span class="keyword">auto</span> x_hat = ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9195311596dd7eb2d0cbcc9dff2f7ca3">estimate</a>();</div>
+<div class="line"><span class="keyword">auto</span> P_hat = ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#abc62dc4780a5e8a9e96e7bbfa9f29338">covariance</a>();</div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF</a></div><div class="ttdoc">Extended Kalman filter on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00054">ekf.hpp:55</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a57a23546447c59ae8dbfc4cacf23636e"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">smooth::feedback::EKF::update</a></div><div class="ttdeci">void update(F &amp;&amp;h, const Y &amp;y, const Eigen::MatrixBase&lt; RDev &gt; &amp;R)</div><div class="ttdoc">Update EKF with a measurement  where .</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00140">ekf.hpp:140</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a9195311596dd7eb2d0cbcc9dff2f7ca3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a9195311596dd7eb2d0cbcc9dff2f7ca3">smooth::feedback::EKF::estimate</a></div><div class="ttdeci">G estimate() const</div><div class="ttdoc">Access filter state estimate.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00078">ekf.hpp:78</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a9d57cbe2f7594295531de756ab98e85d"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">smooth::feedback::EKF::predict</a></div><div class="ttdeci">void predict(F &amp;&amp;f, const Eigen::MatrixBase&lt; QDer &gt; &amp;Q, Scalar&lt; G &gt; tau, std::optional&lt; Scalar&lt; G &gt;&gt; dt={})</div><div class="ttdoc">Propagate EKF through dynamics  with covariance .</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00103">ekf.hpp:103</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_abc62dc4780a5e8a9e96e7bbfa9f29338"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#abc62dc4780a5e8a9e96e7bbfa9f29338">smooth::feedback::EKF::covariance</a></div><div class="ttdeci">CovT covariance() const</div><div class="ttdoc">Access filter covariance.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00083">ekf.hpp:83</a></div></div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md7"></a>
 Optimization</h1>
 <p>To make it easy to solve the quadratic programs generated by the MPC and ASIF functions a QP solver is included.</p>
