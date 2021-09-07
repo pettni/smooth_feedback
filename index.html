@@ -142,7 +142,7 @@ PID Control: A classic, now on Lie groups</h2>
 Model-Predictive Control: When more look-ahead is needed</h2>
 <ul>
 <li>Automatic linearization and time discretization of nonlinear continuous dynamics</li>
-<li>Define state and input reference trajectories via arbitrary functions <code>T -&gt; X</code> and <code>T -&gt; U</code> for a time type T</li>
+<li>Define state and input reference trajectories via arbitrary functions <code>T -&gt; X</code> and <code>T -&gt; U</code> for a time type T. The bus in the video above uses MPC to track the boundary of the circle.</li>
 </ul>
 <p><b>Example</b>: Model-predictive control on <code>dyn</code> defined above (see also <code>examples/mpc_asif_se2.cpp</code>)</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedback/mpc.hpp&gt;</span></div>
@@ -161,10 +161,10 @@ Model-Predictive Control: When more look-ahead is needed</h2>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00120">mpc.hpp:121</a></div></div>
 <div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_aac12d2706acc4452872787ea56ace9e3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#aac12d2706acc4452872787ea56ace9e3">smooth::feedback::MPC::set_udes</a></div><div class="ttdeci">void set_udes(std::function&lt; U(Time)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired input trajectory (absolute time)</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00271">mpc.hpp:271</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md4"></a>
-Active Set Invariance</h2>
+Active Set Invariance Filtering (ASIF)</h2>
 <ul>
+<li>Minimally invasive filtering of a control input in order to enforce state constraints. The bus in the video above is using an ASIF that avoids the red cylinder.</li>
 <li>Automatic differentiation of nonlinear continuous dynamics and constraints</li>
-<li>Minimally invasive filtering of a control input in order to enforce state constraints</li>
 <li>Theory (non-Lie group case) is described in e.g. <a href="https://thesis.library.caltech.edu/13771/1/My_Thesis.pdf">Thomas Gurriet's Ph.D. thesis</a></li>
 </ul>
 <p><b>Example</b>: Safety filtering on <code>dyn</code> defined above.</p>
