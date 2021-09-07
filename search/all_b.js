@@ -1,14 +1,13 @@
 var searchData=
 [
-  ['q_61',['q',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#af9cfac2013f678eb683f2bf5fa8e5aee',1,'smooth::feedback::QuadraticProgram::q()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a7cff5c59c37d778e10785d29e7715989',1,'smooth::feedback::QuadraticProgramSparse::q()']]],
-  ['q_62',['Q',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a18104640f745da44e2e3f932aa4979dd',1,'smooth::feedback::OptimalControlProblem']]],
-  ['qp_63',['qp',['../structsmooth_1_1feedback_1_1MPCParams.html#a5fca7a42cfa6f39d314a0d3a6d207c99',1,'smooth::feedback::MPCParams']]],
-  ['qp_2ehpp_64',['qp.hpp',['../qp_8hpp.html',1,'']]],
-  ['qp_5fcheck_5fstopping_65',['qp_check_stopping',['../qp_8hpp.html#a5a9758b9ceccde43668ed7b50f7b6854',1,'smooth::feedback::detail']]],
-  ['qpsolution_66',['QPSolution',['../structsmooth_1_1feedback_1_1QPSolution.html',1,'smooth::feedback']]],
-  ['qpsolutionstatus_67',['QPSolutionStatus',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feb',1,'smooth::feedback']]],
-  ['qpsolverparams_68',['QPSolverParams',['../structsmooth_1_1feedback_1_1QPSolverParams.html',1,'smooth::feedback']]],
-  ['qt_69',['QT',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#af638e433f7ac2f2cbe611c21569bc889',1,'smooth::feedback::OptimalControlProblem']]],
-  ['quadraticprogram_70',['QuadraticProgram',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
-  ['quadraticprogramsparse_71',['QuadraticProgramSparse',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]]
+  ['p_61',['P',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#a0f23929c20ff8fd2c8ee6ca09b057e13',1,'smooth::feedback::QuadraticProgram::P()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a8da2f569b867c08ee44ef5220e22b248',1,'smooth::feedback::QuadraticProgramSparse::P()']]],
+  ['pid_62',['PID',['../classsmooth_1_1feedback_1_1PID.html#a8859c22490940ca7997b5373fd9b891d',1,'smooth::feedback::PID::PID(const PIDParams &amp;prm=PIDParams{}) noexcept'],['../classsmooth_1_1feedback_1_1PID.html#ac96c67b9184125e3000a7c31d9ff3244',1,'smooth::feedback::PID::PID(const PID &amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#a99ea65d7bbd838ee06fdcbc1dc711e49',1,'smooth::feedback::PID::PID(PID &amp;&amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html',1,'smooth::feedback::PID&lt; Time, G &gt;']]],
+  ['pidparams_63',['PIDParams',['../structsmooth_1_1feedback_1_1PIDParams.html',1,'smooth::feedback']]],
+  ['polish_64',['polish',['../structsmooth_1_1feedback_1_1QPSolverParams.html#aa5a9bda5887e5eec02c9bdfdad3b1a7a',1,'smooth::feedback::QPSolverParams']]],
+  ['polish_5fiter_65',['polish_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#aca78531f868b99ab481bcf3146b3ecfe',1,'smooth::feedback::QPSolverParams']]],
+  ['polish_5fqp_66',['polish_qp',['../qp_8hpp.html#ad27b3771b96cb03c2afe78a9555ff842',1,'smooth::feedback::detail']]],
+  ['polishfailed_67',['PolishFailed',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feba9dc0130434f81159ae1da5d0d87551ee',1,'smooth::feedback']]],
+  ['predict_68',['predict',['../classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d',1,'smooth::feedback::EKF']]],
+  ['primal_69',['primal',['../structsmooth_1_1feedback_1_1QPSolution.html#a8d6fd927cdff30519dde786c1e220223',1,'smooth::feedback::QPSolution']]],
+  ['primalinfeasible_70',['PrimalInfeasible',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feba190b2e9507159faf8c6939d98220a75e',1,'smooth::feedback']]]
 ];

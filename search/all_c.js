@@ -1,11 +1,15 @@
 var searchData=
 [
-  ['r_72',['R',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#aa68e642bf9b7479ae6f7a29075d7af59',1,'smooth::feedback::OptimalControlProblem']]],
-  ['relax_5fcost_73',['relax_cost',['../structsmooth_1_1feedback_1_1AsifParams.html#a26ef2ec3f08274f5d1fc1de6e1cb37ad',1,'smooth::feedback::AsifParams']]],
-  ['relinearize_5finput_5faround_5fsol_74',['relinearize_input_around_sol',['../structsmooth_1_1feedback_1_1MPCParams.html#a43eee5e33f68a9e4ecfc636d0e3e9783',1,'smooth::feedback::MPCParams::relinearize_input_around_sol()'],['../classsmooth_1_1feedback_1_1MPC.html#a149621b49aef72f960839b0b5f2b88bb',1,'smooth::feedback::MPC::relinearize_input_around_sol()']]],
-  ['relinearize_5fstate_5faround_5fsol_75',['relinearize_state_around_sol',['../structsmooth_1_1feedback_1_1MPCParams.html#a3c0a54b180f73963d220a3a1073ba557',1,'smooth::feedback::MPCParams::relinearize_state_around_sol()'],['../classsmooth_1_1feedback_1_1MPC.html#aeb000806bcab4b42c86656bafebe49d0',1,'smooth::feedback::MPC::relinearize_state_around_sol()']]],
-  ['reset_76',['reset',['../classsmooth_1_1feedback_1_1EKF.html#a2fdbc3ac62b4e9cb8c5b0fee204b350c',1,'smooth::feedback::EKF']]],
-  ['reset_5fintegral_77',['reset_integral',['../classsmooth_1_1feedback_1_1PID.html#a7be08a39f7cda290bcb58622eafbc9f3',1,'smooth::feedback::PID']]],
-  ['reset_5fwarmstart_78',['reset_warmstart',['../classsmooth_1_1feedback_1_1MPC.html#a108a50653a95d1ebfcb1885eda23190e',1,'smooth::feedback::MPC']]],
-  ['rho_79',['rho',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a12313e82b48be1c090051beefd1f2af7',1,'smooth::feedback::QPSolverParams']]]
+  ['q_71',['q',['../structsmooth_1_1feedback_1_1QuadraticProgram.html#af9cfac2013f678eb683f2bf5fa8e5aee',1,'smooth::feedback::QuadraticProgram::q()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a7cff5c59c37d778e10785d29e7715989',1,'smooth::feedback::QuadraticProgramSparse::q()']]],
+  ['q_72',['Q',['../structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#a184365bf0fc53330cf460906b31a3f57',1,'smooth::feedback::OptimalControlProblem::Weights']]],
+  ['qp_73',['qp',['../structsmooth_1_1feedback_1_1ASIFilterParams.html#a3307bb4c2dbd8faefaa35c6b4c0dab9d',1,'smooth::feedback::ASIFilterParams::qp()'],['../structsmooth_1_1feedback_1_1MPCParams.html#a21e521ca84b5fa08de1d8b394d671810',1,'smooth::feedback::MPCParams::qp()']]],
+  ['qp_2ehpp_74',['qp.hpp',['../qp_8hpp.html',1,'']]],
+  ['qp_5fcheck_5fstopping_75',['qp_check_stopping',['../qp_8hpp.html#a5a9758b9ceccde43668ed7b50f7b6854',1,'smooth::feedback::detail']]],
+  ['qpsolution_76',['QPSolution',['../structsmooth_1_1feedback_1_1QPSolution.html',1,'smooth::feedback']]],
+  ['qpsolutionstatus_77',['QPSolutionStatus',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feb',1,'smooth::feedback']]],
+  ['qpsolverparams_78',['QPSolverParams',['../structsmooth_1_1feedback_1_1QPSolverParams.html',1,'smooth::feedback']]],
+  ['qt_79',['QT',['../structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#af4849942b2c886a5187e81d170d72a58',1,'smooth::feedback::OptimalControlProblem::Weights']]],
+  ['quadraticprogram_80',['QuadraticProgram',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
+  ['quadraticprogram_3c_2d1_2c_20_2d1_2c_20double_20_3e_81',['QuadraticProgram&lt;-1, -1, double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
+  ['quadraticprogramsparse_82',['QuadraticProgramSparse',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]]
 ];

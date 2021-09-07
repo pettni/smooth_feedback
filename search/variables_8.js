@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['n_193',['n',['../structsmooth_1_1feedback_1_1OptimalControlBounds.html#a6e54562c5704b467fdf9f2500ba04226',1,'smooth::feedback::OptimalControlBounds']]],
-  ['nu_194',['nu',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae36fd67cbf94e702d9705671d7ca833d',1,'smooth::feedback::OptimalControlProblem']]],
-  ['nx_195',['nx',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a510c443e209a42c5acc55add36acc0cb',1,'smooth::feedback::OptimalControlProblem']]]
+  ['max_5fiter_201',['max_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a24ef03d60c70af07fdd7b3adb233e2c4',1,'smooth::feedback::QPSolverParams']]],
+  ['max_5ftime_202',['max_time',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a5c2cccec6a21d902a8fa12bc85cf92a2',1,'smooth::feedback::QPSolverParams']]]
 ];

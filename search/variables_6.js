@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['l_190',['l',['../structsmooth_1_1feedback_1_1OptimalControlBounds.html#acecd36d18ca3fa368a9ff8102a777ef2',1,'smooth::feedback::OptimalControlBounds::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgram.html#abb1555f458de94ff6c13ff522fa1ad58',1,'smooth::feedback::QuadraticProgram::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a59fa967c2807534e8f749993b4c82d9d',1,'smooth::feedback::QuadraticProgramSparse::l()']]]
+  ['k_199',['K',['../structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aab99219680cef706f4858f4d548df1a1',1,'smooth::feedback::ASIFtoQPParams::K()'],['../structsmooth_1_1feedback_1_1MPCParams.html#aa325af0fd92edda7c9e2eee514fac947',1,'smooth::feedback::MPCParams::K()']]]
 ];

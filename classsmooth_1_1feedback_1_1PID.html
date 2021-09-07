@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>smooth_feedback: smooth::feedback::PID&lt; T, G &gt; Class Template Reference</title>
+<title>smooth_feedback: smooth::feedback::PID&lt; Time, G &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -78,7 +78,7 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classsmooth_1_1feedback_1_1PID-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">smooth::feedback::PID&lt; T, G &gt; Class Template Reference</div>  </div>
+<div class="title">smooth::feedback::PID&lt; Time, G &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -89,89 +89,93 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:ad8cf7e5d90bed51be83e44a2c101ad66"><td class="memItemLeft" align="right" valign="top"><a id="ad8cf7e5d90bed51be83e44a2c101ad66"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad8cf7e5d90bed51be83e44a2c101ad66">TrajectoryReturnT</a> = std::tuple&lt; G, typename G::Tangent, typename G::Tangent &gt;</td></tr>
-<tr class="memdesc:ad8cf7e5d90bed51be83e44a2c101ad66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired trajectory consists of position, velocity, and acceleration. <br /></td></tr>
-<tr class="separator:ad8cf7e5d90bed51be83e44a2c101ad66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29d70bf20196a836f7faa81becacc082"><td class="memItemLeft" align="right" valign="top"><a id="a29d70bf20196a836f7faa81becacc082"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a29d70bf20196a836f7faa81becacc082">TrajectoryReturnT</a> = std::tuple&lt; G, Tangent&lt; G &gt;, Tangent&lt; G &gt; &gt;</td></tr>
+<tr class="memdesc:a29d70bf20196a836f7faa81becacc082"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired trajectory consists of position, velocity, and acceleration. <br /></td></tr>
+<tr class="separator:a29d70bf20196a836f7faa81becacc082"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa5de7b5c7935a2b6db8add2d00a47998"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#aa5de7b5c7935a2b6db8add2d00a47998">PID</a> (const <a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html">PIDParams</a> &amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html">PIDParams</a>{}) noexcept</td></tr>
-<tr class="memdesc:aa5de7b5c7935a2b6db8add2d00a47998"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classsmooth_1_1feedback_1_1PID.html" title="Proportional-Integral-Derivative controller for Lie groups.">PID</a> controller.  <a href="classsmooth_1_1feedback_1_1PID.html#aa5de7b5c7935a2b6db8add2d00a47998">More...</a><br /></td></tr>
-<tr class="separator:aa5de7b5c7935a2b6db8add2d00a47998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad36e4bccc9ad61d5050495a893f66500"><td class="memItemLeft" align="right" valign="top"><a id="ad36e4bccc9ad61d5050495a893f66500"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad36e4bccc9ad61d5050495a893f66500">PID</a> (const <a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;)=default</td></tr>
-<tr class="memdesc:ad36e4bccc9ad61d5050495a893f66500"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy constructor. <br /></td></tr>
-<tr class="separator:ad36e4bccc9ad61d5050495a893f66500"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1076ca62fa37eb2286153bacecdcfe6"><td class="memItemLeft" align="right" valign="top"><a id="ab1076ca62fa37eb2286153bacecdcfe6"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ab1076ca62fa37eb2286153bacecdcfe6">PID</a> (<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&amp;)=default</td></tr>
-<tr class="memdesc:ab1076ca62fa37eb2286153bacecdcfe6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move constructor. <br /></td></tr>
-<tr class="separator:ab1076ca62fa37eb2286153bacecdcfe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9302f4c30d07b7acb54093240f21728e"><td class="memItemLeft" align="right" valign="top"><a id="a9302f4c30d07b7acb54093240f21728e"></a>
-<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a9302f4c30d07b7acb54093240f21728e">operator=</a> (const <a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;)=default</td></tr>
-<tr class="memdesc:a9302f4c30d07b7acb54093240f21728e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy assignment. <br /></td></tr>
-<tr class="separator:a9302f4c30d07b7acb54093240f21728e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ced4ea1d3d780f6c19991d2cdb6425b"><td class="memItemLeft" align="right" valign="top"><a id="a7ced4ea1d3d780f6c19991d2cdb6425b"></a>
-<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a7ced4ea1d3d780f6c19991d2cdb6425b">operator=</a> (<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&amp;)=default</td></tr>
-<tr class="memdesc:a7ced4ea1d3d780f6c19991d2cdb6425b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move assignment. <br /></td></tr>
-<tr class="separator:a7ced4ea1d3d780f6c19991d2cdb6425b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4c37464a7349a495eccfab1c964dd8c"><td class="memItemLeft" align="right" valign="top"><a id="af4c37464a7349a495eccfab1c964dd8c"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#af4c37464a7349a495eccfab1c964dd8c">~PID</a> ()=default</td></tr>
-<tr class="memdesc:af4c37464a7349a495eccfab1c964dd8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor. <br /></td></tr>
-<tr class="separator:af4c37464a7349a495eccfab1c964dd8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae86c73bb3f865d84499c9919ebcd3f23"><td class="memItemLeft" align="right" valign="top"><a id="ae86c73bb3f865d84499c9919ebcd3f23"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ae86c73bb3f865d84499c9919ebcd3f23">set_kp</a> (double kp)</td></tr>
-<tr class="memdesc:ae86c73bb3f865d84499c9919ebcd3f23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all proportional gains to kp. <br /></td></tr>
-<tr class="separator:ae86c73bb3f865d84499c9919ebcd3f23"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01702ec97df075468ff8de86f3106ad3"><td class="memTemplParams" colspan="2"><a id="a01702ec97df075468ff8de86f3106ad3"></a>
+<tr class="memitem:a8859c22490940ca7997b5373fd9b891d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a8859c22490940ca7997b5373fd9b891d">PID</a> (const <a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html">PIDParams</a> &amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html">PIDParams</a>{}) noexcept</td></tr>
+<tr class="memdesc:a8859c22490940ca7997b5373fd9b891d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classsmooth_1_1feedback_1_1PID.html" title="Proportional-Integral-Derivative controller for Lie groups.">PID</a> controller.  <a href="classsmooth_1_1feedback_1_1PID.html#a8859c22490940ca7997b5373fd9b891d">More...</a><br /></td></tr>
+<tr class="separator:a8859c22490940ca7997b5373fd9b891d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac96c67b9184125e3000a7c31d9ff3244"><td class="memItemLeft" align="right" valign="top"><a id="ac96c67b9184125e3000a7c31d9ff3244"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ac96c67b9184125e3000a7c31d9ff3244">PID</a> (const <a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;)=default</td></tr>
+<tr class="memdesc:ac96c67b9184125e3000a7c31d9ff3244"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy constructor. <br /></td></tr>
+<tr class="separator:ac96c67b9184125e3000a7c31d9ff3244"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99ea65d7bbd838ee06fdcbc1dc711e49"><td class="memItemLeft" align="right" valign="top"><a id="a99ea65d7bbd838ee06fdcbc1dc711e49"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a99ea65d7bbd838ee06fdcbc1dc711e49">PID</a> (<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&amp;)=default</td></tr>
+<tr class="memdesc:a99ea65d7bbd838ee06fdcbc1dc711e49"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move constructor. <br /></td></tr>
+<tr class="separator:a99ea65d7bbd838ee06fdcbc1dc711e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7ee1888cb34caebc077f2bc6bbe8ba6"><td class="memItemLeft" align="right" valign="top"><a id="ae7ee1888cb34caebc077f2bc6bbe8ba6"></a>
+<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ae7ee1888cb34caebc077f2bc6bbe8ba6">operator=</a> (const <a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;)=default</td></tr>
+<tr class="memdesc:ae7ee1888cb34caebc077f2bc6bbe8ba6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy assignment. <br /></td></tr>
+<tr class="separator:ae7ee1888cb34caebc077f2bc6bbe8ba6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c8f1e97088aaecb4440c73161440df0"><td class="memItemLeft" align="right" valign="top"><a id="a1c8f1e97088aaecb4440c73161440df0"></a>
+<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a1c8f1e97088aaecb4440c73161440df0">operator=</a> (<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> &amp;&amp;)=default</td></tr>
+<tr class="memdesc:a1c8f1e97088aaecb4440c73161440df0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move assignment. <br /></td></tr>
+<tr class="separator:a1c8f1e97088aaecb4440c73161440df0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6eab7aba2ba0d5188cdfeea9c582dccb"><td class="memItemLeft" align="right" valign="top"><a id="a6eab7aba2ba0d5188cdfeea9c582dccb"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a6eab7aba2ba0d5188cdfeea9c582dccb">~PID</a> ()=default</td></tr>
+<tr class="memdesc:a6eab7aba2ba0d5188cdfeea9c582dccb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor. <br /></td></tr>
+<tr class="separator:a6eab7aba2ba0d5188cdfeea9c582dccb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74ea1f85a9e2af1bada48ab43297ef6c"><td class="memItemLeft" align="right" valign="top">Tangent&lt; G &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a74ea1f85a9e2af1bada48ab43297ef6c">operator()</a> (const Time &amp;t, const G &amp;x, const Tangent&lt; G &gt; &amp;v)</td></tr>
+<tr class="memdesc:a74ea1f85a9e2af1bada48ab43297ef6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate control input.  <a href="classsmooth_1_1feedback_1_1PID.html#a74ea1f85a9e2af1bada48ab43297ef6c">More...</a><br /></td></tr>
+<tr class="separator:a74ea1f85a9e2af1bada48ab43297ef6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a990a2b870d83377092ed3af8ee76e4d9"><td class="memItemLeft" align="right" valign="top"><a id="a990a2b870d83377092ed3af8ee76e4d9"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a990a2b870d83377092ed3af8ee76e4d9">set_kp</a> (double kp)</td></tr>
+<tr class="memdesc:a990a2b870d83377092ed3af8ee76e4d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all proportional gains to kp. <br /></td></tr>
+<tr class="separator:a990a2b870d83377092ed3af8ee76e4d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f0a9071d14d90840a4b0651f9afb844"><td class="memTemplParams" colspan="2"><a id="a0f0a9071d14d90840a4b0651f9afb844"></a>
 template&lt;typename Derived &gt; </td></tr>
-<tr class="memitem:a01702ec97df075468ff8de86f3106ad3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a01702ec97df075468ff8de86f3106ad3">set_kp</a> (const Eigen::MatrixBase&lt; Derived &gt; &amp;kp)</td></tr>
-<tr class="memdesc:a01702ec97df075468ff8de86f3106ad3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set proportional gains. <br /></td></tr>
-<tr class="separator:a01702ec97df075468ff8de86f3106ad3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a324518b9eb67461f3f3bcfe68224851c"><td class="memItemLeft" align="right" valign="top"><a id="a324518b9eb67461f3f3bcfe68224851c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a324518b9eb67461f3f3bcfe68224851c">set_kd</a> (double kd)</td></tr>
-<tr class="memdesc:a324518b9eb67461f3f3bcfe68224851c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all derivative gains to kd. <br /></td></tr>
-<tr class="separator:a324518b9eb67461f3f3bcfe68224851c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23d3b7c01ce2a81f387ff8e00f5f91ef"><td class="memTemplParams" colspan="2"><a id="a23d3b7c01ce2a81f387ff8e00f5f91ef"></a>
+<tr class="memitem:a0f0a9071d14d90840a4b0651f9afb844"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a0f0a9071d14d90840a4b0651f9afb844">set_kp</a> (const Eigen::MatrixBase&lt; Derived &gt; &amp;kp)</td></tr>
+<tr class="memdesc:a0f0a9071d14d90840a4b0651f9afb844"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set proportional gains. <br /></td></tr>
+<tr class="separator:a0f0a9071d14d90840a4b0651f9afb844"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f5e7538b57f68cc02945cf17d73cb93"><td class="memItemLeft" align="right" valign="top"><a id="a9f5e7538b57f68cc02945cf17d73cb93"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a9f5e7538b57f68cc02945cf17d73cb93">set_kd</a> (double kd)</td></tr>
+<tr class="memdesc:a9f5e7538b57f68cc02945cf17d73cb93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all derivative gains to kd. <br /></td></tr>
+<tr class="separator:a9f5e7538b57f68cc02945cf17d73cb93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf47a8d2baea0e44e29e9defdd00d4da"><td class="memTemplParams" colspan="2"><a id="abf47a8d2baea0e44e29e9defdd00d4da"></a>
 template&lt;typename Derived &gt; </td></tr>
-<tr class="memitem:a23d3b7c01ce2a81f387ff8e00f5f91ef"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a23d3b7c01ce2a81f387ff8e00f5f91ef">set_kd</a> (const Eigen::MatrixBase&lt; Derived &gt; &amp;kd)</td></tr>
-<tr class="memdesc:a23d3b7c01ce2a81f387ff8e00f5f91ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set derivative gains. <br /></td></tr>
-<tr class="separator:a23d3b7c01ce2a81f387ff8e00f5f91ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a843d255f93fac8bce487eecfe949abff"><td class="memItemLeft" align="right" valign="top"><a id="a843d255f93fac8bce487eecfe949abff"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a843d255f93fac8bce487eecfe949abff">set_ki</a> (double ki)</td></tr>
-<tr class="memdesc:a843d255f93fac8bce487eecfe949abff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all integral gains to ki. <br /></td></tr>
-<tr class="separator:a843d255f93fac8bce487eecfe949abff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac890915adef567b343ec88a5fccf9fb3"><td class="memTemplParams" colspan="2"><a id="ac890915adef567b343ec88a5fccf9fb3"></a>
+<tr class="memitem:abf47a8d2baea0e44e29e9defdd00d4da"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#abf47a8d2baea0e44e29e9defdd00d4da">set_kd</a> (const Eigen::MatrixBase&lt; Derived &gt; &amp;kd)</td></tr>
+<tr class="memdesc:abf47a8d2baea0e44e29e9defdd00d4da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set derivative gains. <br /></td></tr>
+<tr class="separator:abf47a8d2baea0e44e29e9defdd00d4da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad665562f53089242aa99f170f92e9e83"><td class="memItemLeft" align="right" valign="top"><a id="ad665562f53089242aa99f170f92e9e83"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad665562f53089242aa99f170f92e9e83">set_ki</a> (double ki)</td></tr>
+<tr class="memdesc:ad665562f53089242aa99f170f92e9e83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all integral gains to ki. <br /></td></tr>
+<tr class="separator:ad665562f53089242aa99f170f92e9e83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af22964d530e220a220dca8b3e3944e92"><td class="memTemplParams" colspan="2"><a id="af22964d530e220a220dca8b3e3944e92"></a>
 template&lt;typename Derived &gt; </td></tr>
-<tr class="memitem:ac890915adef567b343ec88a5fccf9fb3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#ac890915adef567b343ec88a5fccf9fb3">set_ki</a> (const Eigen::MatrixBase&lt; Derived &gt; &amp;ki)</td></tr>
-<tr class="memdesc:ac890915adef567b343ec88a5fccf9fb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set derivative gains. <br /></td></tr>
-<tr class="separator:ac890915adef567b343ec88a5fccf9fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7be08a39f7cda290bcb58622eafbc9f3"><td class="memItemLeft" align="right" valign="top"><a id="a7be08a39f7cda290bcb58622eafbc9f3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a7be08a39f7cda290bcb58622eafbc9f3">reset_integral</a> ()</td></tr>
-<tr class="memdesc:a7be08a39f7cda290bcb58622eafbc9f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset integral state to zero. <br /></td></tr>
-<tr class="separator:a7be08a39f7cda290bcb58622eafbc9f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26592d43e8511f07fa4a5d64a744b426"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">set_xdes</a> (T t0, const smooth::Curve&lt; G &gt; &amp;c)</td></tr>
-<tr class="memdesc:a26592d43e8511f07fa4a5d64a744b426"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory as a smooth::Curve.  <a href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">More...</a><br /></td></tr>
-<tr class="separator:a26592d43e8511f07fa4a5d64a744b426"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c95a9d780b8933acf101d3eba2c4b3d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a8c95a9d780b8933acf101d3eba2c4b3d">set_xdes</a> (const std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad8cf7e5d90bed51be83e44a2c101ad66">TrajectoryReturnT</a>(T)&gt; &amp;f)</td></tr>
-<tr class="memdesc:a8c95a9d780b8933acf101d3eba2c4b3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory.  <a href="classsmooth_1_1feedback_1_1PID.html#a8c95a9d780b8933acf101d3eba2c4b3d">More...</a><br /></td></tr>
-<tr class="separator:a8c95a9d780b8933acf101d3eba2c4b3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fba8feacf4a71ebf942bc733d1f3a8e"><td class="memItemLeft" align="right" valign="top"><a id="a2fba8feacf4a71ebf942bc733d1f3a8e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a2fba8feacf4a71ebf942bc733d1f3a8e">set_xdes</a> (std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad8cf7e5d90bed51be83e44a2c101ad66">TrajectoryReturnT</a>(T)&gt; &amp;&amp;f)</td></tr>
-<tr class="memdesc:a2fba8feacf4a71ebf942bc733d1f3a8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory (rvalue version). <br /></td></tr>
-<tr class="separator:a2fba8feacf4a71ebf942bc733d1f3a8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02f9a9ecd7d9bc3fba03f5f9b6d56ace"><td class="memItemLeft" align="right" valign="top">G::Tangent&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a02f9a9ecd7d9bc3fba03f5f9b6d56ace">operator()</a> (const T &amp;t, const G &amp;x, const typename G::Tangent &amp;v)</td></tr>
-<tr class="memdesc:a02f9a9ecd7d9bc3fba03f5f9b6d56ace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate control input.  <a href="classsmooth_1_1feedback_1_1PID.html#a02f9a9ecd7d9bc3fba03f5f9b6d56ace">More...</a><br /></td></tr>
-<tr class="separator:a02f9a9ecd7d9bc3fba03f5f9b6d56ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af22964d530e220a220dca8b3e3944e92"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#af22964d530e220a220dca8b3e3944e92">set_ki</a> (const Eigen::MatrixBase&lt; Derived &gt; &amp;ki)</td></tr>
+<tr class="memdesc:af22964d530e220a220dca8b3e3944e92"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set derivative gains. <br /></td></tr>
+<tr class="separator:af22964d530e220a220dca8b3e3944e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa2ed4ff8b76ffc4bbe865b38b1c433d"><td class="memItemLeft" align="right" valign="top"><a id="afa2ed4ff8b76ffc4bbe865b38b1c433d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#afa2ed4ff8b76ffc4bbe865b38b1c433d">reset_integral</a> ()</td></tr>
+<tr class="memdesc:afa2ed4ff8b76ffc4bbe865b38b1c433d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset integral state to zero. <br /></td></tr>
+<tr class="separator:afa2ed4ff8b76ffc4bbe865b38b1c433d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d2362c536efdadf9052d814f83bd34b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a9d2362c536efdadf9052d814f83bd34b">set_xdes</a> (Time t0, const smooth::Curve&lt; G &gt; &amp;c)</td></tr>
+<tr class="memdesc:a9d2362c536efdadf9052d814f83bd34b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory as a smooth::Curve.  <a href="classsmooth_1_1feedback_1_1PID.html#a9d2362c536efdadf9052d814f83bd34b">More...</a><br /></td></tr>
+<tr class="separator:a9d2362c536efdadf9052d814f83bd34b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3acdcfcd36757c765b358f15b587a1c3"><td class="memItemLeft" align="right" valign="top"><a id="a3acdcfcd36757c765b358f15b587a1c3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a3acdcfcd36757c765b358f15b587a1c3">set_xdes</a> (Time t0, smooth::Curve&lt; G &gt; &amp;&amp;c)</td></tr>
+<tr class="memdesc:a3acdcfcd36757c765b358f15b587a1c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory as a smooth::Curve (rvalue version) <br /></td></tr>
+<tr class="separator:a3acdcfcd36757c765b358f15b587a1c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38e111b8def5a04ced95345ce2875419"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a38e111b8def5a04ced95345ce2875419">set_xdes</a> (const std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a29d70bf20196a836f7faa81becacc082">TrajectoryReturnT</a>(Time)&gt; &amp;f)</td></tr>
+<tr class="memdesc:a38e111b8def5a04ced95345ce2875419"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory.  <a href="classsmooth_1_1feedback_1_1PID.html#a38e111b8def5a04ced95345ce2875419">More...</a><br /></td></tr>
+<tr class="separator:a38e111b8def5a04ced95345ce2875419"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62c0b9b5a286fc615b142d805276d3d7"><td class="memItemLeft" align="right" valign="top"><a id="a62c0b9b5a286fc615b142d805276d3d7"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a62c0b9b5a286fc615b142d805276d3d7">set_xdes</a> (std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a29d70bf20196a836f7faa81becacc082">TrajectoryReturnT</a>(Time)&gt; &amp;&amp;f)</td></tr>
+<tr class="memdesc:a62c0b9b5a286fc615b142d805276d3d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory (rvalue version). <br /></td></tr>
+<tr class="separator:a62c0b9b5a286fc615b142d805276d3d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename T, LieGroup G&gt;<br />
-class smooth::feedback::PID&lt; T, G &gt;</h3>
+<div class="textblock"><h3>template&lt;typename Time, LieGroup G&gt;<br />
+class smooth::feedback::PID&lt; Time, G &gt;</h3>
 
 <p>Proportional-Integral-Derivative controller for Lie groups. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
-    <tr><td class="paramname">T</td><td>time type, must be a std::chrono::duration-like </td></tr>
+    <tr><td class="paramname">Time</td><td>time type, must be a std::chrono::duration-like </td></tr>
     <tr><td class="paramname">G</td><td>state space LieGroup type</td></tr>
   </table>
   </dd>
@@ -183,19 +187,19 @@ class smooth::feedback::PID&lt; T, G &gt;</h3>
 
 <p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00060">60</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="aa5de7b5c7935a2b6db8add2d00a47998"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa5de7b5c7935a2b6db8add2d00a47998">&#9670;&nbsp;</a></span>PID()</h2>
+<a id="a8859c22490940ca7997b5373fd9b891d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8859c22490940ca7997b5373fd9b891d">&#9670;&nbsp;</a></span>PID()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , LieGroup G&gt; </div>
+template&lt;typename Time , LieGroup G&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; T, G &gt;::<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> </td>
+          <td class="memname"><a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; Time, G &gt;::<a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a> </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html">PIDParams</a> &amp;&#160;</td>
           <td class="paramname"><em>prm</em> = <code><a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html">PIDParams</a>{}</code></td><td>)</td>
@@ -223,21 +227,21 @@ template&lt;typename T , LieGroup G&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a02f9a9ecd7d9bc3fba03f5f9b6d56ace"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02f9a9ecd7d9bc3fba03f5f9b6d56ace">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="a74ea1f85a9e2af1bada48ab43297ef6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74ea1f85a9e2af1bada48ab43297ef6c">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , LieGroup G&gt; </div>
+template&lt;typename Time , LieGroup G&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">G::Tangent <a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; T, G &gt;::operator() </td>
+          <td class="memname">Tangent&lt;G&gt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; Time, G &gt;::operator() </td>
           <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramtype">const Time &amp;&#160;</td>
           <td class="paramname"><em>t</em>, </td>
         </tr>
         <tr>
@@ -249,7 +253,7 @@ template&lt;typename T , LieGroup G&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const typename G::Tangent &amp;&#160;</td>
+          <td class="paramtype">const Tangent&lt; G &gt; &amp;&#160;</td>
           <td class="paramname"><em>v</em>&#160;</td>
         </tr>
         <tr>
@@ -270,30 +274,31 @@ template&lt;typename T , LieGroup G&gt; </div>
   <table class="params">
     <tr><td class="paramname">t</td><td>current time </td></tr>
     <tr><td class="paramname">x</td><td>current state </td></tr>
-    <tr><td class="paramname">v</td><td>current body velocity </td></tr>
+    <tr><td class="paramname">v</td><td>current body velocity</td></tr>
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>input proportional to desired body acceleration </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00184">184</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00095">95</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a8c95a9d780b8933acf101d3eba2c4b3d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c95a9d780b8933acf101d3eba2c4b3d">&#9670;&nbsp;</a></span>set_xdes() <span class="overload">[1/2]</span></h2>
+<a id="a38e111b8def5a04ced95345ce2875419"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38e111b8def5a04ced95345ce2875419">&#9670;&nbsp;</a></span>set_xdes() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , LieGroup G&gt; </div>
+template&lt;typename Time , LieGroup G&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; T, G &gt;::set_xdes </td>
+          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; Time, G &gt;::set_xdes </td>
           <td>(</td>
-          <td class="paramtype">const std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#ad8cf7e5d90bed51be83e44a2c101ad66">TrajectoryReturnT</a>(T)&gt; &amp;&#160;</td>
+          <td class="paramtype">const std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a29d70bf20196a836f7faa81becacc082">TrajectoryReturnT</a>(Time)&gt; &amp;&#160;</td>
           <td class="paramname"><em>f</em></td><td>)</td>
           <td></td>
         </tr>
@@ -306,32 +311,32 @@ template&lt;typename T , LieGroup G&gt; </div>
 </div><div class="memdoc">
 
 <p>Set desired trajectory. </p>
-<p>The trajectory is a function from time to (position, velocity, acceleration). To track a time-dependent trajectory consider using <code>smooth::Curve</code> and <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">set_xdes</a>(T, const smooth::Curve&lt;G&gt; &amp;) to set the desired trajectory.</p>
+<p>The trajectory is a function from time to (position, velocity, acceleration). To track a time-dependent trajectory consider using <code>smooth::Curve</code> and <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a9d2362c536efdadf9052d814f83bd34b">set_xdes</a>(Time, const smooth::Curve&lt;G&gt; &amp;) to set the desired trajectory.</p>
 <p>For a constant reference target the velocity and acceleration should be constantly zero.</p>
 <dl class="section note"><dt>Note</dt><dd>For best performance the trajectory should be dynamically consistent, i.e. <p class="formulaDsp">
 \[ \mathrm{d}^r \mathbf{x}_t = \mathbf{v}, \\ \frac{\mathrm{d}}{\mathrm{d}t} \mathbf{v} = \mathbf{a}, \]
 </p>
  where (x, v, a) is the (position, velocity, acceleration)-tuple returned by the trajectory. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00166">166</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00196">196</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a26592d43e8511f07fa4a5d64a744b426"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26592d43e8511f07fa4a5d64a744b426">&#9670;&nbsp;</a></span>set_xdes() <span class="overload">[2/2]</span></h2>
+<a id="a9d2362c536efdadf9052d814f83bd34b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d2362c536efdadf9052d814f83bd34b">&#9670;&nbsp;</a></span>set_xdes() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , LieGroup G&gt; </div>
+template&lt;typename Time , LieGroup G&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; T, G &gt;::set_xdes </td>
+          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a>&lt; Time, G &gt;::set_xdes </td>
           <td>(</td>
-          <td class="paramtype">T&#160;</td>
+          <td class="paramtype">Time&#160;</td>
           <td class="paramname"><em>t0</em>, </td>
         </tr>
         <tr>
@@ -362,7 +367,7 @@ template&lt;typename T , LieGroup G&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00140">140</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pid_8hpp_source.html#l00165">165</a> of file <a class="el" href="pid_8hpp_source.html">pid.hpp</a>.</p>
 
 </div>
 </div>

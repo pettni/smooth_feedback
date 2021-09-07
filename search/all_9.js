@@ -1,9 +1,7 @@
 var searchData=
 [
-  ['objective_45',['objective',['../structsmooth_1_1feedback_1_1QPSolution.html#a4cce04b3d7e7a0a066769b6193235bd7',1,'smooth::feedback::QPSolution']]],
-  ['ocp_5fto_5fqp_46',['ocp_to_qp',['../mpc_8hpp.html#aef8d61fa12eb80b9927db4a606c837f0',1,'smooth::feedback']]],
-  ['operator_28_29_47',['operator()',['../classsmooth_1_1feedback_1_1MPC.html#a7791399b95a9a3c2375b10b5dc542eac',1,'smooth::feedback::MPC::operator()()'],['../classsmooth_1_1feedback_1_1PID.html#a02f9a9ecd7d9bc3fba03f5f9b6d56ace',1,'smooth::feedback::PID::operator()()']]],
-  ['operator_3d_48',['operator=',['../classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#acdf9f2a789ea530e8c24cc2b6a03770f',1,'smooth::feedback::detail::LDLTLapack::operator=(const LDLTLapack &amp;)=default'],['../classsmooth_1_1feedback_1_1detail_1_1LDLTLapack.html#a0b75419ad7bc215ed87468420ba7e77e',1,'smooth::feedback::detail::LDLTLapack::operator=(LDLTLapack &amp;&amp;)=default'],['../classsmooth_1_1feedback_1_1detail_1_1LDLTSparse.html#a36601955ca3316a9652c9e3e776877ac',1,'smooth::feedback::detail::LDLTSparse::operator=(const LDLTSparse &amp;)=default'],['../classsmooth_1_1feedback_1_1detail_1_1LDLTSparse.html#ad9c98052464b6db1778dea0a9dc4b4d1',1,'smooth::feedback::detail::LDLTSparse::operator=(LDLTSparse &amp;&amp;)=default'],['../classsmooth_1_1feedback_1_1MPC.html#a389b29053e1ba7105df5d7c77ec81270',1,'smooth::feedback::MPC::operator=(const MPC &amp;)=default'],['../classsmooth_1_1feedback_1_1MPC.html#a3468a6388f68a29306500ebdb7b1d3b5',1,'smooth::feedback::MPC::operator=(MPC &amp;&amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#a9302f4c30d07b7acb54093240f21728e',1,'smooth::feedback::PID::operator=(const PID &amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#a7ced4ea1d3d780f6c19991d2cdb6425b',1,'smooth::feedback::PID::operator=(PID &amp;&amp;)=default']]],
-  ['optimalcontrolbounds_49',['OptimalControlBounds',['../structsmooth_1_1feedback_1_1OptimalControlBounds.html',1,'smooth::feedback']]],
-  ['optimalcontrolproblem_50',['OptimalControlProblem',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html',1,'smooth::feedback']]]
+  ['n_50',['N',['../structsmooth_1_1feedback_1_1ManifoldBounds.html#a57b207b5f5ccb8c1eb40624f5744e2c6',1,'smooth::feedback::ManifoldBounds']]],
+  ['nh_51',['nh',['../structsmooth_1_1feedback_1_1ASIFilterParams.html#a28a2152d6885392a15036babae5fe899',1,'smooth::feedback::ASIFilterParams']]],
+  ['nu_52',['Nu',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac5510c00ed2a9a2fcb61e28ab2bff47e',1,'smooth::feedback::OptimalControlProblem']]],
+  ['nx_53',['Nx',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a0d29993d746c52b35bb3d1f3e565aed4',1,'smooth::feedback::OptimalControlProblem']]]
 ];

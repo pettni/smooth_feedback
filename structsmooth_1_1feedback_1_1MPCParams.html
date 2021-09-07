@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>smooth_feedback: smooth::feedback::MPCParams Struct Reference</title>
+<title>smooth_feedback: smooth::feedback::MPCParams&lt; G, U &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -77,7 +77,7 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structsmooth_1_1feedback_1_1MPCParams-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">smooth::feedback::MPCParams Struct Reference</div>  </div>
+<div class="title">smooth::feedback::MPCParams&lt; G, U &gt; Struct Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -88,42 +88,59 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a8c2d541e8362105e808149943d06973a"><td class="memItemLeft" align="right" valign="top"><a id="a8c2d541e8362105e808149943d06973a"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a8c2d541e8362105e808149943d06973a">T</a> {1}</td></tr>
-<tr class="memdesc:a8c2d541e8362105e808149943d06973a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> horizon (seconds) <br /></td></tr>
-<tr class="separator:a8c2d541e8362105e808149943d06973a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac24fea108871e87d6789429fcfcb5cf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aac24fea108871e87d6789429fcfcb5cf">warmstart</a> {true}</td></tr>
-<tr class="memdesc:aac24fea108871e87d6789429fcfcb5cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable warmstarting.  <a href="structsmooth_1_1feedback_1_1MPCParams.html#aac24fea108871e87d6789429fcfcb5cf">More...</a><br /></td></tr>
-<tr class="separator:aac24fea108871e87d6789429fcfcb5cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c0a54b180f73963d220a3a1073ba557"><td class="memItemLeft" align="right" valign="top"><a id="a3c0a54b180f73963d220a3a1073ba557"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a3c0a54b180f73963d220a3a1073ba557">relinearize_state_around_sol</a> {false}</td></tr>
-<tr class="memdesc:a3c0a54b180f73963d220a3a1073ba557"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relinearize the problem around state solution after each solve. <br /></td></tr>
-<tr class="separator:a3c0a54b180f73963d220a3a1073ba557"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43eee5e33f68a9e4ecfc636d0e3e9783"><td class="memItemLeft" align="right" valign="top"><a id="a43eee5e33f68a9e4ecfc636d0e3e9783"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a43eee5e33f68a9e4ecfc636d0e3e9783">relinearize_input_around_sol</a> {false}</td></tr>
-<tr class="memdesc:a43eee5e33f68a9e4ecfc636d0e3e9783"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relinearize the problem around input solution after each solve. <br /></td></tr>
-<tr class="separator:a43eee5e33f68a9e4ecfc636d0e3e9783"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5432f8148094c33975b0bc9e720a1bf0"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a5432f8148094c33975b0bc9e720a1bf0">iterative_relinearization</a> {0}</td></tr>
-<tr class="memdesc:a5432f8148094c33975b0bc9e720a1bf0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterative relinearization.  <a href="structsmooth_1_1feedback_1_1MPCParams.html#a5432f8148094c33975b0bc9e720a1bf0">More...</a><br /></td></tr>
-<tr class="separator:a5432f8148094c33975b0bc9e720a1bf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5fca7a42cfa6f39d314a0d3a6d207c99"><td class="memItemLeft" align="right" valign="top"><a id="a5fca7a42cfa6f39d314a0d3a6d207c99"></a>
-<a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html">QPSolverParams</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a5fca7a42cfa6f39d314a0d3a6d207c99">qp</a> {}</td></tr>
-<tr class="memdesc:a5fca7a42cfa6f39d314a0d3a6d207c99"><td class="mdescLeft">&#160;</td><td class="mdescRight">QP solvers parameters. <br /></td></tr>
-<tr class="separator:a5fca7a42cfa6f39d314a0d3a6d207c99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5f181b92332704866601ee61e5174fa"><td class="memItemLeft" align="right" valign="top"><a id="af5f181b92332704866601ee61e5174fa"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#af5f181b92332704866601ee61e5174fa">T</a> {1}</td></tr>
+<tr class="memdesc:af5f181b92332704866601ee61e5174fa"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> time horizon (seconds) <br /></td></tr>
+<tr class="separator:af5f181b92332704866601ee61e5174fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa325af0fd92edda7c9e2eee514fac947"><td class="memItemLeft" align="right" valign="top"><a id="aa325af0fd92edda7c9e2eee514fac947"></a>
+std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aa325af0fd92edda7c9e2eee514fac947">K</a> {10}</td></tr>
+<tr class="memdesc:aa325af0fd92edda7c9e2eee514fac947"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of discretization steps. <br /></td></tr>
+<tr class="separator:aa325af0fd92edda7c9e2eee514fac947"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea04fc638e292237ac70c04d12a301f8"><td class="memItemLeft" align="right" valign="top"><a id="aea04fc638e292237ac70c04d12a301f8"></a>
+<a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem</a>&lt; G, U &gt;::Weights&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aea04fc638e292237ac70c04d12a301f8">weights</a> {}</td></tr>
+<tr class="memdesc:aea04fc638e292237ac70c04d12a301f8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> state and input weights. <br /></td></tr>
+<tr class="separator:aea04fc638e292237ac70c04d12a301f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a529dcc02320655f14e6210efbc82a6ad"><td class="memItemLeft" align="right" valign="top"><a id="a529dcc02320655f14e6210efbc82a6ad"></a>
+<a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html">ManifoldBounds</a>&lt; G &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a529dcc02320655f14e6210efbc82a6ad">glim</a> {}</td></tr>
+<tr class="memdesc:a529dcc02320655f14e6210efbc82a6ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">State bounds. <br /></td></tr>
+<tr class="separator:a529dcc02320655f14e6210efbc82a6ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a359040f044d8dd3603e7a46844111b38"><td class="memItemLeft" align="right" valign="top"><a id="a359040f044d8dd3603e7a46844111b38"></a>
+<a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html">ManifoldBounds</a>&lt; U &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a359040f044d8dd3603e7a46844111b38">ulim</a> {}</td></tr>
+<tr class="memdesc:a359040f044d8dd3603e7a46844111b38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input bounds. <br /></td></tr>
+<tr class="separator:a359040f044d8dd3603e7a46844111b38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ac576ea95a6bfd64f6a87df2ff1eaa1"><td class="memItemLeft" align="right" valign="top"><a id="a4ac576ea95a6bfd64f6a87df2ff1eaa1"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a4ac576ea95a6bfd64f6a87df2ff1eaa1">warmstart</a> {true}</td></tr>
+<tr class="memdesc:a4ac576ea95a6bfd64f6a87df2ff1eaa1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable warmstarting. <br /></td></tr>
+<tr class="separator:a4ac576ea95a6bfd64f6a87df2ff1eaa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54992672883c01640e8393a906d37b0c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a54992672883c01640e8393a906d37b0c">relinearize_around_solution</a> {false}</td></tr>
+<tr class="memdesc:a54992672883c01640e8393a906d37b0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relinearize the problem around solution after each solve.  <a href="structsmooth_1_1feedback_1_1MPCParams.html#a54992672883c01640e8393a906d37b0c">More...</a><br /></td></tr>
+<tr class="separator:a54992672883c01640e8393a906d37b0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abeec8bd844d0f6fecbd9367ec9813441"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#abeec8bd844d0f6fecbd9367ec9813441">iterative_relinearization</a> {0}</td></tr>
+<tr class="memdesc:abeec8bd844d0f6fecbd9367ec9813441"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterative relinearization.  <a href="structsmooth_1_1feedback_1_1MPCParams.html#abeec8bd844d0f6fecbd9367ec9813441">More...</a><br /></td></tr>
+<tr class="separator:abeec8bd844d0f6fecbd9367ec9813441"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21e521ca84b5fa08de1d8b394d671810"><td class="memItemLeft" align="right" valign="top"><a id="a21e521ca84b5fa08de1d8b394d671810"></a>
+<a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html">QPSolverParams</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a21e521ca84b5fa08de1d8b394d671810">qp</a> {}</td></tr>
+<tr class="memdesc:a21e521ca84b5fa08de1d8b394d671810"><td class="mdescLeft">&#160;</td><td class="mdescRight">QP solvers parameters. <br /></td></tr>
+<tr class="separator:a21e521ca84b5fa08de1d8b394d671810"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Parameters for <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a>. </p>
+<div class="textblock"><h3>template&lt;LieGroup G, Manifold U&gt;<br />
+struct smooth::feedback::MPCParams&lt; G, U &gt;</h3>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00448">448</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p>Parameters for <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a>. </p>
+
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00037">37</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="a5432f8148094c33975b0bc9e720a1bf0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5432f8148094c33975b0bc9e720a1bf0">&#9670;&nbsp;</a></span>iterative_relinearization</h2>
+<a id="abeec8bd844d0f6fecbd9367ec9813441"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abeec8bd844d0f6fecbd9367ec9813441">&#9670;&nbsp;</a></span>iterative_relinearization</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, Manifold U&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t smooth::feedback::MPCParams::iterative_relinearization {0}</td>
+          <td class="memname">uint32_t <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">smooth::feedback::MPCParams</a>&lt; G, U &gt;::iterative_relinearization {0}</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -132,32 +149,40 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="stru
 <p>If this is set to a positive number an iterative procedure is used:</p>
 <ol type="1">
 <li>Solve problem at current linearization</li>
-<li>If solution does not touch linearization bounds g_bound / u_bound, stop</li>
+<li>If solution does not touch linearization bounds g_bound, stop</li>
 <li>Else relinearize around solution and go to 1</li>
 </ol>
-<p>This process is repeated at most <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a5432f8148094c33975b0bc9e720a1bf0" title="Iterative relinearization.">MPCParams::iterative_relinearization</a> times.</p>
-<dl class="section note"><dt>Note</dt><dd>Requires <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#acc0a39718ddcafe8b0b3395eb64691a9" title="Domain of validity of state linearization.">LinearizationInfo::g_domain</a> and <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac86f0494b7ba041dd45d82971ce411a0" title="Domain of validity of input linearization.">LinearizationInfo::u_domain</a> to be set to appropriate values. </dd></dl>
+<p>This process is repeated at most <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#abeec8bd844d0f6fecbd9367ec9813441" title="Iterative relinearization.">MPCParams::iterative_relinearization</a> times.</p>
+<dl class="section note"><dt>Note</dt><dd>Requires <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac267b0228db56b5e353446d34e4e1135" title="Domain of validity of state linearization.">LinearizationInfo::g_domain</a> to be set to an appropriate value. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00484">484</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00094">94</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
-<a id="aac24fea108871e87d6789429fcfcb5cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac24fea108871e87d6789429fcfcb5cf">&#9670;&nbsp;</a></span>warmstart</h2>
+<a id="a54992672883c01640e8393a906d37b0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54992672883c01640e8393a906d37b0c">&#9670;&nbsp;</a></span>relinearize_around_solution</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, Manifold U&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool smooth::feedback::MPCParams::warmstart {true}</td>
+          <td class="memname">bool <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">smooth::feedback::MPCParams</a>&lt; G, U &gt;::relinearize_around_solution {false}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Enable warmstarting. </p>
-<dl class="section warning"><dt>Warning</dt><dd><a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aac24fea108871e87d6789429fcfcb5cf" title="Enable warmstarting.">MPCParams::warmstart</a> should not be enabled together with frequent relinearization. </dd></dl>
+<p>Relinearize the problem around solution after each solve. </p>
+<p>If this parameter is false</p><ul>
+<li>Problem is relinearized around the desired trajectory at each iteration</li>
+</ul>
+<p>If this is set to true:</p><ul>
+<li>Problem is relinearized once around a new desired trajectory</li>
+<li>Problem is relinearized after each solve </li>
+</ul>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00458">458</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00079">79</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

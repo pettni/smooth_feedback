@@ -73,18 +73,24 @@ $(function() {
 
 <h3><a id="index_a"></a>- a -</h3><ul>
 <li>A
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#acbd612f62b20171d672c6527967e101a">smooth::feedback::OptimalControlBounds&lt; M &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#ad2f207a98e1815233abd35ad12440aba">smooth::feedback::ManifoldBounds&lt; M &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#a39e57c5f95bbce5a44a6ab391fb25628">smooth::feedback::QuadraticProgram&lt; M, N, Scalar &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a730052dd30316bae21ce656bdfeae57d">smooth::feedback::QuadraticProgramSparse&lt; Scalar &gt;</a>
 </li>
 <li>alpha
-: <a class="el" href="structsmooth_1_1feedback_1_1AsifParams.html#acb284f90ffb2298694d74b3820ece70c">smooth::feedback::AsifParams</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aaf53c744cc05a6d12edd3b51ebe50ecf">smooth::feedback::ASIFtoQPParams</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#a525be1e53ed8916edae9016a48cd15a6">smooth::feedback::QPSolverParams</a>
+</li>
+<li>asif
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a13eb4a170b28855853aea36e030f57fc">smooth::feedback::ASIFilterParams&lt; U &gt;</a>
 </li>
 </ul>
 
 
 <h3><a id="index_c"></a>- c -</h3><ul>
+<li>c
+: <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#afce2158e034a1667f58c73017a6e68a7">smooth::feedback::ManifoldBounds&lt; M &gt;</a>
+</li>
 <li>code
 : <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html#a1d895ef2cc155b7f1cecbff4278f88b7">smooth::feedback::QPSolution&lt; M, N, Scalar &gt;</a>
 </li>
@@ -95,11 +101,8 @@ $(function() {
 <li>delta
 : <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#af0f769c1e55ac5f9ef8ab1c7e46bb31a">smooth::feedback::QPSolverParams</a>
 </li>
-<li>dg
-: <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#a0b0f9b13db3a24f43a67b61b8fdc650d">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>
-</li>
 <li>dt
-: <a class="el" href="structsmooth_1_1feedback_1_1AsifParams.html#a5eeb86492d2f3c5ebf84edb5a534b0a4">smooth::feedback::AsifParams</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#a2a4826417bae112b0d4f5818bd744c39">smooth::feedback::ASIFtoQPParams</a>
 </li>
 <li>dual
 : <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html#aa4284da0c53e19215616e6471254ec01">smooth::feedback::QPSolution&lt; M, N, Scalar &gt;</a>
@@ -125,16 +128,17 @@ $(function() {
 
 <h3><a id="index_g"></a>- g -</h3><ul>
 <li>g
-: <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#a1214e70ce610cafba7b51c2bb9c830d2">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#a3beb54cd87bec7db8a879e6d29178229">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>
 </li>
 <li>g_domain
-: <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#acc0a39718ddcafe8b0b3395eb64691a9">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac267b0228db56b5e353446d34e4e1135">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>
 </li>
 <li>gdes
 : <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae0ada3eab3ed9642a05d28cc902fa13e">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
 </li>
 <li>glim
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#af0121876f71ba645b67fc135a8e196b6">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a529dcc02320655f14e6210efbc82a6ad">smooth::feedback::MPCParams&lt; G, U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a290a5e94b25491d733ec6f18def8f584">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
 </li>
 </ul>
 
@@ -144,14 +148,22 @@ $(function() {
 : <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html#a43ac2d7756736ee34ac86e129a285808">smooth::feedback::QPSolution&lt; M, N, Scalar &gt;</a>
 </li>
 <li>iterative_relinearization
-: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a5432f8148094c33975b0bc9e720a1bf0">smooth::feedback::MPCParams</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#abeec8bd844d0f6fecbd9367ec9813441">smooth::feedback::MPCParams&lt; G, U &gt;</a>
+</li>
+</ul>
+
+
+<h3><a id="index_k"></a>- k -</h3><ul>
+<li>K
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aab99219680cef706f4858f4d548df1a1">smooth::feedback::ASIFtoQPParams</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aa325af0fd92edda7c9e2eee514fac947">smooth::feedback::MPCParams&lt; G, U &gt;</a>
 </li>
 </ul>
 
 
 <h3><a id="index_l"></a>- l -</h3><ul>
 <li>l
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#acecd36d18ca3fa368a9ff8102a777ef2">smooth::feedback::OptimalControlBounds&lt; M &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a90ac2651e3f1dcbb614137fc7f3bef73">smooth::feedback::ManifoldBounds&lt; M &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#abb1555f458de94ff6c13ff522fa1ad58">smooth::feedback::QuadraticProgram&lt; M, N, Scalar &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a59fa967c2807534e8f749993b4c82d9d">smooth::feedback::QuadraticProgramSparse&lt; Scalar &gt;</a>
 </li>
@@ -169,14 +181,17 @@ $(function() {
 
 
 <h3><a id="index_n"></a>- n -</h3><ul>
-<li>n
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#a6e54562c5704b467fdf9f2500ba04226">smooth::feedback::OptimalControlBounds&lt; M &gt;</a>
+<li>N
+: <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a57b207b5f5ccb8c1eb40624f5744e2c6">smooth::feedback::ManifoldBounds&lt; M &gt;</a>
 </li>
-<li>nu
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae36fd67cbf94e702d9705671d7ca833d">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+<li>nh
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a28a2152d6885392a15036babae5fe899">smooth::feedback::ASIFilterParams&lt; U &gt;</a>
 </li>
-<li>nx
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a510c443e209a42c5acc55add36acc0cb">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+<li>Nu
+: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac5510c00ed2a9a2fcb61e28ab2bff47e">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+</li>
+<li>Nx
+: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a0d29993d746c52b35bb3d1f3e565aed4">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
 </li>
 </ul>
 
@@ -207,33 +222,31 @@ $(function() {
 
 <h3><a id="index_q"></a>- q -</h3><ul>
 <li>Q
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a18104640f745da44e2e3f932aa4979dd">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#a184365bf0fc53330cf460906b31a3f57">smooth::feedback::OptimalControlProblem&lt; G, U &gt;::Weights</a>
 </li>
 <li>q
 : <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#af9cfac2013f678eb683f2bf5fa8e5aee">smooth::feedback::QuadraticProgram&lt; M, N, Scalar &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a7cff5c59c37d778e10785d29e7715989">smooth::feedback::QuadraticProgramSparse&lt; Scalar &gt;</a>
 </li>
 <li>qp
-: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a5fca7a42cfa6f39d314a0d3a6d207c99">smooth::feedback::MPCParams</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a3307bb4c2dbd8faefaa35c6b4c0dab9d">smooth::feedback::ASIFilterParams&lt; U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a21e521ca84b5fa08de1d8b394d671810">smooth::feedback::MPCParams&lt; G, U &gt;</a>
 </li>
 <li>QT
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#af638e433f7ac2f2cbe611c21569bc889">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#af4849942b2c886a5187e81d170d72a58">smooth::feedback::OptimalControlProblem&lt; G, U &gt;::Weights</a>
 </li>
 </ul>
 
 
 <h3><a id="index_r"></a>- r -</h3><ul>
 <li>R
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#aa68e642bf9b7479ae6f7a29075d7af59">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#a6aaab93e0a35b8987a97de9b6f678e6e">smooth::feedback::OptimalControlProblem&lt; G, U &gt;::Weights</a>
 </li>
 <li>relax_cost
-: <a class="el" href="structsmooth_1_1feedback_1_1AsifParams.html#a26ef2ec3f08274f5d1fc1de6e1cb37ad">smooth::feedback::AsifParams</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#a1ac57c1aaa7b3e8e77e7eabf8287a5aa">smooth::feedback::ASIFtoQPParams</a>
 </li>
-<li>relinearize_input_around_sol
-: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a43eee5e33f68a9e4ecfc636d0e3e9783">smooth::feedback::MPCParams</a>
-</li>
-<li>relinearize_state_around_sol
-: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a3c0a54b180f73963d220a3a1073ba557">smooth::feedback::MPCParams</a>
+<li>relinearize_around_solution
+: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a54992672883c01640e8393a906d37b0c">smooth::feedback::MPCParams&lt; G, U &gt;</a>
 </li>
 <li>rho
 : <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#a12313e82b48be1c090051beefd1f2af7">smooth::feedback::QPSolverParams</a>
@@ -256,11 +269,10 @@ $(function() {
 
 <h3><a id="index_t"></a>- t -</h3><ul>
 <li>T
-: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a8c2d541e8362105e808149943d06973a">smooth::feedback::MPCParams</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#af2b8a4c5d58093b6293c51286c895dff">smooth::feedback::ASIFilterParams&lt; U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a0fbb8db21298fb8513681ab8e2a06fab">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#af5f181b92332704866601ee61e5174fa">smooth::feedback::MPCParams&lt; G, U &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae31650695082bde65ca6c11eb7681e0c">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
-</li>
-<li>tau
-: <a class="el" href="structsmooth_1_1feedback_1_1AsifParams.html#a7de417435fd8e10f1a5d74c4fcbabe4e">smooth::feedback::AsifParams</a>
 </li>
 </ul>
 
@@ -268,18 +280,24 @@ $(function() {
 <h3><a id="index_u"></a>- u -</h3><ul>
 <li>u
 : <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>
-, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlBounds.html#ab7e7dbb18d5b75750298dd968be80307">smooth::feedback::OptimalControlBounds&lt; M &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a1855edf64431d8de01d5374d44d8f293">smooth::feedback::ManifoldBounds&lt; M &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#a6308cf45596d755de52b198990530fd9">smooth::feedback::QuadraticProgram&lt; M, N, Scalar &gt;</a>
 , <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a590786eb3c3230068cffb62700276c6c">smooth::feedback::QuadraticProgramSparse&lt; Scalar &gt;</a>
 </li>
-<li>u_domain
-: <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac86f0494b7ba041dd45d82971ce411a0">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>
+<li>u_des
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a0adfcff75d0b12743fa9e6b445e39fb5">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>
+</li>
+<li>u_weight
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a824b02c8d5ea99358a61012ab48ee640">smooth::feedback::ASIFilterParams&lt; U &gt;</a>
 </li>
 <li>udes
 : <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
 </li>
 <li>ulim
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac9e2f9052191801000a8fbc45d031b23">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a15bac77c7c99c5dd3a46ba4065cb9130">smooth::feedback::ASIFilterParams&lt; U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#ac872355a608a29ff0c280a9e10548b4f">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a359040f044d8dd3603e7a46844111b38">smooth::feedback::MPCParams&lt; G, U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#aed735251f2a513ab99716e1d9479b966">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
 </li>
 </ul>
 
@@ -292,8 +310,15 @@ $(function() {
 
 
 <h3><a id="index_w"></a>- w -</h3><ul>
+<li>W_u
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#ab533825b3922a43911c70417593b3978">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>
+</li>
 <li>warmstart
-: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aac24fea108871e87d6789429fcfcb5cf">smooth::feedback::MPCParams</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a4ac576ea95a6bfd64f6a87df2ff1eaa1">smooth::feedback::MPCParams&lt; G, U &gt;</a>
+</li>
+<li>weights
+: <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aea04fc638e292237ac70c04d12a301f8">smooth::feedback::MPCParams&lt; G, U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a967816d83eaf00a11964fd7216721ef4">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
 </li>
 <li>windup_limit
 : <a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html#a3b120cee267e78595ade8a784b3562a1">smooth::feedback::PIDParams</a>
@@ -303,7 +328,8 @@ $(function() {
 
 <h3><a id="index_x"></a>- x -</h3><ul>
 <li>x0
-: <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac4af927a70f4a218546ce290c5093e8d">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
+: <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a6cb14136725bbbc70222698dd205c720">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>
+, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac4af927a70f4a218546ce290c5093e8d">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a>
 </li>
 </ul>
 </div><!-- contents -->

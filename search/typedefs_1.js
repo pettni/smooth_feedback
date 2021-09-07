@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['scalar_224',['Scalar',['../classsmooth_1_1feedback_1_1EKF.html#abb95d648223dc54835f4762127c6a242',1,'smooth::feedback::EKF']]]
+  ['trajectoryreturnt_236',['TrajectoryReturnT',['../classsmooth_1_1feedback_1_1PID.html#a29d70bf20196a836f7faa81becacc082',1,'smooth::feedback::PID']]]
 ];
