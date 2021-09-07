@@ -11,5 +11,6 @@ var searchData=
   ['qt_79',['QT',['../structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#af4849942b2c886a5187e81d170d72a58',1,'smooth::feedback::OptimalControlProblem::Weights']]],
   ['quadraticprogram_80',['QuadraticProgram',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
   ['quadraticprogram_3c_2d1_2c_20_2d1_2c_20double_20_3e_81',['QuadraticProgram&lt;-1, -1, double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
-  ['quadraticprogramsparse_82',['QuadraticProgramSparse',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]]
+  ['quadraticprogramsparse_82',['QuadraticProgramSparse',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]],
+  ['quadraticprogramsparse_3c_20double_20_3e_83',['QuadraticProgramSparse&lt; double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]]
 ];
