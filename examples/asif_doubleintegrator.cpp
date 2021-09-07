@@ -26,16 +26,13 @@ int main()
   using std::sin;
   std::srand(5);
 
-  // number of ASIF constraints
-  static constexpr int nAsif = 50;
-
   // system variables
   Gd g(-5, 1);
   Ud udes = Ud(1), u;
 
   smooth::feedback::ASIFilterParams<Ud> prm{
     .T = 0.5,
-    .u_lim =
+    .ulim =
       {
         .A = Eigen::Matrix<double, 1, 1>(1),
         .l = Eigen::Matrix<double, 1, 1>(-1),
@@ -43,6 +40,7 @@ int main()
       },
     .asif =
       {
+        .K          = 50,
         .alpha      = 1,
         .dt         = 0.01,
         .relax_cost = 100,
@@ -66,8 +64,7 @@ int main()
   // backup controller
   auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
 
-  smooth::feedback::ASIFilter<nAsif, Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(
-    f, h, bu, prm);
+  smooth::feedback::ASIFilter<Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(f, h, bu, prm);
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};

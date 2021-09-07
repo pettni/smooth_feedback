@@ -29,9 +29,7 @@ using Tangentd = typename Gd::Tangent;
 int main()
 {
   // number of MPC discretization points steps
-  static constexpr int nMpc  = 50;
-  static constexpr int nAsif = 100;
-  double T                   = 5;
+  double T = 5;
 
   // system variables
   Gd g = Gd::Identity();
@@ -76,16 +74,17 @@ int main()
 
   smooth::feedback::MPCParams<Gd, Ud> mpc_prm{
     .T = T,
+    .K = 50,
     .weights =
       {
         .QT = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
       },
-    .ulim      = ulim,
-    .warmstart = true,
+    .ulim                        = ulim,
+    .warmstart                   = true,
     .relinearize_around_solution = true,
   };
 
-  smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
+  smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
 
   // define desired trajectory
   auto xdes = [&vdes](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
@@ -119,9 +118,10 @@ int main()
   smooth::feedback::ASIFilterParams<Ud> asif_prm{
     .T        = T / 2,
     .u_weight = Eigen::Vector2d{10, 1},
-    .u_lim    = ulim,
+    .ulim     = ulim,
     .asif =
       {
+        .K          = 100,
         .alpha      = 10,
         .dt         = 0.01,
         .relax_cost = 100,
@@ -132,7 +132,7 @@ int main()
       },
   };
 
-  smooth::feedback::ASIFilter<nAsif, Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
+  smooth::feedback::ASIFilter<Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
     f_asif, h, bu, asif_prm);
 
   // prepare for integrating the closed-loop system

@@ -147,9 +147,9 @@ namespace detail {
  *
  * @returns sparse quadratic program definition with allocated matrices.
  */
-template<std::size_t K, LieGroup G, Manifold U>
+template<LieGroup G, Manifold U>
 QuadraticProgramSparse<double> ocp_to_qp_allocate(
-  const OptimalControlProblem<G, U> & pbm, bool lin_con = false)
+  const OptimalControlProblem<G, U> & pbm, std::size_t K, bool lin_con = false)
 {
   // problem info
   static constexpr int Nx = Dof<G>;
@@ -215,8 +215,9 @@ QuadraticProgramSparse<double> ocp_to_qp_allocate(
 /**
  * @brief Fill QP matrices (part 2 of ocp_to_qp()).
  */
-template<std::size_t K, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
 void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
+  std::size_t K,
   const Dyn & f,
   const LinearizationInfo<G, U> & lin,
   QuadraticProgramSparse<double> & qp)
@@ -225,7 +226,7 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
 
   static constexpr int Nx = Dof<G>;
   static constexpr int Nu = Dof<U>;
-  static constexpr int NU = K * Nu;
+  const int NU            = K * Nu;
 
   static_assert(Nx > 0, "State space dimension must be static");
   static_assert(Nu > 0, "Input space dimension must be static");
@@ -400,6 +401,7 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   qp.q.template segment<Nx>(NU + (K - 1) * Nx) =
     pbm.weights.QT * rminus(lin.g(pbm.T).first, pbm.gdes(pbm.T));
 }
+
 }  // namespace detail
 
 /**
@@ -412,8 +414,6 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
  * \end{bmatrix}, \f] where the discrete time index \f$k\f$ corresponds to time \f$t_k = k
  * \frac{T}{K} \f$ for \f$ k = 0, 1, \ldots, K \f$.
  *
- * @tparam K number of discretization points. More points create a larger QP, but the distance \f$
- * T / K \f$ between points should be smaller than the smallest system time constant for adequate
  * performance.
  * @tparam G problem state group type \f$ \mathbb{G} \f$
  * @tparam U problem input group type \f$ \mathbb{U} \f$
@@ -421,6 +421,8 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
  * @tparam DT differentiation method to utilize
  *
  * @param pbm optimal control problem
+ * @param K number of discretization points. More points create a larger QP, but the distance \f$
+ * T / K \f$ between points should be smaller than the smallest system time constant for adequate
  * @param f dynamics \f$ f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
  * \mathbb{R}^{\dim \mathfrak g}\f$ s.t. \f$ \mathrm{d}^r g_t = f(t, g, u) \f$
  * @param lin linearization point
@@ -438,14 +440,16 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
  * smooth::diff method (check \p smooth::diff::DefaultType). If using an automatic differentiation
  * method this means that it must be templated on the scalar type.
  */
-template<std::size_t K, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
-QuadraticProgramSparse<double> ocp_to_qp(
-  const OptimalControlProblem<G, U> & pbm, const Dyn & f, const LinearizationInfo<G, U> & lin)
+template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm,
+  std::size_t K,
+  const Dyn & f,
+  const LinearizationInfo<G, U> & lin)
 {
   bool lin_con = lin.g_domain.minCoeff() < std::numeric_limits<double>::infinity();
 
-  auto qp = detail::ocp_to_qp_allocate<K, G, U>(pbm, lin_con);
-  detail::ocp_to_qp_fill<K, G, U>(pbm, f, lin, qp);
+  auto qp = detail::ocp_to_qp_allocate<G, U>(pbm, K, lin_con);
+  detail::ocp_to_qp_fill<G, U>(pbm, K, f, lin, qp);
 
   return qp;
 }
@@ -460,6 +464,11 @@ struct MPCParams
    * @brief MPC time horizon (seconds)
    */
   double T{1};
+
+  /**
+   * @brief Number of discretization steps
+   */
+  std::size_t K{10};
 
   /**
    * @brief MPC state and input weights
@@ -517,7 +526,6 @@ struct MPCParams
 /**
  * @brief Model-Predictive Control (MPC) on Lie groups.
  *
- * @tparam K number of MPC discretization steps (see ocp_to_qp).
  * @tparam T time type, must be a std::chrono::duration-like
  * @tparam G state space LieGroup type
  * @tparam U input space Manifold type
@@ -532,12 +540,7 @@ struct MPCParams
  * the user to update the linearizaiton in an appropriate way, or make sure that the problem is
  * linear. The linearization point can be manually updated via the linearization() member functions.
  */
-template<std::size_t K,
-  typename T,
-  LieGroup G,
-  Manifold U,
-  typename Dyn,
-  diff::Type DT = diff::Type::DEFAULT>
+template<typename T, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
 class MPC
 {
 public:
@@ -559,7 +562,7 @@ public:
     ocp_.glim    = prm_.glim;
     ocp_.ulim    = prm_.ulim;
     ocp_.weights = prm_.weights;
-    qp_          = detail::ocp_to_qp_allocate<K, G, U>(ocp_);
+    qp_          = detail::ocp_to_qp_allocate<G, U>(ocp_, prm_.K);
   }
   /// Same as above but for lvalues
   MPC(const Dyn & f, const MPCParams<G, U> & prm = MPCParams<G, U>{})
@@ -611,7 +614,7 @@ public:
 
     static constexpr int Nx = Dof<G>;
     static constexpr int Nu = Dof<U>;
-    static constexpr int NU = K * Nu;
+    const int NU            = prm_.K * Nu;
 
     // update problem with functions defined in "MPC time"
     ocp_.x0   = g;
@@ -633,7 +636,7 @@ public:
       relinearize_around_desired_ = false;
     }
 
-    const double dt = ocp_.T / static_cast<double>(K);
+    const double dt = ocp_.T / static_cast<double>(prm_.K);
 
     // define dynamics in "MPC time"
     const auto dyn = [this, &t]<typename S>(
@@ -641,13 +644,13 @@ public:
       return dyn_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
     };
 
-    detail::ocp_to_qp_fill<K, G, U, decltype(dyn), DT>(ocp_, dyn, lin_, qp_);
+    detail::ocp_to_qp_fill<G, U, decltype(dyn), DT>(ocp_, prm_.K, dyn, lin_, qp_);
     auto sol = solve_qp(qp_, prm_.qp, warmstart_);
 
     for (auto i = 0u; i < prm_.iterative_relinearization; ++i) {
       // check if solution touches linearization domain
       bool touches = false;
-      for (auto k = 0u; !touches && k < K; ++k) {
+      for (auto k = 0u; !touches && k < prm_.K; ++k) {
         // clang-format off
         if (((1. - 1e-6) * lin_.g_domain - sol.primal.template segment<Nx>(NU + k * Nx).cwiseAbs()).minCoeff() < 0) { touches = true; }
         // clang-format on
@@ -655,7 +658,7 @@ public:
       if (touches) {
         // relinearize around solution and solve again
         relinearize_around_sol(sol);
-        detail::ocp_to_qp_fill<K, G, U, decltype(dyn), DT>(ocp_, dyn, lin_, qp_);
+        detail::ocp_to_qp_fill<G, U, decltype(dyn), DT>(ocp_, prm_.K, dyn, lin_, qp_);
         sol = solve_qp(qp_, prm_.qp, warmstart_);
       } else {
         // solution seems fine
@@ -668,15 +671,15 @@ public:
 
     // output solution trajectories
     if (u_traj.has_value()) {
-      u_traj.value().get().resize(K);
-      for (auto i = 0u; i < K; ++i) {
+      u_traj.value().get().resize(prm_.K);
+      for (auto i = 0u; i < prm_.K; ++i) {
         u_traj.value().get()[i] = lin_.u(i * dt) + sol.primal.template segment<Nu>(i * Nu);
       }
     }
     if (x_traj.has_value()) {
-      x_traj.value().get().resize(K + 1);
+      x_traj.value().get().resize(prm_.K + 1);
       x_traj.value().get()[0] = ocp_.x0;
-      for (auto i = 1u; i < K + 1; ++i) {
+      for (auto i = 1u; i < prm_.K + 1; ++i) {
         x_traj.value().get()[i] =
           lin_.g(i * dt).first + sol.primal.template segment<Nx>(NU + (i - 1) * Nx);
       }
@@ -761,18 +764,19 @@ public:
    */
   void relinearize_around_sol(const QPSolution<-1, -1, double> & sol)
   {
-    const double dt = ocp_.T / static_cast<double>(K);
+    const double dt = ocp_.T / static_cast<double>(prm_.K);
 
-    auto g_spline = smooth::fit_cubic_bezier(
-      std::views::iota(0u, K + 1) | std::views::transform([&](auto k) -> double { return dt * k; }),
-      std::views::iota(0u, K + 1) | std::views::transform([&](auto k) -> G {
-        if (k == 0) {
-          return ocp_.x0;
-        } else {
-          return rplus(lin_.g(dt * k).first,
-            sol.primal.template segment<Dof<G>>(K * Dof<U> + (k - 1) * Dof<G>));
-        }
-      }));
+    auto g_spline =
+      smooth::fit_cubic_bezier(std::views::iota(0u, prm_.K + 1)
+                                 | std::views::transform([&](auto k) -> double { return dt * k; }),
+        std::views::iota(0u, prm_.K + 1) | std::views::transform([&](auto k) -> G {
+          if (k == 0) {
+            return ocp_.x0;
+          } else {
+            return rplus(lin_.g(dt * k).first,
+              sol.primal.template segment<Dof<G>>(prm_.K * Dof<U> + (k - 1) * Dof<G>));
+          }
+        }));
 
     lin_.g = [g_spline = std::move(g_spline)](double t) -> std::pair<G, Tangent<G>> {
       Tangent<G> dg;
@@ -783,7 +787,7 @@ public:
 
 private:
   // parameters
-  MPCParams<G, U> prm_{};
+  const MPCParams<G, U> prm_{};
 
   // dynamics description
   Dyn dyn_{};

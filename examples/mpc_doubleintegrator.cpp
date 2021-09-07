@@ -26,9 +26,6 @@ int main()
   using std::sin;
   std::srand(5);
 
-  // number of MPC discretization points steps
-  static constexpr int nMpc = 20;
-
   // system variables
   Gd g = Gd::Random();
   Ud u;
@@ -41,6 +38,7 @@ int main()
   // parameters
   smooth::feedback::MPCParams<Gd, Ud> prm{
     .T = 5,
+    .K = 20,
     .weights =
       {
         .Q  = Eigen::Matrix2d::Identity(),
@@ -57,7 +55,7 @@ int main()
   };
 
   // create MPC object and set input bounds, and desired trajectories
-  smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
+  smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, prm);
   mpc.set_xdes([](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
     return {
       Gd{-0.5 * sin(0.3 * t.count()), 0},

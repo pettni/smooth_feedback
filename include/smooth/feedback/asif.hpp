@@ -76,6 +76,8 @@ struct ASIFProblem
  */
 struct ASIFtoQPParams
 {
+  /// number of constraint instances (equally spaced over the time horizon)
+  std::size_t K{10};
   /// barrier function time constant s.t. \f$ \dot h - \alpha h \geq 0 \f$.
   double alpha{1};
   /// maximal integration time step
@@ -83,6 +85,138 @@ struct ASIFtoQPParams
   /// relaxation cost
   double relax_cost{100};
 };
+
+namespace detail {
+
+/**
+ * @brief Allocate QP matrices (part 1 of asif_to_qp())
+ *
+ * @param k number of constraint instances
+ * @param nu_ineq number in inequalities in input constraint
+ * @param nh number of barrier constraints
+ *
+ * @return allocated QP with zero matrices
+ */
+template<LieGroup G, Manifold U>
+QuadraticProgram<-1, -1, double> asif_to_qp_allocate(
+  std::size_t K, std::size_t nu_ineq, std::size_t nh)
+{
+  static constexpr int nx = Dof<G>;
+  static constexpr int nu = Dof<U>;
+
+  static_assert(nx > 0, "State space dimension must be static");
+  static_assert(nu > 0, "Input space dimension must be static");
+
+  const int M = K * nh + nu_ineq + 1;
+  const int N = nu + 1;
+
+  QuadraticProgram<-1, -1> qp;
+
+  qp.A.setZero(M, N);
+  qp.l.setZero(M);
+  qp.u.setZero(M);
+
+  qp.P.setZero(N, N);
+  qp.q.setZero(N);
+
+  return qp;
+}
+
+/**
+ * @brief Fill QP matrices (part 2 of asif_to_qp())
+ *
+ * Note that the (dense) QP matrices must be pre-allocated and filled with zeros.
+ */
+template<LieGroup G,
+  Manifold U,
+  typename Dyn,
+  typename SafeSet,
+  typename BackupU,
+  diff::Type DT = diff::Type::DEFAULT>
+void asif_to_qp_fill(const ASIFProblem<G, U> & pbm,
+  const ASIFtoQPParams & prm,
+  Dyn && f,
+  SafeSet && h,
+  BackupU && bu,
+  QuadraticProgram<-1, -1, double> & qp)
+{
+  using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
+  using std::placeholders::_1;
+
+  static constexpr int nx = Dof<G>;
+  static constexpr int nu = Dof<U>;
+  static constexpr int nh = std::invoke_result_t<SafeSet, double, G>::SizeAtCompileTime;
+
+  euler<G, double, Tangent<G>, double, vector_space_algebra> state_stepper{};
+  euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
+
+  const int nu_ineq = pbm.ulim.A.rows();
+
+  // iteration variables
+  const double tau     = pbm.T / static_cast<double>(prm.K);
+  const double dt      = std::min<double>(prm.dt, tau);
+  double t             = 0;
+  G x                  = pbm.x0;
+  TangentMap<G> dx_dx0 = TangentMap<G>::Identity();
+
+  // define ODEs for closed-loop dynamics and its sensitivity
+  const auto x_ode = [&f, &bu](
+                       const G & xx, Tangent<G> & dd, double tt) { dd = f(tt, xx, bu(tt, xx)); };
+
+  const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
+    auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
+    const auto [fcl, dr_fcl_dx] = diff::dr<DT>(std::move(f_cl), wrt(x));
+    dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
+  };
+
+  // value of dynamics at call time
+  const auto [f0, d_f0_du] = diff::dr<DT>(
+    [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(pbm.u_des));
+
+  // loop over constraint number
+  for (auto k = 0u; k != prm.K; ++k) {
+    // differentiate barrier function w.r.t. x
+    const auto [hval, dh_dtx] = diff::dr<DT>(
+      [&h]<typename T>(const T & vt, const CastT<T, G> & vx) { return h(vt, vx); }, wrt(t, x));
+
+    const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
+    const Eigen::Matrix<double, nh, nx> dh_dx = dh_dtx.template rightCols<nx>();
+
+    // insert barrier constraint
+    const Eigen::Matrix<double, nh, nx> dh_dx0 = dh_dx * dx_dx0;
+    qp.A.template block<nh, nu>(k * nh, 0)     = dh_dx0 * d_f0_du;
+    qp.l.template segment<nh>(k * nh)          = -dh_dt - prm.alpha * hval - dh_dx0 * f0;
+    qp.u.template segment<nh>(k * nh).setConstant(std::numeric_limits<double>::infinity());
+
+    // integrate system and sensitivity forward until next constraint
+    double dt_act = std::min(dt, tau * (k + 1) - t);
+    while (t < tau * (k + 1)) {
+      state_stepper.do_step(x_ode, x, t, dt_act);
+      sensi_stepper.do_step(dx_dx0_ode, dx_dx0, t, dt_act);
+      t += dt_act;
+    }
+  }
+
+  // relaxation of barrier constraints
+  qp.A.block(0, nu, prm.K * nh, 1).setConstant(1);
+
+  // input bounds
+  qp.A.block(prm.K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
+  qp.l.segment(prm.K * nh, nu_ineq)      = pbm.ulim.l - pbm.ulim.A * rminus(pbm.u_des, pbm.ulim.c);
+  qp.u.segment(prm.K * nh, nu_ineq)      = pbm.ulim.u - pbm.ulim.A * rminus(pbm.u_des, pbm.ulim.c);
+
+  // upper and lower bounds on delta
+  qp.A(prm.K * nh + nu_ineq, nu) = 1;
+  qp.l(prm.K * nh + nu_ineq)     = 0;
+  qp.u(prm.K * nh + nu_ineq)     = std::numeric_limits<double>::infinity();
+
+  qp.P.template block<nu, nu>(0, 0) = pbm.W_u.asDiagonal();
+
+  qp.P(nu, nu) = prm.relax_cost;
+  qp.q(nu)     = 0;
+}
+
+}  // namespace detail
 
 /**
  * @brief Convert a ASIFProblem to a QuadraticProgram.
@@ -107,7 +241,6 @@ struct ASIFtoQPParams
  * A solution \f$ \mu^* \f$ to the QuadraticProgram corresponds to an input \f$ u_{des} \oplus \mu^*
  * \f$ applied to the system.
  *
- * @tparam K number of constraints (\p ASIFtoQPParams::tau controls time between constraints)
  * @tparam G state LieGroup type \f$\mathbb{G}\f$
  * @tparam U input Manifold type \f$\mathbb{G}\f$
  *
@@ -128,112 +261,25 @@ struct ASIFtoQPParams
  *
  * @return QuadraticProgram modeling the ASIF filtering problem
  */
-template<std::size_t K,
-  LieGroup G,
+template<LieGroup G,
   Manifold U,
   typename Dyn,
   typename SafeSet,
   typename BackupU,
   diff::Type DT = diff::Type::DEFAULT>
-auto asif_to_qp(
+QuadraticProgram<-1, -1, double> asif_to_qp(
   const ASIFProblem<G, U> & pbm, const ASIFtoQPParams & prm, Dyn && f, SafeSet && h, BackupU && bu)
 {
-  using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
-  using std::placeholders::_1;
-
-  static constexpr int nx = Dof<G>;
-  static constexpr int nu = Dof<U>;
   static constexpr int nh = std::invoke_result_t<SafeSet, double, G>::SizeAtCompileTime;
 
-  static_assert(nx > 0, "State space dimension must be static");
-  static_assert(nu > 0, "Input space dimension must be static");
+  static_assert(Dof<G> > 0, "State space dimension must be static");
+  static_assert(Dof<U> > 0, "Input space dimension must be static");
   static_assert(nh > 0, "Safe set dimension must be static");
 
-  euler<G, double, Tangent<G>, double, vector_space_algebra> state_stepper{};
-  euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
-
   const int nu_ineq = pbm.ulim.A.rows();
-  const int M       = K * nh + nu_ineq + 1;
-  const int N       = nu + 1;
-
-  QuadraticProgram<-1, -1> ret;
-
-  ret.A.resize(M, N);
-  ret.l.resize(M);
-  ret.u.resize(M);
-
-  ret.P.resize(N, N);
-  ret.q.resize(N);
-
-  // iteration variables
-  const double tau     = pbm.T / static_cast<double>(K);
-  const double dt      = std::min<double>(prm.dt, tau);
-  double t             = 0;
-  G x                  = pbm.x0;
-  TangentMap<G> dx_dx0 = TangentMap<G>::Identity();
-
-  // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](
-                       const G & xx, Tangent<G> & dd, double tt) { dd = f(tt, xx, bu(tt, xx)); };
-
-  const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
-    auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
-    const auto [fcl, dr_fcl_dx] = diff::dr<DT>(std::move(f_cl), wrt(x));
-    dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
-  };
-
-  // value of dynamics at call time
-  const auto [f0, d_f0_du] = diff::dr<DT>(
-    [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(pbm.u_des));
-
-  // loop over constraint number
-  for (auto k = 0u; k != K; ++k) {
-    // differentiate barrier function w.r.t. x
-    const auto [hval, dh_dtx] = diff::dr<DT>(
-      [&h]<typename T>(const T & vt, const CastT<T, G> & vx) { return h(vt, vx); }, wrt(t, x));
-
-    const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
-    const Eigen::Matrix<double, nh, nx> dh_dx = dh_dtx.template rightCols<nx>();
-
-    // insert barrier constraint
-    const Eigen::Matrix<double, nh, nx> dh_dx0 = dh_dx * dx_dx0;
-    ret.A.template block<nh, nu>(k * nh, 0)    = dh_dx0 * d_f0_du;
-    ret.l.template segment<nh>(k * nh)         = -dh_dt - prm.alpha * hval - dh_dx0 * f0;
-    ret.u.template segment<nh>(k * nh).setConstant(std::numeric_limits<double>::infinity());
-
-    // integrate system and sensitivity forward until next constraint
-    double dt_act = std::min(dt, tau * (k + 1) - t);
-    while (t < tau * (k + 1)) {
-      state_stepper.do_step(x_ode, x, t, dt_act);
-      sensi_stepper.do_step(dx_dx0_ode, dx_dx0, t, dt_act);
-      t += dt_act;
-    }
-  }
-
-  // relaxation of barrier constraints
-  ret.A.template block<K * nh, 1>(0, nu).setConstant(1);
-
-  // input bounds
-  ret.A.block(K * nh, 0, nu_ineq, nu) = pbm.ulim.A;
-  ret.A.block(K * nh, nu, nu_ineq, 1).setZero();
-  ret.l.segment(K * nh, nu_ineq) = pbm.ulim.l - pbm.ulim.A * rminus(pbm.u_des, pbm.ulim.c);
-  ret.u.segment(K * nh, nu_ineq) = pbm.ulim.u - pbm.ulim.A * rminus(pbm.u_des, pbm.ulim.c);
-
-  // upper and lower bounds on delta
-  ret.A.row(K * nh + nu_ineq).setZero();
-  ret.A(K * nh + nu_ineq, nu) = 1;
-  ret.l(K * nh + nu_ineq)     = 0;
-  ret.u(K * nh + nu_ineq)     = std::numeric_limits<double>::infinity();
-
-  ret.P.template block<nu, nu>(0, 0) = pbm.W_u.asDiagonal();
-  ret.P.template block<nu, 1>(0, nu).setZero();
-  ret.q.template head<nu>().setZero();
-
-  ret.P.row(nu).setZero();
-  ret.P(nu, nu) = prm.relax_cost;
-  ret.q(nu)     = 0;
-
-  return ret;
+  auto qp           = detail::asif_to_qp_allocate<G, U>(prm.K, nu_ineq, nh);
+  detail::asif_to_qp_fill(pbm, prm, f, h, bu, qp);
+  return qp;
 }
 
 /**
@@ -242,16 +288,16 @@ auto asif_to_qp(
 template<Manifold U>
 struct ASIFilterParams
 {
-  /// Horizon
+  /// Time horizon
   double T{1};
   /// Weights on desired input
   Eigen::Matrix<double, Dof<U>, 1> u_weight = Eigen::Matrix<double, Dof<U>, 1>::Ones();
   /// Input bounds
-  ManifoldBounds<U> u_lim{};
+  ManifoldBounds<U> ulim{};
   /// ASIFilter algorithm parameters
-  ASIFtoQPParams asif;
+  ASIFtoQPParams asif{};
   /// QP solver parameters
-  QPSolverParams qp;
+  QPSolverParams qp{};
 };
 
 /**
@@ -261,8 +307,7 @@ struct ASIFilterParams
  * recent solution for warmstarting, and facilitates working with time-varying
  * problems.
  */
-template<std::size_t K,
-  LieGroup G,
+template<LieGroup G,
   Manifold U,
   typename Dyn,
   typename SS,
@@ -295,8 +340,12 @@ public:
    * @brief Construct an ASI filter (rvalue version).
    */
   ASIFilter(Dyn && f, SS && h, BU && bu, ASIFilterParams<U> && prm = ASIFilterParams<U>{})
-      : f_(std::move(f)), h_(std::move(h)), bu_(std::move(bu)), prm_(prm)
-  {}
+      : f_(std::move(f)), h_(std::move(h)), bu_(std::move(bu)), prm_(std::move(prm))
+  {
+    static constexpr int nh = std::invoke_result_t<SS, double, G>::SizeAtCompileTime;
+    const int nu_ineq       = prm_.ulim.A.rows();
+    qp_                     = detail::asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, nh);
+  }
 
   /**
    * @brief Filter an input
@@ -325,9 +374,9 @@ public:
       .ulim  = ulim_,
     };
 
-    auto qp = feedback::asif_to_qp<K, G, U, decltype(f), decltype(h), decltype(bu), DT>(
-      pbm, prm_.asif, std::move(f), std::move(h), std::move(bu));
-    auto sol = feedback::solve_qp(qp, prm_.qp, warmstart_);
+    detail::asif_to_qp_fill<G, U, decltype(f), decltype(h), decltype(bu), DT>(
+      pbm, prm_.asif, std::move(f), std::move(h), std::move(bu), qp_);
+    auto sol = feedback::solve_qp(qp_, prm_.qp, warmstart_);
 
     u = rplus(u, sol.primal.template head<Dof<U>>());
 
@@ -339,6 +388,8 @@ private:
   Dyn f_;
   SS h_;
   BU bu_;
+
+  QuadraticProgram<-1, -1, double> qp_;
 
   ManifoldBounds<U> ulim_;
 

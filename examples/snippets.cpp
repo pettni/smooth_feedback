@@ -113,8 +113,11 @@ void mpc_snippet()
   };
 
   // create MPC object
-  smooth::feedback::MPCParams<X<double>, U<double>> prm{.T = 5};
-  smooth::feedback::MPC<50, Time, X<double>, U<double>, decltype(f)> mpc(f, prm);
+  smooth::feedback::MPCParams<X<double>, U<double>> prm{
+    .T = 5,
+    .K = 50,
+  };
+  smooth::feedback::MPC<Time, X<double>, U<double>, decltype(f)> mpc(f, prm);
 
   // set desired state and input trajectories for MPC to track
   mpc.set_xdes([](Time t) -> std::pair<X<double>, smooth::Tangent<X<double>>> {
@@ -169,7 +172,7 @@ void asif_snippet()
   auto bu = []<typename T>(T, const X<T> &) -> U<T> { return U<T>(1, 1); };
 
   using ASIF =
-    smooth::feedback::ASIFilter<100, X<double>, U<double>, decltype(f), decltype(h), decltype(bu)>;
+    smooth::feedback::ASIFilter<X<double>, U<double>, decltype(f), decltype(h), decltype(bu)>;
 
   ASIF asif(f, h, bu);
 

@@ -62,11 +62,13 @@ TEST(Asif, Basic)
         .u = Eigen::Vector2d{1, 1},
       },
   };
-  smooth::feedback::ASIFtoQPParams prm{};
+  smooth::feedback::ASIFtoQPParams prm{
+    .K = K,
+  };
 
   int niq = pbm.ulim.A.rows();
 
-  auto qp = smooth::feedback::asif_to_qp<K, G<double>, U1<double>>(pbm, prm, f, h, bu);
+  auto qp = smooth::feedback::asif_to_qp<G<double>, U1<double>>(pbm, prm, f, h, bu);
 
   ASSERT_EQ(qp.P.rows(), Nu + 1);
   ASSERT_EQ(qp.P.cols(), Nu + 1);
@@ -113,9 +115,13 @@ TEST(Asif, Filter)
   auto bu = []<typename T>(T, const X<T> &) -> U<T> { return U<T>(1, 1, 1); };
 
   using ASIF =
-    smooth::feedback::ASIFilter<100, X<double>, U<double>, decltype(f), decltype(h), decltype(bu)>;
+    smooth::feedback::ASIFilter<X<double>, U<double>, decltype(f), decltype(h), decltype(bu)>;
 
-  ASIF asif(f, h, bu);
+  smooth::feedback::ASIFilterParams<U<double>> prm{
+    .asif = {.K = 100},
+  };
+
+  ASIF asif(f, h, bu, prm);
 
   smooth::SO3d g           = smooth::SO3d::Random();
   Eigen::Vector3<double> u = Eigen::Vector3d::Zero();

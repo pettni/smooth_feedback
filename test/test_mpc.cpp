@@ -85,7 +85,7 @@ TEST(Mpc, OcpToQP)
     return A * x + B * u;
   };
 
-  auto qp = smooth::feedback::ocp_to_qp<K, G, U>(ocp, dyn, lin);
+  auto qp = smooth::feedback::ocp_to_qp(ocp, K, dyn, lin);
 
   double dt = ocp.T / K;
 
@@ -189,8 +189,9 @@ TEST(Mpc, BasicEigenInput)
     return Eigen::Vector3<T>(u(0), T(0), u(1));
   };
 
-  smooth::feedback::MPC<3, Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(std::move(f),
+  smooth::feedback::MPC<Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(std::move(f),
     smooth::feedback::MPCParams<smooth::SE2d, Eigen::Vector2d>{
+      .K                           = 3,
       .relinearize_around_solution = true,
       .iterative_relinearization   = 5,
     });
