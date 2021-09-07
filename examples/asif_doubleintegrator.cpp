@@ -1,3 +1,28 @@
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/asif.hpp>
@@ -23,13 +48,20 @@ using Ud = U<double>;
 
 int main()
 {
-  using std::sin;
-  std::srand(5);
+  // dynamics
+  auto f = []<typename T>(T, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+    return {x(1), u(0)};
+  };
 
-  // system variables
-  Gd g(-5, 1);
-  Ud udes = Ud(1), u;
+  // safety set
+  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Vector2<T> {
+    return {T(3) - g(0), T(1.5) - g(1)};
+  };
 
+  // backup controller
+  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
+
+  // parameters
   smooth::feedback::ASIFilterParams<Ud> prm{
     .T = 0.5,
     .ulim =
@@ -51,20 +83,12 @@ int main()
       },
   };
 
-  // dynamics
-  auto f = []<typename T>(T, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
-    return {x(1), u(0)};
-  };
-
-  // safety set
-  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Vector2<T> {
-    return {T(3) - g(0), T(1.5) - g(1)};
-  };
-
-  // backup controller
-  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
-
+  // create filter
   smooth::feedback::ASIFilter<Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(f, h, bu, prm);
+
+  // system variables
+  Gd g(-5, 1);
+  Ud udes = Ud(1), u;
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
@@ -73,8 +97,9 @@ int main()
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 10s; t += 50ms) {
-    u         = udes;
-    auto code = asif(u, 0, g);
+    auto [u_asif, code] = asif(0, g, udes);
+
+    u = u_asif;
 
     if (code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;

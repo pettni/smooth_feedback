@@ -589,7 +589,6 @@ public:
    * @warning set_xdes() and set_udes() must be called before calling this function for the first
    * time.
    *
-   * @param[out] u resulting input
    * @param[in] t current time
    * @param[in] g current state
    * @param[out] u_traj (optional) return MPC input solution \f$ \{ \mu_k \mid k = 0, \ldots, K-1 \}
@@ -597,17 +596,9 @@ public:
    * @param[out] x_traj (optional) return MPC state solution \f$ \{ x_k \mid k = 0, \ldots, K \}
    * \f$.
    *
-   * @return solver exit code
-   *
-   * If MPCParams::relinearization_interval is set to a value \f$ I > 0 \f$, an internal counter is
-   * maintained that relinearizes the problem at every \f$ I \f$ calls to this function.
-   *
-   * If MPCParams::iterative_relinearization is set to a value \f$ I > 0 \f$, this function checks
-   * up to \f$ I \f$ times whether the solution touches the linearization domain, and relinearizes
-   * and re-solves if that is the case.
+   * @return {u, code}
    */
-  QPSolutionStatus operator()(U & u,
-    const T & t,
+  std::pair<U, QPSolutionStatus> operator()(const T & t,
     const G & g,
     std::optional<std::reference_wrapper<std::vector<U>>> u_traj = std::nullopt,
     std::optional<std::reference_wrapper<std::vector<G>>> x_traj = std::nullopt)
@@ -668,9 +659,6 @@ public:
       }
     }
 
-    // output result
-    u = lin_.u(0) + sol.primal.template head<Nu>();
-
     // output solution trajectories
     if (u_traj.has_value()) {
       u_traj.value().get().resize(prm_.K);
@@ -700,7 +688,7 @@ public:
       }
     }
 
-    return sol.code;
+    return {rplus(lin_.u(0), sol.primal.template head<Nu>()), sol.code};
   }
 
   /**

@@ -209,5 +209,5 @@ TEST(Mpc, BasicEigenInput)
 
   std::vector<Eigen::Vector2d> uvec;
   std::vector<smooth::SE2d> xvec;
-  ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random(), uvec, xvec));
+  ASSERT_NO_THROW(mpc(std::chrono::milliseconds(100), smooth::SE2d::Random(), uvec, xvec));
 }

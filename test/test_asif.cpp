@@ -126,7 +126,7 @@ TEST(Asif, Filter)
   smooth::SO3d g           = smooth::SO3d::Random();
   Eigen::Vector3<double> u = Eigen::Vector3d::Zero();
 
-  auto code = asif(u, 0, g);
+  auto [u_asif, code] = asif(0, g, u);
 
   ASSERT_EQ(code, smooth::feedback::QPSolutionStatus::Optimal);
 }

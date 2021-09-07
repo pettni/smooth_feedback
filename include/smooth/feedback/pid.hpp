@@ -72,7 +72,6 @@ public:
    * set to 0.
    */
   inline PID(const PIDParams & prm = PIDParams{}) noexcept : prm_(prm) {}
-
   /// Default copy constructor
   PID(const PID &) = default;
   /// Default move constructor
@@ -83,6 +82,32 @@ public:
   PID & operator=(PID &&) = default;
   /// Default destructor
   ~PID() = default;
+
+  /**
+   * @brief Calculate control input
+   *
+   * @param t current time
+   * @param x current state
+   * @param v current body velocity
+   *
+   * @return input proportional to desired body acceleration
+   */
+  inline Tangent<G> operator()(const Time & t, const G & x, const Tangent<G> & v)
+  {
+    const auto [g_des, v_des, a_des] = x_des_(t);
+    const Tangent<G> g_err           = g_des - x;
+
+    if (t_last && t > t_last.value()) {
+      // update integral state
+      double dt =
+        std::chrono::duration_cast<std::chrono::duration<double>>(t - t_last.value()).count();
+      i_err_ += dt * g_err;
+      i_err_ = i_err_.cwiseMax(-prm_.windup_limit).cwiseMin(prm_.windup_limit);
+    }
+    t_last = t;
+
+    return a_des + kp_.cwiseProduct(g_err) + kd_.cwiseProduct(v_des - v) + ki_.cwiseProduct(i_err_);
+  }
 
   /**
    * @brief Set all proportional gains to kp.
@@ -178,30 +203,6 @@ public:
    * @brief Set desired trajectory (rvalue version).
    */
   inline void set_xdes(std::function<TrajectoryReturnT(Time)> && f) { x_des_ = std::move(f); }
-
-  /**
-   * @brief Calculate control input
-   *
-   * @param t current time
-   * @param x current state
-   * @param v current body velocity
-   */
-  inline Tangent<G> operator()(const Time & t, const G & x, const Tangent<G> & v)
-  {
-    const auto [g_des, v_des, a_des] = x_des_(t);
-    const Tangent<G> g_err           = g_des - x;
-
-    if (t_last && t > t_last.value()) {
-      // update integral state
-      double dt =
-        std::chrono::duration_cast<std::chrono::duration<double>>(t - t_last.value()).count();
-      i_err_ += dt * g_err;
-      i_err_ = i_err_.cwiseMax(-prm_.windup_limit).cwiseMin(prm_.windup_limit);
-    }
-    t_last = t;
-
-    return a_des + kp_.cwiseProduct(g_err) + kd_.cwiseProduct(v_des - v) + ki_.cwiseProduct(i_err_);
-  }
 
 private:
   PIDParams prm_;

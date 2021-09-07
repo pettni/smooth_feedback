@@ -350,11 +350,13 @@ public:
   /**
    * @brief Filter an input
    *
-   * @param[in, out] u desired input in, filter output out
-   * @param[in] t current global time
-   * @param[in] g current state
+   * @param t current global time
+   * @param g current state
+   * @param u_des nominal (desired) control input
+   *
+   * @returns {u, code}: safe control input and QP solver code
    */
-  QPSolutionStatus operator()(U & u, double t, const G & g)
+  std::pair<U, QPSolutionStatus> operator()(double t, const G & g, const U & u_des)
   {
     using std::chrono::duration, std::chrono::nanoseconds;
 
@@ -369,7 +371,7 @@ public:
     ASIFProblem<G, U> pbm{
       .T     = prm_.T,
       .x0    = g,
-      .u_des = u,
+      .u_des = u_des,
       .W_u   = prm_.u_weight,
       .ulim  = ulim_,
     };
@@ -378,10 +380,9 @@ public:
       pbm, prm_.asif, std::move(f), std::move(h), std::move(bu), qp_);
     auto sol = feedback::solve_qp(qp_, prm_.qp, warmstart_);
 
-    u = rplus(u, sol.primal.template head<Dof<U>>());
-
     if (sol.code == QPSolutionStatus::Optimal) { warmstart_ = sol; }
-    return sol.code;
+
+    return {rplus(u_des, sol.primal.template head<Dof<U>>()), sol.code};
   }
 
 private:

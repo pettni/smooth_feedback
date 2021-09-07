@@ -131,8 +131,7 @@ void mpc_snippet()
   // calculate control input for current time t and current state x
   Time t(0);
   X<double> x = X<double>::Identity();
-  U<double> u;
-  mpc(u, t, x);
+  auto [u, code] = mpc(t, x);
 }
 
 void pid_snippet()
@@ -179,7 +178,7 @@ void asif_snippet()
   U<double> u = U<double>::Zero();
   double t    = 0;
   X<double> x = X<double>::Random();
-  auto code   = asif(u, 0, x);
+  auto [u_asif, code] = asif(0, x, u);
 }
 
 int main()

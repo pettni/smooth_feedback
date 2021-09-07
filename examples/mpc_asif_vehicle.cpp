@@ -1,3 +1,28 @@
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include <boost/numeric/odeint.hpp>
 #include <smooth/bundle.hpp>
 #include <smooth/compat/odeint.hpp>
@@ -143,17 +168,19 @@ int main()
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 30s; t += 25ms) {
     // compute MPC input
-    auto mpc_code = mpc(u, t, g);
-    Ud u_mpc      = u;
+    const auto [u_mpc, mpc_code] = mpc(t, g);
     if (mpc_code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "MPC failed with mpc_code " << static_cast<int>(mpc_code) << std::endl;
     }
 
     // filter input with ASIF
-    auto asif_code = asif(u, 0, g);
+    const auto [u_asif, asif_code] = asif(0, g, u_mpc);
     if (asif_code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "ASIF solver failed with asif_code " << static_cast<int>(asif_code) << std::endl;
     }
+
+    // select input
+    u = u_asif;
 
     // store data
     tvec.push_back(duration_cast<Time>(t).count());
@@ -162,8 +189,8 @@ int main()
 
     u1mpcvec.push_back(u_mpc(0));
     u2mpcvec.push_back(u_mpc(1));
-    u1vec.push_back(u(0));
-    u2vec.push_back(u(1));
+    u1vec.push_back(u_asif(0));
+    u2vec.push_back(u_asif(1));
 
     // step dynamics
     stepper.do_step(ode, g, 0, 0.05);

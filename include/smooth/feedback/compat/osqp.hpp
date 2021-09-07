@@ -16,7 +16,7 @@ namespace smooth::feedback {
  *
  * @return solution
  *
- * @note This is a conveience interface that performs copies and memory allocation in each
+ * @note This is a convenience interface that performs copies and memory allocation in each
  * call. For more fine-grained control use the low-level OSQP interface (https://osqp.org/).
  */
 template<typename Problem>
