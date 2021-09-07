@@ -160,7 +160,7 @@ struct LinearizationInfo
  *
  * @param[in] pbm OptimalControlProblem definition.
  * @param[in] K number of time discretization steps
- * @param[out] sparse quadratic program definition with allocated matrices.
+ * @param[out] qp quadratic program definition with allocated matrices.
  * @param[in] lin_con set to true to allocate K * Nu state linearization constraints
  */
 template<LieGroup G, Manifold U>

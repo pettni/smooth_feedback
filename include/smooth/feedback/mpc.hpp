@@ -290,10 +290,11 @@ public:
    *
    * @param f function double -> U<double> s.t. u_des(t) = f(t - t0)
    * @param t0 absolute zero time for the desired trajectory
-   * \f$
    */
   template<typename Fun>
+    // \cond
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<U>>, U>)
+  // \endcond
   inline void set_udes(Fun && f, Time t0 = Time(0))
   {
     set_udes([t0 = t0, f = std::forward<Fun>(f)](Time t) -> U {
@@ -325,15 +326,16 @@ public:
    * Instead of providing {x(t), dx(t)} of the desired trajectory, this function differentiates a
    * function x(t) so that the derivative does not need to be specified.
    *
+   * @param f function s.t. desired trajectory is x(t) = f(t - t0)
+   * @param t0 absolute zero time for the desired trajectory
+   *
    * @note This function triggers a relinearization around the desired input and trajectory at the
    * next call to operator()().
-   *
-   * @param f function s.t. desired trajectory is x(t) = f(t - t0). f is a templated function T ->
-   * CastT<G, T>.
-   * @param t0 absolute zero time for the desired trajectory
-   * */
+   */
   template<typename Fun>
+    // \cond
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<G>>, G>)
+  // \endcond
   inline void set_xdes(Fun && f, Time t0 = Time(0))
   {
     set_xdes([t0 = t0, f = std::forward<Fun>(f)](Time t) -> std::pair<G, Tangent<G>> {

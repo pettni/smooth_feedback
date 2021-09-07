@@ -88,11 +88,10 @@ struct ASIFtoQPParams
 /**
  * @brief Allocate QP matrices (part 1 of asif_to_qp())
  *
- * @param K number of constraint instances
- * @param nu_ineq number in inequalities in input constraint
- * @param nh number of barrier constraints
- *
- * @return allocated QP with zero matrices
+ * @param[in] K number of constraint instances
+ * @param[in] nu_ineq number in inequalities in input constraint
+ * @param[in] nh number of barrier constraints
+ * @param[out] qp allocated QP with zero matrices
  */
 template<LieGroup G, Manifold U>
 void asif_to_qp_allocate(

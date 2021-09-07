@@ -39,7 +39,7 @@ using X = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
 template<typename T>
 using U = Eigen::Matrix<T, 2, 1>;
 
-auto f = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
+auto dyn = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
   return smooth::Tangent<X<T>>{
     x.template part<1>().x(),
     x.template part<1>().y(),
@@ -52,6 +52,10 @@ auto f = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent
 
 void ekf_snippet()
 {
+  U<double> u = U<double>::Random();
+  // closed-loop dynamics
+  auto dyn_cl = [&u]<typename T>(T t, const X<T> & x) { return dyn(Time(t), x, u.template cast<T>()); };
+
   smooth::feedback::EKF<X<double>> ekf;
 
   // measurement model
@@ -61,8 +65,7 @@ void ekf_snippet()
   };
 
   // PREDICT STEP: propagate filter over time
-  U<double> u = U<double>::Random();
-  ekf.predict([&u]<typename T>(T, const X<T> & x) { return f(Time(0), x, u.template cast<T>()); },
+  ekf.predict(dyn_cl,
     Eigen::Matrix<double, 6, 6>::Identity(),  // motion covariance Q
     1.                                        // time step length
   );
@@ -82,22 +85,25 @@ void pid_snippet()
 {
   smooth::feedback::PID<Time, smooth::SE2d> pid;
 
-  // set desired motion as a function Time -> (position, velocity, acceleration)
+  // set desired motion
   pid.set_xdes([](Time Time) -> std::tuple<smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d> {
-    return std::make_tuple(
-      smooth::SE2d::Identity(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+    return {
+      smooth::SE2d::Identity(),  // position
+      Eigen::Vector3d::Zero(),   // velocity (right derivative of position w.r.t. t)
+      Eigen::Vector3d::Zero(),   // acceleration (second right derivative of position w.r.t. t)
+    };
   });
 
-  Time t(1);          // current time
-  smooth::SE2d x;     // current state
-  Eigen::Vector3d v;  // current body velocity
+  Time t            = Time(1);                    // current time
+  smooth::SE2d x    = smooth::SE2d::Random();     // current state
+  Eigen::Vector3d v = Eigen::Vector3d::Random();  // current body velocity
 
   Eigen::Vector3d u = pid(t, x, v);
 }
 
 void asif_snippet()
 {
-  smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(f)> asif(f);
+  smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(dyn)> asif(dyn);
 
   // safety set S(t) = { x : h(t, x) >= 0 }
   auto h = []<typename T>(T, const X<T> & x) -> Eigen::Matrix<T, 1, 1> {
@@ -117,7 +123,7 @@ void asif_snippet()
 
 void mpc_snippet()
 {
-  smooth::feedback::MPC<Time, X<double>, U<double>, decltype(f)> mpc(f, {.T = 5, .K = 50});
+  smooth::feedback::MPC<Time, X<double>, U<double>, decltype(dyn)> mpc(dyn, {.T = 5, .K = 50});
 
   // set desired input and state trajectories
   mpc.set_udes([]<typename T>(T t) -> U<T> { return U<T>::Zero(); });
