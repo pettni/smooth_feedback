@@ -152,9 +152,18 @@ auto asif_to_qp(
   euler<G, double, Tangent<G>, double, vector_space_algebra> state_stepper{};
   euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
 
-  static constexpr int nu_ineq = decltype(pbm.ulim)::NumCon;
-  static constexpr int M       = K * nh + nu_ineq + 1;
-  static constexpr int N       = nu + 1;
+  const int nu_ineq = pbm.ulim.A.rows();
+  const int M       = K * nh + nu_ineq + 1;
+  const int N       = nu + 1;
+
+  QuadraticProgram<-1, -1> ret;
+
+  ret.A.resize(M, N);
+  ret.l.resize(M);
+  ret.u.resize(M);
+
+  ret.P.resize(N, N);
+  ret.q.resize(N);
 
   // iteration variables
   const double tau     = pbm.T / static_cast<double>(K);
@@ -176,15 +185,6 @@ auto asif_to_qp(
   // value of dynamics at call time
   const auto [f0, d_f0_du] = diff::dr<DT>(
     [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(pbm.u_des));
-
-  QuadraticProgram<-1, -1> ret;
-
-  ret.A.resize(M, N);
-  ret.l.resize(M);
-  ret.u.resize(M);
-
-  ret.P.resize(N, N);
-  ret.q.resize(N);
 
   // loop over constraint number
   for (auto k = 0u; k != K; ++k) {

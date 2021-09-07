@@ -66,6 +66,7 @@ int main()
 
   // Input bounds
   const smooth::feedback::ManifoldBounds<Ud> ulim{
+    .A = Eigen::Matrix2d{{1, 0}, {0, 1}},
     .c = Ud::Zero(),
     .l = Eigen::Vector2d(-0.2, -0.5),
     .u = Eigen::Vector2d(0.5, 0.5),
@@ -73,23 +74,20 @@ int main()
 
   // SET UP MPC
 
-  smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f,
-    smooth::feedback::MPCParams{
-      .T         = T,
-      .warmstart = true,
-    });
+  smooth::feedback::MPCParams<Gd, Ud> mpc_prm{
+    .T = T,
+    .weights =
+      {
+        .QT = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
+      },
+    .ulim      = ulim,
+    .warmstart = true,
+    .relinearize_around_solution = true,
+  };
 
-  // set input bounds
-  mpc.set_ulim(ulim);
+  smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
 
-  // set weights
-  Eigen::Matrix2d R = Eigen::Matrix2d::Identity();
-  mpc.set_input_cost(R);
-  Eigen::Matrix<double, 6, 6> Q = Eigen::Matrix<double, 6, 6>::Identity();
-  mpc.set_running_state_cost(Q);
-  mpc.set_final_state_cost(0.1 * Q);
-
-  // set desired trajectory
+  // define desired trajectory
   auto xdes = [&vdes](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
     Eigen::Matrix<double, 6, 1> v;
     v.head(3) = vdes;
@@ -99,6 +97,8 @@ int main()
       v,
     };
   };
+
+  // set desired trajectory
   mpc.set_xdes(xdes);
   mpc.set_udes([](Time t) -> Ud { return Ud::Zero(); });
 

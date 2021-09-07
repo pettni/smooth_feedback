@@ -38,7 +38,7 @@ namespace smooth::feedback {
  *   l \leq  A ( m \ominus c ) \leq u.
  * \f]
  *
- * @note The number of constraints is hard-coded so that \f$ A \f$ is a square matrix.
+ * @warning As there are no defaults all fields must be specified.
  */
 template<Manifold M>
 struct ManifoldBounds
@@ -46,19 +46,14 @@ struct ManifoldBounds
   /// Dimensionality
   static constexpr int N = Dof<M>;
 
-  /// Number of constraints
-  static constexpr int NumCon = N;
-
   /// Transformation matrix
-  Eigen::Matrix<double, NumCon, N> A = Eigen::Matrix<double, NumCon, N>::Identity(NumCon, N);
+  Eigen::Matrix<double, -1, N> A;
   /// Nominal point in constraint set.
   M c;
   /// Lower bound
-  Eigen::Matrix<double, NumCon, 1> l =
-    Eigen::Matrix<double, NumCon, 1>::Constant(-std::numeric_limits<double>::infinity());
+  Eigen::Matrix<double, -1, 1> l;
   /// Upper bound
-  Eigen::Matrix<double, NumCon, 1> u =
-    Eigen::Matrix<double, NumCon, 1>::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Matrix<double, -1, 1> u;
 };
 
 }  // namespace smooth::feedback

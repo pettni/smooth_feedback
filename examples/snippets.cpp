@@ -113,7 +113,7 @@ void mpc_snippet()
   };
 
   // create MPC object
-  smooth::feedback::MPCParams prm{.T = 5};
+  smooth::feedback::MPCParams<X<double>, U<double>> prm{.T = 5};
   smooth::feedback::MPC<50, Time, X<double>, U<double>, decltype(f)> mpc(f, prm);
 
   // set desired state and input trajectories for MPC to track

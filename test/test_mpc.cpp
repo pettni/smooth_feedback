@@ -25,8 +25,6 @@
 
 #include <gtest/gtest.h>
 
-#include <boost/numeric/odeint.hpp>
-#include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 #include <unsupported/Eigen/MatrixFunctions>
@@ -44,25 +42,30 @@ TEST(Mpc, OcpToQP)
   Eigen::Vector2d u_des = Eigen::Vector2d::Random();
 
   smooth::feedback::OptimalControlProblem<G, U> ocp{
-    .x0   = G::Zero(),
     .T    = 0.1,
-    .gdes = [&x_des](double) -> G { return x_des; },
+    .x0   = G::Zero(),
     .udes = [&u_des](double) -> U { return u_des; },
+    .gdes = [&x_des](double) -> G { return x_des; },
     .ulim =
       smooth::feedback::ManifoldBounds<U>{
+        .A = Eigen::Matrix<double, 3, smooth::Dof<U>>{{1, 0}, {0, 1}, {1, 1}},
         .c = U::Zero(),
-        .l = Eigen::Vector2d(-4, -5),
-        .u = Eigen::Vector2d(4, 5),
+        .l = Eigen::Vector3d(-4, -5, -6),
+        .u = Eigen::Vector3d(4, 5, 6),
       },
     .glim =
       smooth::feedback::ManifoldBounds<G>{
+        .A = Eigen::Matrix<double, 3, smooth::Dof<G>>{{1, 0}, {0, 1}, {1, 1}},
         .c = G::Zero(),
-        .l = Eigen::Vector2d(-2, -3),
-        .u = Eigen::Vector2d(2, 3),
+        .l = Eigen::Vector3d(-2, -3, -4),
+        .u = Eigen::Vector3d(2, 3, 4),
       },
-    .Q  = Eigen::Matrix2d{{1, 2}, {2, 4}},
-    .QT = Eigen::Matrix2d{{5, 6}, {5, 8}},
-    .R  = Eigen::Matrix2d{{9, 10}, {9, 12}},
+    .weights =
+      {
+        .Q  = Eigen::Matrix2d{{1, 2}, {2, 4}},
+        .QT = Eigen::Matrix2d{{5, 6}, {5, 8}},
+        .R  = Eigen::Matrix2d{{9, 10}, {9, 12}},
+      },
   };
 
   smooth::feedback::LinearizationInfo<G, U> lin{
@@ -72,7 +75,8 @@ TEST(Mpc, OcpToQP)
         smooth::Tangent<G>::Zero(),
       };
     },
-    .u = [](double) -> U { return U::Zero(); },
+    .u        = [](double) -> U { return U::Zero(); },
+    .g_domain = Eigen::Matrix<double, smooth::Dof<G>, 1>(1.5, 2.5),
   };
 
   Eigen::Matrix2d A = Eigen::Matrix2d::Random();
@@ -87,8 +91,13 @@ TEST(Mpc, OcpToQP)
 
   Eigen::Matrix2d expA = (A * dt).exp();
 
-  ASSERT_EQ(qp.A.cols(), 4 * K);
-  ASSERT_GE(qp.A.rows(), 2 * K + 4 * K);
+  static constexpr int Nx = smooth::Dof<G>;
+  static constexpr int Nu = smooth::Dof<U>;
+  int nu_ineq             = ocp.ulim.value().A.rows();
+  int nx_ineq             = ocp.glim.value().A.rows();
+
+  ASSERT_EQ(qp.A.cols(), K * (Nx + Nu));
+  ASSERT_GE(qp.A.rows(), Nx * K + (nu_ineq * K) + (nx_ineq * K) + Nx * K);
 
   // dense versions
   Eigen::MatrixXd Ad(qp.A);
@@ -98,7 +107,7 @@ TEST(Mpc, OcpToQP)
 
   // check B matrices
   for (auto k = 1u; k != K; ++k) {
-    bool test = Ad.block<2, 2>(0, 0).isApprox(Ad.block<2, 2>(2 * k, 2 * k));
+    bool test = Ad.block(0, 0, Nx, Nx).isApprox(Ad.block(Nx * k, Nx * k, Nx, Nx));
     ASSERT_TRUE(test);
   }
 
@@ -114,40 +123,61 @@ TEST(Mpc, OcpToQP)
     ASSERT_TRUE(test);
   }
 
-  // check bounds part of A
-  bool test =
-    Ad.block<4 * K, 4 * K>(K * 2, 0).isApprox(Eigen::Matrix<double, 4 * K, 4 * K>::Identity());
-  ASSERT_TRUE(test);
-
+  // check input bounds
+  int row0 = K * Nx;
+  int col0 = 0;
   for (auto k = 0; k != K; ++k) {
-    ASSERT_TRUE(qp.l.segment(2 * K + 2 * k, 2).isApprox(ocp.ulim.value().l));
-    ASSERT_TRUE(qp.u.segment(2 * K + 2 * k, 2).isApprox(ocp.ulim.value().u));
+    bool test =
+      Ad.block(row0 + k * nu_ineq, col0 + k * Nu, nu_ineq, Nu).isApprox(ocp.ulim.value().A);
+    ASSERT_TRUE(test);
+    ASSERT_TRUE(qp.l.segment(row0 + k * nu_ineq, nu_ineq).isApprox(ocp.ulim.value().l));
+    ASSERT_TRUE(qp.u.segment(row0 + k * nu_ineq, nu_ineq).isApprox(ocp.ulim.value().u));
+  }
 
-    ASSERT_TRUE(qp.l.segment(4 * K + 2 * k, 2).isApprox(ocp.glim.value().l));
-    ASSERT_TRUE(qp.u.segment(4 * K + 2 * k, 2).isApprox(ocp.glim.value().u));
+  // check state bounds
+  row0 = K * Nx + K * nu_ineq;
+  col0 = K * Nu;
+  for (auto k = 0; k != K; ++k) {
+    bool test =
+      Ad.block(row0 + k * nx_ineq, col0 + k * Nx, nx_ineq, Nx).isApprox(ocp.glim.value().A);
+    ASSERT_TRUE(test);
+    ASSERT_TRUE(qp.l.segment(row0 + k * nx_ineq, nx_ineq).isApprox(ocp.glim.value().l));
+    ASSERT_TRUE(qp.u.segment(row0 + k * nx_ineq, nx_ineq).isApprox(ocp.glim.value().u));
+  }
+
+  // check state linearization bounds
+  row0 = K * Nx + K * nu_ineq + K * nx_ineq;
+  col0 = K * Nu;
+  for (auto k = 0; k != K; ++k) {
+    bool test = Ad.block(row0 + k * Nx, col0 + k * Nx, Nx, Nx)
+                  .isApprox(Eigen::Matrix<double, Nx, Nx>::Identity());
+    ASSERT_TRUE(test);
+
+    ASSERT_TRUE(qp.l.segment(row0 + Nx * k, Nx).isApprox(-lin.g_domain));
+    ASSERT_TRUE(qp.u.segment(row0 + Nx * k, Nx).isApprox(lin.g_domain));
   }
 
   // CHECK P AND q
 
   for (auto k = 0; k != K; ++k) {
-    bool test = Pd.block<2, 2>(2 * k, 2 * k).isApprox(ocp.R * dt);
+    bool test = Pd.block<2, 2>(2 * k, 2 * k).isApprox(ocp.weights.R * dt);
     ASSERT_TRUE(test);
-    test = qp.q.segment<2>(2 * k).isApprox(-ocp.R * u_des * dt);
+    test = qp.q.segment<2>(2 * k).isApprox(-ocp.weights.R * u_des * dt);
     ASSERT_TRUE(test);
   }
 
   for (auto k = 0; k != K - 1; ++k) {
-    bool test = Pd.block<2, 2>(2 * K + 2 * k, 2 * K + 2 * k).isApprox(ocp.Q * dt);
+    bool test = Pd.block<2, 2>(2 * K + 2 * k, 2 * K + 2 * k).isApprox(ocp.weights.Q * dt);
     ASSERT_TRUE(test);
 
-    test = qp.q.segment<2>(2 * K + 2 * k).isApprox(-ocp.Q * x_des * dt);
+    test = qp.q.segment<2>(2 * K + 2 * k).isApprox(-ocp.weights.Q * x_des * dt);
     ASSERT_TRUE(test);
   }
 
-  test = Pd.block<2, 2>(2 * K + 2 * (K - 1), 2 * K + 2 * (K - 1)).isApprox(ocp.QT);
+  bool test = Pd.block<2, 2>(2 * K + 2 * (K - 1), 2 * K + 2 * (K - 1)).isApprox(ocp.weights.QT);
   ASSERT_TRUE(test);
 
-  test = qp.q.segment<2>(2 * K + 2 * (K - 1)).isApprox(-ocp.QT * x_des);
+  test = qp.q.segment<2>(2 * K + 2 * (K - 1)).isApprox(-ocp.weights.QT * x_des);
   ASSERT_TRUE(test);
 }
 
@@ -160,8 +190,9 @@ TEST(Mpc, BasicEigenInput)
   };
 
   smooth::feedback::MPC<3, Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(std::move(f),
-    smooth::feedback::MPCParams{
-      .iterative_relinearization = 5,
+    smooth::feedback::MPCParams<smooth::SE2d, Eigen::Vector2d>{
+      .relinearize_around_solution = true,
+      .iterative_relinearization   = 5,
     });
 
   mpc.set_xdes([](Time t) -> std::pair<smooth::SE2d, Eigen::Vector3d> {
@@ -174,6 +205,8 @@ TEST(Mpc, BasicEigenInput)
   mpc.set_udes([](Time) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
 
   Eigen::Vector2d u;
-  ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random()));
-}
 
+  std::vector<Eigen::Vector2d> uvec;
+  std::vector<smooth::SE2d> xvec;
+  ASSERT_NO_THROW(mpc(u, std::chrono::milliseconds(100), smooth::SE2d::Random(), uvec, xvec));
+}
