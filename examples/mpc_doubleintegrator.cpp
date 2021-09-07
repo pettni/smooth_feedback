@@ -1,7 +1,31 @@
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/mpc.hpp>
-#include <smooth/tn.hpp>
 
 #include <chrono>
 
@@ -15,63 +39,71 @@ using namespace boost::numeric::odeint;
 using Time = std::chrono::duration<double>;
 
 template<typename T>
-using G = smooth::T2<T>;
+using G = Eigen::Vector2<T>;
 template<typename T>
 using U = Eigen::Matrix<T, 1, 1>;
 
 using Gd = G<double>;
 using Ud = U<double>;
 
-using Tangentd = typename Gd::Tangent;
-
 int main()
 {
   using std::sin;
   std::srand(5);
-
-  // number of MPC discretization points steps
-  static constexpr int nMpc = 20;
 
   // system variables
   Gd g = Gd::Random();
   Ud u;
 
   // dynamics
-  auto f = []<typename T>(Time, const G<T> & x, const U<T> u) ->
-    typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> u) -> smooth::Tangent<G<T>> {
+    return {x(1), u(0)};
+  };
 
   // parameters
-  smooth::feedback::MPCParams prm{.T = 5};
+  smooth::feedback::MPCParams<Gd, Ud> prm{
+    .T = 5,
+    .K = 20,
+    .weights =
+      {
+        .Q  = Eigen::Matrix2d::Identity(),
+        .QT = 0.1 * Eigen::Matrix2d::Identity(),
+        .R  = Eigen::Matrix<double, 1, 1>::Constant(0.1),
+      },
+    .ulim =
+      smooth::feedback::ManifoldBounds<Ud>{
+        .A = Eigen::Matrix<double, 1, 1>(1),
+        .c = Ud::Zero(),
+        .l = Eigen::Matrix<double, 1, 1>(-0.5),
+        .u = Eigen::Matrix<double, 1, 1>(0.5),
+      },
+  };
 
   // create MPC object and set input bounds, and desired trajectories
-  smooth::feedback::MPC<nMpc, Time, Gd, Ud, decltype(f)> mpc(f, prm);
-  mpc.set_ulim(smooth::feedback::OptimalControlBounds<Ud>{
-    .l = Eigen::Matrix<double, 1, 1>(-0.5),
-    .u = Eigen::Matrix<double, 1, 1>(0.5),
-  });
-  mpc.set_input_cost(Eigen::Matrix<double, 1, 1>::Constant(0.1));
-  mpc.set_running_state_cost(Eigen::Matrix<double, 2, 2>::Identity());
-  mpc.set_final_state_cost(0.1 * Eigen::Matrix<double, 2, 2>::Identity());
-  mpc.set_xudes([](Time t) -> Gd { return Gd(Eigen::Vector2d(-0.5 * sin(0.3 * t.count()), 0)); },
-    [](Time) -> Ud { return Ud::Zero(); });
+  smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, prm);
+  mpc.set_xdes([]<typename T>(T t) -> G<T> { return G<T>{-0.5 * sin(0.3 * t), 0}; });
+  mpc.set_udes([]<typename T>(T) -> U<T> { return U<T>::Zero(); });
 
   // prepare for integrating the closed-loop system
-  runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
+  runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) -> void {
+    d = f(Time(t), x, u);
+  };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
-    auto code = mpc(u, t, g);
+    auto [u_mpc, code] = mpc(t, g);
+    u                  = u_mpc;
     if (code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
     }
 
     // store data
     tvec.push_back(duration_cast<Time>(t).count());
-    xvec.push_back(g.rn().x());
-    vvec.push_back(g.rn().y());
+    xvec.push_back(g.x());
+    vvec.push_back(g.y());
     uvec.push_back(u(0));
 
     // step dynamics

@@ -23,29 +23,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SMOOTH__FEEDBACK__INTERNAL__META_HPP_
-#define SMOOTH__FEEDBACK__INTERNAL__META_HPP_
+#ifndef SMOOTH__FEEDBACK__COMMON_HPP_
+#define SMOOTH__FEEDBACK__COMMON_HPP_
 
-#include <smooth/concepts.hpp>
+#include "smooth/manifold.hpp"
 
 namespace smooth::feedback {
 
-/// Identity for Eigen types is the zero vector/matrix
-template<Manifold T>
-requires(!LieGroup<T>)
-T identity()
+/**
+ * @brief Manifold constraint set.
+ *
+ * The set consists of all \f$ m \f$ s.t.
+ * \f[
+ *   l \leq  A ( m \ominus c ) \leq u.
+ * \f]
+ */
+template<Manifold M>
+struct ManifoldBounds
 {
-  return T::Zero();
-}
+  /// Dimensionality
+  static constexpr int N = Dof<M>;
 
-/// Identity for LieGroup types is the zero vector/matrix
-template<LieGroup G>
-G identity()
-{
-  return G::Identity();
-}
+  static_assert(N > 0, "Dynamic size not supported");
+
+  /// Transformation matrix
+  Eigen::Matrix<double, -1, N> A{Eigen::Matrix<double, -1, N>::Zero(0, N)};
+  /// Nominal point in constraint set.
+  M c{Default<M>()};
+  /// Lower bound
+  Eigen::VectorXd l{Eigen::VectorXd::Constant(0, -std::numeric_limits<double>::infinity())};
+  /// Upper bound
+  Eigen::VectorXd u{Eigen::VectorXd::Constant(0, std::numeric_limits<double>::infinity())};
+};
 
 }  // namespace smooth::feedback
 
-#endif  // SMOOTH__FEEDBACK__INTERNAL__META_HPP_
-
+#endif  // SMOOTH__FEEDBACK__COMMON_HPP_

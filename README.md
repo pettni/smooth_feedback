@@ -17,7 +17,7 @@ Nonlinearities are handled via linearization around a reference point or traject
 this automatically results in a linear system in the tangent space, in which case these algorithms are expected
 to work very well.
 
-### Proportional-Derivative Control: A classic, now on Lie groups
+### PID Control: A classic, now on Lie groups
 
 * Model-free
 * Assumes that inputs control body acceleration. See `examples/pid_se2.cpp` for an example of allocating PID inputs to actuators.
@@ -42,7 +42,7 @@ Eigen::Vector3d v;  // current body velocity
 Eigen::Vector3d u = pid(t, x, v);
 ```
 
-### Lie group Model-Predictive Control: When more look-ahead is needed
+### Model-Predictive Control: When more look-ahead is needed
 
 * Templated on the dynamical model
 * Automatic linearization and time discretization of nonlinear dynamics
@@ -87,18 +87,41 @@ U<double> u;
 auto qp_status = mpc(u, t, x);
 ```
 
-### Active Set Invariance: Don't collide with stuff
+### Active Set Invariance
+
+* Minimally invasive filtering of a control input in order to enforce state constraints
+* Model-based, uses automatic differentiation of dynamics and constraints
+* Theory (non-Lie group case) is described in e.g. [Thomas Gurriet's Ph.D. thesis](https://thesis.library.caltech.edu/13771/1/My_Thesis.pdf)
 
 **Example**:
 
 ```cpp
 #include <smooth/feedback/asif.hpp>
+
+// define dynamics
+auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> { /* ... */ };
+
+// define safety set { x : h(x) >= 0 }
+auto h = []<typename T>(T, const X<T> & x) -> Eigen::Vector3<T> { /* ... */};
+
+// backup controller
+auto bu = []<typename T>(T, const X<T> &) -> U<T> { /* ... */  };
+
+// create ASI filter
+using ASIF = smooth::feedback::ASIFilter<100, X<double>, U<double>, decltype(f), decltype(h), decltype(bu)>;
+ASIF asif(f, h, bu);
+
+// filter an input u at time t and state x
+U<double> u = U<double>::Zero();
+double t    = 0;
+X<double> x = X<double>::Random();
+auto code   = asif(u, 0, x);
 ```
 
 
-## Filtering on Lie groups
+## Estimation on Lie groups
 
-Filters take system models on the form
+Estimators take system models on the form
 ![](https://latex.codecogs.com/png.image?\dpi{110}&space;\mathrm{d}^r&space;\mathbf{x}_t&space;=&space;f(t,&space;\mathbf{x}),&space;\quad&space;\mathbf{x}&space;\in&space;\mathbb{X}) where `X` is a `smooth::LieGroup`, and measurements on the form ![](https://latex.codecogs.com/png.image?\dpi{110}&space;\mathbf{y}&space;=&space;h(\mathbf{x})&space;\oplus_r&space;w,&space;\;&space;w&space;\in&space;\mathcal&space;N(0,&space;R)).
 
 
@@ -110,7 +133,7 @@ const auto f = [] (const auto & t, const auto & x, const auto & g) -> Tangent { 
 // variable that holds current input
 U u;
 
-// closed-loop dynamics dr x_t = f(t, x) to use in the filters
+// closed-loop dynamics dr x_t = f(t, x) to use in the estimators
 const auto f_cl = [&f, &u] (const auto & t, const auto & x) -> Tangent { return f(t, x, u); };
 ```
 
@@ -139,7 +162,7 @@ auto h = [&landmark]<typename T>(const smooth::SE2<T> & x) -> Eigen::Matrix<T, 2
   return x.inverse() * landmark;
 };
 
-// PREDICT STEP: propagate filter over time
+// PREDICT STEP: propagate estimator over time
 ekf.predict(f,
   Eigen::Matrix3d::Identity(),  // motion covariance Q
   1.                            // time step length

@@ -95,7 +95,7 @@ BatchResult solve_batch(const R & qps, const smooth::feedback::QPSolverParams & 
   for (const auto & work : work_range) { ret.results.push_back(work()); }
 
   // calculate accuracies
-  for (const auto result : ret.results) {
+  for (const auto & result : ret.results) {
     if (result.status == smooth::feedback::QPSolutionStatus::Optimal) {
       ++ret.num_optimal;
       ret.total_duration_success += std::chrono::duration<double>(result.dt).count();

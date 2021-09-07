@@ -26,193 +26,115 @@
 #ifndef SMOOTH__FEEDBACK__ASIF_HPP_
 #define SMOOTH__FEEDBACK__ASIF_HPP_
 
-/**
- * @file
- * @brief Active Set Invariance Filtering (ASIF) on Lie groups.
- */
+#include <cassert>
 
-#include <Eigen/Core>
-#include <boost/numeric/odeint.hpp>
-#include <smooth/compat/odeint.hpp>
-
-#include <smooth/concepts.hpp>
-#include <smooth/diff.hpp>
-
-#include "common.hpp"
-
-#include "qp.hpp"
+#include "asif_func.hpp"
 
 namespace smooth::feedback {
 
 /**
- * @brief Parameters for asif_to_qp
+ * @brief ASIFilter filter parameters
  */
-struct AsifParams
+template<Manifold U>
+struct ASIFilterParams
 {
-  /// Barrier function time constant
-  float alpha = 1.;
-
-  /// time between barrier constraints
-  float tau = 1;
-
-  /// integration time step (must be smaller or equal to tau)
-  float dt = 0.1;
-
-  /// relaxation cost
-  float relax_cost = 100;
+  /// Time horizon
+  double T{1};
+  /// Number of barrier constraints (must agree with output dimensionality of h)
+  std::size_t nh{1};
+  /// Weights on desired input
+  Eigen::Matrix<double, Dof<U>, 1> u_weight{Eigen::Matrix<double, Dof<U>, 1>::Ones()};
+  /// Input bounds
+  ManifoldBounds<U> ulim{};
+  /// ASIFilter algorithm parameters
+  ASIFtoQPParams asif{};
+  /// QP solver parameters
+  QPSolverParams qp{};
 };
 
 /**
- * @brief Convert an active set invariance problem to a QuadraticProgram.
+ * @brief ASI Filter
  *
- * The objective is to impose constraints on the current input \f$ u \f$ of a system \f$
- * \mathrm{d}^r x_t = f(x, u) \f$ s.t.
- * \f[
- *    \frac{\mathrm{d}}{\mathrm{d}t} h(\phi(t; x_0, bu(\cdot)))
- *    \geq \alpha h(\phi(t; x_0, bu(\cdot)))
- * \f]
- * which enforces forward invariance of the set \f$ \{ x
- * : h(t, x) \geq 0 \} \f$ along the **backup trajectory** \f$ bu \f$. The constraint is enforced at
- * \f$K\f$ look-ahead time steps \f$ t_k = k \tau\f$ for \f$k = 0, \ldots, K \f$.
- *
- * This function encodes the problem as a QuadraticProgram that solves
- * \f[
- *  \begin{cases}
- *   \min_{\mu}  & \left\| u - u_{des} \right\|^2 \\
- *   \text{s.t.} & \text{constraint above holds for } u = u_{lin} + \mu
- *   \end{cases}
- * \f]
- * A solution \f$ \mu^* \f$ to the QuadraticProgram corresponds to an input \f$ u_{lin} \oplus \mu^*
- * \f$ applied to the system.
- *
- * @tparam K number of constraints (\p AsifParams::tau controls time between constraints)
- * @tparam G state Lie group type \f$\mathbb{G}\f$
- * @tparam U input Lie group type \f$\mathbb{G}\f$
- *
- * @param x0 current state of the system
- * @param u_des desired system input
- * @param f system model \f$f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
- * \mathbb{R}^{\dim \mathfrak g}\f$ s.t. \f$ \mathrm{d}^r x_t = f(t, x, u) \f$
- * @param h safe set \f$h : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{n_h}\f$ s.t. \f$
- * S(t) = \{ h(t, x) \geq 0 \} \f$ denotes the safe set at time \f$ t \f$
- * @param bu backup controller \f$ub : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U} \f$
- * @param prm asif parameters
- * @param u_lin input to linearize around (defaults to identity)
- *
- * @return QuadraticProgram modeling the ASIF filtering problem
- *
- * \note For the common case of \f$ U = \mathbb{R}^n \f$ and control-affine dynamics on the form \f$
- * f(t, x, u) = f_x(t, x) + f_u(t, x) u \f$, the linearization point \f$u_{lin}\f$ can safely be
- * left to the default value.
+ * Thin wrapper around asif_to_qp() and solve_qp() that keeps track of the most
+ * recent solution for warmstarting, and facilitates working with time-varying
+ * problems.
  */
-template<std::size_t K, LieGroup G, Manifold U, typename Dyn, typename SafeSet, typename BackupU>
-auto asif_to_qp(const G & x0,
-  const U & u_des,
-  Dyn && f,
-  SafeSet && h,
-  BackupU && bu,
-  const AsifParams & prm,
-  const U & u_lin = identity<U>())
+template<typename Time, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+class ASIFilter
 {
-  using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
-  using std::placeholders::_1;
-  using Tangent    = typename G::Tangent;
-  using TangentMap = typename G::TangentMap;
+public:
+  /**
+   * @brief Construct an ASI filter
+   *
+   * @param f dynamics as function \f$ \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
+   * \mathbb{R}^{\dim \mathbb{G}} \f$
+   * @param prm filter parameters
+   */
+  ASIFilter(const Dyn & f, const ASIFilterParams<U> & prm = ASIFilterParams<U>{})
+      : ASIFilter(Dyn(f), ASIFilterParams<U>(prm))
+  {}
 
-  static constexpr int nx = G::SizeAtCompileTime;
-  static constexpr int nu = U::SizeAtCompileTime;
-  static constexpr int nh = std::invoke_result_t<SafeSet, double, G>::SizeAtCompileTime;
-
-  static_assert(nx > 0, "State space dimension must be static");
-  static_assert(nu > 0, "Input space dimension must be static");
-  static_assert(nh > 0, "Safe set dimension must be static");
-
-  euler<G, double, Tangent, double, vector_space_algebra> state_stepper{};
-  euler<TangentMap, double, TangentMap, double, vector_space_algebra> sensi_stepper{};
-
-  static constexpr int M = K * nh + nu + 1;
-  static constexpr int N = nu + 1;
-
-  // iteration variables
-  double t          = 0;
-  G x               = x0;
-  TangentMap dx_dx0 = TangentMap::Identity();
-
-  // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](const G & xx, Tangent & dd, double tt) {
-    dd = f(tt, xx, bu(tt, xx));
-  };
-
-  const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
-    auto f_cl = [&](const auto & vx) {
-      using T = typename std::decay_t<decltype(vx)>::Scalar;
-      return f(T(tt), vx, bu(T(tt), vx));
-    };
-    const auto [fcl, dr_fcl_dx] = diff::dr(std::move(f_cl), wrt(x));
-    dS_dt_v = (-G::ad(fcl) + dr_fcl_dx) * S_v;
-  };
-
-  // value of dynamics at call time
-  const auto [f0, d_f0_du] = diff::dr(
-    [&](const auto & vu) {
-      using T = typename std::decay_t<decltype(vu)>::Scalar;
-      return f(T(t), x.template cast<T>(), vu);
-    },
-    wrt(u_lin));
-
-  QuadraticProgram<-1, -1> ret;
-
-  ret.A.resize(M, N);
-  ret.l.resize(M);
-  ret.u.resize(M);
-
-  ret.P.resize(N, N);
-  ret.q.resize(N);
-
-  // loop over constraint number
-  for (auto k = 0u; k != K; ++k) {
-    // differentiate barrier function w.r.t. x
-    Eigen::Matrix<double, 1, 1> tvec(t);
-    const auto [hval, dh_dtx] =
-      diff::dr([&h](const auto & vt, const auto & vx) { return h(vt(0), vx); }, wrt(tvec, x));
-
-    const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
-    const Eigen::Matrix<double, nh, nx> dh_dx = dh_dtx.template rightCols<nx>();
-
-    // insert barrier constraint
-    const Eigen::Matrix<double, nh, nx> dh_dx0 = dh_dx * dx_dx0;
-    ret.A.template block<nh, nu>(k * nh, 0)    = dh_dx0 * d_f0_du;
-    ret.l.template segment<nh>(k * nh)         = -dh_dt - prm.alpha * hval - dh_dx0 * f0;
-    ret.u.template segment<nh>(k * nh).setConstant(std::numeric_limits<double>::infinity());
-
-    // integrate system and sensitivity forward until next constraint
-    while (t < prm.tau * (k + 1)) {
-      state_stepper.do_step(x_ode, x, t, prm.dt);
-      sensi_stepper.do_step(dx_dx0_ode, dx_dx0, t, prm.dt);
-      t += std::min(prm.dt, prm.tau);
-    }
+  /**
+   * @brief Construct an ASI filter (rvalue version).
+   */
+  ASIFilter(Dyn && f, ASIFilterParams<U> && prm = ASIFilterParams<U>{})
+      : f_(std::move(f)), prm_(std::move(prm))
+  {
+    const int nu_ineq = prm_.ulim.A.rows();
+    asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, prm_.nh, qp_);
   }
 
-  ret.A.template block<K * nh, 1>(0, nu).setConstant(1);
+  /**
+   * @brief Filter an input
+   *
+   * @param t current global time
+   * @param g current state
+   * @param u_des nominal (desired) control input
+   * @param h safety set definition as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow
+   * \mathbb{R}^{n_h} \f$
+   * @param bu backup controller as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow
+   * \mathbb{U} \f$
+   *
+   * @note h and bu are defined in local time s.t. the safety set is \f$ S(\tau) \coloneq \{ h(\tau
+   * - t) \geq 0 \} \f$, and the backup controll action is \f$ u(\tau, x) = bu(\tau - t, x ) \f$.
+   *
+   * @returns {u, code}: safe control input and QP solver code
+   */
+  template<typename SS, typename BU>
+  std::pair<U, QPSolutionStatus> operator()(Time t, const G & g, const U & u_des, SS && h, BU && bu)
+  {
+    using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
-  // identity matrix for inquality constraints
-  ret.A.template block<nu + 1, nu + 1>(K * nh, 0).setIdentity();
+    assert((prm_.nh == std::invoke_result_t<SS, Scalar<G>, G>::RowsAtCompileTime));
 
-  // upper and lower bounds on u
-  ret.l.template segment<nu>(K * nh).setConstant(-1);
-  ret.u.template segment<nu>(K * nh).setConstant(1);
+    auto f = [this, &t]<typename T>(double t_loc, const CastT<T, G> & vx, const CastT<T, U> & vu) {
+      return f_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
+    };
 
-  // upper and lower bounds on delta
-  ret.l(K * nh + nu) = 0;
-  ret.u(K * nh + nu) = std::numeric_limits<double>::infinity();
+    ASIFProblem<G, U> pbm{
+      .T     = prm_.T,
+      .x0    = g,
+      .u_des = u_des,
+      .W_u   = prm_.u_weight,
+      .ulim  = prm_.ulim,
+    };
 
-  ret.P.setIdentity();
-  ret.P(nu, nu)             = prm.relax_cost;
-  ret.q.template head<nu>() = (u_lin - u_des);
-  ret.q(nu)                 = 0;
+    asif_to_qp_fill<G, U, decltype(f), decltype(h), decltype(bu), DT>(
+      pbm, prm_.asif, std::move(f), std::forward<SS>(h), std::forward<BU>(bu), qp_);
+    auto sol = feedback::solve_qp(qp_, prm_.qp, warmstart_);
 
-  return ret;
-}
+    if (sol.code == QPSolutionStatus::Optimal) { warmstart_ = sol; }
+
+    return {rplus(u_des, sol.primal.template head<Dof<U>>()), sol.code};
+  }
+
+private:
+  Dyn f_;
+
+  QuadraticProgram<-1, -1, double> qp_;
+  ASIFilterParams<U> prm_;
+  std::optional<QPSolution<-1, -1, double>> warmstart_;
+};
 
 }  // namespace smooth::feedback
 

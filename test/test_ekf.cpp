@@ -29,7 +29,6 @@
 
 #include <smooth/feedback/ekf.hpp>
 #include <smooth/so3.hpp>
-#include <smooth/tn.hpp>
 
 TEST(Ekf, NoCrash)
 {
@@ -37,10 +36,12 @@ TEST(Ekf, NoCrash)
 
   ekf.reset(smooth::SO3d::Identity(), Eigen::Matrix3d::Identity());
 
-  const auto dyn    = [](double, const auto &) { return Eigen::Vector3d::UnitX(); };
+  const auto dyn = []<typename T>(T, const smooth::SO3<T> &) -> Eigen::Vector3<T> {
+    return Eigen::Vector3<T>::UnitX();
+  };
   Eigen::Matrix3d Q = Eigen::Matrix3d::Identity();
-  const auto meas   = [](const auto & g) {
-    return g * Eigen::Vector3d::UnitZ();
+  const auto meas   = []<typename T>(const smooth::SO3<T> & g) -> Eigen::Vector3<T> {
+    return g * Eigen::Vector3<T>::UnitZ();
   };
 
   ASSERT_NO_THROW(ekf.predict(dyn, Q, 1, 0.6););
@@ -59,7 +60,7 @@ void test_update_linear()
     Eigen::Matrix<double, Nx, 1> xhat = Eigen::Matrix<double, Nx, 1>::Random();
 
     // linear system
-    smooth::feedback::EKF<smooth::Tn<Nx, double>> ekf;
+    smooth::feedback::EKF<Eigen::Matrix<double, Nx, 1>> ekf;
 
     Eigen::Matrix<double, Nx, Nx> P = Eigen::Matrix<double, Nx, 1>::Random().asDiagonal();
     P.diagonal() += Eigen::Matrix<double, Nx, 1>::Constant(1.1);
@@ -73,7 +74,12 @@ void test_update_linear()
     R.diagonal() += Eigen::Matrix<double, Ny, 1>::Constant(1.1);
 
     // add measurement (without noise)
-    ekf.update([&H, &h](const auto & xvar) { return H * xvar.rn() + h; }, H * x + h, R);
+    ekf.update(
+      [&H, &h]<typename T>(const Eigen::Matrix<T, Nx, 1> & xvar) -> Eigen::Matrix<T, Ny, 1> {
+        return H * xvar + h;
+      },
+      H * x + h,
+      R);
 
     // kalman update for linear system
     Eigen::Matrix<double, Ny, Ny> S = H * P * H.transpose() + R;
@@ -83,7 +89,7 @@ void test_update_linear()
     Eigen::Matrix<double, Nx, 1> x_new  = xhat + K * (H * x + h - (H * xhat + h));
     Eigen::Matrix<double, Nx, Nx> P_new = (Eigen::Matrix<double, Nx, Nx>::Identity() - K * H) * P;
 
-    ASSERT_TRUE(x_new.isApprox(ekf.estimate().rn(), 1e-6));
+    ASSERT_TRUE(x_new.isApprox(ekf.estimate(), 1e-6));
     ASSERT_TRUE(P_new.isApprox(ekf.covariance(), 1e-6));
   }
 }
@@ -108,7 +114,7 @@ void test_predict_linear()
     Eigen::Matrix<double, Nx, 1> xhat = Eigen::Matrix<double, Nx, 1>::Random();
 
     // linear system
-    smooth::feedback::EKF<smooth::Tn<Nx, double>,
+    smooth::feedback::EKF<Eigen::Matrix<double, Nx, 1>,
       smooth::diff::Type::NUMERICAL,
       boost::numeric::odeint::runge_kutta4>
       ekf;
@@ -127,7 +133,13 @@ void test_predict_linear()
     double tau = 0.7;
 
     // propagate
-    ekf.predict([&A](double, const auto & xvar) { return A * xvar.rn(); }, Q, tau, 1e-3);
+    ekf.predict(
+      [&A]<typename T>(double, const Eigen::Matrix<T, Nx, 1> & xvar) -> Eigen::Matrix<T, Nx, 1> {
+        return A * xvar;
+      },
+      Q,
+      tau,
+      1e-3);
 
     // exact solution
     // x_new = exp(A * t) * xhat
@@ -135,7 +147,7 @@ void test_predict_linear()
     Eigen::Matrix<double, Nx, 1> xhat_new = F * xhat;
     Eigen::Matrix<double, Nx, Nx> P_new   = F * P * F.transpose() + Q * tau;
 
-    ASSERT_TRUE(xhat_new.isApprox(ekf.estimate().rn(), 1e-3));
+    ASSERT_TRUE(xhat_new.isApprox(ekf.estimate(), 1e-3));
     ASSERT_TRUE(P_new.isApprox(ekf.covariance(), 1e-3));
   }
 }
@@ -154,7 +166,7 @@ TEST(Ekf, PredictTimeCut)
   Eigen::Matrix<double, 2, 2> P    = Eigen::Matrix<double, 2, 1>::Random().asDiagonal();
   P.diagonal() += Eigen::Matrix<double, 2, 1>::Constant(1.1);
 
-  smooth::feedback::EKF<smooth::Tn<2, double>> ekf;
+  smooth::feedback::EKF<Eigen::Vector2d> ekf;
   ekf.reset(xhat, P);
 
   // dynamical model
@@ -164,8 +176,13 @@ TEST(Ekf, PredictTimeCut)
 
   // propagate
   double tau = 0.7;
-  ekf.predict([&b](double, const auto &) { return b; }, Q, tau, 0.5);
+  ekf.predict(
+    [&b]<typename T>(
+      T, const Eigen::Matrix<T, 2, 1> &) -> Eigen::Matrix<T, 2, 1> { return b.template cast<T>(); },
+    Q,
+    tau,
+    0.5);
 
   // exact solution
-  ASSERT_TRUE(ekf.estimate().rn().isApprox(xhat + b * tau));
+  ASSERT_TRUE(ekf.estimate().isApprox(xhat + b * tau));
 }

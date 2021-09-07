@@ -29,8 +29,8 @@
 #include <Eigen/Cholesky>
 #include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
-#include <smooth/concepts.hpp>
 #include <smooth/diff.hpp>
+#include <smooth/lie_group.hpp>
 
 namespace smooth::feedback {
 
@@ -54,12 +54,11 @@ template<LieGroup G,
 class EKF
 {
 public:
-  static_assert(G::SizeAtCompileTime > 0, "State space dimension must be static");
+  static_assert(Dof<G> > 0, "Dynamic sizes not supported");
 
   //! Scalar type for computations.
-  using Scalar = typename G::Scalar;
   //! Degrees of freedom.
-  using CovT = Eigen::Matrix<Scalar, G::SizeAtCompileTime, G::SizeAtCompileTime>;
+  using CovT = Eigen::Matrix<Scalar<G>, Dof<G>, Dof<G>>;
 
   /**
    * @brief Reset the state of the EKF.
@@ -101,18 +100,19 @@ public:
    * @note Only the upper triangular part of Q is used.
    */
   template<typename F, typename QDer>
-  void predict(F && f, const Eigen::MatrixBase<QDer> & Q, Scalar tau, std::optional<Scalar> dt = {})
+  void predict(
+    F && f, const Eigen::MatrixBase<QDer> & Q, Scalar<G> tau, std::optional<Scalar<G>> dt = {})
   {
-    const Scalar dt_v = dt.has_value() ? dt.value() : 2 * tau;
+    const Scalar<G> dt_v = dt.has_value() ? dt.value() : 2 * tau;
 
-    const auto cov_ode = [this, &f, &Q](const CovT & cov, CovT & dcov, Scalar t) {
+    const auto cov_ode = [this, &f, &Q](const CovT & cov, CovT & dcov, Scalar<G> t) {
       const auto [fv, dr] = diff::dr<DiffType>(std::bind(f, t, std::placeholders::_1), wrt(g_hat_));
-      const CovT A        = -G::ad(fv) + dr;
+      const CovT A        = -ad<G>(fv) + dr;
       dcov = (A * cov + cov * A.transpose() + Q).template selfadjointView<Eigen::Upper>();
     };
-    const auto state_ode = [&f](const G & g, typename G::Tangent & dg, Scalar t) { dg = f(t, g); };
+    const auto state_ode = [&f](const G & g, Tangent<G> & dg, Scalar<G> t) { dg = f(t, g); };
 
-    Scalar t = 0;
+    Scalar<G> t = 0;
     while (t + dt_v < tau) {
       // step covariance first since it depends on g_hat_
       cst_.do_step(cov_ode, P_, t, dt_v);
@@ -141,14 +141,20 @@ public:
   {
     const auto [hval, H] = diff::dr<DiffType>(h, wrt(g_hat_));
 
-    static constexpr Eigen::Index Ny = std::decay_t<decltype(hval)>::SizeAtCompileTime;
+    using Result = std::decay_t<decltype(hval)>;
 
-    const Eigen::Matrix<Scalar, Ny, Ny> S =
+    static_assert(Manifold<Result>, "h(x) is not a Manifold");
+
+    static constexpr Eigen::Index Ny = Dof<Result>;
+
+    static_assert(Ny > 0, "h(x) must be statically sized");
+
+    const Eigen::Matrix<Scalar<G>, Ny, Ny> S =
       (H * P_.template selfadjointView<Eigen::Upper>() * H.transpose() + R)
         .template triangularView<Eigen::Upper>();
 
     // solve for Kalman gain
-    const Eigen::Matrix<Scalar, G::SizeAtCompileTime, Ny> K =
+    const Eigen::Matrix<Scalar<G>, Dof<G>, Ny> K =
       S.template selfadjointView<Eigen::Upper>().ldlt().solve(H * P_).transpose();
 
     // update estimate and covariance
@@ -158,12 +164,12 @@ public:
 
 private:
   // filter estimate and covariance
-  G g_hat_ = G::Identity();
+  G g_hat_ = Default<G>();
   CovT P_  = CovT::Identity();
 
   // steppers for numerical ODE solutions
-  Stpr<G, Scalar, typename G::Tangent, Scalar, boost::numeric::odeint::vector_space_algebra> sst_{};
-  Stpr<CovT, Scalar, CovT, Scalar, boost::numeric::odeint::vector_space_algebra> cst_{};
+  Stpr<G, Scalar<G>, Tangent<G>, Scalar<G>, boost::numeric::odeint::vector_space_algebra> sst_{};
+  Stpr<CovT, Scalar<G>, CovT, Scalar<G>, boost::numeric::odeint::vector_space_algebra> cst_{};
 };
 
 }  // namespace smooth::feedback

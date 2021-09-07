@@ -1,3 +1,28 @@
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
 #include <smooth/feedback/asif.hpp>
@@ -14,72 +39,79 @@ using namespace boost::numeric::odeint;
 using Time = std::chrono::duration<double>;
 
 template<typename T>
-using G = smooth::T2<T>;
+using G = Eigen::Matrix<T, 2, 1>;
 template<typename T>
 using U = Eigen::Matrix<T, 1, 1>;
 
 using Gd = G<double>;
 using Ud = U<double>;
 
-using Tangentd = typename Gd::Tangent;
-
 int main()
 {
-  using std::sin;
-  std::srand(5);
-
-  // number of ASIF constraints
-  static constexpr int nAsif = 50;
-
-  // system variables
-  Gd g;
-  g.rn() << -5, 1;
-  Ud udes = Ud(1), u;
-
-  smooth::feedback::AsifParams prm{.alpha = 1, .tau = 0.01, .dt = 0.01, .relax_cost = 500};
-
-  smooth::feedback::QPSolverParams qpprm{
-    // .verbose = true,
-    .scaling = true,
-    // .max_time = std::chrono::microseconds(100),
-    .polish = true,
+  // dynamics
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+    return {x(1), u(0)};
   };
 
-  // dynamics
-  auto f = []<typename T>(T, const G<T> & x, const U<T> & u) ->
-    typename G<T>::Tangent { return typename G<T>::Tangent(x.rn()(1), u(0)); };
-
   // safety set
-  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 2, 1> {
-    return Eigen::Matrix<T, 2, 1>(3, 1.5) - Eigen::Matrix<T, 2, 1>(g.rn());
+  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Vector2<T> {
+    return {T(3) - g(0), T(1.5) - g(1)};
   };
 
   // backup controller
-  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return Eigen::Matrix<T, 1, 1>(-0.6); };
+  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
+
+  // parameters
+  smooth::feedback::ASIFilterParams<Ud> prm{
+    .T  = 0.5,
+    .nh = 2,
+    .ulim =
+      {
+        .A = Eigen::Matrix<double, 1, 1>(1),
+        .l = Eigen::Matrix<double, 1, 1>(-1),
+        .u = Eigen::Matrix<double, 1, 1>(1),
+      },
+    .asif =
+      {
+        .K          = 50,
+        .alpha      = 1,
+        .dt         = 0.01,
+        .relax_cost = 100,
+      },
+    .qp =
+      {
+        .polish = false,
+      },
+  };
+
+  // create filter
+  smooth::feedback::ASIFilter<Time, Gd, Ud, decltype(f)> asif(f, prm);
+
+  // system variables
+  Gd g(-5, 1);
+  Ud udes = Ud(1), u;
 
   // prepare for integrating the closed-loop system
-  runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(t, x, u); };
+  runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
+  const auto ode = [&f, &u](
+                     const Gd & x, smooth::Tangent<Gd> & d, double t) { d = f(Time(t), x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
-
-  std::optional<smooth::feedback::QPSolution<-1, -1, double>> sol;
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 10s; t += 50ms) {
-    auto qp = smooth::feedback::asif_to_qp<nAsif>(g, udes, f, h, bu, prm);
-    sol     = smooth::feedback::solve_qp(qp, qpprm, sol);
+    auto [u_asif, code] = asif(t, g, udes, h, bu);
 
-    u = sol.value().primal.head<1>();
+    u = u_asif;
 
-    if (sol.value().code != smooth::feedback::QPSolutionStatus::Optimal) {
-      std::cerr << "Solver failed with code " << static_cast<int>(sol.value().code) << std::endl;
+    if (code != smooth::feedback::QPSolutionStatus::Optimal) {
+      std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
     }
 
     // store data
     tvec.push_back(duration_cast<Time>(t).count());
-    xvec.push_back(g.rn().x());
-    vvec.push_back(g.rn().y());
-    uvec.push_back(u(0));
+    xvec.push_back(g.x());
+    vvec.push_back(g.y());
+    uvec.push_back(u.x());
 
     // step dynamics
     stepper.do_step(ode, g, 0, 0.05);

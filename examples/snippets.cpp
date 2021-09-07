@@ -24,6 +24,7 @@
 // SOFTWARE.
 
 #include <smooth/bundle.hpp>
+#include <smooth/feedback/asif.hpp>
 #include <smooth/feedback/ekf.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/feedback/pid.hpp>
@@ -32,23 +33,38 @@
 
 #include <iostream>
 
+using Time = std::chrono::duration<double>;
+template<typename T>
+using X = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
+template<typename T>
+using U = Eigen::Matrix<T, 2, 1>;
+
+auto f = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
+  return smooth::Tangent<X<T>>{
+    x.template part<1>().x(),
+    x.template part<1>().y(),
+    x.template part<1>().z(),
+    -T(0.2) * x.template part<1>().x() + u(0),
+    T(0),
+    -T(0.4) * x.template part<1>().z() + u(1),
+  };
+};
+
 void ekf_snippet()
 {
-  smooth::feedback::EKF<smooth::SE2d> ekf;
-
-  // motion model
-  auto f = []<typename T>(double, const smooth::SE2<T> &) ->
-    typename smooth::SE2<T>::Tangent { return typename smooth::SE2<T>::Tangent(0.4, 0.01, 0.1); };
+  smooth::feedback::EKF<X<double>> ekf;
 
   // measurement model
   Eigen::Vector2d landmark(1, 1);
-  auto h = [&landmark]<typename T>(
-             const smooth::SE2<T> & x) -> Eigen::Matrix<T, 2, 1> { return x.inverse() * landmark; };
+  auto h = [&landmark]<typename T>(const X<T> & x) -> Eigen::Matrix<T, 2, 1> {
+    return x.template part<0>().inverse() * landmark;
+  };
 
   // PREDICT STEP: propagate filter over time
-  ekf.predict(f,
-    Eigen::Matrix3d::Identity(),  // motion covariance Q
-    1.                            // time step length
+  U<double> u = U<double>::Random();
+  ekf.predict([&u]<typename T>(T, const X<T> & x) { return f(Time(0), x, u.template cast<T>()); },
+    Eigen::Matrix<double, 6, 6>::Identity(),  // motion covariance Q
+    1.                                        // time step length
   );
 
   // UPDATE STEP: register a measurement of the known landmark
@@ -58,72 +74,8 @@ void ekf_snippet()
   );
 
   // access estimate
-  std::cout << ekf.estimate() << std::endl;
-}
-
-void qp_snippet()
-{
-  int n = 5;
-  int m = 10;
-
-  Eigen::MatrixXd P(n, n);
-  Eigen::MatrixXd q(n, 1);
-
-  Eigen::MatrixXd A(m, n);
-  Eigen::MatrixXd l(m, 1);
-  Eigen::MatrixXd u(m, 1);
-
-  P.setRandom();
-  q.setRandom();
-  A.setRandom();
-  l.setRandom();
-  u.setRandom();
-
-  // define the QP
-  //  min 0.5 x' P x + q' x
-  //  s.t l <= Ax <= u
-  smooth::feedback::QuadraticProgram<-1, -1> qp{
-    .P = P,  // n x n matrix
-    .q = q,  // n x 1 vector
-    .A = A,  // m x n matrix
-    .l = l,  // m x 1 vector
-    .u = u,  // m x 1 vector
-  };
-
-  smooth::feedback::QPSolverParams prm{};
-  auto sol = smooth::feedback::solve_qp(qp, prm);
-}
-
-template<typename T>
-using X = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
-template<typename T>
-using U    = Eigen::Matrix<T, 2, 1>;
-using Time = std::chrono::duration<double>;
-
-void mpc_snippet()
-{
-  // dynamics
-  auto f = []<typename T>(Time, const X<T> & x, const U<T> & u) -> typename X<T>::Tangent {
-    typename X<T>::Tangent dx_dt;
-    dx_dt.template head<3>() = x.template part<1>();
-    dx_dt.template tail<3>() << -T(0.2) * x.template part<1>().x() + u(0), T(0),
-      -T(0.4) * x.template part<1>().z() + u(1);
-    return dx_dt;
-  };
-
-  // create MPC object
-  smooth::feedback::MPCParams prm{.T = 5};
-  smooth::feedback::MPC<50, Time, X<double>, U<double>, decltype(f)> mpc(f, prm);
-
-  // set desired state and input trajectories for MPC to track
-  mpc.set_xudes([](Time t) -> X<double> { return X<double>::Identity(); },
-    [](Time T) -> U<double> { return U<double>::Zero(); });
-
-  // calculate control input for current time t and current state x
-  Time t(0);
-  X<double> x = X<double>::Identity();
-  U<double> u;
-  mpc(u, t, x);
+  auto x_hat = ekf.estimate();
+  auto P_hat = ekf.covariance();
 }
 
 void pid_snippet()
@@ -143,14 +95,73 @@ void pid_snippet()
   Eigen::Vector3d u = pid(t, x, v);
 }
 
+void asif_snippet()
+{
+  smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(f)> asif(f);
+
+  // safety set S(t) = { x : h(t, x) >= 0 }
+  auto h = []<typename T>(T, const X<T> & x) -> Eigen::Matrix<T, 1, 1> {
+    return Eigen::Matrix<T, 1, 1>(x.template part<0>().r2().x() - T(0.2));
+  };
+
+  // backup controller
+  auto bu = []<typename T>(T, const X<T> &) -> U<T> { return U<T>(1, 1); };
+
+  Time t          = Time(1);
+  X<double> x     = X<double>::Random();
+  U<double> u_des = U<double>::Zero();
+
+  // get control input for time t, state x, and reference input u_des
+  auto [u_asif, code] = asif(t, x, u_des, h, bu);
+}
+
+void mpc_snippet()
+{
+  smooth::feedback::MPC<Time, X<double>, U<double>, decltype(f)> mpc(f, {.T = 5, .K = 50});
+
+  // set desired input and state trajectories
+  mpc.set_udes([]<typename T>(T t) -> U<T> { return U<T>::Zero(); });
+  mpc.set_xdes([]<typename T>(T t) -> X<T> { return X<T>::Identity(); });
+
+  Time t(0);
+  X<double> x = X<double>::Identity();
+
+  // get control input for time t and state x
+  auto [u, code] = mpc(t, x);
+}
+
+void qp_snippet()
+{
+  int n = 5;
+  int m = 10;
+
+  Eigen::MatrixXd P = Eigen::MatrixXd::Random(n, n);
+  Eigen::VectorXd q = Eigen::VectorXd::Random(n);
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Random(m, n);
+  Eigen::VectorXd l = Eigen::VectorXd::Random(m);
+  Eigen::VectorXd u = Eigen::VectorXd::Random(m);
+
+  // define the QP
+  //  min 0.5 x' P x + q' x
+  //  s.t l <= Ax <= u
+  smooth::feedback::QuadraticProgram<-1, -1> qp{
+    .P = P,  // n x n matrix
+    .q = q,  // n x 1 vector
+    .A = A,  // m x n matrix
+    .l = l,  // m x 1 vector
+    .u = u,  // m x 1 vector
+  };
+
+  smooth::feedback::QPSolverParams prm{};
+  auto sol = smooth::feedback::solve_qp(qp, prm);
+}
+
 int main()
 {
-  std::cout << "RUNNING EKF" << std::endl;
   ekf_snippet();
-  std::cout << "RUNNING MPC" << std::endl;
-  mpc_snippet();
-  std::cout << "RUNNING PID" << std::endl;
   pid_snippet();
-  std::cout << "RUNNING QP" << std::endl;
+  asif_snippet();
+  mpc_snippet();
   qp_snippet();
 }

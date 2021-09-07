@@ -27,40 +27,109 @@
 
 #include <smooth/feedback/asif.hpp>
 #include <smooth/se2.hpp>
-#include <smooth/tn.hpp>
+#include <smooth/so3.hpp>
 
 template<typename T>
 using G = smooth::SE2<T>;
 
 template<typename T>
-using U = Eigen::Matrix<T, 2, 1>;
+using U1 = Eigen::Matrix<T, 2, 1>;
 
 TEST(Asif, Basic)
 {
-  const auto f = []<typename T>(T, const G<T> &, const U<T> & u) {
+  static constexpr int K  = 3;
+  static constexpr int Nu = 2;
+  static constexpr int Nh = 2;
+
+  const auto f = []<typename T>(T, const G<T> &, const U1<T> & u) -> Eigen::Matrix<T, 3, 1> {
     return Eigen::Matrix<T, 3, 1>(u(0), T(0), u(1));
   };
 
-  const auto h = []<typename T>(T, const G<T> & g) { return g.r2(); };
+  const auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, Nh, 1> { return g.r2(); };
 
-  const auto bu = []<typename T>(T, const G<T> &) { return Eigen::Matrix<T, 2, 1>(-0.1, 1); };
+  const auto bu = []<typename T>(T, const G<T> &) -> Eigen::Matrix<T, 2, 1> {
+    return Eigen::Matrix<T, 2, 1>(-0.1, 1);
+  };
 
-  smooth::SE2d x0 = smooth::SE2d::Random();
+  smooth::feedback::ASIFProblem<smooth::SE2d, Eigen::Vector2d> pbm{
+    .x0    = smooth::SE2d::Random(),
+    .u_des = Eigen::Vector2d{0.5, 0.5},
+    .ulim =
+      {
+        .A = Eigen::Matrix<double, 2, 2>{{1, 0}, {0, 1}},
+        .c = U1<double>::Zero(),
+        .l = Eigen::Vector2d{-1, -1},
+        .u = Eigen::Vector2d{1, 1},
+      },
+  };
+  smooth::feedback::ASIFtoQPParams prm{
+    .K = K,
+  };
 
-  smooth::feedback::AsifParams prm;
+  int niq = pbm.ulim.A.rows();
 
-  Eigen::Vector2d u = Eigen::Vector2d::Zero();
+  auto qp = smooth::feedback::asif_to_qp<G<double>, U1<double>>(pbm, prm, f, h, bu);
 
-  auto qp = smooth::feedback::asif_to_qp<3, smooth::SE2d, Eigen::Vector2d>(x0, u, f, h, bu, prm);
+  ASSERT_EQ(qp.P.rows(), Nu + 1);
+  ASSERT_EQ(qp.P.cols(), Nu + 1);
+  ASSERT_EQ(qp.q.size(), Nu + 1);
 
-  std::cout << "A" << std::endl;
-  std::cout << qp.A << std::endl;
-  std::cout << "lu" << std::endl;
-  std::cout << qp.l.transpose() << std::endl;
-  std::cout << qp.u.transpose() << std::endl;
+  ASSERT_EQ(qp.A.rows(), Nh * K + niq + 1);
+  ASSERT_EQ(qp.A.cols(), Nu + 1);
+  ASSERT_EQ(qp.l.size(), qp.A.rows());
+  ASSERT_EQ(qp.u.size(), qp.A.rows());
 
-  std::cout << "P" << std::endl;
-  std::cout << qp.P << std::endl;
-  std::cout << "q" << std::endl;
-  std::cout << qp.q.transpose() << std::endl;
+  // Expect
+  // A = [ BAR   1 ;   Nh * k rows
+  //       A_u   0 ;   niq    rows
+  //        0    1 ]   1      row
+
+  ASSERT_TRUE(qp.A.block(0, Nu, Nh * K, 1).isApprox(Eigen::Matrix<double, Nh * K, 1>::Ones()));
+  ASSERT_TRUE(qp.A.block(Nh * K, 0, niq, Nu).isApprox(pbm.ulim.A));
+  ASSERT_TRUE(qp.A.row(Nh * K + niq).isApprox(Eigen::Matrix<double, 1, Nu + 1>::Unit(Nu)));
+
+  ASSERT_EQ(qp.u.head(Nh * K).minCoeff(), std::numeric_limits<double>::infinity());
+
+  ASSERT_TRUE(qp.l.segment(Nh * K, niq).isApprox(pbm.ulim.l - pbm.ulim.A * pbm.u_des));
+  ASSERT_TRUE(qp.u.segment(Nh * K, niq).isApprox(pbm.ulim.u - pbm.ulim.A * pbm.u_des));
+
+  ASSERT_EQ(qp.l(Nh * K + niq), 0);
+  ASSERT_EQ(qp.u(Nh * K + niq), std::numeric_limits<double>::infinity());
+}
+
+template<typename T>
+using X = smooth::SO3<T>;
+
+template<typename T>
+using U = Eigen::Vector3<T>;
+
+TEST(Asif, Filter)
+{
+  using Time = std::chrono::duration<double>;
+
+  // dynamics
+  auto f = []<typename T>(
+             Time, const X<T> &, const U<T> & u) -> smooth::Tangent<X<T>> { return u; };
+
+  // safety set
+  auto h = []<typename T>(T, const X<T> & g) -> Eigen::Vector3<T> { return g.log(); };
+
+  // backup controller
+  auto bu = []<typename T>(T, const X<T> &) -> U<T> { return U<T>(1, 1, 1); };
+
+  using ASIF = smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(f)>;
+
+  smooth::feedback::ASIFilterParams<U<double>> prm{
+    .nh   = 3,
+    .asif = {.K = 100},
+  };
+
+  ASIF asif(f, prm);
+
+  smooth::SO3d g           = smooth::SO3d::Random();
+  Eigen::Vector3<double> u = Eigen::Vector3d::Zero();
+
+  auto [u_asif, code] = asif(Time(0), g, u, h, bu);
+
+  ASSERT_EQ(code, smooth::feedback::QPSolutionStatus::Optimal);
 }
