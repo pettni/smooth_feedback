@@ -28,18 +28,20 @@ using Tangentd = typename Gd::Tangent;
 
 int main()
 {
-  // number of MPC discretization points steps
-  double T = 5;
+  // input bounds
+  const smooth::feedback::ManifoldBounds<Ud> ulim{
+    .A = Eigen::Matrix2d{{1, 0}, {0, 1}},
+    .c = Ud::Zero(),
+    .l = Eigen::Vector2d(-0.2, -0.5),
+    .u = Eigen::Vector2d(0.5, 0.5),
+  };
 
-  // system variables
-  Gd g = Gd::Identity();
-  Ud u;
-
-  // body velocity of desired trajectory
-  Eigen::Vector3d vdes{1, 0, 0.4};
+  /////////////////////
+  //// SET UP ASIF ////
+  /////////////////////
 
   // dynamics
-  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+  auto f_mpc = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
     return {
       x.template part<1>().x(),
       x.template part<1>().y(),
@@ -49,6 +51,40 @@ int main()
       -T(0.4) * x.template part<1>().z() + u.y(),
     };
   };
+
+  smooth::feedback::MPCParams<Gd, Ud> mpc_prm{
+    .T = 5,
+    .K = 50,
+    .weights =
+      {
+        .QT = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
+      },
+    .ulim                        = ulim,
+    .warmstart                   = true,
+    .relinearize_around_solution = true,
+  };
+
+  smooth::feedback::MPC<Time, Gd, Ud, decltype(f_mpc)> mpc(f_mpc, mpc_prm);
+
+  // define desired trajectory
+  auto xdes = [](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
+    Eigen::Vector3d vdes{1, 0, 0.4};
+    Eigen::Matrix<double, 6, 1> v;
+    v.head(3) = vdes;
+    v.tail(3).setZero();
+    return {
+      Gd(smooth::SE2d(smooth::SO2d(M_PI_2), Eigen::Vector2d(2.5, 0)) + (t.count() * vdes), vdes),
+      v,
+    };
+  };
+
+  // set desired trajectory in MPC
+  mpc.set_xdes(xdes);
+  mpc.set_udes([](Time t) -> Ud { return Ud::Zero(); });
+
+  /////////////////////
+  //// SET UP ASIF ////
+  /////////////////////
 
   // asif dynamics
   auto f_asif = []<typename T>(T, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
@@ -62,47 +98,6 @@ int main()
     };
   };
 
-  // Input bounds
-  const smooth::feedback::ManifoldBounds<Ud> ulim{
-    .A = Eigen::Matrix2d{{1, 0}, {0, 1}},
-    .c = Ud::Zero(),
-    .l = Eigen::Vector2d(-0.2, -0.5),
-    .u = Eigen::Vector2d(0.5, 0.5),
-  };
-
-  // SET UP MPC
-
-  smooth::feedback::MPCParams<Gd, Ud> mpc_prm{
-    .T = T,
-    .K = 50,
-    .weights =
-      {
-        .QT = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
-      },
-    .ulim                        = ulim,
-    .warmstart                   = true,
-    .relinearize_around_solution = true,
-  };
-
-  smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
-
-  // define desired trajectory
-  auto xdes = [&vdes](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
-    Eigen::Matrix<double, 6, 1> v;
-    v.head(3) = vdes;
-    v.tail(3).setZero();
-    return {
-      Gd(smooth::SE2d(smooth::SO2d(M_PI_2), Eigen::Vector2d(2.5, 0)) + (t.count() * vdes), vdes),
-      v,
-    };
-  };
-
-  // set desired trajectory
-  mpc.set_xdes(xdes);
-  mpc.set_udes([](Time t) -> Ud { return Ud::Zero(); });
-
-  // SET UP ASIF
-
   // safe set
   auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 1, 1> {
     const Eigen::Vector2<T> dir = g.template part<0>().r2() - Eigen::Vector2<T>{-2.3, 0};
@@ -115,8 +110,9 @@ int main()
     return {0.2 * g.template part<1>().x(), -0.5};
   };
 
+  // parameters
   smooth::feedback::ASIFilterParams<Ud> asif_prm{
-    .T        = T / 2,
+    .T        = 2.5,
     .u_weight = Eigen::Vector2d{10, 1},
     .ulim     = ulim,
     .asif =
@@ -135,9 +131,13 @@ int main()
   smooth::feedback::ASIFilter<Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
     f_asif, h, bu, asif_prm);
 
+  // system variables
+  Gd g = Gd::Identity();
+  Ud u;
+
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
+  const auto ode = [&f_mpc, &u](const Gd & x, Tangentd & d, double t) { d = f_mpc(Time(t), x, u); };
   std::vector<double> tvec, xvec, yvec, u1vec, u2vec, u1mpcvec, u2mpcvec;
 
   // integrate closed-loop system

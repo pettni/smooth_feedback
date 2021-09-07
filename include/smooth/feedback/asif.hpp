@@ -91,7 +91,7 @@ namespace detail {
 /**
  * @brief Allocate QP matrices (part 1 of asif_to_qp())
  *
- * @param k number of constraint instances
+ * @param K number of constraint instances
  * @param nu_ineq number in inequalities in input constraint
  * @param nh number of barrier constraints
  *

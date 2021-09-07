@@ -85,6 +85,7 @@ struct OptimalControlProblem
   /// State bounds (optional)
   std::optional<ManifoldBounds<G>> glim{};
 
+  /// MPC weights struct
   struct Weights
   {
     /// Running state cost
@@ -95,7 +96,7 @@ struct OptimalControlProblem
     Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
   };
 
-  /// MPC weights
+  /// MPC weights values
   Weights weights{};
 };
 
@@ -143,6 +144,7 @@ namespace detail {
  *  - State linearization constraints (K * Nu)        [optional]
  *
  * @param pbm OptimalControlProblem definition.
+ * @param K number of time discretization steps
  * @param lin_con set to true to allocate K * Nu state linearization constraints
  *
  * @returns sparse quadratic program definition with allocated matrices.
@@ -746,7 +748,7 @@ public:
    * next call to operator()().
    *
    * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow (G,
-   * \mathbb{R}^{\dim G} \f$ std::pair<G, Tangent<G>> \f$
+   * \mathbb{R}^{\dim G} \f$
    */
   void set_xdes(std::function<std::pair<G, Tangent<G>>(T)> && x_des)
   {
