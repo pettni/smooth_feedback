@@ -53,6 +53,18 @@ using Tangentd = typename Gd::Tangent;
 
 int main()
 {
+  // dynamics
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+    return {
+      x.template part<1>().x(),
+      x.template part<1>().y(),
+      x.template part<1>().z(),
+      -T(0.2) * x.template part<1>().x() + u.x(),
+      T(0),
+      -T(0.4) * x.template part<1>().z() + u.y(),
+    };
+  };
+
   // input bounds
   const smooth::feedback::ManifoldBounds<Ud> ulim{
     .A = Eigen::Matrix2d{{1, 0}, {0, 1}},
@@ -64,18 +76,6 @@ int main()
   /////////////////////
   //// SET UP ASIF ////
   /////////////////////
-
-  // dynamics
-  auto f_mpc = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
-    return {
-      x.template part<1>().x(),
-      x.template part<1>().y(),
-      x.template part<1>().z(),
-      -T(0.2) * x.template part<1>().x() + u.x(),
-      T(0),
-      -T(0.4) * x.template part<1>().z() + u.y(),
-    };
-  };
 
   smooth::feedback::MPCParams<Gd, Ud> mpc_prm{
     .T = 5,
@@ -89,39 +89,24 @@ int main()
     .relinearize_around_solution = true,
   };
 
-  smooth::feedback::MPC<Time, Gd, Ud, decltype(f_mpc)> mpc(f_mpc, mpc_prm);
+  smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
 
   // define desired trajectory
-  auto xdes = [](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
-    Eigen::Vector3d vdes{1, 0, 0.4};
-    Eigen::Matrix<double, 6, 1> v;
-    v.head(3) = vdes;
-    v.tail(3).setZero();
-    return {
-      Gd(smooth::SE2d(smooth::SO2d(M_PI_2), Eigen::Vector2d(2.5, 0)) + (t.count() * vdes), vdes),
-      v,
+  auto xdes = []<typename T>(T t) -> G<T> {
+    const Eigen::Vector3d vdes{1, 0, 0.4};
+    return G<T>{
+      smooth::SE2<T>(smooth::SO2<T>(M_PI_2), Eigen::Vector2<T>(2.5, 0)) + (t * vdes),
+      vdes,
     };
   };
 
   // set desired trajectory in MPC
   mpc.set_xdes(xdes);
-  mpc.set_udes([](Time t) -> Ud { return Ud::Zero(); });
+  mpc.set_udes([]<typename T>(T) -> U<T> { return U<T>::Zero(); });
 
   /////////////////////
   //// SET UP ASIF ////
   /////////////////////
-
-  // asif dynamics
-  auto f_asif = []<typename T>(T, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
-    return {
-      x.template part<1>().x(),
-      x.template part<1>().y(),
-      x.template part<1>().z(),
-      -T(0.2) * x.template part<1>().x() + u.x(),
-      T(0),
-      -T(0.4) * x.template part<1>().z() + u.y(),
-    };
-  };
 
   // safe set
   auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 1, 1> {
@@ -138,6 +123,7 @@ int main()
   // parameters
   smooth::feedback::ASIFilterParams<Ud> asif_prm{
     .T        = 2.5,
+    .nh       = 2,
     .u_weight = Eigen::Vector2d{10, 1},
     .ulim     = ulim,
     .asif =
@@ -153,8 +139,7 @@ int main()
       },
   };
 
-  smooth::feedback::ASIFilter<Gd, Ud, decltype(f_asif), decltype(h), decltype(bu)> asif(
-    f_asif, h, bu, asif_prm);
+  smooth::feedback::ASIFilter<Time, Gd, Ud, decltype(f)> asif(f, asif_prm);
 
   // system variables
   Gd g = Gd::Identity();
@@ -162,7 +147,7 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f_mpc, &u](const Gd & x, Tangentd & d, double t) { d = f_mpc(Time(t), x, u); };
+  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
   std::vector<double> tvec, xvec, yvec, u1vec, u2vec, u1mpcvec, u2mpcvec;
 
   // integrate closed-loop system
@@ -174,7 +159,7 @@ int main()
     }
 
     // filter input with ASIF
-    const auto [u_asif, asif_code] = asif(0, g, u_mpc);
+    const auto [u_asif, asif_code] = asif(t, g, u_mpc, h, bu);
     if (asif_code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "ASIF solver failed with asif_code " << static_cast<int>(asif_code) << std::endl;
     }
@@ -202,10 +187,9 @@ int main()
   matplot::title("Path");
 
   matplot::plot(xvec, yvec)->line_width(2);
-  matplot::plot(matplot::transform(
-                  tvec, [&](auto t) { return xdes(Time(t)).first.template part<0>().r2().x(); }),
-    matplot::transform(
-      tvec, [&](auto t) { return xdes(Time(t)).first.template part<0>().r2().y(); }),
+  matplot::plot(
+    matplot::transform(tvec, [&](auto t) { return xdes(t).template part<0>().r2().x(); }),
+    matplot::transform(tvec, [&](auto t) { return xdes(t).template part<0>().r2().y(); }),
     "k--")
     ->line_width(2);
   matplot::legend({"actual", "desired"});

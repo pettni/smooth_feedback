@@ -26,6 +26,8 @@
 #ifndef SMOOTH__FEEDBACK__ASIF_HPP_
 #define SMOOTH__FEEDBACK__ASIF_HPP_
 
+#include <cassert>
+
 #include "asif_func.hpp"
 
 namespace smooth::feedback {
@@ -38,6 +40,8 @@ struct ASIFilterParams
 {
   /// Time horizon
   double T{1};
+  /// Number of barrier constraints (must agree with output dimensionality of h)
+  std::size_t nh{1};
   /// Weights on desired input
   Eigen::Matrix<double, Dof<U>, 1> u_weight{Eigen::Matrix<double, Dof<U>, 1>::Ones()};
   /// Input bounds
@@ -55,12 +59,7 @@ struct ASIFilterParams
  * recent solution for warmstarting, and facilitates working with time-varying
  * problems.
  */
-template<LieGroup G,
-  Manifold U,
-  typename Dyn,
-  typename SS,
-  typename BU,
-  diff::Type DT = diff::Type::DEFAULT>
+template<typename Time, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
 class ASIFilter
 {
 public:
@@ -69,30 +68,20 @@ public:
    *
    * @param f dynamics as function \f$ \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
    * \mathbb{R}^{\dim \mathbb{G}} \f$
-   * @param h safety set definition as function \f$ \mathbb{G} \rightarrow \mathbb{R}^{n_h} \f$
-   * @param bu backup controller as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U}
-   * \f$
    * @param prm filter parameters
-   *
-   * @note These functions are defined in global time. As opposed to MPC the time
-   * variable must be a \p double since differentiation of bu w.r.t. t is required.
    */
-  ASIFilter(const Dyn & f,
-    const SS & h,
-    const BU & bu,
-    const ASIFilterParams<U> & prm = ASIFilterParams<U>{})
-      : ASIFilter(Dyn(f), SS(h), BU(bu), ASIFilterParams<U>(prm))
+  ASIFilter(const Dyn & f, const ASIFilterParams<U> & prm = ASIFilterParams<U>{})
+      : ASIFilter(Dyn(f), ASIFilterParams<U>(prm))
   {}
 
   /**
    * @brief Construct an ASI filter (rvalue version).
    */
-  ASIFilter(Dyn && f, SS && h, BU && bu, ASIFilterParams<U> && prm = ASIFilterParams<U>{})
-      : f_(std::move(f)), h_(std::move(h)), bu_(std::move(bu)), prm_(std::move(prm))
+  ASIFilter(Dyn && f, ASIFilterParams<U> && prm = ASIFilterParams<U>{})
+      : f_(std::move(f)), prm_(std::move(prm))
   {
-    static constexpr int nh = std::invoke_result_t<SS, double, G>::SizeAtCompileTime;
-    const int nu_ineq       = prm_.ulim.A.rows();
-    qp_                     = asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, nh);
+    const int nu_ineq = prm_.ulim.A.rows();
+    qp_               = asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, prm_.nh);
   }
 
   /**
@@ -101,20 +90,26 @@ public:
    * @param t current global time
    * @param g current state
    * @param u_des nominal (desired) control input
+   * @param h safety set definition as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow
+   * \mathbb{R}^{n_h} \f$
+   * @param bu backup controller as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow
+   * \mathbb{U} \f$
+   *
+   * @note h and bu are defined in local time s.t. the safety set is \f$ S(\tau) \coloneq \{ h(\tau
+   * - t) \geq 0 \} \f$, and the backup controll action is \f$ u(\tau, x) = bu(\tau - t, x ) \f$.
    *
    * @returns {u, code}: safe control input and QP solver code
    */
-  std::pair<U, QPSolutionStatus> operator()(double t, const G & g, const U & u_des)
+  template<typename SS, typename BU>
+  std::pair<U, QPSolutionStatus> operator()(Time t, const G & g, const U & u_des, SS && h, BU && bu)
   {
-    using std::chrono::duration, std::chrono::nanoseconds;
+    using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
-    auto f = [this, &t]<typename T>(T t_loc, const CastT<T, G> & vx, const CastT<T, U> & vu) {
-      return f_(T(t) + t_loc, vx, vu);
+    assert((prm_.nh == std::invoke_result_t<SS, double>::RowsAtCompileTime));
+
+    auto f = [this, &t]<typename T>(double t_loc, const CastT<T, G> & vx, const CastT<T, U> & vu) {
+      return f_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
     };
-    auto h = [this, &t]<typename T>(
-               T t_loc, const CastT<T, G> & vx) { return h_(T(t) + t_loc, vx); };
-    auto bu = [this, &t]<typename T>(
-                T t_loc, const CastT<T, G> & vx) { return bu_(T(t) + t_loc, vx); };
 
     ASIFProblem<G, U> pbm{
       .T     = prm_.T,
@@ -125,7 +120,7 @@ public:
     };
 
     asif_to_qp_fill<G, U, decltype(f), decltype(h), decltype(bu), DT>(
-      pbm, prm_.asif, std::move(f), std::move(h), std::move(bu), qp_);
+      pbm, prm_.asif, std::move(f), std::forward<SS>(h), std::forward<BU>(bu), qp_);
     auto sol = feedback::solve_qp(qp_, prm_.qp, warmstart_);
 
     if (sol.code == QPSolutionStatus::Optimal) { warmstart_ = sol; }
@@ -135,8 +130,6 @@ public:
 
 private:
   Dyn f_;
-  SS h_;
-  BU bu_;
 
   QuadraticProgram<-1, -1, double> qp_;
   ManifoldBounds<U> ulim_;

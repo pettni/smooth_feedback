@@ -105,8 +105,11 @@ using U = Eigen::Vector3<T>;
 
 TEST(Asif, Filter)
 {
+  using Time = std::chrono::duration<double>;
+
   // dynamics
-  auto f = []<typename T>(T, const X<T> &, const U<T> & u) -> smooth::Tangent<X<T>> { return u; };
+  auto f = []<typename T>(
+             Time, const X<T> &, const U<T> & u) -> smooth::Tangent<X<T>> { return u; };
 
   // safety set
   auto h = []<typename T>(T, const X<T> & g) -> Eigen::Vector3<T> { return g.log(); };
@@ -114,19 +117,19 @@ TEST(Asif, Filter)
   // backup controller
   auto bu = []<typename T>(T, const X<T> &) -> U<T> { return U<T>(1, 1, 1); };
 
-  using ASIF =
-    smooth::feedback::ASIFilter<X<double>, U<double>, decltype(f), decltype(h), decltype(bu)>;
+  using ASIF = smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(f)>;
 
   smooth::feedback::ASIFilterParams<U<double>> prm{
+    .nh   = 3,
     .asif = {.K = 100},
   };
 
-  ASIF asif(f, h, bu, prm);
+  ASIF asif(f, prm);
 
   smooth::SO3d g           = smooth::SO3d::Random();
   Eigen::Vector3<double> u = Eigen::Vector3d::Zero();
 
-  auto [u_asif, code] = asif(0, g, u);
+  auto [u_asif, code] = asif(Time(0), g, u, h, bu);
 
   ASSERT_EQ(code, smooth::feedback::QPSolutionStatus::Optimal);
 }

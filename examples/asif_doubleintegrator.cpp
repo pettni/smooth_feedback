@@ -49,7 +49,7 @@ using Ud = U<double>;
 int main()
 {
   // dynamics
-  auto f = []<typename T>(T, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
     return {x(1), u(0)};
   };
 
@@ -63,7 +63,8 @@ int main()
 
   // parameters
   smooth::feedback::ASIFilterParams<Ud> prm{
-    .T = 0.5,
+    .T  = 0.5,
+    .nh = 2,
     .ulim =
       {
         .A = Eigen::Matrix<double, 1, 1>(1),
@@ -84,7 +85,7 @@ int main()
   };
 
   // create filter
-  smooth::feedback::ASIFilter<Gd, Ud, decltype(f), decltype(h), decltype(bu)> asif(f, h, bu, prm);
+  smooth::feedback::ASIFilter<Time, Gd, Ud, decltype(f)> asif(f, prm);
 
   // system variables
   Gd g(-5, 1);
@@ -92,12 +93,13 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) { d = f(t, x, u); };
+  const auto ode = [&f, &u](
+                     const Gd & x, smooth::Tangent<Gd> & d, double t) { d = f(Time(t), x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 10s; t += 50ms) {
-    auto [u_asif, code] = asif(0, g, udes);
+    auto [u_asif, code] = asif(t, g, udes, h, bu);
 
     u = u_asif;
 

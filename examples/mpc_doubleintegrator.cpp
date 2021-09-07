@@ -81,13 +81,8 @@ int main()
 
   // create MPC object and set input bounds, and desired trajectories
   smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, prm);
-  mpc.set_xdes([](Time t) -> std::pair<Gd, smooth::Tangent<Gd>> {
-    return {
-      Gd{-0.5 * sin(0.3 * t.count()), 0},
-      smooth::Tangent<Gd>{-0.15 * cos(0.3 * t.count()), 0},
-    };
-  });
-  mpc.set_udes([](Time) -> Ud { return Ud::Zero(); });
+  mpc.set_xdes([]<typename T>(T t) -> G<T> { return G<T>{-0.5 * sin(0.3 * t), 0}; });
+  mpc.set_udes([]<typename T>(T) -> U<T> { return U<T>::Zero(); });
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
@@ -100,7 +95,7 @@ int main()
   for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
     auto [u_mpc, code] = mpc(t, g);
-    u = u_mpc;
+    u                  = u_mpc;
     if (code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "Solver failed with code " << static_cast<int>(code) << std::endl;
     }

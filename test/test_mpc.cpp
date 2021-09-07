@@ -182,14 +182,10 @@ TEST(Mpc, BasicEigenInput)
       .iterative_relinearization   = 5,
     });
 
-  mpc.set_xdes([](Time t) -> std::pair<smooth::SE2d, Eigen::Vector3d> {
-    double t_dbl = std::chrono::duration_cast<Time>(t).count();
-    return {
-      smooth::SE2<double>::exp(t_dbl * Eigen::Vector3d(0.2, 0.1, -0.1)),
-      Eigen::Vector3d(0.2, 0.1, -0.1),
-    };
+  mpc.set_xdes([]<typename T>(T t) -> smooth::SE2<T> {
+    return smooth::SE2<T>::exp(t * Eigen::Vector3<T>(0.2, 0.1, -0.1));
   });
-  mpc.set_udes([](Time) -> Eigen::Vector2d { return Eigen::Vector2d::Zero(); });
+  mpc.set_udes([]<typename T>(T) -> Eigen::Vector2<T> { return Eigen::Vector2<T>::Zero(); });
 
   Eigen::Vector2d u;
 

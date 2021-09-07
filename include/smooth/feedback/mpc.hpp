@@ -102,7 +102,7 @@ struct MPCParams
 /**
  * @brief Model-Predictive Control (MPC) on Lie groups.
  *
- * @tparam T time type, must be a std::chrono::duration-like
+ * @tparam Time time type, must be a std::chrono::duration-like
  * @tparam G state space LieGroup type
  * @tparam U input space Manifold type
  * @tparam Dyn callable type that represents dynamics
@@ -116,7 +116,7 @@ struct MPCParams
  * the user to update the linearizaiton in an appropriate way, or make sure that the problem is
  * linear. The linearization point can be manually updated via the linearization() member functions.
  */
-template<typename T, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+template<typename Time, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
 class MPC
 {
 public:
@@ -124,7 +124,7 @@ public:
    * @brief Create an MPC instance.
    *
    * @param f callable object that represents dynamics \f$ \mathrm{d}^r x_t = f(f, x, u) \f$ as a
-   * function \f$ f : T \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
+   * function \f$ f : Time \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
    * @param prm MPC parameters
    *
    * @note \f$ f \f$ is copied/moved into the class. In order to modify the dynamics from the
@@ -172,12 +172,12 @@ public:
    *
    * @return {u, code}
    */
-  inline std::pair<U, QPSolutionStatus> operator()(const T & t,
+  inline std::pair<U, QPSolutionStatus> operator()(const Time & t,
     const G & g,
     std::optional<std::reference_wrapper<std::vector<U>>> u_traj = std::nullopt,
     std::optional<std::reference_wrapper<std::vector<G>>> x_traj = std::nullopt)
   {
-    using std::chrono::duration, std::chrono::nanoseconds;
+    using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
     static constexpr int Nx = Dof<G>;
     static constexpr int Nu = Dof<U>;
@@ -192,15 +192,15 @@ public:
       return u_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
     };
 
-    // linearize around new desired trajectory
-    if (!prm_.relinearize_around_solution || relinearize_around_desired_) {
+    // define linearization if not already updated around previous solution
+    if (!prm_.relinearize_around_solution || new_desired_) {
       lin_.u = [this, &t](double t_loc) -> U {
         return u_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
       };
       lin_.g = [this, &t](double t_loc) -> std::pair<G, Tangent<G>> {
         return x_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
       };
-      relinearize_around_desired_ = false;
+      new_desired_ = false;
     }
 
     const double dt = ocp_.T / static_cast<double>(prm_.K);
@@ -266,61 +266,53 @@ public:
   }
 
   /**
-   * @brief Set the desired input trajectory (lvalue version).
+   * @brief Set the desired input trajectory (relative time).
    *
    * @note This function triggers a relinearization around the desired input and trajectory at the
    * next call to operator()().
    *
-   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
+   * @param f templated function T -> U<T> s.t. u_des(t) = f(t - t0)
+   * @param t0 absolute zero time for the desired trajectory
+   * \f$
    */
-  inline void set_udes(const std::function<U(T)> & u_des)
+  template<typename Fun>
+    requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<U>>, U>)
+  inline void set_udes(Fun && f, Time t0 = Time(0))
   {
-    set_xudes(std::function<U(T)>(u_des));
-  };
+    u_des_ = [t0 = t0, f = std::forward<Fun>(f)](Time t) -> U {
+      return std::invoke(
+        f, std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count());
+    };
+    new_desired_ = true;
+  }
 
   /**
-   * @brief Set the desired input trajectory (rvalue version).
+   * @brief Set the desired state trajectry (relative time, automatic differentiation).
+   *
+   * Instead of providing {x(t), dx(t)} of the desired trajectory, this function differentiates a
+   * function x(t) so that the derivative does not need to be specified.
    *
    * @note This function triggers a relinearization around the desired input and trajectory at the
    * next call to operator()().
    *
-   * @param u_des desired input trajectory \f$ u_{des} (t) \f$ as function \f$ T \rightarrow U \f$
-   */
-  inline void set_udes(std::function<U(T)> && u_des)
+   * @param f function s.t. desired trajectory is x(t) = f(t - t0). f is a templated function T ->
+   * CastT<G, T>.
+   * @param t0 absolute zero time for the desired trajectory
+   * */
+  template<typename Fun>
+    requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<G>>, G>)
+  inline void set_xdes(Fun && f, Time t0 = Time(0))
   {
-    u_des_                      = std::move(u_des);
-    relinearize_around_desired_ = true;
-  };
+    x_des_ = [t0 = t0, f = std::forward<Fun>(f)](Time t) -> std::pair<G, Tangent<G>> {
+      const auto t_rel = std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count();
+      return diff::dr<DT>(f, wrt(t_rel));
+    };
+    new_desired_ = true;
+  }
 
   /**
-   * @brief Set the desired state trajectory by providing value and derivative (lvalue version).
-   *
-   * @note This function triggers a relinearization around the desired input and trajectory at the
-   * next call to operator()().
-   *
-   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow (G,
-   * \mathbb{R}^{\dim G} \f$
+   * @brief Update MPC weights
    */
-  inline void set_xdes(const std::function<std::pair<G, Tangent<G>>(T)> & x_des)
-  {
-    set_xdes(std::function<std::pair<G, Tangent<G>>(T)>(x_des));
-  };
-
-  /**
-   * @brief Set the desired state trajectory by providing value and derivative (rvalue version).
-   *
-   * @note This function triggers a relinearization around the desired input and trajectory at the
-   * next call to operator()().
-   *
-   * @param x_des desired state trajectory \f$ g_{des} (t) \f$ as function \f$ T \rightarrow (G,
-   * \mathbb{R}^{\dim G} \f$
-   */
-  inline void set_xdes(std::function<std::pair<G, Tangent<G>>(T)> && x_des)
-  {
-    x_des_                      = std::move(x_des);
-    relinearize_around_desired_ = true;
-  };
-
   inline void update_weights(const typename OptimalControlProblem<G, U>::Weights & weights)
   {
     ocp_.weights = weights;
@@ -366,17 +358,17 @@ private:
   // problem description
   OptimalControlProblem<G, U> ocp_;
   // flag to keep track of linearization point, and current linearization
-  bool relinearize_around_desired_{false};
+  bool new_desired_{false};
   LinearizationInfo<G, U> lin_{};
   // pre-allocated QP matrices
   QuadraticProgramSparse<double> qp_;
   // store last solution for warmstarting
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
   // desired state (pos + vel) and input trajectories
-  std::function<std::pair<G, Tangent<G>>(T)> x_des_{[](T) -> std::pair<G, Tangent<G>> {
+  std::function<std::pair<G, Tangent<G>>(Time)> x_des_{[](Time) -> std::pair<G, Tangent<G>> {
     return {Default<G>(), Tangent<G>::Zero()};
   }};
-  std::function<U(T)> u_des_{[](T) -> U { return Default<U>(); }};
+  std::function<U(Time)> u_des_{[](Time) -> U { return Default<U>(); }};
 };
 
 }  // namespace smooth::feedback
