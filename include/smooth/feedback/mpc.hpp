@@ -266,12 +266,29 @@ public:
   }
 
   /**
+   * @brief Set the desired input trajectory (absolute time)
+   */
+  inline void set_udes(std::function<U(Time)> && u_des)
+  {
+    u_des_       = std::move(u_des);
+    new_desired_ = true;
+  }
+
+  /**
+   * @brief Set the desired input trajectory (absolute time, rvalue version)
+   */
+  inline void set_udes(const std::function<U(Time)> & u_des)
+  {
+    set_udes(std::function<U(Time)>(u_des));
+  }
+
+  /**
    * @brief Set the desired input trajectory (relative time).
    *
    * @note This function triggers a relinearization around the desired input and trajectory at the
    * next call to operator()().
    *
-   * @param f templated function T -> U<T> s.t. u_des(t) = f(t - t0)
+   * @param f function double -> U<double> s.t. u_des(t) = f(t - t0)
    * @param t0 absolute zero time for the desired trajectory
    * \f$
    */
@@ -279,11 +296,27 @@ public:
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<U>>, U>)
   inline void set_udes(Fun && f, Time t0 = Time(0))
   {
-    u_des_ = [t0 = t0, f = std::forward<Fun>(f)](Time t) -> U {
+    set_udes([t0 = t0, f = std::forward<Fun>(f)](Time t) -> U {
       return std::invoke(
         f, std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count());
-    };
+    });
+  }
+
+  /**
+   * @brief Set the desired state trajectory and velocity (absolute time)
+   */
+  inline void set_xdes(std::function<std::pair<G, Tangent<G>>(Time)> && x_des)
+  {
+    x_des_       = std::move(x_des);
     new_desired_ = true;
+  }
+
+  /**
+   * @brief Set the desired state trajectory (absolute time, rvalue version)
+   */
+  inline void set_xdes(const std::function<std::pair<G, Tangent<G>>(Time)> & x_des)
+  {
+    set_xdes(std::function<std::pair<G, Tangent<G>>(Time)>(x_des));
   }
 
   /**
@@ -303,11 +336,10 @@ public:
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<G>>, G>)
   inline void set_xdes(Fun && f, Time t0 = Time(0))
   {
-    x_des_ = [t0 = t0, f = std::forward<Fun>(f)](Time t) -> std::pair<G, Tangent<G>> {
+    set_xdes([t0 = t0, f = std::forward<Fun>(f)](Time t) -> std::pair<G, Tangent<G>> {
       const auto t_rel = std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count();
       return diff::dr<DT>(f, wrt(t_rel));
-    };
-    new_desired_ = true;
+    });
   }
 
   /**
