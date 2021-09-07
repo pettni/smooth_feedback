@@ -138,7 +138,7 @@ public:
     ocp_.glim    = prm_.glim;
     ocp_.ulim    = prm_.ulim;
     ocp_.weights = prm_.weights;
-    qp_          = ocp_to_qp_allocate<G, U>(ocp_, prm_.K);
+    ocp_to_qp_allocate<G, U>(ocp_, prm_.K, qp_);
   }
   /// Same as above but for lvalues
   inline MPC(const Dyn & f, const MPCParams<G, U> & prm = MPCParams<G, U>{})

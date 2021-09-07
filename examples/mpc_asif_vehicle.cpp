@@ -123,7 +123,7 @@ int main()
   // parameters
   smooth::feedback::ASIFilterParams<Ud> asif_prm{
     .T        = 2.5,
-    .nh       = 2,
+    .nh       = 1,
     .u_weight = Eigen::Vector2d{10, 1},
     .ulim     = ulim,
     .asif =

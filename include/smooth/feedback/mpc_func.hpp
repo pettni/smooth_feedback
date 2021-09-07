@@ -33,6 +33,7 @@
 
 #include <Eigen/Core>
 
+#include <cassert>
 #include <chrono>
 #include <smooth/diff.hpp>
 #include <smooth/lie_group.hpp>
@@ -157,15 +158,16 @@ struct LinearizationInfo
  *  - State constraints               (Nx_ineq * Nx)
  *  - State linearization constraints (K * Nu)        [optional]
  *
- * @param pbm OptimalControlProblem definition.
- * @param K number of time discretization steps
- * @param lin_con set to true to allocate K * Nu state linearization constraints
- *
- * @returns sparse quadratic program definition with allocated matrices.
+ * @param[in] pbm OptimalControlProblem definition.
+ * @param[in] K number of time discretization steps
+ * @param[out] sparse quadratic program definition with allocated matrices.
+ * @param[in] lin_con set to true to allocate K * Nu state linearization constraints
  */
 template<LieGroup G, Manifold U>
-QuadraticProgramSparse<double> ocp_to_qp_allocate(
-  const OptimalControlProblem<G, U> & pbm, std::size_t K, bool lin_con = false)
+void ocp_to_qp_allocate(const OptimalControlProblem<G, U> & pbm,
+  std::size_t K,
+  QuadraticProgramSparse<double> & qp,
+  bool lin_con = false)
 {
   // problem info
   static constexpr int Nx = Dof<G>;
@@ -182,8 +184,6 @@ QuadraticProgramSparse<double> ocp_to_qp_allocate(
   const uint32_t nvar = K * Nx + K * Nu;
   const uint32_t ncon = n_eq + NU_iq + NX_iq + NXLIN_iq;
 
-  QuadraticProgramSparse qp;
-
   // Matrix sizes
   qp.P.resize(nvar, nvar);
   qp.q.resize(nvar);
@@ -195,8 +195,13 @@ QuadraticProgramSparse<double> ocp_to_qp_allocate(
   // SPARSITY PATTERN FOR P
 
   Eigen::Matrix<int, -1, 1> Pp(nvar);
-  for (std::size_t i = 0u; i != K * Nu; ++i) { Pp[i] = Nu; }
-  for (std::size_t i = K * Nu; i != K * (Nu + Nx); ++i) { Pp[i] = Nx; }
+  for (auto k = 0u; k != K; ++k) {
+    for (auto i = 0u; i != Nu; ++i) { Pp[k * Nu + i] = 1 + i; }
+  }
+
+  for (auto k = 0u; k != K; ++k) {
+    for (auto i = 0u; i != Nx; ++i) { Pp[K * Nu + k * Nx + i] = 1 + i; }
+  }
 
   // SPARSITY PATTERN FOR A
 
@@ -224,8 +229,6 @@ QuadraticProgramSparse<double> ocp_to_qp_allocate(
 
   qp.P.reserve(Pp);
   qp.A.reserve(Ap);
-
-  return qp;
 }
 
 /**
@@ -259,6 +262,11 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   /// FILL A, l, u ///
   ////////////////////
 
+  assert(static_cast<uint32_t>(qp.A.rows()) == K * (Nx + Nu_iq + Nx_iq + Nxlin_iq));
+  assert(static_cast<uint32_t>(qp.A.cols()) == K * (Nx + Nu));
+  assert(static_cast<uint32_t>(qp.l.rows()) == K * (Nx + Nu_iq + Nx_iq + Nxlin_iq));
+  assert(static_cast<uint32_t>(qp.u.rows()) == K * (Nx + Nu_iq + Nx_iq + Nxlin_iq));
+
   int Arow = 0;
 
   for (auto k = 0u; k != K; ++k) {
@@ -270,11 +278,17 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
 
     // LINEARIZATION
 
-    const auto [xl, dxl]     = lin.g(t);
-    const auto ul            = lin.u(t);
-    const auto f_t           = [&f, &t]<typename T>(const CastT<T, G> & vx,
-                       const CastT<T, U> & vu) -> Eigen::Matrix<T, Nx, 1> { return f(t, vx, vu); };
-    const auto [flin, df_xu] = diff::dr<DT>(f_t, wrt(xl, ul));
+    const auto [xl, dxl] = lin.g(t);
+    const auto ul        = lin.u(t);
+
+    // clang-format off
+    const auto [flin, df_xu] = diff::dr<DT>(
+      [&f, &t]<typename T>(const CastT<T, G> & vx, const CastT<T, U> & vu) -> Tangent<CastT<T, G>> {
+        return f(t, vx, vu);
+      },
+      wrt(xl, ul)
+    );
+    // clang-format on
 
     // cltv system \dot x = At x(t) + Bt u(t) + Et
     const AT At = -0.5 * ad<G>(flin) - 0.5 * ad<G>(dxl) + df_xu.template leftCols<Nx>();
@@ -298,31 +312,36 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
       // x(1) - B u(0) = A x0 + E
 
       // identity matrix on x(1)
-      for (auto i = 0u; i != Nx; ++i) { qp.A.coeffRef(Nx * k + i, NU + Nx * k + i) = 1; }
+      for (auto i = 0u; i != Nx; ++i) {
+        const Eigen::Index Ari = Nx * k + i;
+        assert(qp.A.outerIndexPtr()[Ari + 1] - qp.A.outerIndexPtr()[Ari] == Nu + 1);
+
+        // B matrix on u0
+        for (auto j = 0u; j != Nu; ++j) { qp.A.coeffRef(Ari, Nu * k + j) = -Bk(i, j); }
+
+        // Identity matrix on x1
+        qp.A.coeffRef(Ari, NU + Nx * k + i) = 1;
+      }
 
       // B matrix on u(0)
-      for (auto i = 0u; i != Nx; ++i) {
-        for (auto j = 0u; j != Nu; ++j) { qp.A.coeffRef(Nx * k + i, Nu * k + j) = -Bk(i, j); }
-      }
+      for (auto i = 0u; i != Nx; ++i) {}
 
       qp.u.template segment<Nx>(Nx * k) = Ak * rminus(pbm.x0, xl) + Ek;
       qp.l.template segment<Nx>(Nx * k) = qp.u.template segment<Nx>(Nx * k);
     } else {
       // x(k+1) - A x(k) - B u(k) = E
-
-      // identity matrix on x(k+1)
-      for (auto i = 0u; i != Nx; ++i) { qp.A.coeffRef(Nx * k + i, NU + Nx * k + i) = 1; }
-
-      // A matrix on x(k)
       for (auto i = 0u; i != Nx; ++i) {
-        for (auto j = 0u; j != Nx; ++j) {
-          qp.A.coeffRef(Nx * k + i, NU + Nx * (k - 1) + j) = -Ak(i, j);
-        }
-      }
+        const Eigen::Index Ari = Nx * k + i;
+        assert(qp.A.outerIndexPtr()[Ari + 1] - qp.A.outerIndexPtr()[Ari] == Nu + Nx + 1);
 
-      // B matrix on u(k)
-      for (auto i = 0u; i != Nx; ++i) {
-        for (auto j = 0u; j != Nu; ++j) { qp.A.coeffRef(Nx * k + i, Nu * k + j) = -Bk(i, j); }
+        // B matrix on u(k)
+        for (auto j = 0u; j != Nu; ++j) { qp.A.coeffRef(Ari, Nu * k + j) = -Bk(i, j); }
+
+        // A matrix on x(k)
+        for (auto j = 0u; j != Nx; ++j) { qp.A.coeffRef(Ari, NU + Nx * (k - 1) + j) = -Ak(i, j); }
+
+        // identity matrix on x(k+1)
+        qp.A.coeffRef(Ari, NU + Nx * k + i) = 1;
       }
 
       qp.u.template segment<Nx>(Nx * k) = Ek;
@@ -336,9 +355,10 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   if (Nu_iq > 0) {
     for (auto k = 0u; k < K; ++k) {
       for (auto i = 0u; i != Nu_iq; ++i) {
-        for (auto j = 0u; j != Nu; ++j) {
-          qp.A.coeffRef(Arow + k * Nu_iq + i, k * Nu + j) = pbm.ulim.A(i, j);
-        }
+        const Eigen::Index Ari = Arow + k * Nu_iq + i;
+        assert(qp.A.outerIndexPtr()[Ari + 1] - qp.A.outerIndexPtr()[Ari] == Nu);
+
+        for (auto j = 0u; j != Nu; ++j) { qp.A.coeffRef(Ari, k * Nu + j) = pbm.ulim.A(i, j); }
       }
       // clang-format off
       qp.l.segment(Arow + k * Nu_iq, Nu_iq) = pbm.ulim.l - pbm.ulim.A * rminus(lin.u(k * dt), pbm.ulim.c);
@@ -353,8 +373,11 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   if (Nx_iq > 0) {
     for (auto k = 1u; k != K + 1; ++k) {
       for (auto i = 0u; i != Nx_iq; ++i) {
+        const Eigen::Index Ari = Arow + (k - 1) * Nx_iq + i;
+        assert(qp.A.outerIndexPtr()[Ari + 1] - qp.A.outerIndexPtr()[Ari] == Nx);
+
         for (auto j = 0u; j != Nx; ++j) {
-          qp.A.coeffRef(Arow + (k - 1) * Nx_iq + i, NU + (k - 1) * Nx + j) = pbm.glim.A(i, j);
+          qp.A.coeffRef(Ari, NU + (k - 1) * Nx + j) = pbm.glim.A(i, j);
         }
       }
       // clang-format off
@@ -370,7 +393,10 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   if (Nxlin_iq > 0) {
     for (auto k = 1u; k < K + 1; ++k) {
       for (auto i = 0u; i != Nxlin_iq; ++i) {
-        qp.A.coeffRef(Arow + (k - 1) * Nxlin_iq + i, NU + (k - 1) * Nx + i) = 1.;
+        const Eigen::Index Ari = Arow + (k - 1) * Nxlin_iq + i;
+        assert(qp.A.outerIndexPtr()[Ari + 1] - qp.A.outerIndexPtr()[Ari] == 1);
+
+        qp.A.coeffRef(Ari, NU + (k - 1) * Nx + i) = 1.;
       }
       qp.l.segment(Arow + (k - 1) * Nxlin_iq, Nxlin_iq) = -lin.g_domain;
       qp.u.segment(Arow + (k - 1) * Nxlin_iq, Nxlin_iq) = lin.g_domain;
@@ -382,12 +408,20 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   /// FILL P,q ///
   ////////////////
 
+  assert(static_cast<uint32_t>(qp.P.cols()) == K * (Nx + Nu));
+  assert(static_cast<uint32_t>(qp.P.cols()) == K * (Nx + Nu));
+  assert(static_cast<uint32_t>(qp.q.rows()) == K * (Nx + Nu));
+
   // INPUT COSTS
 
   for (auto k = 0u; k < K; ++k) {
     for (auto i = 0u; i != Nu; ++i) {
-      for (auto j = 0u; j != Nu; ++j) {
-        qp.P.coeffRef(k * Nu + i, k * Nu + j) = pbm.weights.R(i, j) * dt;
+      const Eigen::Index Pci = k * Nu + i;
+      assert(qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
+             == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
+
+      for (auto j = 0u; j != i + 1; ++j) {
+        qp.P.coeffRef(k * Nu + j, Pci) = pbm.weights.R(j, i) * dt;
       }
     }
     qp.q.segment(k * Nu, Nu) = pbm.weights.R * rminus(lin.u(k * dt), pbm.udes(k * dt)) * dt;
@@ -398,8 +432,12 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   // intermediate states x(1) ... x(K-1)
   for (auto k = 1u; k < K; ++k) {
     for (auto i = 0u; i != Nx; ++i) {
-      for (auto j = 0u; j != Nx; ++j) {
-        qp.P.coeffRef(NU + (k - 1) * Nx + i, NU + (k - 1) * Nx + j) = pbm.weights.Q(i, j) * dt;
+      const Eigen::Index Pci = NU + (k - 1) * Nx + i;
+      assert(qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
+             == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
+
+      for (auto j = 0u; j != i + 1; ++j) {
+        qp.P.coeffRef(NU + (k - 1) * Nx + j, Pci) = pbm.weights.Q(j, i) * dt;
       }
     }
     qp.q.segment(NU + (k - 1) * Nx, Nx) =
@@ -408,12 +446,19 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
 
   // last state x(K) ~ x(T)
   for (auto i = 0u; i != Nx; ++i) {
-    for (auto j = 0u; j != Nx; ++j) {
-      qp.P.coeffRef(NU + (K - 1) * Nx + i, NU + (K - 1) * Nx + j) = pbm.weights.QT(i, j);
+    const Eigen::Index Pci = NU + (K - 1) * Nx + i;
+    assert(qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
+           == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
+
+    for (auto j = 0u; j != i + 1; ++j) {
+      qp.P.coeffRef(NU + (K - 1) * Nx + j, Pci) = pbm.weights.QT(j, i);
     }
   }
   qp.q.segment(NU + (K - 1) * Nx, Nx) =
     pbm.weights.QT * rminus(lin.g(pbm.T).first, pbm.gdes(pbm.T));
+
+  qp.A.makeCompressed();
+  qp.P.makeCompressed();
 }
 
 /**
@@ -461,7 +506,9 @@ QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm
 {
   bool lin_con = lin.g_domain.minCoeff() < std::numeric_limits<double>::infinity();
 
-  auto qp = ocp_to_qp_allocate<G, U>(pbm, K, lin_con);
+  QuadraticProgramSparse<double> qp;
+
+  ocp_to_qp_allocate<G, U>(pbm, K, qp, lin_con);
   ocp_to_qp_fill<G, U>(pbm, K, f, lin, qp);
 
   return qp;

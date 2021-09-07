@@ -81,7 +81,7 @@ public:
       : f_(std::move(f)), prm_(std::move(prm))
   {
     const int nu_ineq = prm_.ulim.A.rows();
-    qp_               = asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, prm_.nh);
+    asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, prm_.nh, qp_);
   }
 
   /**
@@ -116,7 +116,7 @@ public:
       .x0    = g,
       .u_des = u_des,
       .W_u   = prm_.u_weight,
-      .ulim  = ulim_,
+      .ulim  = prm_.ulim,
     };
 
     asif_to_qp_fill<G, U, decltype(f), decltype(h), decltype(bu), DT>(
@@ -132,7 +132,6 @@ private:
   Dyn f_;
 
   QuadraticProgram<-1, -1, double> qp_;
-  ManifoldBounds<U> ulim_;
   ASIFilterParams<U> prm_;
   std::optional<QPSolution<-1, -1, double>> warmstart_;
 };

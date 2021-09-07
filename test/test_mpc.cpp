@@ -63,8 +63,8 @@ TEST(Mpc, OcpToQP)
     .weights =
       {
         .Q  = Eigen::Matrix2d{{1, 2}, {2, 4}},
-        .QT = Eigen::Matrix2d{{5, 6}, {5, 8}},
-        .R  = Eigen::Matrix2d{{9, 10}, {9, 12}},
+        .QT = Eigen::Matrix2d{{5, 6}, {6, 8}},
+        .R  = Eigen::Matrix2d{{9, 10}, {10, 12}},
       },
   };
 
@@ -101,7 +101,8 @@ TEST(Mpc, OcpToQP)
 
   // dense versions
   Eigen::MatrixXd Ad(qp.A);
-  Eigen::MatrixXd Pd(qp.P);
+  Eigen::MatrixXd Pd_upp(qp.P);
+  Eigen::MatrixXd Pd = Pd_upp.selfadjointView<Eigen::Upper>();
 
   // CHECK A
 

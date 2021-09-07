@@ -98,7 +98,7 @@ struct QuadraticProgramSparse
   Eigen::Matrix<Scalar, -1, 1> q;
 
   /**
-   * @brief Inequality matrix (only upper triangular part is used)
+   * @brief Inequality matrix
    *
    * @note The constraint matrix is stored in row-major format,
    * i.e. coefficients for each constraint are contiguous in memory

@@ -95,8 +95,8 @@ struct ASIFtoQPParams
  * @return allocated QP with zero matrices
  */
 template<LieGroup G, Manifold U>
-QuadraticProgram<-1, -1, double> asif_to_qp_allocate(
-  std::size_t K, std::size_t nu_ineq, std::size_t nh)
+void asif_to_qp_allocate(
+  std::size_t K, std::size_t nu_ineq, std::size_t nh, QuadraticProgram<-1, -1, double> & qp)
 {
   static constexpr int nx = Dof<G>;
   static constexpr int nu = Dof<U>;
@@ -107,16 +107,12 @@ QuadraticProgram<-1, -1, double> asif_to_qp_allocate(
   const int M = K * nh + nu_ineq + 1;
   const int N = nu + 1;
 
-  QuadraticProgram<-1, -1> qp;
-
   qp.A.setZero(M, N);
   qp.l.setZero(M);
   qp.u.setZero(M);
 
   qp.P.setZero(N, N);
   qp.q.setZero(N);
-
-  return qp;
 }
 
 /**
@@ -148,6 +144,18 @@ void asif_to_qp_fill(const ASIFProblem<G, U> & pbm,
   euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
 
   const int nu_ineq = pbm.ulim.A.rows();
+
+  [[maybe_unused]] const int M = prm.K * nh + nu_ineq + 1;
+  [[maybe_unused]] const int N = nu + 1;
+
+  assert(qp.A.rows() == M);
+  assert(qp.A.cols() == N);
+  assert(qp.l.rows() == M);
+  assert(qp.u.rows() == M);
+
+  assert(qp.P.rows() == N);
+  assert(qp.P.cols() == N);
+  assert(qp.q.rows() == N);
 
   // iteration variables
   const double tau     = pbm.T / static_cast<double>(prm.K);
@@ -272,7 +280,8 @@ QuadraticProgram<-1, -1, double> asif_to_qp(
   static_assert(nh > 0, "Safe set dimension must be static");
 
   const int nu_ineq = pbm.ulim.A.rows();
-  auto qp           = asif_to_qp_allocate<G, U>(prm.K, nu_ineq, nh);
+  QuadraticProgram<-1, -1, double> qp;
+  asif_to_qp_allocate<G, U>(prm.K, nu_ineq, nh, qp);
   asif_to_qp_fill(pbm, prm, f, h, bu, qp);
   return qp;
 }
