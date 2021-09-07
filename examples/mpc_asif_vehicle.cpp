@@ -29,11 +29,19 @@
 #include <smooth/feedback/asif.hpp>
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
+#include <smooth/se3.hpp>
 
 #include <chrono>
 
 #ifdef ENABLE_PLOTTING
 #include <matplot/matplot.h>
+#endif
+
+#ifdef ENABLE_ROS
+#include <smooth/compat/ros.hpp>
+#include <gazebo_msgs/srv/set_entity_state.hpp>
+#include <geometry_msgs/msg/accel.hpp>
+#include <rclcpp/rclcpp.hpp>
 #endif
 
 using namespace std::chrono_literals;
@@ -73,9 +81,12 @@ int main()
     .u = Eigen::Vector2d(0.5, 0.5),
   };
 
-  /////////////////////
-  //// SET UP ASIF ////
-  /////////////////////
+  // simulation time step
+  const auto dt = 25ms;
+
+  ////////////////////
+  //// SET UP MPC ////
+  ////////////////////
 
   smooth::feedback::MPCParams<Gd, Ud> mpc_prm{
     .T = 5,
@@ -110,9 +121,9 @@ int main()
 
   // safe set
   auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 1, 1> {
-    const Eigen::Vector2<T> dir = g.template part<0>().r2() - Eigen::Vector2<T>{-2.3, 0};
+    const Eigen::Vector2<T> dir = g.template part<0>().r2() - Eigen::Vector2<T>{0, -2.3};
     const Eigen::Vector2d e_dir = dir.template cast<double>().normalized();
-    return Eigen::Matrix<T, 1, 1>(dir.dot(e_dir) - 0.6);
+    return Eigen::Matrix<T, 1, 1>(dir.dot(e_dir) - 0.7);
   };
 
   // backup controller
@@ -124,12 +135,12 @@ int main()
   smooth::feedback::ASIFilterParams<Ud> asif_prm{
     .T        = 2.5,
     .nh       = 1,
-    .u_weight = Eigen::Vector2d{10, 1},
+    .u_weight = Eigen::Vector2d{20, 1},
     .ulim     = ulim,
     .asif =
       {
-        .K          = 100,
-        .alpha      = 10,
+        .K          = 200,
+        .alpha      = 5,
         .dt         = 0.01,
         .relax_cost = 100,
       },
@@ -141,6 +152,26 @@ int main()
 
   smooth::feedback::ASIFilter<Time, Gd, Ud, decltype(f)> asif(f, asif_prm);
 
+  /////////////////////////
+  //// CREATE ROS NODE ////
+  /////////////////////////
+
+#ifdef ENABLE_ROS
+  rclcpp::init(0, nullptr);
+  auto node = std::make_shared<rclcpp::Node>("se2_example");
+  auto ses_client = node->create_client<gazebo_msgs::srv::SetEntityState>("/set_entity_state");
+  auto u_mpc_pub =
+    node->create_publisher<geometry_msgs::msg::Accel>("u_mpc", rclcpp::SystemDefaultsQoS{});
+  auto u_asif_pub =
+    node->create_publisher<geometry_msgs::msg::Accel>("u_asif", rclcpp::SystemDefaultsQoS{});
+
+  rclcpp::Rate rate(25ms);
+#endif
+
+  /////////////////////////////////////
+  //// SIMULATE CLOSED-LOOP SYSTEM ////
+  /////////////////////////////////////
+
   // system variables
   Gd g = Gd::Identity();
   Ud u;
@@ -151,7 +182,7 @@ int main()
   std::vector<double> tvec, xvec, yvec, u1vec, u2vec, u1mpcvec, u2mpcvec;
 
   // integrate closed-loop system
-  for (std::chrono::milliseconds t = 0s; t < 30s; t += 25ms) {
+  for (std::chrono::milliseconds t = 0s; t < 30s; t += dt) {
     // compute MPC input
     const auto [u_mpc, mpc_code] = mpc(t, g);
     if (mpc_code != smooth::feedback::QPSolutionStatus::Optimal) {
@@ -177,8 +208,29 @@ int main()
     u1vec.push_back(u_asif(0));
     u2vec.push_back(u_asif(1));
 
+#ifdef ENABLE_ROS
+    auto req = std::make_shared<gazebo_msgs::srv::SetEntityState::Request>();
+    req->state.name = "bus::link";
+    smooth::Map<geometry_msgs::msg::Pose>(req->state.pose) = g.template part<0>().lift_se3();
+    req->state.pose.position.x = 8 * req->state.pose.position.x;
+    req->state.pose.position.y = 8 * req->state.pose.position.y;
+    ses_client->async_send_request(req);
+
+    geometry_msgs::msg::Accel u_mpc_msg;
+    u_mpc_msg.linear.x  = u_mpc.x();
+    u_mpc_msg.angular.z = u_mpc.y();
+    u_mpc_pub->publish(u_mpc_msg);
+
+    geometry_msgs::msg::Accel u_asif_msg;
+    u_asif_msg.linear.x  = u_asif.x();
+    u_asif_msg.angular.z = u_asif.y();
+    u_asif_pub->publish(u_asif_msg);
+
+    rate.sleep();
+#endif
     // step dynamics
-    stepper.do_step(ode, g, 0, 0.05);
+    stepper.do_step(
+      ode, g, 0, std::chrono::duration_cast<std::chrono::duration<double>>(dt).count());
   }
 
 #ifdef ENABLE_PLOTTING
@@ -210,4 +262,10 @@ int main()
     std::cout << "t=" << tvec[i] << ": x=" << xvec[i] << ", y=" << yvec[i] << std::endl;
   }
 #endif
+
+#ifdef ENABLE_ROS
+  rclcpp::shutdown();
+#endif
+
+  return EXIT_SUCCESS;
 }

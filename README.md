@@ -4,6 +4,8 @@
 [![Code coverage][cov-shield]][cov-link]
 [![License][license-shield]][license-link]
 
+![](media/se2_example.gif)
+
 * Requirements: C++20, Eigen 3.4, boost::numeric::odeint, LAPACK, [smooth][smooth-link]
 * [Documentation][doc-link]
 
@@ -85,7 +87,7 @@ Eigen::Vector3d u = pid(t, x, v);
 ### Model-Predictive Control: When more look-ahead is needed
 
 * Automatic linearization and time discretization of nonlinear continuous dynamics
-* Define state and input reference trajectories via arbitrary functions `T -> X` and `T -> U` for a time type T
+* Define state and input reference trajectories via arbitrary functions `T -> X` and `T -> U` for a time type T. The bus in the video above uses MPC to track the boundary of the circle.
 
 **Example**: Model-predictive control on `dyn` defined above (see also `examples/mpc_asif_se2.cpp`)
 
@@ -105,10 +107,10 @@ X<double> x = X<double>::Identity();
 auto [u, code] = mpc(t, x);
 ```
 
-### Active Set Invariance
+### Active Set Invariance Filtering (ASIF)
 
+* Minimally invasive filtering of a control input in order to enforce state constraints. The bus in the video above is using an ASIF that avoids the red cylinder.
 * Automatic differentiation of nonlinear continuous dynamics and constraints
-* Minimally invasive filtering of a control input in order to enforce state constraints
 * Theory (non-Lie group case) is described in e.g. [Thomas Gurriet's Ph.D. thesis](https://thesis.library.caltech.edu/13771/1/My_Thesis.pdf)
 
 **Example**: Safety filtering on `dyn` defined above.
