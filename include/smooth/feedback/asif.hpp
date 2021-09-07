@@ -105,7 +105,7 @@ public:
   {
     using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
-    assert((prm_.nh == std::invoke_result_t<SS, double>::RowsAtCompileTime));
+    assert((prm_.nh == std::invoke_result_t<SS, Scalar<G>, G>::RowsAtCompileTime));
 
     auto f = [this, &t]<typename T>(double t_loc, const CastT<T, G> & vx, const CastT<T, U> & vu) {
       return f_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
