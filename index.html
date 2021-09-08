@@ -74,7 +74,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_README"></a> <a href="https://github.com/pettni/smooth_feedback/actions/workflows/build_and_test.yml"><img src="https://img.shields.io/github/workflow/status/pettni/smooth_feedback/build_and_test/master?style=flat-square" alt="CI Build and Test" class="inline"/></a> <a href="https://codecov.io/gh/pettni/smooth_feedback"><img src="https://img.shields.io/codecov/c/gh/pettni/smooth_feedback/master?style=flat-square" alt="Code coverage" class="inline"/></a> <a href="https://github.com/pettni/smooth_feedback/blob/master/LICENSE"><img src="https://img.shields.io/github/license/pettni/smooth_feedback.svg?style=flat-square" alt="License" style="pointer-events: none;" class="inline"/></a></p>
-<p><img src="media/se2_example.gif" alt="" class="inline"/></p>
+<p><img src="media/se2_example.gif" alt="" width="100%" class="inline"/></p>
 <p>Tool collection for control and estimation on Lie groups leveraging the <a href="https://github.com/pettni/smooth/">smooth</a> library.</p>
 <ul>
 <li>Requirements: C++20, Eigen 3.4, boost::numeric::odeint, LAPACK, <a href="https://github.com/pettni/smooth/">smooth</a></li>
@@ -252,7 +252,7 @@ Fast QP Solver</h2>
 <li>Eigen lazy evaluations enable fast SIMD in the compiled assembly.</li>
 </ul>
 <p>Preliminary results suggest that the performance compares favorably to the original OSQP implementation. The plot below compares solution times (lower is better) for square QPs over three different levels of sparsity. Although the <code>smooth</code> sparse (smooth-s) solver is consistently faster than the <code>smooth</code> dense (smooth-d) and osqp solvers, it currently appears to be slightly less robust than the other methods on ill-conditioned problems.</p>
-<p><img src="media/qp_benchmarks.png" alt="" class="inline"/></p>
+<p><img src="media/qp_benchmarks.png" alt="" width="100%" class="inline"/></p>
 <p>The results are generated from the benchmarking program in <code>benchmark/</code>.</p>
 <p><b>Example</b>: Define and solve a dynamically sized dense quadratic program.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;<a class="code" href="qp_8hpp.html">smooth/feedback/qp.hpp</a>&gt;</span></div>
