@@ -105,17 +105,25 @@ G&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsm
 <a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a1bd1eda0d12115c5dde53968b8544a88">CovT</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1EKF.html#abc62dc4780a5e8a9e96e7bbfa9f29338">covariance</a> () const</td></tr>
 <tr class="memdesc:abc62dc4780a5e8a9e96e7bbfa9f29338"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access filter covariance. <br /></td></tr>
 <tr class="separator:abc62dc4780a5e8a9e96e7bbfa9f29338"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d57cbe2f7594295531de756ab98e85d"><td class="memTemplParams" colspan="2">template&lt;typename F , typename QDer &gt; </td></tr>
+<tr class="memitem:a9d57cbe2f7594295531de756ab98e85d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">predict</a> (F &amp;&amp;f, const Eigen::MatrixBase&lt; QDer &gt; &amp;Q, Scalar&lt; G &gt; tau, std::optional&lt; Scalar&lt; G &gt;&gt; dt={})</td></tr>
+<tr class="memdesc:a9d57cbe2f7594295531de756ab98e85d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Propagate <a class="el" href="classsmooth_1_1feedback_1_1EKF.html" title="Extended Kalman filter on Lie groups.">EKF</a> through dynamics \( \mathrm{d}^r x_t = f(t, x) \) with covariance \(Q\) over a time interval \( [0, \tau] \).  <a href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">More...</a><br /></td></tr>
+<tr class="separator:a9d57cbe2f7594295531de756ab98e85d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57a23546447c59ae8dbfc4cacf23636e"><td class="memTemplParams" colspan="2">template&lt;typename F , typename RDev , Manifold Y = std::invoke_result_t&lt;F, G&gt;&gt; </td></tr>
+<tr class="memitem:a57a23546447c59ae8dbfc4cacf23636e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">update</a> (F &amp;&amp;h, const Y &amp;y, const Eigen::MatrixBase&lt; RDev &gt; &amp;R)</td></tr>
+<tr class="memdesc:a57a23546447c59ae8dbfc4cacf23636e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update <a class="el" href="classsmooth_1_1feedback_1_1EKF.html" title="Extended Kalman filter on Lie groups.">EKF</a> with a measurement \(y = h(x) + w\) where \(w \sim \mathcal N(0, R)\).  <a href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">More...</a><br /></td></tr>
+<tr class="separator:a57a23546447c59ae8dbfc4cacf23636e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;LieGroup G, diff::Type DiffType = diff::Type::DEFAULT, template&lt; typename... &gt; typename Stpr = boost::numeric::odeint::euler&gt;<br />
 class smooth::feedback::EKF&lt; G, DiffType, Stpr &gt;</h3>
 
 <p>Extended Kalman filter on Lie groups. </p>
-<p>The primary methods are predict() and update().</p><ul>
-<li>predict(): propagates filter state through a dynamical model.</li>
-<li>update(): Bayesian update of filter state from a measurement.</li>
+<p>The primary methods are <a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d" title="Propagate EKF through dynamics  with covariance  over a time interval .">predict()</a> and <a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e" title="Update EKF with a measurement  where .">update()</a>.</p><ul>
+<li><a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d" title="Propagate EKF through dynamics  with covariance  over a time interval .">predict()</a>: propagates filter state through a dynamical model.</li>
+<li><a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e" title="Update EKF with a measurement  where .">update()</a>: Bayesian update of filter state from a measurement.</li>
 </ul>
-<p>Use this class for information fusion (without dynamics) by solely using update().</p>
+<p>Use this class for information fusion (without dynamics) by solely using <a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e" title="Update EKF with a measurement  where .">update()</a>.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">G</td><td><code>smooth::LieGroup</code> type. </td></tr>
@@ -147,6 +155,76 @@ template&lt;LieGroup G, diff::Type DiffType = diff::Type::DEFAULT, template&lt; 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a9d57cbe2f7594295531de756ab98e85d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d57cbe2f7594295531de756ab98e85d">&#9670;&nbsp;</a></span>predict()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, diff::Type DiffType = diff::Type::DEFAULT, template&lt; typename... &gt; typename Stpr = boost::numeric::odeint::euler&gt; </div>
+<div class="memtemplate">
+template&lt;typename F , typename QDer &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF</a>&lt; G, DiffType, Stpr &gt;::predict </td>
+          <td>(</td>
+          <td class="paramtype">F &amp;&amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::MatrixBase&lt; QDer &gt; &amp;&#160;</td>
+          <td class="paramname"><em>Q</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Scalar&lt; G &gt;&#160;</td>
+          <td class="paramname"><em>tau</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::optional&lt; Scalar&lt; G &gt;&gt;&#160;</td>
+          <td class="paramname"><em>dt</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Propagate <a class="el" href="classsmooth_1_1feedback_1_1EKF.html" title="Extended Kalman filter on Lie groups.">EKF</a> through dynamics \( \mathrm{d}^r x_t = f(t, x) \) with covariance \(Q\) over a time interval \( [0, \tau] \). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>right-hand side \( f : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \) of the dynamics. The time type must be the scalar type of G. </td></tr>
+    <tr><td class="paramname">Q</td><td>process covariance (size \( \dim \mathfrak{g} \times \dim \mathfrak{g} \)) </td></tr>
+    <tr><td class="paramname">tau</td><td>amount of time to propagate </td></tr>
+    <tr><td class="paramname">dt</td><td>maximal ODE solver step size (defaults to <code>tau</code>, i.e. one step)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>The time \( t \) argument of \( f(t, x) \) ranges over the interval \(t \in [0, \tau] \).</dd>
+<dd>
+The covariance \( Q \) is infinitesimal, i.e. its SI unit is \( S^2/T \) where \(S\) is the unit of state and \(T\) is the unit of time.</dd>
+<dd>
+Only the upper triangular part of Q is used. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ekf_8hpp_source.html#l00104">104</a> of file <a class="el" href="ekf_8hpp_source.html">ekf.hpp</a>.</p>
+
+</div>
+</div>
 <a id="a2fdbc3ac62b4e9cb8c5b0fee204b350c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2fdbc3ac62b4e9cb8c5b0fee204b350c">&#9670;&nbsp;</a></span>reset()</h2>
 
@@ -193,6 +271,67 @@ template&lt;LieGroup G, diff::Type DiffType = diff::Type::DEFAULT, template&lt; 
 </dl>
 
 <p class="definition">Definition at line <a class="el" href="ekf_8hpp_source.html#l00069">69</a> of file <a class="el" href="ekf_8hpp_source.html">ekf.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a57a23546447c59ae8dbfc4cacf23636e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57a23546447c59ae8dbfc4cacf23636e">&#9670;&nbsp;</a></span>update()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, diff::Type DiffType = diff::Type::DEFAULT, template&lt; typename... &gt; typename Stpr = boost::numeric::odeint::euler&gt; </div>
+<div class="memtemplate">
+template&lt;typename F , typename RDev , Manifold Y = std::invoke_result_t&lt;F, G&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF</a>&lt; G, DiffType, Stpr &gt;::update </td>
+          <td>(</td>
+          <td class="paramtype">F &amp;&amp;&#160;</td>
+          <td class="paramname"><em>h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Y &amp;&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::MatrixBase&lt; RDev &gt; &amp;&#160;</td>
+          <td class="paramname"><em>R</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Update <a class="el" href="classsmooth_1_1feedback_1_1EKF.html" title="Extended Kalman filter on Lie groups.">EKF</a> with a measurement \(y = h(x) + w\) where \(w \sim \mathcal N(0, R)\). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">h</td><td>measurement function \( h : \mathbb{G} \rightarrow \mathbb{Y} \) </td></tr>
+    <tr><td class="paramname">y</td><td>measurement value \( y \in \mathbb{Y} \) </td></tr>
+    <tr><td class="paramname">R</td><td>measurement covariance (size \( \dim \mathbb{Y} \times \dim \mathbb{Y} \))</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>The function h must be differentiable using the desired method.</dd>
+<dd>
+Only the upper triangular part of \(R\) is used </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ekf_8hpp_source.html#l00143">143</a> of file <a class="el" href="ekf_8hpp_source.html">ekf.hpp</a>.</p>
 
 </div>
 </div>

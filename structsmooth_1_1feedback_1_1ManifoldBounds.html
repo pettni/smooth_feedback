@@ -75,7 +75,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structsmooth_1_1feedback_1_1ManifoldBounds-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">smooth::feedback::ManifoldBounds&lt; M &gt; Struct Template Reference</div>  </div>
@@ -89,10 +88,10 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ad2f207a98e1815233abd35ad12440aba"><td class="memItemLeft" align="right" valign="top"><a id="ad2f207a98e1815233abd35ad12440aba"></a>
-Eigen::Matrix&lt; double, -1, <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a57b207b5f5ccb8c1eb40624f5744e2c6">N</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#ad2f207a98e1815233abd35ad12440aba">A</a> {Eigen::Matrix&lt;double, -1, <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a57b207b5f5ccb8c1eb40624f5744e2c6">N</a>&gt;::Zero(0, <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a57b207b5f5ccb8c1eb40624f5744e2c6">N</a>)}</td></tr>
-<tr class="memdesc:ad2f207a98e1815233abd35ad12440aba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transformation matrix. <br /></td></tr>
-<tr class="separator:ad2f207a98e1815233abd35ad12440aba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4f680d814f106827c4ed78bdac5c953"><td class="memItemLeft" align="right" valign="top"><a id="aa4f680d814f106827c4ed78bdac5c953"></a>
+Eigen::Matrix&lt; double, -1, Dof&lt; M &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#aa4f680d814f106827c4ed78bdac5c953">A</a> {Eigen::Matrix&lt;double, -1, Dof&lt;M&gt;&gt;::Zero(0, Dof&lt;M&gt;)}</td></tr>
+<tr class="memdesc:aa4f680d814f106827c4ed78bdac5c953"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transformation matrix. <br /></td></tr>
+<tr class="separator:aa4f680d814f106827c4ed78bdac5c953"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afce2158e034a1667f58c73017a6e68a7"><td class="memItemLeft" align="right" valign="top"><a id="afce2158e034a1667f58c73017a6e68a7"></a>
 M&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#afce2158e034a1667f58c73017a6e68a7">c</a> {Default&lt;M&gt;()}</td></tr>
 <tr class="memdesc:afce2158e034a1667f58c73017a6e68a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Nominal point in constraint set. <br /></td></tr>
@@ -105,13 +104,6 @@ Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el"
 Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a1855edf64431d8de01d5374d44d8f293">u</a> {Eigen::VectorXd::Constant(0, std::numeric_limits&lt;double&gt;::infinity())}</td></tr>
 <tr class="memdesc:a1855edf64431d8de01d5374d44d8f293"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upper bound. <br /></td></tr>
 <tr class="separator:a1855edf64431d8de01d5374d44d8f293"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
-Static Public Attributes</h2></td></tr>
-<tr class="memitem:a57b207b5f5ccb8c1eb40624f5744e2c6"><td class="memItemLeft" align="right" valign="top"><a id="a57b207b5f5ccb8c1eb40624f5744e2c6"></a>
-static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a57b207b5f5ccb8c1eb40624f5744e2c6">N</a> = Dof&lt;M&gt;</td></tr>
-<tr class="memdesc:a57b207b5f5ccb8c1eb40624f5744e2c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dimensionality. <br /></td></tr>
-<tr class="separator:a57b207b5f5ccb8c1eb40624f5744e2c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;Manifold M&gt;<br />
@@ -119,7 +111,7 @@ struct smooth::feedback::ManifoldBounds&lt; M &gt;</h3>
 
 <p>Manifold constraint set. </p>
 <p>The set consists of all \( m \) s.t. </p><p class="formulaDsp">
-\[ l \leq A ( m \ominus c ) \leq u. \]
+\[ m \in M = \{ l \leq A ( m \ominus c ) \leq u \}. \]
 </p>
  
 <p class="definition">Definition at line <a class="el" href="common_8hpp_source.html#l00042">42</a> of file <a class="el" href="common_8hpp_source.html">common.hpp</a>.</p>

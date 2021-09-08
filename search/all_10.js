@@ -6,5 +6,6 @@ var searchData=
   ['udes_109',['udes',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f',1,'smooth::feedback::OptimalControlProblem']]],
   ['ulim_110',['ulim',['../structsmooth_1_1feedback_1_1ASIFilterParams.html#a15bac77c7c99c5dd3a46ba4065cb9130',1,'smooth::feedback::ASIFilterParams::ulim()'],['../structsmooth_1_1feedback_1_1ASIFProblem.html#ac872355a608a29ff0c280a9e10548b4f',1,'smooth::feedback::ASIFProblem::ulim()'],['../structsmooth_1_1feedback_1_1MPCParams.html#a359040f044d8dd3603e7a46844111b38',1,'smooth::feedback::MPCParams::ulim()'],['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#aed735251f2a513ab99716e1d9479b966',1,'smooth::feedback::OptimalControlProblem::ulim()']]],
   ['unknown_111',['Unknown',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feba88183b946cc5f0e8c96b2e66e1c74a7e',1,'smooth::feedback']]],
-  ['update_5fweights_112',['update_weights',['../classsmooth_1_1feedback_1_1MPC.html#aab2184233d1e03356ee8cead2bee7356',1,'smooth::feedback::MPC']]]
+  ['update_112',['update',['../classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e',1,'smooth::feedback::EKF']]],
+  ['update_5fweights_113',['update_weights',['../classsmooth_1_1feedback_1_1MPC.html#aab2184233d1e03356ee8cead2bee7356',1,'smooth::feedback::MPC']]]
 ];

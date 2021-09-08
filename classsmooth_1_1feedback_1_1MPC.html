@@ -175,9 +175,9 @@ class smooth::feedback::MPC&lt; Time, G, U, Dyn, DT &gt;</h3>
   </dd>
 </dl>
 <p>This <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> class keeps and repeatedly solves an internal <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> that is updated to track a time-dependent trajectory defined through set_xudes().</p>
-<dl class="section note"><dt>Note</dt><dd>If the <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem is nonlinear a good (re-)linearization policy is required for good performance. See <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html" title="Parameters for MPC.">MPCParams</a> for various options. If none of the options are enabled it is up to the user to update the linearizaiton in an appropriate way, or make sure that the problem is linear. The linearization point can be manually updated via the linearization() member functions. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>If the <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem is nonlinear a good (re-)linearization policy is required for good performance. See <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html" title="Parameters for MPC.">MPCParams</a> for details. <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> likely performs better on models that are control-affine. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00120">120</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00119">119</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2d76bae1f6dee2e51541bd1008212d75"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2d76bae1f6dee2e51541bd1008212d75">&#9670;&nbsp;</a></span>MPC()</h2>
@@ -225,7 +225,7 @@ template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT
 </dl>
 <dl class="section note"><dt>Note</dt><dd>\( f \) is copied/moved into the class. In order to modify the dynamics from the outside the type Dyn can be created to contain references to outside objects that are updated by the user. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00134">134</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00133">133</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -279,19 +279,18 @@ template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT
 </div><div class="memdoc">
 
 <p>Solve <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem and return input. </p>
-<dl class="section warning"><dt>Warning</dt><dd><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a8a44a685a60a24f8e9b873d18a7c896c" title="Set the desired state trajectory and velocity (absolute time)">set_xdes()</a> and <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aac12d2706acc4452872787ea56ace9e3" title="Set the desired input trajectory (absolute time)">set_udes()</a> must be called before calling this function for the first time.</dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">t</td><td>current time </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">g</td><td>current state </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">u_traj</td><td>(optional) return <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> input solution \( \{ \mu_k \mid k = 0, \ldots, K-1 \} \). </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">x_traj</td><td>(optional) return <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> state solution \( \{ x_k \mid k = 0, \ldots, K \} \).</td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">u_traj</td><td>(optional) return <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> input solution \( [\mu_0, \mu_1, \ldots, \mu_{K - 1}] \) </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">x_traj</td><td>(optional) return <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> state solution \( [x_0, x_1, \ldots, x_K] \)</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{u, code} </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00175">175</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00169">169</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -343,7 +342,7 @@ template&lt;typename Fun &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00298">298</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00292">292</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -396,7 +395,7 @@ template&lt;typename Fun &gt; </div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>This function triggers a relinearization around the desired input and trajectory at the next call to <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a974d342c92c72d9b903d1d914df0d5db" title="Solve MPC problem and return input.">operator()()</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00339">339</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00333">333</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
