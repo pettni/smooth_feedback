@@ -212,6 +212,9 @@ Extended Kalman Filter</h2>
 <p><b>Example: localization with a known 2D landmark</b> for the system <code>SigmaCL</code></p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedback/ekf.hpp&gt;</span></div>
 <div class="line"> </div>
+<div class="line"><span class="comment">// create filter</span></div>
+<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF&lt;X&lt;double&gt;</a>&gt; ekf;</div>
+<div class="line"> </div>
 <div class="line"><span class="comment">// measurement model</span></div>
 <div class="line">Eigen::Vector2d landmark(1, 1);</div>
 <div class="line"><span class="keyword">auto</span> h = [&amp;landmark]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> X&lt;T&gt; &amp; x) -&gt; Eigen::Matrix&lt;T, 2, 1&gt; {</div>
@@ -219,20 +222,25 @@ Extended Kalman Filter</h2>
 <div class="line">};</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// PREDICT STEP: propagate filter over time</span></div>
-<div class="line">ekf.predict(SigmaCL,</div>
+<div class="line">ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">predict</a>(SigmaCL,</div>
 <div class="line">  Eigen::Matrix&lt;double, 6, 6&gt;::Identity(),  <span class="comment">// motion covariance Q</span></div>
 <div class="line">  1.                                        <span class="comment">// time step length</span></div>
 <div class="line">);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// UPDATE STEP: register a measurement of the known landmark</span></div>
-<div class="line">ekf.update(h,</div>
+<div class="line">ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">update</a>(h,</div>
 <div class="line">  Eigen::Vector2d(0.3, 0.6),   <span class="comment">// measurement result y</span></div>
 <div class="line">  Eigen::Matrix2d::Identity()  <span class="comment">// measurement covariance R</span></div>
 <div class="line">);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// access estimate</span></div>
-<div class="line"><span class="keyword">auto</span> x_hat = ekf.estimate();</div>
-<div class="line"><span class="keyword">auto</span> P_hat = ekf.covariance();</div>
+<div class="line"><span class="keyword">auto</span> x_hat = ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9195311596dd7eb2d0cbcc9dff2f7ca3">estimate</a>();</div>
+<div class="line"><span class="keyword">auto</span> P_hat = ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#abc62dc4780a5e8a9e96e7bbfa9f29338">covariance</a>();</div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF</a></div><div class="ttdoc">Extended Kalman filter on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00054">ekf.hpp:55</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a57a23546447c59ae8dbfc4cacf23636e"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">smooth::feedback::EKF::update</a></div><div class="ttdeci">void update(F &amp;&amp;h, const Y &amp;y, const Eigen::MatrixBase&lt; RDev &gt; &amp;R)</div><div class="ttdoc">Update EKF with a measurement  where .</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00143">ekf.hpp:143</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a9195311596dd7eb2d0cbcc9dff2f7ca3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a9195311596dd7eb2d0cbcc9dff2f7ca3">smooth::feedback::EKF::estimate</a></div><div class="ttdeci">G estimate() const</div><div class="ttdoc">Access filter state estimate.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00078">ekf.hpp:78</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a9d57cbe2f7594295531de756ab98e85d"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">smooth::feedback::EKF::predict</a></div><div class="ttdeci">void predict(F &amp;&amp;f, const Eigen::MatrixBase&lt; QDer &gt; &amp;Q, Scalar&lt; G &gt; tau, std::optional&lt; Scalar&lt; G &gt;&gt; dt={})</div><div class="ttdoc">Propagate EKF through dynamics  with covariance  over a time interval .</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00104">ekf.hpp:104</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_abc62dc4780a5e8a9e96e7bbfa9f29338"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#abc62dc4780a5e8a9e96e7bbfa9f29338">smooth::feedback::EKF::covariance</a></div><div class="ttdeci">CovT covariance() const</div><div class="ttdoc">Access filter covariance.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00083">ekf.hpp:83</a></div></div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md7"></a>
 Optimization</h1>
 <p>MPC and ASIF relies on online quadratic program optimization.</p>
