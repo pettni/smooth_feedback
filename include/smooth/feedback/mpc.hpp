@@ -112,9 +112,8 @@ struct MPCParams
  * track a time-dependent trajectory defined through set_xudes().
  *
  * @note If the MPC problem is nonlinear a good (re-)linearization policy is required for good
- * performance. See MPCParams for various options. If none of the options are enabled it is up to
- * the user to update the linearizaiton in an appropriate way, or make sure that the problem is
- * linear. The linearization point can be manually updated via the linearization() member functions.
+ * performance. See MPCParams for details. MPC likely performs better on models that
+ * are control-affine.
  */
 template<typename Time, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
 class MPC
@@ -160,15 +159,10 @@ public:
   /**
    * @brief Solve MPC problem and return input.
    *
-   * @warning set_xdes() and set_udes() must be called before calling this function for the first
-   * time.
-   *
    * @param[in] t current time
    * @param[in] g current state
-   * @param[out] u_traj (optional) return MPC input solution \f$ \{ \mu_k \mid k = 0, \ldots, K-1 \}
-   * \f$.
-   * @param[out] x_traj (optional) return MPC state solution \f$ \{ x_k \mid k = 0, \ldots, K \}
-   * \f$.
+   * @param[out] u_traj (optional) return MPC input solution \f$ [\mu_0, \mu_1, \ldots, \mu_{K - 1}] \f$
+   * @param[out] x_traj (optional) return MPC state solution \f$ [x_0, x_1, \ldots, x_K] \f$
    *
    * @return {u, code}
    */

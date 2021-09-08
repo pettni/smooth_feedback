@@ -119,7 +119,7 @@ struct LinearizationInfo
 {
   /**
    * @brief state linearization trajectory with first derivative
-   * \f$ g_{lin}: \mathbb{R} \rightarrow (G, T / G) \f$
+   * \f$ g_{lin}: \mathbb{R} \rightarrow (G, \mathbb{R}^{\dim \mathfrak{g}}) \f$
    */
   std::function<std::pair<G, Tangent<G>>(double)> g{
     [](double) -> std::pair<G, Tangent<G>> {
@@ -128,7 +128,7 @@ struct LinearizationInfo
   };
 
   /**
-   * @brief input linearization trajectory \f$ u_{lin}(t) :  \mathbb{R} \rightarrow / G \f$
+   * @brief input linearization trajectory \f$ u_{lin}(t) :  \mathbb{R} \rightarrow U \f$
    */
   std::function<U(double)> u{
     [](double) -> U { return Default<U>(); },
@@ -139,8 +139,9 @@ struct LinearizationInfo
    *
    *  Defines an upper bound \f$ \bar a \f$ s.t. the linearization is valid for \f$ g \f$ s.t.
    * \f[
-   *   \left\| g \ominus_r g_{lin} \right \| \leq \bar a.
+   *   -\bar a \leq g \ominus_r g_{lin} \leq \bar a
    * \f]
+   * holds component-wise.
    */
   Eigen::Matrix<double, Dof<G>, 1> g_domain{
     Eigen::Matrix<double, Dof<G>, 1>::Constant(std::numeric_limits<double>::infinity()),

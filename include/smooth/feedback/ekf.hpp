@@ -83,18 +83,19 @@ public:
   CovT covariance() const { return P_; }
 
   /**
-   * @brief Propagate EKF through dynamics \f$\mathrm{d}^r x_t = f(t, x)\f$ with covariance \f$Q\f$.
+   * @brief Propagate EKF through dynamics \f$ \mathrm{d}^r x_t = f(t, x) \f$ with covariance
+   * \f$Q\f$ over a time interval \f$ [0, \tau] \f$.
    *
-   * @param f right-hand side \f$f : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{\dim
-   * \mathfrak{g}}\f$ of the dynamics
-   * @param Q process covariance (size \f$n_x \times n_x\f$)
-   * @param tau time \f$\tau\f$ to propagate
+   * @param f right-hand side \f$ f : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{\dim
+   * \mathfrak{g}} \f$ of the dynamics. The time type must be the scalar type of G.
+   * @param Q process covariance (size \f$ \dim \mathfrak{g} \times \dim \mathfrak{g} \f$)
+   * @param tau amount of time to propagate
    * @param dt maximal ODE solver step size (defaults to \p tau, i.e. one step)
    *
-   * @note The time \f$t\f$ argument of \f$f(t, x)\f$ ranges over the interval \f$t \in [0,
-   * \tau]\f$.
+   * @note The time \f$ t \f$ argument of \f$ f(t, x) \f$ ranges over the interval \f$t  \in [0,
+   * \tau] \f$.
    *
-   * @note The covariance \f$ Q \f$ is infinitesimal, i.e. its SI unit is \f$S^2/T\f$
+   * @note The covariance \f$ Q \f$ is infinitesimal, i.e. its SI unit is \f$ S^2/T \f$
    * where \f$S\f$ is the unit of state and \f$T\f$ is the unit of time.
    *
    * @note Only the upper triangular part of Q is used.
@@ -103,16 +104,18 @@ public:
   void predict(
     F && f, const Eigen::MatrixBase<QDer> & Q, Scalar<G> tau, std::optional<Scalar<G>> dt = {})
   {
-    const Scalar<G> dt_v = dt.has_value() ? dt.value() : 2 * tau;
+    const auto state_ode = [&f](const G & g, Tangent<G> & dg, Scalar<G> t) { dg = f(t, g); };
 
     const auto cov_ode = [this, &f, &Q](const CovT & cov, CovT & dcov, Scalar<G> t) {
-      const auto [fv, dr] = diff::dr<DiffType>(std::bind(f, t, std::placeholders::_1), wrt(g_hat_));
+      const auto f_x = [&f, &t]<typename T>(
+                         const CastT<T, G> & x) -> Tangent<CastT<T, G>> { return f(t, x); };
+      const auto [fv, dr] = diff::dr<DiffType>(f_x, wrt(g_hat_));
       const CovT A        = -ad<G>(fv) + dr;
       dcov = (A * cov + cov * A.transpose() + Q).template selfadjointView<Eigen::Upper>();
     };
-    const auto state_ode = [&f](const G & g, Tangent<G> & dg, Scalar<G> t) { dg = f(t, g); };
 
-    Scalar<G> t = 0;
+    Scalar<G> t          = 0;
+    const Scalar<G> dt_v = dt.value_or(2 * tau);
     while (t + dt_v < tau) {
       // step covariance first since it depends on g_hat_
       cst_.do_step(cov_ode, P_, t, dt_v);

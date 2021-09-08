@@ -94,7 +94,7 @@ struct lapack_xsytr<double>
 // \endcond
 
 /**
- * @brief Wrapper for LAPACKE xSYTRF / xSYTRS routines for factorizing and solving
+ * @brief Wrapper for LAPACK xSYTRF / xSYTRS routines for factorizing and solving
  * symmetric linear systems of equations.
  */
 template<typename Scalar, Eigen::Index N>

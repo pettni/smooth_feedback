@@ -35,19 +35,16 @@ namespace smooth::feedback {
  *
  * The set consists of all \f$ m \f$ s.t.
  * \f[
- *   l \leq  A ( m \ominus c ) \leq u.
+ *   m \in M = \{ l \leq  A ( m \ominus c ) \leq u \}.
  * \f]
  */
 template<Manifold M>
 struct ManifoldBounds
 {
-  /// Dimensionality
-  static constexpr int N = Dof<M>;
-
-  static_assert(N > 0, "Dynamic size not supported");
+  static_assert(Dof<M> > 0, "Dynamic size not supported");
 
   /// Transformation matrix
-  Eigen::Matrix<double, -1, N> A{Eigen::Matrix<double, -1, N>::Zero(0, N)};
+  Eigen::Matrix<double, -1, Dof<M>> A{Eigen::Matrix<double, -1, Dof<M>>::Zero(0, Dof<M>)};
   /// Nominal point in constraint set.
   M c{Default<M>()};
   /// Lower bound

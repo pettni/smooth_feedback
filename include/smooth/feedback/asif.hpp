@@ -48,7 +48,7 @@ struct ASIFilterParams
   ManifoldBounds<U> ulim{};
   /// ASIFilter algorithm parameters
   ASIFtoQPParams asif{};
-  /// QP solver parameters
+  /// solve_qp() parameters
   QPSolverParams qp{};
 };
 
@@ -95,8 +95,9 @@ public:
    * @param bu backup controller as function \f$ \mathbb{R} \times \mathbb{G} \rightarrow
    * \mathbb{U} \f$
    *
-   * @note h and bu are defined in local time s.t. the safety set is \f$ S(\tau) \coloneq \{ h(\tau
-   * - t) \geq 0 \} \f$, and the backup controll action is \f$ u(\tau, x) = bu(\tau - t, x ) \f$.
+   * @note h and bu are defined w.r.t the current time. That is, the safety set at global time
+   * \f$\tau\f$ is \f$ S(\tau) = \{ h(\tau - t) \geq 0 \} \f$, and the backup controll action is \f$
+   * u(\tau, x) = bu(\tau - t, x ) \f$.
    *
    * @returns {u, code}: safe control input and QP solver code
    */

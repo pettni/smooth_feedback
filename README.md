@@ -4,13 +4,13 @@
 [![Code coverage][cov-shield]][cov-link]
 [![License][license-shield]][license-link]
 
-![](media/se2_example.gif)
+<img src="media/se2_example.gif" width="100%">
+
+Tool collection for control and estimation on Lie groups leveraging the [smooth][smooth-link] library.
 
 * Requirements: C++20, Eigen 3.4, boost::numeric::odeint, LAPACK, [smooth][smooth-link]
 * [Documentation][doc-link]
 
-Tool collection for control and estimation on Lie groups leveraging the
-[smooth][smooth-link] library.
 
 ## Control on Lie groups
 
@@ -23,9 +23,9 @@ in which case these algorithms are expected to work very well. Linearization is 
 [automatic differentiation][ad-link]. For this to work with the most performant methods (e.g. [autodiff][autodiff-link]) the functions must be templated on the scalar type. 
 The dynamical system
 
-![](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D%20%5Cbegin%7Baligned%7D%20%5Cmathrm%7Bd%7D%5Er%20x_t%20&%20=%20%5Cbegin%7Bbmatrix%7Dv_x%20%5C%5C%20v_y%20%5C%5C%20%5Comega_Z%20%5Cend%7Baligned%7D%20%5C%5C%20%5Cfrac%7B%5Cmathrm%7Bd%7D%7D%7B%5Cmathrm%7Bd%7Dt%7D%20%5Cbegin%7Bbmatrix%7Dv_x%20%5C%5C%20v_y%20%5C%5C%20%5Comega_Z%20%5Cend%7Baligned%7D%20&%20=%20%5Cbegin%7Bbmatrix%7D-0.2%20v_x%20&plus;%20u_1%20%5C%5C%200%20%5C%5C%20-0.4%20%5Comega_Z%20&plus;%20u_2%20%5Cend%7Bbmatrix%7D%5Cend%7Baligned%7D)
+![](https://latex.codecogs.com/png.latex?%5CSigma%20%3A%20%5Cleft%5C%7B%20%5Cbegin%7Baligned%7D%20%5Cmathrm%7Bd%7D%5Er%20%5Cmathbf%7Bx%7D_t%20%26%3D%20v%28t%29%2C%20%5Cquad%20%5Cmathbf%7Bx%7D%28t%29%20%5Cin%20%5Cmathbb%7BSE%7D%282%29%29%2C%20v%20%5Cin%20%5Cmathbb%7BR%7D%5E3%20%5C%5C%20%5Cfrac%7B%5Cmathrm%7Bd%7D%7D%7B%5Cmathrm%7Bd%7Dt%7D%20v%28t%29%20%26%3D%20A%20v%20&plus;%20B%20u%2C%20%5Cquad%20u%20%5Cin%20%5Cmathbb%7BR%7D%5E2%20%5Cend%7Baligned%7D%20%5Cright.)
 
-on SE(2) x R3 and with two inputs can be defined via a lambda function in a way that supports automatic differentiation as follows:
+can be defined via a lambda function that supports automatic differentiation as follows:
 ```cpp
 #include <Eigen/Core>
 
@@ -43,20 +43,26 @@ using X = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
 template<typename T>
 using U = Eigen::Matrix<T, 2, 1>;
 
-auto dyn = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
-  return smooth::Tangent<X<T>>{
-    x.template part<1>().x(),
-    x.template part<1>().y(),
-    x.template part<1>().z(),
-    -T(0.2) * x.template part<1>().x() + u(0),
-    T(0),
-    -T(0.4) * x.template part<1>().z() + u(1),
-  };
+const Eigen::Matrix3d A{
+  {-0.2, 0, 0},
+  {0, 0, 0},
+  {0, 0, -0.4},
+};
+const Eigen::Matrix<double, 3, 2> B{
+  {1, 0},
+  {0, 0},
+  {0, 1},
+};
+
+auto Sigma = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
+  smooth::Tangent<X<T>> dx_dt;
+  dx_dt.head(3) = x.template part<1>();
+  dx_dt.tail(3) = A * x.template part<1>() + B * u;
+  return dx_dt;
 };
 ```
 
-
-### PID Control: A classic, now on Lie groups
+### PID Control
 
 * Model-free
 * Assumes that inputs control body acceleration. See `examples/pid_se2.cpp` for an example of allocating PID inputs to actuators.
@@ -84,17 +90,17 @@ Eigen::Vector3d v = Eigen::Vector3d::Random();  // current body velocity
 Eigen::Vector3d u = pid(t, x, v);
 ```
 
-### Model-Predictive Control: When more look-ahead is needed
+### Model-Predictive Control
 
 * Automatic linearization and time discretization of nonlinear continuous dynamics
 * Define state and input reference trajectories via arbitrary functions `T -> X` and `T -> U` for a time type T. The bus in the video above uses MPC to track the boundary of the circle.
 
-**Example**: Model-predictive control on `dyn` defined above (see also `examples/mpc_asif_se2.cpp`)
+**Example**: Model-predictive control for the system `Sigma` (see also `examples/mpc_asif_vehicle.cpp`)
 
 ```cpp
 #include <smooth/feedback/mpc.hpp>
 
-smooth::feedback::MPC<Time, X<double>, U<double>, decltype(dyn)> mpc(dyn, {.T = 5, .K = 50});
+smooth::feedback::MPC<Time, X<double>, U<double>, decltype(Sigma)> mpc(Sigma, {.T = 5, .K = 50});
 
 // set desired input and state trajectories
 mpc.set_udes([]<typename T>(T t) -> U<T> { return U<T>::Zero(); });
@@ -113,12 +119,12 @@ auto [u, code] = mpc(t, x);
 * Automatic differentiation of nonlinear continuous dynamics and constraints
 * Theory (non-Lie group case) is described in e.g. [Thomas Gurriet's Ph.D. thesis](https://thesis.library.caltech.edu/13771/1/My_Thesis.pdf)
 
-**Example**: Safety filtering on `dyn` defined above.
+**Example**: Safety filtering for the system `Sigma`
 
 ```cpp
 #include <smooth/feedback/asif.hpp>
 
-smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(dyn)> asif(dyn);
+smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(Sigma)> asif(Sigma);
 
 // safety set S(t) = { x : h(t, x) >= 0 }
 auto h = []<typename T>(T, const X<T> & x) -> Eigen::Matrix<T, 1, 1> {
@@ -148,20 +154,23 @@ To use in a feedback loop for a controlled system use partial application:
 // variable that holds current input
 U<double> u = U<double>::Random();
 // closed-loop dynamics
-auto dyn_cl = [&u]<typename T>(T t, const X<T> & x) { return dyn(Time(t), x, u.template cast<T>()); };
+auto SigmaCL = [&u]<typename T>(T t, const X<T> & x) { return Sigma(Time(t), x, u.template cast<T>()); };
 ```
 
-### smooth::feedback::EKF: The only Kalman filter you need in 63 lines of code
+### Extended Kalman Filter
 
 * Templated over dynamics and measurement models
 * Automatic differentiation
 * Reduces to [standard Kalman filter (KF)](https://en.wikipedia.org/wiki/Kalman_filter) for linear models on Rn
 * Reduces to [Invariant Extended Kalman Filter (IEKF)](https://en.wikipedia.org/wiki/Invariant_extended_Kalman_filter) for group-linear models on Lie groups 
 
-**Example: localization with a known 2D landmark** with the system `dyn` defined above
+**Example: localization with a known 2D landmark** for the system `SigmaCL`
 
 ```cpp
 #include <smooth/feedback/ekf.hpp>
+
+// create filter
+smooth::feedback::EKF<X<double>> ekf;
 
 // measurement model
 Eigen::Vector2d landmark(1, 1);
@@ -170,7 +179,7 @@ auto h = [&landmark]<typename T>(const X<T> & x) -> Eigen::Matrix<T, 2, 1> {
 };
 
 // PREDICT STEP: propagate filter over time
-ekf.predict(dyn_cl,
+ekf.predict(SigmaCL,
   Eigen::Matrix<double, 6, 6>::Identity(),  // motion covariance Q
   1.                                        // time step length
 );
@@ -189,10 +198,9 @@ auto P_hat = ekf.covariance();
 
 ## Optimization
 
-To make it easy to solve the quadratic programs generated by the MPC and ASIF functions
-a QP solver is included.
+MPC and ASIF relies on online quadratic program optimization.
 
-### smooth::feedback::solve_qp: Fast QP Solver in pure Eigen
+### Fast QP Solver
 
 * Eigen port of the [operator splitting QP solver](https://osqp.org/). 
 * For both dense and sparse problems.
@@ -201,7 +209,7 @@ a QP solver is included.
 Preliminary results suggest that the performance compares favorably to the original OSQP implementation.
 The plot below compares solution times (lower is better) for square QPs over three different levels of sparsity. Although the `smooth` sparse (smooth-s) solver is consistently faster than the `smooth` dense (smooth-d) and osqp solvers, it currently appears to be slightly less robust than the other methods on ill-conditioned problems. 
 
-![](media/qp_benchmarks.png)
+<img src="media/qp_benchmarks.png" width="100%">
 
 The results are generated from the benchmarking program in `benchmark/`. 
 
@@ -229,7 +237,7 @@ auto sol = smooth::feedback::solve_qp(qp, prm);
 [doc-link]: https://pettni.github.io/smooth_feedback
 
 [ci-shield]: https://img.shields.io/github/workflow/status/pettni/smooth_feedback/build_and_test/master?style=flat-square
-[ci-link]: https://github.com/pettni/lie/actions/workflows/build_and_test.yml
+[ci-link]: https://github.com/pettni/smooth_feedback/actions/workflows/build_and_test.yml
 
 [cov-shield]: https://img.shields.io/codecov/c/gh/pettni/smooth_feedback/master?style=flat-square
 [cov-link]: https://codecov.io/gh/pettni/smooth_feedback
@@ -240,4 +248,3 @@ auto sol = smooth::feedback::solve_qp(qp, prm);
 [autodiff-link]: https://github.com/autodiff/autodiff/
 [smooth-link]: https://github.com/pettni/smooth/
 [ad-link]: https://en.wikipedia.org/wiki/Automatic_differentiation
-

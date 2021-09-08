@@ -50,6 +50,7 @@ namespace smooth::feedback {
  * \begin{cases}
  *  \min_u        & (u \ominus u_{des})' W_u (u \ominus u_{des})  \\
  *  \text{s.t.}   & x(0) = x_0 \\
+ *                & u \in ulim \\
  *                & h(x(t)) \geq 0, \quad t \in [0, T]    \\
  * \end{cases}
  * \f]
@@ -77,7 +78,7 @@ struct ASIFtoQPParams
 {
   /// number of constraint instances (equally spaced over the time horizon)
   std::size_t K{10};
-  /// barrier function time constant s.t. \f$ \dot h - \alpha h \geq 0 \f$.
+  /// barrier function time constant \f$ \alpha \f$ s.t. \f$ \dot h - \alpha h \geq 0 \f$.
   double alpha{1};
   /// maximal integration time step
   double dt{0.1};

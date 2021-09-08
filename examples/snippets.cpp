@@ -39,23 +39,34 @@ using X = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
 template<typename T>
 using U = Eigen::Matrix<T, 2, 1>;
 
-auto dyn = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
-  return smooth::Tangent<X<T>>{
-    x.template part<1>().x(),
-    x.template part<1>().y(),
-    x.template part<1>().z(),
-    -T(0.2) * x.template part<1>().x() + u(0),
-    T(0),
-    -T(0.4) * x.template part<1>().z() + u(1),
-  };
+const Eigen::Matrix3d A{
+  {-0.2, 0, 0},
+  {0, 0, 0},
+  {0, 0, -0.4},
+};
+const Eigen::Matrix<double, 3, 2> B{
+  {1, 0},
+  {0, 0},
+  {0, 1},
+};
+
+auto Sigma = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
+  smooth::Tangent<X<T>> dx_dt;
+  dx_dt.head(3) = x.template part<1>();
+  dx_dt.tail(3) = A * x.template part<1>() + B * u;
+  return dx_dt;
 };
 
 void ekf_snippet()
 {
   U<double> u = U<double>::Random();
-  // closed-loop dynamics
-  auto dyn_cl = [&u]<typename T>(T t, const X<T> & x) { return dyn(Time(t), x, u.template cast<T>()); };
 
+  // closed-loop dynamics
+  auto SigmaCL = [&u]<typename T>(T t, const X<T> & x) -> smooth::Tangent<X<T>> {
+    return Sigma(Time(t), x, u.template cast<T>());
+  };
+
+  // create filter
   smooth::feedback::EKF<X<double>> ekf;
 
   // measurement model
@@ -65,7 +76,7 @@ void ekf_snippet()
   };
 
   // PREDICT STEP: propagate filter over time
-  ekf.predict(dyn_cl,
+  ekf.predict(SigmaCL,
     Eigen::Matrix<double, 6, 6>::Identity(),  // motion covariance Q
     1.                                        // time step length
   );
@@ -103,7 +114,7 @@ void pid_snippet()
 
 void asif_snippet()
 {
-  smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(dyn)> asif(dyn);
+  smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(Sigma)> asif(Sigma);
 
   // safety set S(t) = { x : h(t, x) >= 0 }
   auto h = []<typename T>(T, const X<T> & x) -> Eigen::Matrix<T, 1, 1> {
@@ -123,7 +134,7 @@ void asif_snippet()
 
 void mpc_snippet()
 {
-  smooth::feedback::MPC<Time, X<double>, U<double>, decltype(dyn)> mpc(dyn, {.T = 5, .K = 50});
+  smooth::feedback::MPC<Time, X<double>, U<double>, decltype(Sigma)> mpc(Sigma, {.T = 5, .K = 50});
 
   // set desired input and state trajectories
   mpc.set_udes([]<typename T>(T t) -> U<T> { return U<T>::Zero(); });
