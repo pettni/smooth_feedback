@@ -27,6 +27,7 @@
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
 #include "mpc_func.hpp"
+#include "time.hpp"
 
 namespace smooth::feedback {
 
@@ -102,11 +103,11 @@ struct MPCParams
 /**
  * @brief Model-Predictive Control (MPC) on Lie groups.
  *
- * @tparam Time time type, must be a std::chrono::duration-like
+ * @tparam T time type, must be a std::chrono::duration-like
  * @tparam G state space LieGroup type
  * @tparam U input space Manifold type
  * @tparam Dyn callable type that represents dynamics
- * @tparam DT differentiation method
+ * @tparam DiffT differentiation method
  *
  * This MPC class keeps and repeatedly solves an internal OptimalControlProblem that is updated to
  * track a time-dependent trajectory defined through set_xudes().
@@ -115,7 +116,7 @@ struct MPCParams
  * performance. See MPCParams for details. MPC likely performs better on models that
  * are control-affine.
  */
-template<typename Time, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DiffT = diff::Type::DEFAULT>
 class MPC
 {
 public:
@@ -123,7 +124,7 @@ public:
    * @brief Create an MPC instance.
    *
    * @param f callable object that represents dynamics \f$ \mathrm{d}^r x_t = f(f, x, u) \f$ as a
-   * function \f$ f : Time \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
+   * function \f$ f : T \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
    * @param prm MPC parameters
    *
    * @note \f$ f \f$ is copied/moved into the class. In order to modify the dynamics from the
@@ -161,12 +162,13 @@ public:
    *
    * @param[in] t current time
    * @param[in] g current state
-   * @param[out] u_traj (optional) return MPC input solution \f$ [\mu_0, \mu_1, \ldots, \mu_{K - 1}] \f$
+   * @param[out] u_traj (optional) return MPC input solution \f$ [\mu_0, \mu_1, \ldots, \mu_{K - 1}]
+   * \f$
    * @param[out] x_traj (optional) return MPC state solution \f$ [x_0, x_1, \ldots, x_K] \f$
    *
    * @return {u, code}
    */
-  inline std::pair<U, QPSolutionStatus> operator()(const Time & t,
+  inline std::pair<U, QPSolutionStatus> operator()(const T & t,
     const G & g,
     std::optional<std::reference_wrapper<std::vector<U>>> u_traj = std::nullopt,
     std::optional<std::reference_wrapper<std::vector<G>>> x_traj = std::nullopt)
@@ -188,11 +190,9 @@ public:
 
     // define linearization if not already updated around previous solution
     if (!prm_.relinearize_around_solution || new_desired_) {
-      lin_.u = [this, &t](double t_loc) -> U {
-        return u_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
-      };
+      lin_.u = [this, &t](double t_loc) -> U { return u_des_(time_trait<T>::plus(t, t_loc)); };
       lin_.g = [this, &t](double t_loc) -> std::pair<G, Tangent<G>> {
-        return x_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
+        return x_des_(time_trait<T>::plus(t, t_loc));
       };
       new_desired_ = false;
     }
@@ -205,7 +205,7 @@ public:
       return dyn_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
     };
 
-    ocp_to_qp_fill<G, U, decltype(dyn), DT>(ocp_, prm_.K, dyn, lin_, qp_);
+    ocp_to_qp_fill<G, U, decltype(dyn), DiffT>(ocp_, prm_.K, dyn, lin_, qp_);
     auto sol = solve_qp(qp_, prm_.qp, warmstart_);
 
     for (auto i = 0u; i < prm_.iterative_relinearization; ++i) {
@@ -219,7 +219,7 @@ public:
       if (touches) {
         // relinearize around solution and solve again
         relinearize_around_sol(sol);
-        ocp_to_qp_fill<G, U, decltype(dyn), DT>(ocp_, prm_.K, dyn, lin_, qp_);
+        ocp_to_qp_fill<G, U, decltype(dyn), DiffT>(ocp_, prm_.K, dyn, lin_, qp_);
         sol = solve_qp(qp_, prm_.qp, warmstart_);
       } else {
         // solution seems fine
@@ -262,7 +262,7 @@ public:
   /**
    * @brief Set the desired input trajectory (absolute time)
    */
-  inline void set_udes(std::function<U(Time)> && u_des)
+  inline void set_udes(std::function<U(T)> && u_des)
   {
     u_des_       = std::move(u_des);
     new_desired_ = true;
@@ -271,10 +271,7 @@ public:
   /**
    * @brief Set the desired input trajectory (absolute time, rvalue version)
    */
-  inline void set_udes(const std::function<U(Time)> & u_des)
-  {
-    set_udes(std::function<U(Time)>(u_des));
-  }
+  inline void set_udes(const std::function<U(T)> & u_des) { set_udes(std::function<U(T)>(u_des)); }
 
   /**
    * @brief Set the desired input trajectory (relative time).
@@ -289,9 +286,9 @@ public:
     // \cond
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<U>>, U>)
   // \endcond
-  inline void set_udes(Fun && f, Time t0 = Time(0))
+  inline void set_udes(Fun && f, T t0 = T(0))
   {
-    set_udes([t0 = t0, f = std::forward<Fun>(f)](Time t) -> U {
+    set_udes([t0 = t0, f = std::forward<Fun>(f)](T t) -> U {
       return std::invoke(
         f, std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count());
     });
@@ -300,7 +297,7 @@ public:
   /**
    * @brief Set the desired state trajectory and velocity (absolute time)
    */
-  inline void set_xdes(std::function<std::pair<G, Tangent<G>>(Time)> && x_des)
+  inline void set_xdes(std::function<std::pair<G, Tangent<G>>(T)> && x_des)
   {
     x_des_       = std::move(x_des);
     new_desired_ = true;
@@ -309,9 +306,9 @@ public:
   /**
    * @brief Set the desired state trajectory (absolute time, rvalue version)
    */
-  inline void set_xdes(const std::function<std::pair<G, Tangent<G>>(Time)> & x_des)
+  inline void set_xdes(const std::function<std::pair<G, Tangent<G>>(T)> & x_des)
   {
-    set_xdes(std::function<std::pair<G, Tangent<G>>(Time)>(x_des));
+    set_xdes(std::function<std::pair<G, Tangent<G>>(T)>(x_des));
   }
 
   /**
@@ -330,11 +327,11 @@ public:
     // \cond
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<G>>, G>)
   // \endcond
-  inline void set_xdes(Fun && f, Time t0 = Time(0))
+  inline void set_xdes(Fun && f, T t0 = T(0))
   {
-    set_xdes([t0 = t0, f = std::forward<Fun>(f)](Time t) -> std::pair<G, Tangent<G>> {
-      const auto t_rel = std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count();
-      return diff::dr<DT>(f, wrt(t_rel));
+    set_xdes([t0 = t0, f = std::forward<Fun>(f)](T t) -> std::pair<G, Tangent<G>> {
+      const double t_rel = time_trait<T>::minus(t, t0);
+      return diff::dr<DiffT>(f, wrt(t_rel));
     });
   }
 
@@ -393,10 +390,10 @@ private:
   // store last solution for warmstarting
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
   // desired state (pos + vel) and input trajectories
-  std::function<std::pair<G, Tangent<G>>(Time)> x_des_{[](Time) -> std::pair<G, Tangent<G>> {
+  std::function<std::pair<G, Tangent<G>>(T)> x_des_{[](T) -> std::pair<G, Tangent<G>> {
     return {Default<G>(), Tangent<G>::Zero()};
   }};
-  std::function<U(Time)> u_des_{[](Time) -> U { return Default<U>(); }};
+  std::function<U(T)> u_des_{[](T) -> U { return Default<U>(); }};
 };
 
 }  // namespace smooth::feedback

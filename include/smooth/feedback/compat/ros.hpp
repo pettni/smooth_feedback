@@ -23,36 +23,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SMOOTH__FEEDBACK__COMMON_HPP_
-#define SMOOTH__FEEDBACK__COMMON_HPP_
+#ifndef SMOOTH__FEEDBACK__COMPAT__ROS_HPP_
+#define SMOOTH__FEEDBACK__COMPAT__ROS_HPP_
 
-#include <smooth/manifold.hpp>
+#include <rclcpp/time.hpp>
+
+#include "smooth/feedback/time.hpp"
 
 namespace smooth::feedback {
 
-/**
- * @brief Manifold constraint set.
- *
- * The set consists of all \f$ m \f$ s.t.
- * \f[
- *   m \in M = \{ l \leq  A ( m \ominus c ) \leq u \}.
- * \f]
- */
-template<Manifold M>
-struct ManifoldBounds
+template<>
+struct time_trait<rclcpp::Time>
 {
-  static_assert(Dof<M> > 0, "Dynamic size not supported");
+  static rclcpp::Time plus(rclcpp::Time t, double t_dbl)
+  {
+    return t + rclcpp::Duration::from_seconds(t_dbl);
+  }
 
-  /// Transformation matrix
-  Eigen::Matrix<double, -1, Dof<M>> A{Eigen::Matrix<double, -1, Dof<M>>::Zero(0, Dof<M>)};
-  /// Nominal point in constraint set.
-  M c{Default<M>()};
-  /// Lower bound
-  Eigen::VectorXd l{Eigen::VectorXd::Constant(0, -std::numeric_limits<double>::infinity())};
-  /// Upper bound
-  Eigen::VectorXd u{Eigen::VectorXd::Constant(0, std::numeric_limits<double>::infinity())};
+  static double minus(rclcpp::Time t2, rclcpp::Time t1)
+  {
+    return (t2 - t1).to_chrono<std::chrono::duration<double>>().count();
+  }
 };
 
 }  // namespace smooth::feedback
 
-#endif  // SMOOTH__FEEDBACK__COMMON_HPP_
+#endif  // SMOOTH__FEEDBACK__COMPAT__ROS_HPP_

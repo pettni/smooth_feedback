@@ -118,6 +118,17 @@ if(BUILD_TESTING)
 
   add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
+
+  add_executable(test_static test/test_static.cpp)
+  target_link_libraries(test_static PRIVATE feedback GTest::Main)
+  gtest_discover_tests(test_static)
+
+  find_package(rclcpp QUIET)
+  if (${rclcpp_FOUND})
+    target_link_libraries(test_static PRIVATE rclcpp::rclcpp)
+    target_compile_definitions(test_static PRIVATE ENABLE_ROS_TESTS)
+  endif()
+
   add_executable(test_asif test/test_asif.cpp)
   target_link_libraries(test_asif PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_asif)

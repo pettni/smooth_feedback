@@ -31,6 +31,8 @@
 
 #include <chrono>
 
+#include "time.hpp"
+
 namespace smooth::feedback {
 
 /**
@@ -45,8 +47,8 @@ struct PIDParams
 /**
  * @brief Proportional-Integral-Derivative controller for Lie groups.
  *
- * @tparam Time time type, must be a std::chrono::duration-like
- * @tparam G state space LieGroup type
+ * @tparam T Time type
+ * @tparam G LieGroup state space type
  *
  * This controller is designed for a system
  * \f[
@@ -56,7 +58,7 @@ struct PIDParams
  * \mathbf{u} \in \mathbb{R}^{\dim \mathbb{G}} \end{aligned} \f] i.e. the input is the body
  * acceleration.
  */
-template<typename Time, LieGroup G>
+template<Time T, LieGroup G>
 class PID
 {
 public:
@@ -92,16 +94,14 @@ public:
    *
    * @return input proportional to desired body acceleration
    */
-  inline Tangent<G> operator()(const Time & t, const G & x, const Tangent<G> & v)
+  inline Tangent<G> operator()(const T & t, const G & x, const Tangent<G> & v)
   {
     const auto [g_des, v_des, a_des] = x_des_(t);
     const Tangent<G> g_err           = g_des - x;
 
     if (t_last && t > t_last.value()) {
       // update integral state
-      double dt =
-        std::chrono::duration_cast<std::chrono::duration<double>>(t - t_last.value()).count();
-      i_err_ += dt * g_err;
+      i_err_ += time_trait<T>::minus(t, t_last.value()) * g_err;
       i_err_ = i_err_.cwiseMax(-prm_.windup_limit).cwiseMin(prm_.windup_limit);
     }
     t_last = t;
@@ -162,17 +162,16 @@ public:
    * @param c desired trajectory as a smooth::Curve
    * @param t0 curve initial time s.t. the desired position at time t is equal to c(t - t0)
    */
-  inline void set_xdes(Time t0, const smooth::Curve<G> & c) { set_xdes(t0, smooth::Curve<G>(c)); }
+  inline void set_xdes(T t0, const smooth::Curve<G> & c) { set_xdes(t0, smooth::Curve<G>(c)); }
 
   /**
    * @brief Set desired trajectory as a smooth::Curve (rvalue version)
    */
-  inline void set_xdes(Time t0, smooth::Curve<G> && c)
+  inline void set_xdes(T t0, smooth::Curve<G> && c)
   {
-    set_xdes([t0 = std::move(t0), c = std::move(c)](Time t) -> TrajectoryReturnT {
+    set_xdes([t0 = std::move(t0), c = std::move(c)](T t) -> TrajectoryReturnT {
       Tangent<G> vel, acc;
-      double t_curve = std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count();
-      G x            = c(t_curve, vel, acc);
+      G x = c(time_trait<T>::minus(t, t0), vel, acc);
       return TrajectoryReturnT(std::move(x), std::move(vel), std::move(acc));
     });
   }
@@ -181,7 +180,7 @@ public:
    * @brief Set desired trajectory.
    *
    * The trajectory is a function from time to (position, velocity, acceleration). To track a
-   * time-dependent trajectory consider using \p smooth::Curve and \ref set_xdes(Time, const
+   * time-dependent trajectory consider using \p smooth::Curve and \ref set_xdes(T, const
    * smooth::Curve<G> &) to set the desired trajectory.
    *
    * For a constant reference target the velocity and acceleration should be constantly zero.
@@ -193,7 +192,7 @@ public:
    * \f]
    * where (x, v, a) is the (position, velocity, acceleration)-tuple returned by the trajectory.
    */
-  inline void set_xdes(const std::function<TrajectoryReturnT(Time)> & f)
+  inline void set_xdes(const std::function<TrajectoryReturnT(T)> & f)
   {
     auto f_copy = f;
     set_xdes(std::move(f_copy));
@@ -202,7 +201,7 @@ public:
   /**
    * @brief Set desired trajectory (rvalue version).
    */
-  inline void set_xdes(std::function<TrajectoryReturnT(Time)> && f) { x_des_ = std::move(f); }
+  inline void set_xdes(std::function<TrajectoryReturnT(T)> && f) { x_des_ = std::move(f); }
 
 private:
   PIDParams prm_;
@@ -213,11 +212,11 @@ private:
   Tangent<G> ki_ = Tangent<G>::Zero();
 
   // integral state
-  std::optional<Time> t_last;
+  std::optional<T> t_last;
   Tangent<G> i_err_ = Tangent<G>::Zero();
 
   // desired trajectory
-  std::function<TrajectoryReturnT(Time)> x_des_ = [](Time) -> TrajectoryReturnT {
+  std::function<TrajectoryReturnT(T)> x_des_ = [](T) -> TrajectoryReturnT {
     return TrajectoryReturnT(Identity<G>(), Tangent<G>::Zero(), Tangent<G>::Zero());
   };
 };

@@ -33,11 +33,11 @@
 
 #include <iostream>
 
-using Time = std::chrono::duration<double>;
-template<typename T>
-using X = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
-template<typename T>
-using U = Eigen::Matrix<T, 2, 1>;
+using T = std::chrono::duration<double>;
+template<typename S>
+using X = smooth::Bundle<smooth::SE2<S>, Eigen::Matrix<S, 3, 1>>;
+template<typename S>
+using U = Eigen::Matrix<S, 2, 1>;
 
 const Eigen::Matrix3d A{
   {-0.2, 0, 0},
@@ -50,8 +50,8 @@ const Eigen::Matrix<double, 3, 2> B{
   {0, 1},
 };
 
-auto Sigma = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
-  smooth::Tangent<X<T>> dx_dt;
+auto Sigma = []<typename S>(T, const X<S> & x, const U<S> & u) -> smooth::Tangent<X<S>> {
+  smooth::Tangent<X<S>> dx_dt;
   dx_dt.head(3) = x.template part<1>();
   dx_dt.tail(3) = A * x.template part<1>() + B * u;
   return dx_dt;
@@ -59,11 +59,11 @@ auto Sigma = []<typename T>(Time, const X<T> & x, const U<T> & u) -> smooth::Tan
 
 void ekf_snippet()
 {
+  // variable that holds current input
   U<double> u = U<double>::Random();
-
-  // closed-loop dynamics
-  auto SigmaCL = [&u]<typename T>(T t, const X<T> & x) -> smooth::Tangent<X<T>> {
-    return Sigma(Time(t), x, u.template cast<T>());
+  // closed-loop dynamics (time type must be Scalar<X>)
+  auto SigmaCL = [&u]<typename S>(double t, const X<S> & x) -> smooth::Tangent<X<S>> {
+    return Sigma(T(t), x, u.template cast<S>());
   };
 
   // create filter
@@ -71,7 +71,7 @@ void ekf_snippet()
 
   // measurement model
   Eigen::Vector2d landmark(1, 1);
-  auto h = [&landmark]<typename T>(const X<T> & x) -> Eigen::Matrix<T, 2, 1> {
+  auto h = [&landmark]<typename S>(const X<S> & x) -> Eigen::Matrix<S, 2, 1> {
     return x.template part<0>().inverse() * landmark;
   };
 
@@ -94,10 +94,10 @@ void ekf_snippet()
 
 void pid_snippet()
 {
-  smooth::feedback::PID<Time, smooth::SE2d> pid;
+  smooth::feedback::PID<T, smooth::SE2d> pid;
 
   // set desired motion
-  pid.set_xdes([](Time Time) -> std::tuple<smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d> {
+  pid.set_xdes([](T T) -> std::tuple<smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d> {
     return {
       smooth::SE2d::Identity(),  // position
       Eigen::Vector3d::Zero(),   // velocity (right derivative of position w.r.t. t)
@@ -105,7 +105,7 @@ void pid_snippet()
     };
   });
 
-  Time t            = Time(1);                    // current time
+  T t               = T(1);                       // current time
   smooth::SE2d x    = smooth::SE2d::Random();     // current state
   Eigen::Vector3d v = Eigen::Vector3d::Random();  // current body velocity
 
@@ -114,17 +114,17 @@ void pid_snippet()
 
 void asif_snippet()
 {
-  smooth::feedback::ASIFilter<Time, X<double>, U<double>, decltype(Sigma)> asif(Sigma);
+  smooth::feedback::ASIFilter<T, X<double>, U<double>, decltype(Sigma)> asif(Sigma);
 
   // safety set S(t) = { x : h(t, x) >= 0 }
-  auto h = []<typename T>(T, const X<T> & x) -> Eigen::Matrix<T, 1, 1> {
-    return Eigen::Matrix<T, 1, 1>(x.template part<0>().r2().x() - T(0.2));
+  auto h = []<typename S>(S, const X<S> & x) -> Eigen::Matrix<S, 1, 1> {
+    return Eigen::Matrix<S, 1, 1>(x.template part<0>().r2().x() - S(0.2));
   };
 
   // backup controller
-  auto bu = []<typename T>(T, const X<T> &) -> U<T> { return U<T>(1, 1); };
+  auto bu = []<typename S>(S, const X<S> &) -> U<S> { return U<S>(1, 1); };
 
-  Time t          = Time(1);
+  T t             = T(1);
   X<double> x     = X<double>::Random();
   U<double> u_des = U<double>::Zero();
 
@@ -134,13 +134,13 @@ void asif_snippet()
 
 void mpc_snippet()
 {
-  smooth::feedback::MPC<Time, X<double>, U<double>, decltype(Sigma)> mpc(Sigma, {.T = 5, .K = 50});
+  smooth::feedback::MPC<T, X<double>, U<double>, decltype(Sigma)> mpc(Sigma, {.T = 5, .K = 50});
 
   // set desired input and state trajectories
-  mpc.set_udes([]<typename T>(T t) -> U<T> { return U<T>::Zero(); });
-  mpc.set_xdes([]<typename T>(T t) -> X<T> { return X<T>::Identity(); });
+  mpc.set_udes([]<typename S>(S t) -> U<S> { return U<S>::Zero(); });
+  mpc.set_xdes([]<typename S>(S t) -> X<S> { return X<S>::Identity(); });
 
-  Time t(0);
+  T t(0);
   X<double> x = X<double>::Identity();
 
   // get control input for time t and state x

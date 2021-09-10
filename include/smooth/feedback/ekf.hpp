@@ -107,8 +107,8 @@ public:
     const auto state_ode = [&f](const G & g, Tangent<G> & dg, Scalar<G> t) { dg = f(t, g); };
 
     const auto cov_ode = [this, &f, &Q](const CovT & cov, CovT & dcov, Scalar<G> t) {
-      const auto f_x = [&f, &t]<typename T>(
-                         const CastT<T, G> & x) -> Tangent<CastT<T, G>> { return f(t, x); };
+      const auto f_x = [&f, &t]<typename _T>(
+                         const CastT<_T, G> & x) -> Tangent<CastT<_T, G>> { return f(t, x); };
       const auto [fv, dr] = diff::dr<DiffType>(f_x, wrt(g_hat_));
       const CovT A        = -ad<G>(fv) + dr;
       dcov = (A * cov + cov * A.transpose() + Q).template selfadjointView<Eigen::Upper>();

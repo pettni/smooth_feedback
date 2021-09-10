@@ -29,6 +29,7 @@
 #include <cassert>
 
 #include "asif_func.hpp"
+#include "time.hpp"
 
 namespace smooth::feedback {
 
@@ -59,7 +60,7 @@ struct ASIFilterParams
  * recent solution for warmstarting, and facilitates working with time-varying
  * problems.
  */
-template<typename Time, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
 class ASIFilter
 {
 public:
@@ -102,15 +103,15 @@ public:
    * @returns {u, code}: safe control input and QP solver code
    */
   template<typename SS, typename BU>
-  std::pair<U, QPSolutionStatus> operator()(Time t, const G & g, const U & u_des, SS && h, BU && bu)
+  std::pair<U, QPSolutionStatus> operator()(T t, const G & g, const U & u_des, SS && h, BU && bu)
   {
     using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
     assert((prm_.nh == std::invoke_result_t<SS, Scalar<G>, G>::RowsAtCompileTime));
 
-    auto f = [this, &t]<typename T>(double t_loc, const CastT<T, G> & vx, const CastT<T, U> & vu) {
-      return f_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
-    };
+    auto f = [this, &t]<typename _T>(double t_loc,
+               const CastT<_T, G> & vx,
+               const CastT<_T, U> & vu) { return f_(time_trait<T>::plus(t, t_loc), vx, vu); };
 
     ASIFProblem<G, U> pbm{
       .T     = prm_.T,

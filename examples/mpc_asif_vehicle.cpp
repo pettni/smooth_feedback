@@ -38,21 +38,21 @@
 #endif
 
 #ifdef ENABLE_ROS
-#include <smooth/compat/ros.hpp>
 #include <gazebo_msgs/srv/set_entity_state.hpp>
 #include <geometry_msgs/msg/accel.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <smooth/compat/ros.hpp>
 #endif
 
 using namespace std::chrono_literals;
 using namespace boost::numeric::odeint;
 
-using Time = std::chrono::duration<double>;
+using T = std::chrono::duration<double>;
 
-template<typename T>
-using G = smooth::Bundle<smooth::SE2<T>, Eigen::Matrix<T, 3, 1>>;
-template<typename T>
-using U = Eigen::Matrix<T, 2, 1>;
+template<typename S>
+using G = smooth::Bundle<smooth::SE2<S>, Eigen::Matrix<S, 3, 1>>;
+template<typename S>
+using U = Eigen::Matrix<S, 2, 1>;
 
 using Gd = G<double>;
 using Ud = U<double>;
@@ -62,14 +62,14 @@ using Tangentd = typename Gd::Tangent;
 int main()
 {
   // dynamics
-  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+  auto f = []<typename S>(T, const G<S> & x, const U<S> & u) -> smooth::Tangent<G<S>> {
     return {
       x.template part<1>().x(),
       x.template part<1>().y(),
       x.template part<1>().z(),
-      -T(0.2) * x.template part<1>().x() + u.x(),
-      T(0),
-      -T(0.4) * x.template part<1>().z() + u.y(),
+      -S(0.2) * x.template part<1>().x() + u.x(),
+      S(0),
+      -S(0.4) * x.template part<1>().z() + u.y(),
     };
   };
 
@@ -100,34 +100,34 @@ int main()
     .relinearize_around_solution = true,
   };
 
-  smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
+  smooth::feedback::MPC<T, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
 
   // define desired trajectory
-  auto xdes = []<typename T>(T t) -> G<T> {
+  auto xdes = []<typename S>(S t) -> G<S> {
     const Eigen::Vector3d vdes{1, 0, 0.4};
-    return G<T>{
-      smooth::SE2<T>(smooth::SO2<T>(M_PI_2), Eigen::Vector2<T>(2.5, 0)) + (t * vdes),
+    return G<S>{
+      smooth::SE2<S>(smooth::SO2<S>(M_PI_2), Eigen::Vector2<S>(2.5, 0)) + (t * vdes),
       vdes,
     };
   };
 
   // set desired trajectory in MPC
   mpc.set_xdes(xdes);
-  mpc.set_udes([]<typename T>(T) -> U<T> { return U<T>::Zero(); });
+  mpc.set_udes([]<typename S>(S) -> U<S> { return U<S>::Zero(); });
 
   /////////////////////
   //// SET UP ASIF ////
   /////////////////////
 
   // safe set
-  auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, 1, 1> {
-    const Eigen::Vector2<T> dir = g.template part<0>().r2() - Eigen::Vector2<T>{0, -2.3};
+  auto h = []<typename S>(S, const G<S> & g) -> Eigen::Matrix<S, 1, 1> {
+    const Eigen::Vector2<S> dir = g.template part<0>().r2() - Eigen::Vector2<S>{0, -2.3};
     const Eigen::Vector2d e_dir = dir.template cast<double>().normalized();
-    return Eigen::Matrix<T, 1, 1>(dir.dot(e_dir) - 0.7);
+    return Eigen::Matrix<S, 1, 1>(dir.dot(e_dir) - 0.7);
   };
 
   // backup controller
-  auto bu = []<typename T>(T, const G<T> & g) -> U<T> {
+  auto bu = []<typename S>(S, const G<S> & g) -> U<S> {
     return {0.2 * g.template part<1>().x(), -0.5};
   };
 
@@ -150,7 +150,7 @@ int main()
       },
   };
 
-  smooth::feedback::ASIFilter<Time, Gd, Ud, decltype(f)> asif(f, asif_prm);
+  smooth::feedback::ASIFilter<T, Gd, Ud, decltype(f)> asif(f, asif_prm);
 
   /////////////////////////
   //// CREATE ROS NODE ////
@@ -158,7 +158,7 @@ int main()
 
 #ifdef ENABLE_ROS
   rclcpp::init(0, nullptr);
-  auto node = std::make_shared<rclcpp::Node>("se2_example");
+  auto node       = std::make_shared<rclcpp::Node>("se2_example");
   auto ses_client = node->create_client<gazebo_msgs::srv::SetEntityState>("/set_entity_state");
   auto u_mpc_pub =
     node->create_publisher<geometry_msgs::msg::Accel>("u_mpc", rclcpp::SystemDefaultsQoS{});
@@ -178,7 +178,7 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
+  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(T(t), x, u); };
   std::vector<double> tvec, xvec, yvec, u1vec, u2vec, u1mpcvec, u2mpcvec;
 
   // integrate closed-loop system
@@ -199,7 +199,7 @@ int main()
     u = u_asif;
 
     // store data
-    tvec.push_back(duration_cast<Time>(t).count());
+    tvec.push_back(duration_cast<T>(t).count());
     xvec.push_back(g.template part<0>().r2().x());
     yvec.push_back(g.template part<0>().r2().y());
 
@@ -209,11 +209,11 @@ int main()
     u2vec.push_back(u_asif(1));
 
 #ifdef ENABLE_ROS
-    auto req = std::make_shared<gazebo_msgs::srv::SetEntityState::Request>();
+    auto req        = std::make_shared<gazebo_msgs::srv::SetEntityState::Request>();
     req->state.name = "bus::link";
     smooth::Map<geometry_msgs::msg::Pose>(req->state.pose) = g.template part<0>().lift_se3();
-    req->state.pose.position.x = 8 * req->state.pose.position.x;
-    req->state.pose.position.y = 8 * req->state.pose.position.y;
+    req->state.pose.position.x                             = 8 * req->state.pose.position.x;
+    req->state.pose.position.y                             = 8 * req->state.pose.position.y;
     ses_client->async_send_request(req);
 
     geometry_msgs::msg::Accel u_mpc_msg;
