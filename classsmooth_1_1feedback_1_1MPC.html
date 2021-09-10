@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>smooth_feedback: smooth::feedback::MPC&lt; Time, G, U, Dyn, DT &gt; Class Template Reference</title>
+<title>smooth_feedback: smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -77,7 +77,7 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classsmooth_1_1feedback_1_1MPC-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">smooth::feedback::MPC&lt; Time, G, U, Dyn, DT &gt; Class Template Reference</div>  </div>
+<div class="title">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -88,110 +88,110 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a2d76bae1f6dee2e51541bd1008212d75"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a2d76bae1f6dee2e51541bd1008212d75">MPC</a> (Dyn &amp;&amp;f, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt; &amp;&amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt;{})</td></tr>
-<tr class="memdesc:a2d76bae1f6dee2e51541bd1008212d75"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> instance.  <a href="classsmooth_1_1feedback_1_1MPC.html#a2d76bae1f6dee2e51541bd1008212d75">More...</a><br /></td></tr>
-<tr class="separator:a2d76bae1f6dee2e51541bd1008212d75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b33a6e5ce07f0f92221a38dff9b0bdb"><td class="memItemLeft" align="right" valign="top"><a id="a0b33a6e5ce07f0f92221a38dff9b0bdb"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a0b33a6e5ce07f0f92221a38dff9b0bdb">MPC</a> (const Dyn &amp;f, const <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt; &amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt;{})</td></tr>
-<tr class="memdesc:a0b33a6e5ce07f0f92221a38dff9b0bdb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above but for lvalues. <br /></td></tr>
-<tr class="separator:a0b33a6e5ce07f0f92221a38dff9b0bdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0b4df97ca5b10f7469a1e6e7a079379"><td class="memItemLeft" align="right" valign="top"><a id="ab0b4df97ca5b10f7469a1e6e7a079379"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ab0b4df97ca5b10f7469a1e6e7a079379">MPC</a> ()</td></tr>
-<tr class="memdesc:ab0b4df97ca5b10f7469a1e6e7a079379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor. <br /></td></tr>
-<tr class="separator:ab0b4df97ca5b10f7469a1e6e7a079379"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3a861641be76568f0dea11f7c7300b78"><td class="memItemLeft" align="right" valign="top"><a id="a3a861641be76568f0dea11f7c7300b78"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a3a861641be76568f0dea11f7c7300b78">MPC</a> (const <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;)=default</td></tr>
-<tr class="memdesc:a3a861641be76568f0dea11f7c7300b78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy constructor. <br /></td></tr>
-<tr class="separator:a3a861641be76568f0dea11f7c7300b78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a455f41155e0c0a8462bcf3b163f1d023"><td class="memItemLeft" align="right" valign="top"><a id="a455f41155e0c0a8462bcf3b163f1d023"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a455f41155e0c0a8462bcf3b163f1d023">MPC</a> (<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&amp;)=default</td></tr>
-<tr class="memdesc:a455f41155e0c0a8462bcf3b163f1d023"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move constructor. <br /></td></tr>
-<tr class="separator:a455f41155e0c0a8462bcf3b163f1d023"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94a1b2580a1dec5f210ee761106f396e"><td class="memItemLeft" align="right" valign="top"><a id="a94a1b2580a1dec5f210ee761106f396e"></a>
-<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a94a1b2580a1dec5f210ee761106f396e">operator=</a> (const <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;)=default</td></tr>
-<tr class="memdesc:a94a1b2580a1dec5f210ee761106f396e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy assignment. <br /></td></tr>
-<tr class="separator:a94a1b2580a1dec5f210ee761106f396e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac74ebfd9594bd9627fa8ef9113fdc553"><td class="memItemLeft" align="right" valign="top"><a id="ac74ebfd9594bd9627fa8ef9113fdc553"></a>
-<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ac74ebfd9594bd9627fa8ef9113fdc553">operator=</a> (<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&amp;)=default</td></tr>
-<tr class="memdesc:ac74ebfd9594bd9627fa8ef9113fdc553"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move assignment. <br /></td></tr>
-<tr class="separator:ac74ebfd9594bd9627fa8ef9113fdc553"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb42340f70889f9cf878d4477ce7a696"><td class="memItemLeft" align="right" valign="top"><a id="aeb42340f70889f9cf878d4477ce7a696"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aeb42340f70889f9cf878d4477ce7a696">~MPC</a> ()=default</td></tr>
-<tr class="memdesc:aeb42340f70889f9cf878d4477ce7a696"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor. <br /></td></tr>
-<tr class="separator:aeb42340f70889f9cf878d4477ce7a696"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a974d342c92c72d9b903d1d914df0d5db"><td class="memItemLeft" align="right" valign="top">std::pair&lt; U, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">QPSolutionStatus</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a974d342c92c72d9b903d1d914df0d5db">operator()</a> (const Time &amp;t, const G &amp;g, std::optional&lt; std::reference_wrapper&lt; std::vector&lt; U &gt;&gt;&gt; u_traj=std::nullopt, std::optional&lt; std::reference_wrapper&lt; std::vector&lt; G &gt;&gt;&gt; x_traj=std::nullopt)</td></tr>
-<tr class="memdesc:a974d342c92c72d9b903d1d914df0d5db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solve <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem and return input.  <a href="classsmooth_1_1feedback_1_1MPC.html#a974d342c92c72d9b903d1d914df0d5db">More...</a><br /></td></tr>
-<tr class="separator:a974d342c92c72d9b903d1d914df0d5db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac12d2706acc4452872787ea56ace9e3"><td class="memItemLeft" align="right" valign="top"><a id="aac12d2706acc4452872787ea56ace9e3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aac12d2706acc4452872787ea56ace9e3">set_udes</a> (std::function&lt; U(Time)&gt; &amp;&amp;u_des)</td></tr>
-<tr class="memdesc:aac12d2706acc4452872787ea56ace9e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired input trajectory (absolute time) <br /></td></tr>
-<tr class="separator:aac12d2706acc4452872787ea56ace9e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81686ee92b5dd6d1a28b26ccff783904"><td class="memItemLeft" align="right" valign="top"><a id="a81686ee92b5dd6d1a28b26ccff783904"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a81686ee92b5dd6d1a28b26ccff783904">set_udes</a> (const std::function&lt; U(Time)&gt; &amp;u_des)</td></tr>
-<tr class="memdesc:a81686ee92b5dd6d1a28b26ccff783904"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired input trajectory (absolute time, rvalue version) <br /></td></tr>
-<tr class="separator:a81686ee92b5dd6d1a28b26ccff783904"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13b2793ecfa40a61953d1ec1c39a2f2b"><td class="memTemplParams" colspan="2">template&lt;typename Fun &gt; </td></tr>
-<tr class="memitem:a13b2793ecfa40a61953d1ec1c39a2f2b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a13b2793ecfa40a61953d1ec1c39a2f2b">set_udes</a> (Fun &amp;&amp;f, Time t0=Time(0))</td></tr>
-<tr class="memdesc:a13b2793ecfa40a61953d1ec1c39a2f2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired input trajectory (relative time).  <a href="classsmooth_1_1feedback_1_1MPC.html#a13b2793ecfa40a61953d1ec1c39a2f2b">More...</a><br /></td></tr>
-<tr class="separator:a13b2793ecfa40a61953d1ec1c39a2f2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a44a685a60a24f8e9b873d18a7c896c"><td class="memItemLeft" align="right" valign="top"><a id="a8a44a685a60a24f8e9b873d18a7c896c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a8a44a685a60a24f8e9b873d18a7c896c">set_xdes</a> (std::function&lt; std::pair&lt; G, Tangent&lt; G &gt;&gt;(Time)&gt; &amp;&amp;x_des)</td></tr>
-<tr class="memdesc:a8a44a685a60a24f8e9b873d18a7c896c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired state trajectory and velocity (absolute time) <br /></td></tr>
-<tr class="separator:a8a44a685a60a24f8e9b873d18a7c896c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bd969d2f988b981e543f0f635776906"><td class="memItemLeft" align="right" valign="top"><a id="a1bd969d2f988b981e543f0f635776906"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a1bd969d2f988b981e543f0f635776906">set_xdes</a> (const std::function&lt; std::pair&lt; G, Tangent&lt; G &gt;&gt;(Time)&gt; &amp;x_des)</td></tr>
-<tr class="memdesc:a1bd969d2f988b981e543f0f635776906"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired state trajectory (absolute time, rvalue version) <br /></td></tr>
-<tr class="separator:a1bd969d2f988b981e543f0f635776906"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeed17badb8b4cf7d3aaa19ef607c30a9"><td class="memTemplParams" colspan="2">template&lt;typename Fun &gt; </td></tr>
-<tr class="memitem:aeed17badb8b4cf7d3aaa19ef607c30a9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aeed17badb8b4cf7d3aaa19ef607c30a9">set_xdes</a> (Fun &amp;&amp;f, Time t0=Time(0))</td></tr>
-<tr class="memdesc:aeed17badb8b4cf7d3aaa19ef607c30a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired state trajectry (relative time, automatic differentiation).  <a href="classsmooth_1_1feedback_1_1MPC.html#aeed17badb8b4cf7d3aaa19ef607c30a9">More...</a><br /></td></tr>
-<tr class="separator:aeed17badb8b4cf7d3aaa19ef607c30a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab2184233d1e03356ee8cead2bee7356"><td class="memItemLeft" align="right" valign="top"><a id="aab2184233d1e03356ee8cead2bee7356"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aab2184233d1e03356ee8cead2bee7356">update_weights</a> (const typename <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem</a>&lt; G, U &gt;::Weights &amp;weights)</td></tr>
-<tr class="memdesc:aab2184233d1e03356ee8cead2bee7356"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> weights. <br /></td></tr>
-<tr class="separator:aab2184233d1e03356ee8cead2bee7356"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62c0ade0132478ffe9626acac7fdd224"><td class="memItemLeft" align="right" valign="top"><a id="a62c0ade0132478ffe9626acac7fdd224"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a62c0ade0132478ffe9626acac7fdd224">reset_warmstart</a> ()</td></tr>
-<tr class="memdesc:a62c0ade0132478ffe9626acac7fdd224"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset initial guess for next iteration to zero. <br /></td></tr>
-<tr class="separator:a62c0ade0132478ffe9626acac7fdd224"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee51b9168c7d80e091e18936bfaea01e"><td class="memItemLeft" align="right" valign="top"><a id="aee51b9168c7d80e091e18936bfaea01e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aee51b9168c7d80e091e18936bfaea01e">relinearize_around_sol</a> (const <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html">QPSolution</a>&lt;-1, -1, double &gt; &amp;sol)</td></tr>
-<tr class="memdesc:aee51b9168c7d80e091e18936bfaea01e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relinearize state around a solution. <br /></td></tr>
-<tr class="separator:aee51b9168c7d80e091e18936bfaea01e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2cdb95529d87e2dc65c07b48e42e0bd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ac2cdb95529d87e2dc65c07b48e42e0bd">MPC</a> (Dyn &amp;&amp;f, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt; &amp;&amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt;{})</td></tr>
+<tr class="memdesc:ac2cdb95529d87e2dc65c07b48e42e0bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> instance.  <a href="classsmooth_1_1feedback_1_1MPC.html#ac2cdb95529d87e2dc65c07b48e42e0bd">More...</a><br /></td></tr>
+<tr class="separator:ac2cdb95529d87e2dc65c07b48e42e0bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6effac4dbe45bbab12f1172a5147fc6"><td class="memItemLeft" align="right" valign="top"><a id="af6effac4dbe45bbab12f1172a5147fc6"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#af6effac4dbe45bbab12f1172a5147fc6">MPC</a> (const Dyn &amp;f, const <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt; &amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html">MPCParams</a>&lt; G, U &gt;{})</td></tr>
+<tr class="memdesc:af6effac4dbe45bbab12f1172a5147fc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above but for lvalues. <br /></td></tr>
+<tr class="separator:af6effac4dbe45bbab12f1172a5147fc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88a436a8657ab6c5788da8dbefbac406"><td class="memItemLeft" align="right" valign="top"><a id="a88a436a8657ab6c5788da8dbefbac406"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a88a436a8657ab6c5788da8dbefbac406">MPC</a> ()</td></tr>
+<tr class="memdesc:a88a436a8657ab6c5788da8dbefbac406"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor. <br /></td></tr>
+<tr class="separator:a88a436a8657ab6c5788da8dbefbac406"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac57118b4781fa905cdbd3e2fc7fa185c"><td class="memItemLeft" align="right" valign="top"><a id="ac57118b4781fa905cdbd3e2fc7fa185c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ac57118b4781fa905cdbd3e2fc7fa185c">MPC</a> (const <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;)=default</td></tr>
+<tr class="memdesc:ac57118b4781fa905cdbd3e2fc7fa185c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy constructor. <br /></td></tr>
+<tr class="separator:ac57118b4781fa905cdbd3e2fc7fa185c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ada870c124da67c6001849ccb7e2fb5"><td class="memItemLeft" align="right" valign="top"><a id="a7ada870c124da67c6001849ccb7e2fb5"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a7ada870c124da67c6001849ccb7e2fb5">MPC</a> (<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&amp;)=default</td></tr>
+<tr class="memdesc:a7ada870c124da67c6001849ccb7e2fb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move constructor. <br /></td></tr>
+<tr class="separator:a7ada870c124da67c6001849ccb7e2fb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76e1e16bfec84f4e0cf6dd1f83f42221"><td class="memItemLeft" align="right" valign="top"><a id="a76e1e16bfec84f4e0cf6dd1f83f42221"></a>
+<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a76e1e16bfec84f4e0cf6dd1f83f42221">operator=</a> (const <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;)=default</td></tr>
+<tr class="memdesc:a76e1e16bfec84f4e0cf6dd1f83f42221"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy assignment. <br /></td></tr>
+<tr class="separator:a76e1e16bfec84f4e0cf6dd1f83f42221"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1dfcbf83ad7302200594b63a983c8b97"><td class="memItemLeft" align="right" valign="top"><a id="a1dfcbf83ad7302200594b63a983c8b97"></a>
+<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a1dfcbf83ad7302200594b63a983c8b97">operator=</a> (<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> &amp;&amp;)=default</td></tr>
+<tr class="memdesc:a1dfcbf83ad7302200594b63a983c8b97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move assignment. <br /></td></tr>
+<tr class="separator:a1dfcbf83ad7302200594b63a983c8b97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65dd3a9cf052cbb122e5e3b766b7f292"><td class="memItemLeft" align="right" valign="top"><a id="a65dd3a9cf052cbb122e5e3b766b7f292"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a65dd3a9cf052cbb122e5e3b766b7f292">~MPC</a> ()=default</td></tr>
+<tr class="memdesc:a65dd3a9cf052cbb122e5e3b766b7f292"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor. <br /></td></tr>
+<tr class="separator:a65dd3a9cf052cbb122e5e3b766b7f292"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a302f17cdf4aaff95a25b92d50568d342"><td class="memItemLeft" align="right" valign="top">std::pair&lt; U, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">QPSolutionStatus</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a302f17cdf4aaff95a25b92d50568d342">operator()</a> (const T &amp;t, const G &amp;g, std::optional&lt; std::reference_wrapper&lt; std::vector&lt; U &gt;&gt;&gt; u_traj=std::nullopt, std::optional&lt; std::reference_wrapper&lt; std::vector&lt; G &gt;&gt;&gt; x_traj=std::nullopt)</td></tr>
+<tr class="memdesc:a302f17cdf4aaff95a25b92d50568d342"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solve <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem and return input.  <a href="classsmooth_1_1feedback_1_1MPC.html#a302f17cdf4aaff95a25b92d50568d342">More...</a><br /></td></tr>
+<tr class="separator:a302f17cdf4aaff95a25b92d50568d342"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad06de7436df1739680bb0afa044e5b37"><td class="memItemLeft" align="right" valign="top"><a id="ad06de7436df1739680bb0afa044e5b37"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ad06de7436df1739680bb0afa044e5b37">set_udes</a> (std::function&lt; U(T)&gt; &amp;&amp;u_des)</td></tr>
+<tr class="memdesc:ad06de7436df1739680bb0afa044e5b37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired input trajectory (absolute time) <br /></td></tr>
+<tr class="separator:ad06de7436df1739680bb0afa044e5b37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa30e1ae3b19a44796c1060a619666283"><td class="memItemLeft" align="right" valign="top"><a id="aa30e1ae3b19a44796c1060a619666283"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aa30e1ae3b19a44796c1060a619666283">set_udes</a> (const std::function&lt; U(T)&gt; &amp;u_des)</td></tr>
+<tr class="memdesc:aa30e1ae3b19a44796c1060a619666283"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired input trajectory (absolute time, rvalue version) <br /></td></tr>
+<tr class="separator:aa30e1ae3b19a44796c1060a619666283"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a017d9ea68c64f68eefe3d2100a375f3d"><td class="memTemplParams" colspan="2">template&lt;typename Fun &gt; </td></tr>
+<tr class="memitem:a017d9ea68c64f68eefe3d2100a375f3d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a017d9ea68c64f68eefe3d2100a375f3d">set_udes</a> (Fun &amp;&amp;f, T t0=T(0))</td></tr>
+<tr class="memdesc:a017d9ea68c64f68eefe3d2100a375f3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired input trajectory (relative time).  <a href="classsmooth_1_1feedback_1_1MPC.html#a017d9ea68c64f68eefe3d2100a375f3d">More...</a><br /></td></tr>
+<tr class="separator:a017d9ea68c64f68eefe3d2100a375f3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab02ecd1033d001a3d0acc5c6eea69123"><td class="memItemLeft" align="right" valign="top"><a id="ab02ecd1033d001a3d0acc5c6eea69123"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ab02ecd1033d001a3d0acc5c6eea69123">set_xdes</a> (std::function&lt; std::pair&lt; G, Tangent&lt; G &gt;&gt;(T)&gt; &amp;&amp;x_des)</td></tr>
+<tr class="memdesc:ab02ecd1033d001a3d0acc5c6eea69123"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired state trajectory and velocity (absolute time) <br /></td></tr>
+<tr class="separator:ab02ecd1033d001a3d0acc5c6eea69123"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a702a9503c4e5c7fdb411f9246e2d4953"><td class="memItemLeft" align="right" valign="top"><a id="a702a9503c4e5c7fdb411f9246e2d4953"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a702a9503c4e5c7fdb411f9246e2d4953">set_xdes</a> (const std::function&lt; std::pair&lt; G, Tangent&lt; G &gt;&gt;(T)&gt; &amp;x_des)</td></tr>
+<tr class="memdesc:a702a9503c4e5c7fdb411f9246e2d4953"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired state trajectory (absolute time, rvalue version) <br /></td></tr>
+<tr class="separator:a702a9503c4e5c7fdb411f9246e2d4953"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc7a27cbc1ffb5a9958c2d131046c039"><td class="memTemplParams" colspan="2">template&lt;typename Fun &gt; </td></tr>
+<tr class="memitem:afc7a27cbc1ffb5a9958c2d131046c039"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#afc7a27cbc1ffb5a9958c2d131046c039">set_xdes</a> (Fun &amp;&amp;f, T t0=T(0))</td></tr>
+<tr class="memdesc:afc7a27cbc1ffb5a9958c2d131046c039"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired state trajectry (relative time, automatic differentiation).  <a href="classsmooth_1_1feedback_1_1MPC.html#afc7a27cbc1ffb5a9958c2d131046c039">More...</a><br /></td></tr>
+<tr class="separator:afc7a27cbc1ffb5a9958c2d131046c039"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a669381793e1de5cc51864b082d12a7dc"><td class="memItemLeft" align="right" valign="top"><a id="a669381793e1de5cc51864b082d12a7dc"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a669381793e1de5cc51864b082d12a7dc">update_weights</a> (const typename <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem</a>&lt; G, U &gt;::Weights &amp;weights)</td></tr>
+<tr class="memdesc:a669381793e1de5cc51864b082d12a7dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> weights. <br /></td></tr>
+<tr class="separator:a669381793e1de5cc51864b082d12a7dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeeaed739d2e0724b9e78d688fdfd20e4"><td class="memItemLeft" align="right" valign="top"><a id="aeeaed739d2e0724b9e78d688fdfd20e4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aeeaed739d2e0724b9e78d688fdfd20e4">reset_warmstart</a> ()</td></tr>
+<tr class="memdesc:aeeaed739d2e0724b9e78d688fdfd20e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset initial guess for next iteration to zero. <br /></td></tr>
+<tr class="separator:aeeaed739d2e0724b9e78d688fdfd20e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e6592bd4d4a1ae44c555521ef471d3b"><td class="memItemLeft" align="right" valign="top"><a id="a2e6592bd4d4a1ae44c555521ef471d3b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a2e6592bd4d4a1ae44c555521ef471d3b">relinearize_around_sol</a> (const <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html">QPSolution</a>&lt;-1, -1, double &gt; &amp;sol)</td></tr>
+<tr class="memdesc:a2e6592bd4d4a1ae44c555521ef471d3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relinearize state around a solution. <br /></td></tr>
+<tr class="separator:a2e6592bd4d4a1ae44c555521ef471d3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename Time, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT&gt;<br />
-class smooth::feedback::MPC&lt; Time, G, U, Dyn, DT &gt;</h3>
+<div class="textblock"><h3>template&lt;Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DiffT = diff::Type::DEFAULT&gt;<br />
+class smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</h3>
 
 <p>Model-Predictive Control (<a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a>) on Lie groups. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
-    <tr><td class="paramname">Time</td><td>time type, must be a std::chrono::duration-like </td></tr>
+    <tr><td class="paramname">T</td><td>time type, must be a std::chrono::duration-like </td></tr>
     <tr><td class="paramname">G</td><td>state space LieGroup type </td></tr>
     <tr><td class="paramname">U</td><td>input space Manifold type </td></tr>
     <tr><td class="paramname">Dyn</td><td>callable type that represents dynamics </td></tr>
-    <tr><td class="paramname">DT</td><td>differentiation method</td></tr>
+    <tr><td class="paramname">DiffT</td><td>differentiation method</td></tr>
   </table>
   </dd>
 </dl>
 <p>This <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> class keeps and repeatedly solves an internal <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> that is updated to track a time-dependent trajectory defined through set_xudes().</p>
 <dl class="section note"><dt>Note</dt><dd>If the <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> problem is nonlinear a good (re-)linearization policy is required for good performance. See <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html" title="Parameters for MPC.">MPCParams</a> for details. <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> likely performs better on models that are control-affine. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00119">119</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00120">120</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a2d76bae1f6dee2e51541bd1008212d75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d76bae1f6dee2e51541bd1008212d75">&#9670;&nbsp;</a></span>MPC()</h2>
+<a id="ac2cdb95529d87e2dc65c07b48e42e0bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2cdb95529d87e2dc65c07b48e42e0bd">&#9670;&nbsp;</a></span>MPC()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+template&lt;Time T, LieGroup G, Manifold U, typename Dyn , diff::Type DiffT = diff::Type::DEFAULT&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; Time, G, U, Dyn, DT &gt;::<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> </td>
+          <td class="memname"><a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; T, G, U, Dyn, DiffT &gt;::<a class="el" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a> </td>
           <td>(</td>
           <td class="paramtype">Dyn &amp;&amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
@@ -218,33 +218,33 @@ template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT
 <p>Create an <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> instance. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">f</td><td>callable object that represents dynamics \( \mathrm{d}^r x_t = f(f, x, u) \) as a function \( f : Time \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \). </td></tr>
+    <tr><td class="paramname">f</td><td>callable object that represents dynamics \( \mathrm{d}^r x_t = f(f, x, u) \) as a function \( f : T \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \). </td></tr>
     <tr><td class="paramname">prm</td><td><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> parameters</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>\( f \) is copied/moved into the class. In order to modify the dynamics from the outside the type Dyn can be created to contain references to outside objects that are updated by the user. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00133">133</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00134">134</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a974d342c92c72d9b903d1d914df0d5db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a974d342c92c72d9b903d1d914df0d5db">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="a302f17cdf4aaff95a25b92d50568d342"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a302f17cdf4aaff95a25b92d50568d342">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+template&lt;Time T, LieGroup G, Manifold U, typename Dyn , diff::Type DiffT = diff::Type::DEFAULT&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::pair&lt;U, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">QPSolutionStatus</a>&gt; <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; Time, G, U, Dyn, DT &gt;::operator() </td>
+          <td class="memname">std::pair&lt;U, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">QPSolutionStatus</a>&gt; <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; T, G, U, Dyn, DiffT &gt;::operator() </td>
           <td>(</td>
-          <td class="paramtype">const Time &amp;&#160;</td>
+          <td class="paramtype">const T &amp;&#160;</td>
           <td class="paramname"><em>t</em>, </td>
         </tr>
         <tr>
@@ -290,17 +290,17 @@ template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{u, code} </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00169">169</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00171">171</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a13b2793ecfa40a61953d1ec1c39a2f2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13b2793ecfa40a61953d1ec1c39a2f2b">&#9670;&nbsp;</a></span>set_udes()</h2>
+<a id="a017d9ea68c64f68eefe3d2100a375f3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a017d9ea68c64f68eefe3d2100a375f3d">&#9670;&nbsp;</a></span>set_udes()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+template&lt;Time T, LieGroup G, Manifold U, typename Dyn , diff::Type DiffT = diff::Type::DEFAULT&gt; </div>
 <div class="memtemplate">
 template&lt;typename Fun &gt; </div>
 <table class="mlabels">
@@ -308,7 +308,7 @@ template&lt;typename Fun &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; Time, G, U, Dyn, DT &gt;::set_udes </td>
+          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; T, G, U, Dyn, DiffT &gt;::set_udes </td>
           <td>(</td>
           <td class="paramtype">Fun &amp;&amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
@@ -316,8 +316,8 @@ template&lt;typename Fun &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Time&#160;</td>
-          <td class="paramname"><em>t0</em> = <code>Time(0)</code>&#160;</td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>t0</em> = <code>T(0)</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -333,7 +333,7 @@ template&lt;typename Fun &gt; </div>
 </div><div class="memdoc">
 
 <p>Set the desired input trajectory (relative time). </p>
-<dl class="section note"><dt>Note</dt><dd>This function triggers a relinearization around the desired input and trajectory at the next call to <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a974d342c92c72d9b903d1d914df0d5db" title="Solve MPC problem and return input.">operator()()</a>.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This function triggers a relinearization around the desired input and trajectory at the next call to <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a302f17cdf4aaff95a25b92d50568d342" title="Solve MPC problem and return input.">operator()()</a>.</dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">f</td><td>function double -&gt; U&lt;double&gt; s.t. u_des(t) = f(t - t0) </td></tr>
@@ -342,17 +342,17 @@ template&lt;typename Fun &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00292">292</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00289">289</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
-<a id="aeed17badb8b4cf7d3aaa19ef607c30a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeed17badb8b4cf7d3aaa19ef607c30a9">&#9670;&nbsp;</a></span>set_xdes()</h2>
+<a id="afc7a27cbc1ffb5a9958c2d131046c039"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc7a27cbc1ffb5a9958c2d131046c039">&#9670;&nbsp;</a></span>set_xdes()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Time , LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+template&lt;Time T, LieGroup G, Manifold U, typename Dyn , diff::Type DiffT = diff::Type::DEFAULT&gt; </div>
 <div class="memtemplate">
 template&lt;typename Fun &gt; </div>
 <table class="mlabels">
@@ -360,7 +360,7 @@ template&lt;typename Fun &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; Time, G, U, Dyn, DT &gt;::set_xdes </td>
+          <td class="memname">void <a class="el" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a>&lt; T, G, U, Dyn, DiffT &gt;::set_xdes </td>
           <td>(</td>
           <td class="paramtype">Fun &amp;&amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
@@ -368,8 +368,8 @@ template&lt;typename Fun &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Time&#160;</td>
-          <td class="paramname"><em>t0</em> = <code>Time(0)</code>&#160;</td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>t0</em> = <code>T(0)</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -393,9 +393,9 @@ template&lt;typename Fun &gt; </div>
   </table>
   </dd>
 </dl>
-<dl class="section note"><dt>Note</dt><dd>This function triggers a relinearization around the desired input and trajectory at the next call to <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a974d342c92c72d9b903d1d914df0d5db" title="Solve MPC problem and return input.">operator()()</a>. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This function triggers a relinearization around the desired input and trajectory at the next call to <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a302f17cdf4aaff95a25b92d50568d342" title="Solve MPC problem and return input.">operator()()</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00333">333</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00330">330</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
