@@ -84,29 +84,28 @@ $(function() {
 
 <p>Quadratic Programming.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;Eigen/Dense&gt;</code><br />
+<div class="textblock"><code>#include &lt;Eigen/Cholesky&gt;</code><br />
+<code>#include &lt;Eigen/Dense&gt;</code><br />
 <code>#include &lt;Eigen/Sparse&gt;</code><br />
+<code>#include &lt;Eigen/SparseCholesky&gt;</code><br />
 <code>#include &lt;chrono&gt;</code><br />
 <code>#include &lt;iomanip&gt;</code><br />
 <code>#include &lt;iostream&gt;</code><br />
 <code>#include &lt;limits&gt;</code><br />
-<code>#include &quot;<a class="el" href="ldlt__lapack_8hpp_source.html">internal/ldlt_lapack.hpp</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="ldlt__sparse_8hpp_source.html">internal/ldlt_sparse.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for qp.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="qp_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2qp_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2qp_8hpp" id="ainclude_2smooth_2feedback_2qp_8hpp">
-<area shape="rect" title="Quadratic Programming." alt="" coords="257,5,424,47"/>
-<area shape="rect" title=" " alt="" coords="5,95,100,121"/>
-<area shape="rect" title=" " alt="" coords="321,169,419,196"/>
-<area shape="rect" title=" " alt="" coords="175,95,237,121"/>
-<area shape="rect" title=" " alt="" coords="261,95,327,121"/>
-<area shape="rect" title=" " alt="" coords="351,95,423,121"/>
-<area shape="rect" title=" " alt="" coords="447,95,501,121"/>
-<area shape="rect" href="ldlt__lapack_8hpp.html" title="Wrapper for lapack ldlt routines." alt="" coords="703,95,858,121"/>
-<area shape="rect" href="ldlt__sparse_8hpp.html" title="Sparse LDL&#39; for non&#45;singular matrices." alt="" coords="525,95,679,121"/>
-<area shape="rect" title=" " alt="" coords="738,169,823,196"/>
+<area shape="rect" title="Quadratic Programming." alt="" coords="440,5,607,47"/>
+<area shape="rect" title=" " alt="" coords="5,95,116,121"/>
+<area shape="rect" title=" " alt="" coords="140,95,235,121"/>
+<area shape="rect" title=" " alt="" coords="259,95,358,121"/>
+<area shape="rect" title=" " alt="" coords="382,95,534,121"/>
+<area shape="rect" title=" " alt="" coords="558,95,619,121"/>
+<area shape="rect" title=" " alt="" coords="643,95,710,121"/>
+<area shape="rect" title=" " alt="" coords="734,95,806,121"/>
+<area shape="rect" title=" " alt="" coords="830,95,883,121"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -218,7 +217,7 @@ template&lt;typename Pbm , typename D1 , typename D2 , typename D3 , typename D4
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00114">114</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00113">113</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>
@@ -274,7 +273,7 @@ template&lt;typename Pbm &gt; </div>
 </dl>
 <dl class="section warning"><dt>Warning</dt><dd>This function allocates heap memory even for static-sized problems. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00353">353</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00352">352</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>
@@ -325,7 +324,7 @@ template&lt;typename Pbm &gt; </div>
 \[ \begin{bmatrix} \bar P &amp; \bar q \end{bmatrix}. \]
 </p>
  
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00242">242</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00241">241</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>
@@ -385,7 +384,7 @@ template&lt;typename Pbm &gt; </div>
 </ul>
 <p>For the official C implementation, see <a href="https://osqp.org/">https://osqp.org/</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00573">573</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00574">574</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>
