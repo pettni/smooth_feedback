@@ -104,11 +104,13 @@ double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="st
 G&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac4af927a70f4a218546ce290c5093e8d">x0</a> {Default&lt;G&gt;()}</td></tr>
 <tr class="memdesc:ac4af927a70f4a218546ce290c5093e8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial state. <br /></td></tr>
 <tr class="separator:ac4af927a70f4a218546ce290c5093e8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9562f86d56471566009f1cd9679740f"><td class="memItemLeft" align="right" valign="top">std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f">udes</a></td></tr>
-<tr class="memdesc:ad9562f86d56471566009f1cd9679740f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired input trajectory.  <a href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f">More...</a><br /></td></tr>
+<tr class="memitem:ad9562f86d56471566009f1cd9679740f"><td class="memItemLeft" align="right" valign="top"><a id="ad9562f86d56471566009f1cd9679740f"></a>
+std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f">udes</a> = [](double) -&gt; U { return Default&lt;U&gt;(); }</td></tr>
+<tr class="memdesc:ad9562f86d56471566009f1cd9679740f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired input trajectory. <br /></td></tr>
 <tr class="separator:ad9562f86d56471566009f1cd9679740f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0ada3eab3ed9642a05d28cc902fa13e"><td class="memItemLeft" align="right" valign="top">std::function&lt; G(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae0ada3eab3ed9642a05d28cc902fa13e">gdes</a></td></tr>
-<tr class="memdesc:ae0ada3eab3ed9642a05d28cc902fa13e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired state trajectory.  <a href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae0ada3eab3ed9642a05d28cc902fa13e">More...</a><br /></td></tr>
+<tr class="memitem:ae0ada3eab3ed9642a05d28cc902fa13e"><td class="memItemLeft" align="right" valign="top"><a id="ae0ada3eab3ed9642a05d28cc902fa13e"></a>
+std::function&lt; G(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae0ada3eab3ed9642a05d28cc902fa13e">gdes</a> = [](double) -&gt; G { return Default&lt;G&gt;(); }</td></tr>
+<tr class="memdesc:ae0ada3eab3ed9642a05d28cc902fa13e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Desired state trajectory. <br /></td></tr>
 <tr class="separator:ae0ada3eab3ed9642a05d28cc902fa13e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed735251f2a513ab99716e1d9479b966"><td class="memItemLeft" align="right" valign="top"><a id="aed735251f2a513ab99716e1d9479b966"></a>
 <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html">ManifoldBounds</a>&lt; U &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#aed735251f2a513ab99716e1d9479b966">ulim</a> {}</td></tr>
@@ -152,54 +154,7 @@ struct smooth::feedback::OptimalControlProblem&lt; G, U &gt;</h3>
 <p> where the cost matrices must be positive semi-definite. </p>
 
 <p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00067">67</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="ae0ada3eab3ed9642a05d28cc902fa13e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0ada3eab3ed9642a05d28cc902fa13e">&#9670;&nbsp;</a></span>gdes</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;LieGroup G, Manifold U&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::function&lt;G(double)&gt; <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">smooth::feedback::OptimalControlProblem</a>&lt; G, U &gt;::gdes</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
-<div class="line">    [](double) -&gt; G { <span class="keywordflow">return</span> Default&lt;G&gt;(); },</div>
-<div class="line">  }</div>
-</div><!-- fragment -->
-<p>Desired state trajectory. </p>
-
-<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00084">84</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
-
-</div>
-</div>
-<a id="ad9562f86d56471566009f1cd9679740f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9562f86d56471566009f1cd9679740f">&#9670;&nbsp;</a></span>udes</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;LieGroup G, Manifold U&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::function&lt;U(double)&gt; <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">smooth::feedback::OptimalControlProblem</a>&lt; G, U &gt;::udes</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
-<div class="line">    [](double) -&gt; U { <span class="keywordflow">return</span> Default&lt;U&gt;(); },</div>
-<div class="line">  }</div>
-</div><!-- fragment -->
-<p>Desired input trajectory. </p>
-
-<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00080">80</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
-
-</div>
-</div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/smooth/feedback/<a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a></li>
 </ul>
 </div><!-- contents -->

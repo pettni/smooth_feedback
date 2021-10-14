@@ -91,8 +91,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a3beb54cd87bec7db8a879e6d29178229"><td class="memItemLeft" align="right" valign="top">std::function&lt; std::pair&lt; G, Tangent&lt; G &gt; &gt;double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#a3beb54cd87bec7db8a879e6d29178229">g</a></td></tr>
 <tr class="memdesc:a3beb54cd87bec7db8a879e6d29178229"><td class="mdescLeft">&#160;</td><td class="mdescRight">state linearization trajectory with first derivative \( g_{lin}: \mathbb{R} \rightarrow (G, \mathbb{R}^{\dim \mathfrak{g}}) \)  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#a3beb54cd87bec7db8a879e6d29178229">More...</a><br /></td></tr>
 <tr class="separator:a3beb54cd87bec7db8a879e6d29178229"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad084e1f47c64feee186769e3bd834dcc"><td class="memItemLeft" align="right" valign="top">std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">u</a></td></tr>
-<tr class="memdesc:ad084e1f47c64feee186769e3bd834dcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">input linearization trajectory \( u_{lin}(t) : \mathbb{R} \rightarrow U \)  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">More...</a><br /></td></tr>
+<tr class="memitem:ad084e1f47c64feee186769e3bd834dcc"><td class="memItemLeft" align="right" valign="top"><a id="ad084e1f47c64feee186769e3bd834dcc"></a>
+std::function&lt; U(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">u</a> = [](double) -&gt; U { return Default&lt;U&gt;(); }</td></tr>
+<tr class="memdesc:ad084e1f47c64feee186769e3bd834dcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">input linearization trajectory \( u_{lin}(t) : \mathbb{R} \rightarrow U \) <br /></td></tr>
 <tr class="separator:ad084e1f47c64feee186769e3bd834dcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac267b0228db56b5e353446d34e4e1135"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; double, Dof&lt; G &gt;, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac267b0228db56b5e353446d34e4e1135">g_domain</a></td></tr>
 <tr class="memdesc:ac267b0228db56b5e353446d34e4e1135"><td class="mdescLeft">&#160;</td><td class="mdescRight">Domain of validity of state linearization.  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac267b0228db56b5e353446d34e4e1135">More...</a><br /></td></tr>
@@ -104,7 +105,7 @@ struct smooth::feedback::LinearizationInfo&lt; G, U &gt;</h3>
 
 <p>Struct to define a linearization point. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00118">118</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00108">108</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="a3beb54cd87bec7db8a879e6d29178229"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3beb54cd87bec7db8a879e6d29178229">&#9670;&nbsp;</a></span>g</h2>
@@ -119,15 +120,13 @@ template&lt;LieGroup G, Manifold U&gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
-<div class="line">    [](double) -&gt; std::pair&lt;G, Tangent&lt;G&gt;&gt; {</div>
-<div class="line">      <span class="keywordflow">return</span> {Default&lt;G&gt;(), Tangent&lt;G&gt;::Zero()};</div>
-<div class="line">    },</div>
+<b>Initial value:</b><div class="fragment"><div class="line">= [](double) -&gt; std::pair&lt;G, Tangent&lt;G&gt;&gt; {</div>
+<div class="line">    <span class="keywordflow">return</span> {Default&lt;G&gt;(), Tangent&lt;G&gt;::Zero()};</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
 <p>state linearization trajectory with first derivative \( g_{lin}: \mathbb{R} \rightarrow (G, \mathbb{R}^{\dim \mathfrak{g}}) \) </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00124">124</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00114">114</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
 
 </div>
 </div>
@@ -144,9 +143,8 @@ template&lt;LieGroup G, Manifold U&gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
-<div class="line">    Eigen::Matrix&lt;double, Dof&lt;G&gt;, 1&gt;::Constant(std::numeric_limits&lt;double&gt;::infinity()),</div>
-<div class="line">  }</div>
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    Eigen::Matrix&lt;double, Dof&lt;G&gt;, 1&gt;::Constant(std::numeric_limits&lt;double&gt;::infinity())</div>
 </div><!-- fragment -->
 <p>Domain of validity of state linearization. </p>
 <p>Defines an upper bound \( \bar a \) s.t. the linearization is valid for \( g \) s.t. </p><p class="formulaDsp">
@@ -154,30 +152,7 @@ template&lt;LieGroup G, Manifold U&gt; </div>
 </p>
 <p> holds component-wise. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00146">146</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
-
-</div>
-</div>
-<a id="ad084e1f47c64feee186769e3bd834dcc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad084e1f47c64feee186769e3bd834dcc">&#9670;&nbsp;</a></span>u</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;LieGroup G, Manifold U&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::function&lt;U(double)&gt; <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">smooth::feedback::LinearizationInfo</a>&lt; G, U &gt;::u</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
-<div class="line">    [](double) -&gt; U { <span class="keywordflow">return</span> Default&lt;U&gt;(); },</div>
-<div class="line">  }</div>
-</div><!-- fragment -->
-<p>input linearization trajectory \( u_{lin}(t) : \mathbb{R} \rightarrow U \) </p>
-
-<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00133">133</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00132">132</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
 
 </div>
 </div>
