@@ -207,7 +207,7 @@ MPC and ASIF relies on online quadratic program optimization.
 
 The plot below compares solution times (lower is better) for random square QPs over three different levels of sparsity. The results suggest that 
 the dense solver is the best choice except for problems that are both large and very sparse. Performance is however highly problem-dependent
-and should ideally be evaluated an a per-application basis.
+and should ideally be evaluated on a per-application basis.
 
 <img src="media/qp_benchmarks.png" width="100%">
 
