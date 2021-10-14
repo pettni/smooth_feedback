@@ -10,7 +10,6 @@
   <license>MIT</license>
 
   <depend>boost</depend>
-  <depend>liblapack-dev</depend>
   <depend>smooth</depend>
 
   <buildtool_depend>cmake</buildtool_depend>

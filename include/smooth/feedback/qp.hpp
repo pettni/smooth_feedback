@@ -3,7 +3,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2021 Petter Nilsson
+// Copyright (c) 2021 Petter Nilsson, John B. Mains
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,16 +31,15 @@
  * @brief Quadratic Programming.
  */
 
+#include <Eigen/Cholesky>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/SparseCholesky>
 
 #include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <limits>
-
-#include "internal/ldlt_lapack.hpp"
-#include "internal/ldlt_sparse.hpp"
 
 namespace smooth::feedback {
 
@@ -356,8 +355,6 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
   using Scalar                 = typename AmatT::Scalar;
   using VecX                   = Eigen::Matrix<Scalar, -1, 1>;
   static constexpr bool sparse = std::is_base_of_v<Eigen::SparseMatrixBase<AmatT>, AmatT>;
-  using LDLT =
-    std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, -1>>;
 
   static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
   static constexpr Scalar eps = std::numeric_limits<Scalar>::epsilon();
@@ -444,7 +441,11 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
   // ITERATIVE REFINEMENT
 
   // factorize Hp
-  LDLT ldlt(std::move(Hp));
+  std::conditional_t<sparse,
+    Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>,
+    Eigen::LDLT<Eigen::Ref<decltype(H)>, Eigen::Upper>>
+    ldlt(Hp);
+
   if (ldlt.info()) { return false; }
 
   VecX t_hat = VecX::Zero(n + nl + nu);
@@ -583,10 +584,6 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
   static constexpr Eigen::Index N = AmatT::ColsAtCompileTime;
   static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
 
-  // factorization method
-  using LDLT =
-    std::conditional_t<sparse, detail::LDLTSparse<Scalar>, detail::LDLTLapack<Scalar, K>>;
-
   // typedefs
   using Rn = Eigen::Matrix<Scalar, N, 1>;
   using Rm = Eigen::Matrix<Scalar, M, 1>;
@@ -674,7 +671,7 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
     using std::cout, std::left, std::endl, std::setw, std::right;
     // clang-format off
     cout << "========================= QP Solver =========================" << endl;
-    cout << "Solving QP with n=" << n << ", m=" << m << endl;
+    cout << "Solving " << (sparse ? "sparse" : "dense") << " QP with n=" << n << ", m=" << m << endl;
     cout << setw(8)  << right << "ITER"
          << setw(14) << right << "OBJ"
          << setw(14) << right << "PRI_RES"
@@ -684,7 +681,10 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
   }
 
   // factorize H
-  LDLT ldlt(std::move(H));
+  std::conditional_t<sparse,
+    Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>,
+    Eigen::LDLT<Eigen::Ref<decltype(H)>, Eigen::Upper>>
+    ldlt(H);
 
   const auto t_factor = std::chrono::high_resolution_clock::now();
 
@@ -712,7 +712,7 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
   for (; (!prm.max_iter || iter != prm.max_iter.value()) && !ret_code; ++iter) {
     p.template head<N>(n)       = sigma * x - spbm.q;
     p.template segment<M>(n, m) = z - rho.cwiseInverse().cwiseProduct(y);
-    ldlt.solve_inplace(p);
+    p                           = ldlt.solve(p);
 
     if (iter % prm.stop_check_iter == 1) {
       // termination checking requires difference, store old scaled values
@@ -763,7 +763,7 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
 
   detail::qp_solution_t<Pbm> sol{
     .code      = ret_code.value_or(QPSolutionStatus::MaxIterations),
-    .iter      = iter,
+    .iter      = iter - 1,
     .primal    = std::move(x),
     .dual      = std::move(y),
     .objective = obj,
@@ -811,12 +811,12 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
     cout << "QP solver summary:" << endl;
     cout << "Result " << static_cast<int>(sol.code) << endl;
 
-    cout << setw(25) << left << "Iterations"                << setw(10) << right << iter - 1                                               << endl;
-    cout << setw(25) << left << "Total time (microseconds)" << setw(10) << right << duration_cast<microseconds>(t_polish - t0).count()     << endl;
-    cout << setw(25) << left << "  Matrix filling"          << setw(10) << right << duration_cast<microseconds>(t_fill - t0).count()       << endl;
-    cout << setw(25) << left << "  Factorization"           << setw(10) << right << duration_cast<microseconds>(t_factor - t_fill).count() << endl;
-    cout << setw(25) << left << "  Iteration"               << setw(10) << right << duration_cast<microseconds>(t_iter - t_factor).count() << endl;
-    cout << setw(25) << left << "  Polish"                  << setw(10) << right << duration_cast<microseconds>(t_polish - t_iter).count() << endl;
+    cout << setw(25) << left << "Iterations"        << setw(10) << right << iter - 1                                               << endl;
+    cout << setw(26) << left << "Total time (µs)"   << setw(10) << right << duration_cast<microseconds>(t_polish - t0).count()     << endl;
+    cout << setw(25) << left << "  Matrix filling"  << setw(10) << right << duration_cast<microseconds>(t_fill - t0).count()       << endl;
+    cout << setw(25) << left << "  Factorization"   << setw(10) << right << duration_cast<microseconds>(t_factor - t_fill).count() << endl;
+    cout << setw(25) << left << "  Iteration"       << setw(10) << right << duration_cast<microseconds>(t_iter - t_factor).count() << endl;
+    cout << setw(25) << left << "  Polish"          << setw(10) << right << duration_cast<microseconds>(t_polish - t_iter).count() << endl;
     cout << "=============================================================" << endl;
     // clang-format on
   }

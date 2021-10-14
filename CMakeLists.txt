@@ -12,7 +12,6 @@ include(CTest)
 include(GoogleTest)
 
 find_package(Boost REQUIRED)
-find_package(LAPACK REQUIRED)
 find_package(smooth REQUIRED)
 
 # ---------------------------------------------------------------------------------------
@@ -30,12 +29,6 @@ INTERFACE
   Boost::headers
   smooth::smooth
 )
-
-if(${CMAKE_VERSION} VERSION_LESS "3.18")
-  target_link_libraries(feedback INTERFACE ${LAPACK_LIBRARIES})
-else()
-  target_link_libraries(feedback INTERFACE LAPACK::LAPACK)
-endif()
 
 # ---------------------------------------------------------------------------------------
 # EXAMPLES
@@ -118,7 +111,6 @@ if(BUILD_TESTING)
 
   add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
-
   add_executable(test_static test/test_static.cpp)
   target_link_libraries(test_static PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_static)
@@ -140,10 +132,6 @@ if(BUILD_TESTING)
   add_executable(test_mpc test/test_mpc.cpp)
   target_link_libraries(test_mpc PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_mpc)
-
-  add_executable(test_ldlt test/test_ldlt.cpp)
-  target_link_libraries(test_ldlt PRIVATE feedback GTest::Main)
-  gtest_discover_tests(test_ldlt)
 
   add_executable(test_qp test/test_qp.cpp)
   target_link_libraries(test_qp PRIVATE feedback GTest::Main)

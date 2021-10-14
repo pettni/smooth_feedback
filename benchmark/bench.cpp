@@ -12,6 +12,7 @@
 DEFINE_uint64(batch, 10, "Size of each batch");
 DEFINE_uint64(min_size, 4, "Minimal problem size");
 DEFINE_uint64(max_size, 15, "Maximal problem size");
+DEFINE_uint64(step_size, 1, "Step size");
 DEFINE_uint64(m_multiple, 1, "Number of inequalities as multiple of size");
 DEFINE_bool(verbose, false, "Print per problem information");
 
@@ -137,7 +138,7 @@ int main(int argc, char ** argv)
 {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  constexpr std::array<double, 3> D = {0.15, 0.5, 1.};
+  constexpr std::array<double, 3> D = {0.05, 0.3, 1.};
 
   std::default_random_engine rng(5);
 
@@ -146,13 +147,15 @@ int main(int argc, char ** argv)
   prm.eps_rel  = 1e-6;
   prm.polish   = true;
   prm.max_iter = 10000;
+  prm.scaling  = false;
+  // prm.verbose  = true;
 
   std::vector<PlotData> plot_data;
 
   for (auto density : D) {
     PlotData data;
     data.density = density;
-    for (auto n = FLAGS_min_size; n <= FLAGS_max_size; ++n) {
+    for (auto n = FLAGS_min_size; n <= FLAGS_max_size; n += FLAGS_step_size) {
       std::size_t m = FLAGS_m_multiple * n;
 
       std::default_random_engine gen1, gen2;
