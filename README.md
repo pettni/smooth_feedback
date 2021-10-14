@@ -8,7 +8,7 @@
 
 Tool collection for control and estimation on Lie groups leveraging the [smooth][smooth-link] library.
 
-* Requirements: C++20, Eigen 3.4, boost::numeric::odeint, LAPACK, [smooth][smooth-link]
+* Requirements: C++20, Eigen 3.4, boost::numeric::odeint, [smooth][smooth-link]
 * [Documentation][doc-link]
 
 
@@ -201,12 +201,13 @@ MPC and ASIF relies on online quadratic program optimization.
 
 ### Fast QP Solver
 
-* Eigen port of the [operator splitting QP solver](https://osqp.org/). 
-* For both dense and sparse problems.
+* Eigen-native port of the [operator splitting QP solver](https://osqp.org/). 
+* Solves both dense and sparse problems.
 * Eigen lazy evaluations enable fast SIMD in the compiled assembly.
 
-Preliminary results suggest that the performance compares favorably to the original OSQP implementation.
-The plot below compares solution times (lower is better) for square QPs over three different levels of sparsity. Although the `smooth` sparse (smooth-s) solver is consistently faster than the `smooth` dense (smooth-d) and osqp solvers, it currently appears to be slightly less robust than the other methods on ill-conditioned problems. 
+The plot below compares solution times (lower is better) for random square QPs over three different levels of sparsity. The results suggest that 
+the dense solver is the best choice except for problems that are both large and very sparse. Performance is however highly problem-dependent
+and should ideally be evaluated an a per-application basis.
 
 <img src="media/qp_benchmarks.png" width="100%">
 

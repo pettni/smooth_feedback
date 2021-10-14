@@ -26,14 +26,19 @@ smooth::feedback::QuadraticProgram<-1, -1> random_qp(int m, int n, double densit
 
   Eigen::MatrixXd A =
     Eigen::MatrixXd::NullaryExpr(m, n, [&](int, int) { return bdist(rng) ? udist(rng) : 0.; });
-  Eigen::MatrixXd P =
+  Eigen::MatrixXd Lrand =
     Eigen::MatrixXd::NullaryExpr(n, n, [&](int, int) { return bdist(rng) ? udist(rng) : 0.; });
+  Eigen::MatrixXd L = Eigen::MatrixXd::Zero(n, n);
+  L.template triangularView<Eigen::Lower>() = Lrand.template triangularView<Eigen::Lower>();
+  for (int i = 0; i < n; ++i) {
+    L(i, i) = std::max({L(i, i), -L(i, i), 0.05});
+  }
 
   Eigen::VectorXd v     = Eigen::VectorXd::NullaryExpr(n, [&](int) { return udist(rng); });
   Eigen::VectorXd delta = Eigen::VectorXd::NullaryExpr(m, [&](int) { return udist(rng); });
 
   return smooth::feedback::QuadraticProgram<-1, -1>{
-    .P = P * P.transpose() + 0.01 * Eigen::MatrixXd::Identity(n, n),
+    .P = L * L.transpose(),
     .q = Eigen::VectorXd::NullaryExpr(n, [&](int) { return udist(rng); }),
     .A = A,
     .l = Eigen::VectorXd::Constant(m, -std::numeric_limits<double>::infinity()),
