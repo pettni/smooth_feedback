@@ -250,10 +250,11 @@ public:
 
     // save solution for warmstart
     if (prm_.warmstart) {
-      if (sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime
-          || sol.code == QPSolutionStatus::MaxIterations) {
+      // clang-format off
+      if (sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime || sol.code == QPSolutionStatus::MaxIterations) {
         warmstart_ = sol;
       }
+      // clang-format on
     }
 
     return {rplus(lin_.u(0), sol.primal.template head<Nu>()), sol.code};
@@ -390,10 +391,10 @@ private:
   // store last solution for warmstarting
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
   // desired state (pos + vel) and input trajectories
-  std::function<std::pair<G, Tangent<G>>(T)> x_des_{[](T) -> std::pair<G, Tangent<G>> {
+  std::function<std::pair<G, Tangent<G>>(T)> x_des_ = [](T) -> std::pair<G, Tangent<G>> {
     return {Default<G>(), Tangent<G>::Zero()};
-  }};
-  std::function<U(T)> u_des_{[](T) -> U { return Default<U>(); }};
+  };
+  std::function<U(T)> u_des_ = [](T) -> U { return Default<U>(); };
 };
 
 }  // namespace smooth::feedback

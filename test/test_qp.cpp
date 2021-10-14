@@ -145,6 +145,25 @@ TEST(QP, Unconstrained)
   ASSERT_TRUE(sol.primal.isApprox(Eigen::Matrix<double, 3, 1>(1, 0, 2), tol));
 }
 
+TEST(QP, HalfConstrained)
+{
+  smooth::feedback::QuadraticProgram<3, 3> problem;
+  problem.P << 4, 2, 2, 2, 4, 2, 2, 2, 4;
+  problem.q << -8, -6, -10;
+
+  problem.A.setIdentity();
+  problem.l << -inf, -inf, -10;
+  problem.u << inf, 10, inf;
+
+  auto sol = smooth::feedback::solve_qp(problem, prm);
+  ASSERT_EQ(sol.code, smooth::feedback::QPSolutionStatus::Optimal);
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Matrix<double, 3, 1>(1, 0, 2), tol));
+
+  auto sol_hs = smooth::feedback::solve_qp(problem, prm, sol);
+  ASSERT_EQ(sol_hs.code, smooth::feedback::QPSolutionStatus::Optimal);
+  ASSERT_TRUE(sol.primal.isApprox(Eigen::Matrix<double, 3, 1>(1, 0, 2), tol));
+}
+
 TEST(QP, PrimalInfeasibleEasy)
 {
   smooth::feedback::QuadraticProgram<2, 2> problem;
@@ -219,7 +238,10 @@ TEST(QP, PortfolioOptimization)
 
   Eigen::Vector3d answer(497.04552984986384, 0.0, 502.9544801594811);
 
-  auto sol = smooth::feedback::solve_qp(problem, prm);
+  auto prm_copy    = prm;
+  prm_copy.verbose = true;
+
+  auto sol = smooth::feedback::solve_qp(problem, prm_copy);
   ASSERT_EQ(sol.code, smooth::feedback::QPSolutionStatus::Optimal);
   ASSERT_TRUE(sol.primal.isApprox(answer, tol));
   ASSERT_NEAR(sol.objective, 22634.417849884154 / 2, 5e-2);

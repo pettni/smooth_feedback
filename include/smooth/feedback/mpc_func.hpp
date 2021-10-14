@@ -77,13 +77,9 @@ struct OptimalControlProblem
   G x0{Default<G>()};
 
   /// Desired input trajectory
-  std::function<U(double)> udes{
-    [](double) -> U { return Default<U>(); },
-  };
+  std::function<U(double)> udes = [](double) -> U { return Default<U>(); };
   /// Desired state trajectory
-  std::function<G(double)> gdes{
-    [](double) -> G { return Default<G>(); },
-  };
+  std::function<G(double)> gdes = [](double) -> G { return Default<G>(); };
 
   /// Input bounds
   ManifoldBounds<U> ulim{};
@@ -94,17 +90,11 @@ struct OptimalControlProblem
   struct Weights
   {
     /// Running state cost
-    Eigen::Matrix<double, Nx, Nx> Q{
-      Eigen::Matrix<double, Nx, Nx>::Identity(),
-    };
+    Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
     /// Final state cost
-    Eigen::Matrix<double, Nx, Nx> QT{
-      Eigen::Matrix<double, Nx, Nx>::Identity(),
-    };
+    Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
     /// Running input cost
-    Eigen::Matrix<double, Nu, Nu> R{
-      Eigen::Matrix<double, Nu, Nu>::Identity(),
-    };
+    Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
   };
 
   /// MPC weights values
@@ -121,18 +111,14 @@ struct LinearizationInfo
    * @brief state linearization trajectory with first derivative
    * \f$ g_{lin}: \mathbb{R} \rightarrow (G, \mathbb{R}^{\dim \mathfrak{g}}) \f$
    */
-  std::function<std::pair<G, Tangent<G>>(double)> g{
-    [](double) -> std::pair<G, Tangent<G>> {
-      return {Default<G>(), Tangent<G>::Zero()};
-    },
+  std::function<std::pair<G, Tangent<G>>(double)> g = [](double) -> std::pair<G, Tangent<G>> {
+    return {Default<G>(), Tangent<G>::Zero()};
   };
 
   /**
    * @brief input linearization trajectory \f$ u_{lin}(t) :  \mathbb{R} \rightarrow U \f$
    */
-  std::function<U(double)> u{
-    [](double) -> U { return Default<U>(); },
-  };
+  std::function<U(double)> u = [](double) -> U { return Default<U>(); };
 
   /**
    * @brief Domain of validity of state linearization
@@ -143,9 +129,8 @@ struct LinearizationInfo
    * \f]
    * holds component-wise.
    */
-  Eigen::Matrix<double, Dof<G>, 1> g_domain{
-    Eigen::Matrix<double, Dof<G>, 1>::Constant(std::numeric_limits<double>::infinity()),
-  };
+  Eigen::Matrix<double, Dof<G>, 1> g_domain =
+    Eigen::Matrix<double, Dof<G>, 1>::Constant(std::numeric_limits<double>::infinity());
 };
 
 /**
