@@ -37,9 +37,8 @@ using input_t = Eigen::Matrix<T, 1, 1>;
 
 TEST(Collocation, Mesh)
 {
-  smooth::feedback::Mesh m;
-  m.split(0, 10);
-
+  smooth::feedback::Mesh<5, 10> m;
+  m.refine_ph(0, 5 * 10);
   ASSERT_EQ(m.N_ivals(), 10);
 
   for (auto i = 0u; i < 10; ++i) {
@@ -47,16 +46,34 @@ TEST(Collocation, Mesh)
     ASSERT_DOUBLE_EQ(n(0), i * 0.1);
   }
 
-  m.split(1, 2);
-  ASSERT_EQ(m.N_ivals(), 11);
+  // will only increase degree
+  m.refine_ph(1, 10);
+  ASSERT_EQ(m.N_ivals(), 10);
   {
     auto [n, w] = m.interval_nodes_and_weights(1);
     ASSERT_DOUBLE_EQ(n(0), 0.1);
   }
+
+  // actually split it
+  m.refine_ph(1, 13);
+  ASSERT_EQ(m.N_ivals(), 12);
   {
-    auto [n, w] = m.interval_nodes_and_weights(2);
-    ASSERT_DOUBLE_EQ(n(0), 0.15);
+    auto [n1, w1] = m.interval_nodes_and_weights(1);
+    auto [n2, w2] = m.interval_nodes_and_weights(2);
+    auto [n3, w3] = m.interval_nodes_and_weights(3);
+    ASSERT_DOUBLE_EQ(n1(0), 0.1);
+    ASSERT_DOUBLE_EQ(n2(0), 0.1 + 0.1 / 3);
+    ASSERT_DOUBLE_EQ(n3(0), 0.1 + 2 * 0.1 / 3);
   }
+
+  m.refine_ph(2, 27);
+
+  m.refine_ph(7, 33);
+  m.refine_ph(9, 22);
+
+  const auto [alln, allw] = m.all_nodes_and_weights();
+
+  for (auto i = 0u; i + 1 < alln.size(); ++i) { ASSERT_LE(alln[i], alln[i + 1]); }
 }
 
 TEST(Collocation, TimeTrajectory)
@@ -85,10 +102,9 @@ TEST(Collocation, TimeTrajectory)
   double tf   = 5;
   double uval = 0.3;
 
-  smooth::feedback::Mesh m;
-  m.split(m.N_ivals() - 1);
-  m.split(m.N_ivals() - 1);
-  m.split(m.N_ivals() - 1);
+  smooth::feedback::Mesh<5, 5> m;
+  m.refine_ph(0, 40);
+  ASSERT_EQ(m.N_ivals(), 8);
 
   Eigen::MatrixXd X(1, m.N_colloc() + 1);
   Eigen::MatrixXd U = Eigen::MatrixXd::Constant(1, m.N_colloc(), uval);
@@ -146,10 +162,11 @@ TEST(Collocation, StateTrajectory)
   double tf   = 5;
   double uval = 0;
 
-  smooth::feedback::Mesh m;
+  smooth::feedback::Mesh<5, 5> m;
 
   // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
-  for (int i = 0; i < 4; ++i) { m.split_all(); }
+  m.refine_ph(0, 16 * 5);
+  ASSERT_EQ(m.N_ivals(), 16);
 
   Eigen::MatrixXd X(1, m.N_colloc() + 1);
 

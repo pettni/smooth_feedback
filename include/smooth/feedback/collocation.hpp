@@ -45,6 +45,7 @@
 #include <Eigen/Sparse>
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
+#include <smooth/internal/utils.hpp>
 #include <smooth/polynomial/quadrature.hpp>
 
 #include <cstddef>
@@ -85,13 +86,37 @@ constexpr std::pair<std::array<double, K + 1>, std::array<double, K + 1>> lgr_pl
  * [0, 1] is divided into non-overlapping intervals I_i, and each interval I_i has K_i LGR
  * collocation points.
  */
+template<std::size_t Kmin = 5, std::size_t Kmax = 5>
+  requires(Kmax >= Kmin)
 class Mesh
 {
+private:
 public:
   /**
    * @brief Create a mesh consisting of a single interval [0, 1].
    */
-  inline Mesh() { intervals_ = {Interval{.K = 5, .tau0 = 0}}; }
+  inline Mesh()
+  {
+    // store compile-time objects
+    utils::static_for<Kmax + 1 - Kmin>([this](auto i) {
+      constexpr auto K    = Kmin + i;
+      constexpr auto nw_s = detail::lgr_plus_one<K>();
+      constexpr auto B_s  = lagrange_basis<K>(nw_s.first);
+      constexpr auto D_s  = polynomial_basis_derivatives<K, K + 1>(B_s, nw_s.first);
+
+      Eigen::VectorXd n = Eigen::Map<const Eigen::VectorXd>(nw_s.first.data(), K + 1);
+      Eigen::VectorXd w = Eigen::Map<const Eigen::VectorXd>(nw_s.second.data(), K + 1);
+      Eigen::MatrixXd D = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
+        D_s[0].data(), K + 1, K + 1);
+
+      ns_.push_back(std::move(n));
+      ws_.push_back(std::move(w));
+      Ds_.push_back(std::move(D));
+    });
+
+    // initialize with a single interval
+    intervals_ = {Interval{.K = Kmin, .tau0 = 0}};
+  }
 
   /**
    * @brief Number of intervals in mesh.
@@ -118,30 +143,37 @@ public:
   inline std::size_t N_colloc_ival(std::size_t i) const { return intervals_[i].K; }
 
   /**
-   * @breif Split interval i into n equal parts.
+   * @breif Refine interval using the ph strategy.
+   *
+   * @param i index of interval to refine
+   * @param D target number of collocation points in refined interval
+   *
+   * If D < current degree, then nothing is done.
+   * If D <= Kmax,          then the polynomial degree is increased to D.
+   * If D > Kmax,           then the interval is divided into n = max(2, ceil(D / Kmin))
+   *                        intervals with degree Kmin
    */
-  inline void split(std::size_t i, std::size_t n = 2)
+  inline void refine_ph(std::size_t i, std::size_t D)
   {
-    const double tau0 = intervals_[i].tau0;
-    const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
-    const double taum = tau0 + (tauf - tau0) / n;
+    if (D < intervals_[i].K) {
+      return;
+    } else if (D <= Kmax) {
+      intervals_[i].K = D;
+    } else {
+      std::size_t n = std::max<std::size_t>(2u, (D + Kmin - 1) / Kmin);
 
-    while (n-- > 1) {
-      intervals_.insert(intervals_.begin() + i + 1, Interval{.K = 5, .tau0 = n * taum});
+      const double tau0 = intervals_[i].tau0;
+      const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+      const double taum = (tauf - tau0) / n;
+
+      while (n-- > 1) {
+        intervals_.insert(intervals_.begin() + i + 1, Interval{.K = 5, .tau0 = tau0 + n * taum});
+      }
     }
   }
 
   /**
-   * @brief Split all intervals.
-   */
-  inline void split_all(std::size_t n = 2)
-  {
-    const std::size_t S0 = intervals_.size();
-    for (auto i = 0u; i < S0; ++i) { split(S0 - 1 - i, n); }
-  }
-
-  /**
-   * @brief Interval nodes and weights (DOES include extra point)
+   * @brief Interval nodes and quadrature weights (DOES include extra point)
    */
   inline std::pair<Eigen::VectorXd, Eigen::VectorXd> interval_nodes_and_weights(std::size_t i) const
   {
@@ -150,28 +182,15 @@ public:
     const double tau0 = intervals_[i].tau0;
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
 
-    Eigen::VectorXd n_n;
-    Eigen::VectorXd w_n;
-
-    if (K == 5) {
-      constexpr auto Ks   = 5u;
-      constexpr auto nw_s = detail::lgr_plus_one<Ks>();
-
-      n_n = Eigen::Map<const Eigen::VectorXd>(nw_s.first.data(), Ks + 1);
-      w_n = Eigen::Map<const Eigen::VectorXd>(nw_s.second.data(), Ks + 1);
-    } else {
-      throw std::runtime_error("Size not available");
-    }
-
     return {
-      Eigen::VectorXd::Constant(n_n.size(), tau0)
-        + (tauf - tau0) * (n_n + Eigen::VectorXd::Constant(n_n.size(), 1)) / 2,
-      ((tauf - tau0) / 2.) * w_n,
+      Eigen::VectorXd::Constant(ns_[K - Kmin].size(), tau0)
+        + (tauf - tau0) * (ns_[K - Kmin] + Eigen::VectorXd::Constant(ns_[K - Kmin].size(), 1)) / 2,
+      ((tauf - tau0) / 2.) * ws_[K - Kmin],
     };
   }
 
   /**
-   * @brief All nodes (DOES include extra point)
+   * @brief All Mesh nodes and quadrature weights (DOES include extra point)
    */
   inline std::pair<Eigen::VectorXd, Eigen::VectorXd> all_nodes_and_weights() const
   {
@@ -215,21 +234,17 @@ public:
     const double tau0 = intervals_[i].tau0;
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
 
-    if (K == 5) {
-      constexpr auto Ks   = 5u;
-      constexpr auto nw_s = detail::lgr_plus_one<Ks>();
-      constexpr auto B    = lagrange_basis<Ks>(nw_s.first);
-      constexpr auto D    = polynomial_basis_derivatives<Ks, Ks + 1>(B, nw_s.first);
-
-      Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>> m(
-        D[0].data(), Ks + 1, Ks + 1);
-      return (2 / (tauf - tau0)) * m.block(0, 0, Ks + 1, Ks);
-    } else {
-      throw std::runtime_error("Wrong size");
-    }
+    return (2 / (tauf - tau0)) * Ds_[K - Kmin].block(0, 0, K + 1, K);
   }
 
 private:
+  // nodes (plus one)
+  std::vector<Eigen::VectorXd> ns_;
+  // weights (plus one)
+  std::vector<Eigen::VectorXd> ws_;
+  // differentiation matrix (plus one)
+  std::vector<Eigen::MatrixXd> Ds_;
+
   struct Interval
   {
     /// @brief Polynomial degree in interval
@@ -262,10 +277,10 @@ private:
  * @return {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU},
  * where vec(X) stacks the columns of X into a single column vector.
  */
-template<typename Fun>
+template<typename Fun, std::size_t Kmin, std::size_t Kmax>
 auto colloc_eval(std::size_t nf,
   Fun && f,
-  const Mesh & m,
+  const Mesh<Kmin, Kmax> & m,
   const double t0,
   const double tf,
   const Eigen::MatrixXd & X,
@@ -354,9 +369,9 @@ auto colloc_eval(std::size_t nf,
  * @return {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU},
  * where vec(X) stacks the columns of X into a single column vector.
  */
-template<typename F>
+template<typename F, std::size_t Kmin, std::size_t Kmax>
 auto dynamics_constraint(F && f,
-  const Mesh & m,
+  const Mesh<Kmin, Kmax> & m,
   const double t0,
   const double tf,
   const Eigen::MatrixXd & X,
@@ -436,9 +451,9 @@ auto dynamics_constraint(F && f,
  * @return {G, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU},
  * where vec(X) stacks the columns of X into a single column vector.
  */
-template<typename G>
+template<typename G, std::size_t Kmin, std::size_t Kmax>
 auto integral_constraint(G && g,
-  const Mesh & m,
+  const Mesh<Kmin, Kmax> & m,
   const double & t0,
   const double & tf,
   const Eigen::MatrixXd & I,
