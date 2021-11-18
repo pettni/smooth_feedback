@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['qp_5fcheck_5fstopping_194',['qp_check_stopping',['../qp_8hpp.html#a5a9758b9ceccde43668ed7b50f7b6854',1,'smooth::feedback::detail']]]
+  ['_7empc_178',['~MPC',['../classsmooth_1_1feedback_1_1MPC.html#a65dd3a9cf052cbb122e5e3b766b7f292',1,'smooth::feedback::MPC']]],
+  ['_7epid_179',['~PID',['../classsmooth_1_1feedback_1_1PID.html#af4c37464a7349a495eccfab1c964dd8c',1,'smooth::feedback::PID']]]
 ];

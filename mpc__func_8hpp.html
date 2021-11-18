@@ -75,7 +75,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">mpc_func.hpp File Reference</div>  </div>
@@ -140,31 +139,217 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Struct to define a linearization point.  <a href="structsmooth_1_1feedback_1_1LinearizationInfo.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:namespacesmooth_1_1feedback"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesmooth_1_1feedback.html">smooth::feedback</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a7d4442a3030b203b626debeb3ba976df"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U&gt; </td></tr>
-<tr class="memitem:a7d4442a3030b203b626debeb3ba976df"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacesmooth_1_1feedback.html#a7d4442a3030b203b626debeb3ba976df">smooth::feedback::ocp_to_qp_allocate</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, std::size_t K, QuadraticProgramSparse&lt; double &gt; &amp;qp, bool lin_con=false)</td></tr>
-<tr class="memdesc:a7d4442a3030b203b626debeb3ba976df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate QP sparsity pattern (part 1 of <a class="el" href="namespacesmooth_1_1feedback.html#a5c3313b54668cc7713828dbb1a30d88a" title="Convert OptimalControlProblem on  into a tangent space QuadraticProgramSparse on .">ocp_to_qp()</a>).  <a href="namespacesmooth_1_1feedback.html#a7d4442a3030b203b626debeb3ba976df">More...</a><br /></td></tr>
+<tr class="memitem:a7d4442a3030b203b626debeb3ba976df"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc__func_8hpp.html#a7d4442a3030b203b626debeb3ba976df">smooth::feedback::ocp_to_qp_allocate</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, std::size_t K, QuadraticProgramSparse&lt; double &gt; &amp;qp, bool lin_con=false)</td></tr>
+<tr class="memdesc:a7d4442a3030b203b626debeb3ba976df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate QP sparsity pattern (part 1 of <a class="el" href="mpc__func_8hpp.html#a5c3313b54668cc7713828dbb1a30d88a" title="Convert OptimalControlProblem on  into a tangent space QuadraticProgramSparse on .">ocp_to_qp()</a>).  <a href="mpc__func_8hpp.html#a7d4442a3030b203b626debeb3ba976df">More...</a><br /></td></tr>
 <tr class="separator:a7d4442a3030b203b626debeb3ba976df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bce29a156e2e0651a3acee39be72221"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </td></tr>
-<tr class="memitem:a9bce29a156e2e0651a3acee39be72221"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacesmooth_1_1feedback.html#a9bce29a156e2e0651a3acee39be72221">smooth::feedback::ocp_to_qp_fill</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, std::size_t K, const Dyn &amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin, QuadraticProgramSparse&lt; double &gt; &amp;qp)</td></tr>
-<tr class="memdesc:a9bce29a156e2e0651a3acee39be72221"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill QP matrices (part 2 of <a class="el" href="namespacesmooth_1_1feedback.html#a5c3313b54668cc7713828dbb1a30d88a" title="Convert OptimalControlProblem on  into a tangent space QuadraticProgramSparse on .">ocp_to_qp()</a>).  <a href="namespacesmooth_1_1feedback.html#a9bce29a156e2e0651a3acee39be72221">More...</a><br /></td></tr>
+<tr class="memitem:a9bce29a156e2e0651a3acee39be72221"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc__func_8hpp.html#a9bce29a156e2e0651a3acee39be72221">smooth::feedback::ocp_to_qp_fill</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, std::size_t K, const Dyn &amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin, QuadraticProgramSparse&lt; double &gt; &amp;qp)</td></tr>
+<tr class="memdesc:a9bce29a156e2e0651a3acee39be72221"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill QP matrices (part 2 of <a class="el" href="mpc__func_8hpp.html#a5c3313b54668cc7713828dbb1a30d88a" title="Convert OptimalControlProblem on  into a tangent space QuadraticProgramSparse on .">ocp_to_qp()</a>).  <a href="mpc__func_8hpp.html#a9bce29a156e2e0651a3acee39be72221">More...</a><br /></td></tr>
 <tr class="separator:a9bce29a156e2e0651a3acee39be72221"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c3313b54668cc7713828dbb1a30d88a"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </td></tr>
-<tr class="memitem:a5c3313b54668cc7713828dbb1a30d88a"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgramSparse&lt; double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacesmooth_1_1feedback.html#a5c3313b54668cc7713828dbb1a30d88a">smooth::feedback::ocp_to_qp</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, std::size_t K, const Dyn &amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin)</td></tr>
-<tr class="memdesc:a5c3313b54668cc7713828dbb1a30d88a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html" title="Sparse quadratic program definition.">QuadraticProgramSparse</a> on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \).  <a href="namespacesmooth_1_1feedback.html#a5c3313b54668cc7713828dbb1a30d88a">More...</a><br /></td></tr>
+<tr class="memitem:a5c3313b54668cc7713828dbb1a30d88a"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgramSparse&lt; double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="mpc__func_8hpp.html#a5c3313b54668cc7713828dbb1a30d88a">smooth::feedback::ocp_to_qp</a> (const OptimalControlProblem&lt; G, U &gt; &amp;pbm, std::size_t K, const Dyn &amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin)</td></tr>
+<tr class="memdesc:a5c3313b54668cc7713828dbb1a30d88a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html" title="Optimal control problem defintiion.">OptimalControlProblem</a> on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html" title="Sparse quadratic program definition.">QuadraticProgramSparse</a> on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \).  <a href="mpc__func_8hpp.html#a5c3313b54668cc7713828dbb1a30d88a">More...</a><br /></td></tr>
 <tr class="separator:a5c3313b54668cc7713828dbb1a30d88a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Functions for Model-Predictive Control (MPC) on Lie groups. </p>
 
 <p class="definition">Definition in file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="a5c3313b54668cc7713828dbb1a30d88a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c3313b54668cc7713828dbb1a30d88a">&#9670;&nbsp;</a></span>ocp_to_qp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">QuadraticProgramSparse&lt;double&gt; smooth::feedback::ocp_to_qp </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem</a>&lt; G, U &gt; &amp;&#160;</td>
+          <td class="paramname"><em>pbm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>K</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Dyn &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">LinearizationInfo</a>&lt; G, U &gt; &amp;&#160;</td>
+          <td class="paramname"><em>lin</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convert OptimalControlProblem on \( (\mathbb{G}, \mathbb{U}) \) into a tangent space QuadraticProgramSparse on \( (\mathbb{R}^{\dim \mathfrak{g}}, \mathbb{R}^{\dim \mathfrak{u}}) \). </p>
+<p>The OptimalControlProblem is encoded into a QuadraticProgram via linearization around \((g_{lin}(t), u_{lin}(t))\) followed by time discretization. The variables of the QP are </p><p class="formulaDsp">
+\[ \begin{bmatrix} \mu_0 &amp; \mu_1 &amp; \ldots &amp; \mu_{K - 1} &amp; x_1 &amp; x_2 &amp; \ldots &amp; x_K \end{bmatrix}, \]
+</p>
+<p> where the discrete time index \(k\) corresponds to time \(t_k = k \frac{T}{K} \) for \( k = 0, 1, \ldots, K \).</p>
+<p>performance. </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">G</td><td>problem state group type \( \mathbb{G} \) </td></tr>
+    <tr><td class="paramname">U</td><td>problem input group type \( \mathbb{U} \) </td></tr>
+    <tr><td class="paramname">Dyn</td><td>dynamics functor type </td></tr>
+    <tr><td class="paramname">DT</td><td>differentiation method to utilize</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pbm</td><td>optimal control problem </td></tr>
+    <tr><td class="paramname">K</td><td>number of discretization points. More points create a larger QP, but the distance \( T / K \) between points should be smaller than the smallest system time constant for adequate </td></tr>
+    <tr><td class="paramname">f</td><td>dynamics \( f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow \mathbb{R}^{\dim \mathfrak g}\) s.t. \( \mathrm{d}^r g_t = f(t, g, u) \) </td></tr>
+    <tr><td class="paramname">lin</td><td>linearization point</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>QuadraticProgramSparse modeling the input optimal control problem.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Given a solution \((x^*, \mu^*)\) to the QuadraticProgramSparse, the corresponding solution to the OptimalControlProblem is \( u^*(t) = u_{lin}(t) \oplus \mu^*(t) \) and the optimal trajectory is \( g^*(t) = g_{lin}(t) \oplus x^*(t) \).</dd>
+<dd>
+Constraints are added as \( A x \leq b - A (g_{lin} - c) \) and similarly for the input. Beware of using constraints on non-Euclidean spaces.</dd>
+<dd>
+<code>f</code> must be differentiable w.r.t. \( g \) and \( u \) with the default <code>smooth::diff</code> method (check <code>smooth::diff::DefaultType</code>). If using an automatic differentiation method this means that it must be templated on the scalar type. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00488">488</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a7d4442a3030b203b626debeb3ba976df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d4442a3030b203b626debeb3ba976df">&#9670;&nbsp;</a></span>ocp_to_qp_allocate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, Manifold U&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void smooth::feedback::ocp_to_qp_allocate </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem</a>&lt; G, U &gt; &amp;&#160;</td>
+          <td class="paramname"><em>pbm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>K</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html">QuadraticProgramSparse</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>qp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>lin_con</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocate QP sparsity pattern (part 1 of <a class="el" href="mpc__func_8hpp.html#a5c3313b54668cc7713828dbb1a30d88a" title="Convert OptimalControlProblem on  into a tangent space QuadraticProgramSparse on .">ocp_to_qp()</a>). </p>
+<p>Variables: [x_1, ..., x_K, u_0, ..., u_{K-1}]</p>
+<p>Constraints:</p><ul>
+<li>Dynamics constraints (K * Nx)</li>
+<li>Input constraints (Nu_ineq * Nu)</li>
+<li>State constraints (Nx_ineq * Nx)</li>
+<li>State linearization constraints (K * Nu) [optional]</li>
+</ul>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pbm</td><td>OptimalControlProblem definition. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">K</td><td>number of time discretization steps </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">qp</td><td>quadratic program definition with allocated matrices. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">lin_con</td><td>set to true to allocate K * Nu state linearization constraints </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00153">153</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a9bce29a156e2e0651a3acee39be72221"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bce29a156e2e0651a3acee39be72221">&#9670;&nbsp;</a></span>ocp_to_qp_fill()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void smooth::feedback::ocp_to_qp_fill </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html">OptimalControlProblem</a>&lt; G, U &gt; &amp;&#160;</td>
+          <td class="paramname"><em>pbm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>K</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Dyn &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html">LinearizationInfo</a>&lt; G, U &gt; &amp;&#160;</td>
+          <td class="paramname"><em>lin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html">QuadraticProgramSparse</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>qp</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Fill QP matrices (part 2 of <a class="el" href="mpc__func_8hpp.html#a5c3313b54668cc7713828dbb1a30d88a" title="Convert OptimalControlProblem on  into a tangent space QuadraticProgramSparse on .">ocp_to_qp()</a>). </p>
+<p>FILL A, l, u ///</p>
+<p>FILL P,q ///</p>
+
+<p class="definition">Definition at line <a class="el" href="mpc__func_8hpp_source.html#l00224">224</a> of file <a class="el" href="mpc__func_8hpp_source.html">mpc_func.hpp</a>.</p>
+
+</div>
+</div>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
