@@ -69,7 +69,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>smooth</b></li><li class="navelem"><b>feedback</b></li><li class="navelem"><a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a></li>  </ul>
+<li class="navelem"><b>smooth</b></li><li class="navelem"><a class="el" href="namespacesmooth_1_1feedback.html">feedback</a></li><li class="navelem"><a class="el" href="classsmooth_1_1feedback_1_1PID.html">PID</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -153,13 +153,13 @@ template&lt;typename Derived &gt; </td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a7be08a39f7cda290bcb58622eafbc9f3">reset_integral</a> ()</td></tr>
 <tr class="memdesc:a7be08a39f7cda290bcb58622eafbc9f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset integral state to zero. <br /></td></tr>
 <tr class="separator:a7be08a39f7cda290bcb58622eafbc9f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26592d43e8511f07fa4a5d64a744b426"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">set_xdes</a> (T t0, const smooth::Curve&lt; G &gt; &amp;c)</td></tr>
-<tr class="memdesc:a26592d43e8511f07fa4a5d64a744b426"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory as a smooth::Curve.  <a href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">More...</a><br /></td></tr>
-<tr class="separator:a26592d43e8511f07fa4a5d64a744b426"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac04d557be64d6078e7b6f64f7689197"><td class="memItemLeft" align="right" valign="top"><a id="aac04d557be64d6078e7b6f64f7689197"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#aac04d557be64d6078e7b6f64f7689197">set_xdes</a> (T t0, smooth::Curve&lt; G &gt; &amp;&amp;c)</td></tr>
-<tr class="memdesc:aac04d557be64d6078e7b6f64f7689197"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory as a smooth::Curve (rvalue version) <br /></td></tr>
-<tr class="separator:aac04d557be64d6078e7b6f64f7689197"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1860696a8f041574338ea0d50eb136b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a1860696a8f041574338ea0d50eb136b4">set_xdes</a> (T t0, const smooth::Spline&lt; 3, G &gt; &amp;c)</td></tr>
+<tr class="memdesc:a1860696a8f041574338ea0d50eb136b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory as a smooth::Spline.  <a href="classsmooth_1_1feedback_1_1PID.html#a1860696a8f041574338ea0d50eb136b4">More...</a><br /></td></tr>
+<tr class="separator:a1860696a8f041574338ea0d50eb136b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28caba0065e67d71230fd9d66d656f97"><td class="memItemLeft" align="right" valign="top"><a id="a28caba0065e67d71230fd9d66d656f97"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a28caba0065e67d71230fd9d66d656f97">set_xdes</a> (T t0, smooth::Spline&lt; 3, G &gt; &amp;&amp;c)</td></tr>
+<tr class="memdesc:a28caba0065e67d71230fd9d66d656f97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory as a smooth::Spline (rvalue version) <br /></td></tr>
+<tr class="separator:a28caba0065e67d71230fd9d66d656f97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c95a9d780b8933acf101d3eba2c4b3d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1PID.html#a8c95a9d780b8933acf101d3eba2c4b3d">set_xdes</a> (const std::function&lt; <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a6fd580b582e48f4ff658f59bde9c010d">TrajectoryReturnT</a>(T)&gt; &amp;f)</td></tr>
 <tr class="memdesc:a8c95a9d780b8933acf101d3eba2c4b3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set desired trajectory.  <a href="classsmooth_1_1feedback_1_1PID.html#a8c95a9d780b8933acf101d3eba2c4b3d">More...</a><br /></td></tr>
 <tr class="separator:a8c95a9d780b8933acf101d3eba2c4b3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -311,7 +311,7 @@ template&lt;Time T, LieGroup G&gt; </div>
 </div><div class="memdoc">
 
 <p>Set desired trajectory. </p>
-<p>The trajectory is a function from time to (position, velocity, acceleration). To track a time-dependent trajectory consider using <code>smooth::Curve</code> and <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">set_xdes</a>(T, const smooth::Curve&lt;G&gt; &amp;) to set the desired trajectory.</p>
+<p>The trajectory is a function from time to (position, velocity, acceleration). To track a time-dependent trajectory consider using <code>smooth::Spline</code> and <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a1860696a8f041574338ea0d50eb136b4">set_xdes</a>(T, const smooth::Spline&lt;G&gt; &amp;) to set the desired trajectory.</p>
 <p>For a constant reference target the velocity and acceleration should be constantly zero.</p>
 <dl class="section note"><dt>Note</dt><dd>For best performance the trajectory should be dynamically consistent, i.e. <p class="formulaDsp">
 \[ \mathrm{d}^r \mathbf{x}_t = \mathbf{v}, \\ \frac{\mathrm{d}}{\mathrm{d}t} \mathbf{v} = \mathbf{a}, \]
@@ -322,8 +322,8 @@ template&lt;Time T, LieGroup G&gt; </div>
 
 </div>
 </div>
-<a id="a26592d43e8511f07fa4a5d64a744b426"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26592d43e8511f07fa4a5d64a744b426">&#9670;&nbsp;</a></span>set_xdes() <span class="overload">[2/2]</span></h2>
+<a id="a1860696a8f041574338ea0d50eb136b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1860696a8f041574338ea0d50eb136b4">&#9670;&nbsp;</a></span>set_xdes() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -342,7 +342,7 @@ template&lt;Time T, LieGroup G&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const smooth::Curve&lt; G &gt; &amp;&#160;</td>
+          <td class="paramtype">const smooth::Spline&lt; 3, G &gt; &amp;&#160;</td>
           <td class="paramname"><em>c</em>&#160;</td>
         </tr>
         <tr>
@@ -358,10 +358,10 @@ template&lt;Time T, LieGroup G&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Set desired trajectory as a smooth::Curve. </p>
+<p>Set desired trajectory as a smooth::Spline. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">c</td><td>desired trajectory as a smooth::Curve </td></tr>
+    <tr><td class="paramname">c</td><td>desired trajectory as a smooth::Spline </td></tr>
     <tr><td class="paramname">t0</td><td>curve initial time s.t. the desired position at time t is equal to c(t - t0) </td></tr>
   </table>
   </dd>

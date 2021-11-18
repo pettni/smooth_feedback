@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['update_176',['update',['../classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e',1,'smooth::feedback::EKF']]],
-  ['update_5fweights_177',['update_weights',['../classsmooth_1_1feedback_1_1MPC.html#a669381793e1de5cc51864b082d12a7dc',1,'smooth::feedback::MPC']]]
+  ['pid_191',['PID',['../classsmooth_1_1feedback_1_1PID.html#aa5de7b5c7935a2b6db8add2d00a47998',1,'smooth::feedback::PID::PID(const PIDParams &amp;prm=PIDParams{}) noexcept'],['../classsmooth_1_1feedback_1_1PID.html#ad36e4bccc9ad61d5050495a893f66500',1,'smooth::feedback::PID::PID(const PID &amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#ab1076ca62fa37eb2286153bacecdcfe6',1,'smooth::feedback::PID::PID(PID &amp;&amp;)=default']]],
+  ['polish_5fqp_192',['polish_qp',['../qp_8hpp.html#ad27b3771b96cb03c2afe78a9555ff842',1,'smooth::feedback::detail']]],
+  ['predict_193',['predict',['../classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d',1,'smooth::feedback::EKF']]]
 ];
