@@ -37,7 +37,6 @@
 #include <chrono>
 #include <smooth/diff.hpp>
 #include <smooth/lie_group.hpp>
-#include <smooth/spline/bezier.hpp>
 
 #include "common.hpp"
 #include "qp.hpp"

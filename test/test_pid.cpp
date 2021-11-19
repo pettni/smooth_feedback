@@ -27,7 +27,7 @@
 
 #include <smooth/feedback/pid.hpp>
 #include <smooth/se2.hpp>
-#include <smooth/spline/spline.hpp>
+#include <smooth/spline/fit.hpp>
 
 #include <chrono>
 
@@ -77,7 +77,7 @@ TEST(PID, SetDesiredCurve)
       smooth::SE2d::Random(),
       smooth::SE2d::Random()};
 
-    smooth::Spline<smooth::SE2d> c(smooth::fit_cubic_bezier(tt, gg));
+    auto c = smooth::fit_spline_cubic(tt, gg);
 
     pid.set_xdes(0.5s, c);
 

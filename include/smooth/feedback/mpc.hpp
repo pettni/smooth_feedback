@@ -26,6 +26,8 @@
 #ifndef SMOOTH__FEEDBACK__MPC_HPP_
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
+#include <smooth/spline/fit.hpp>
+
 #include "mpc_func.hpp"
 #include "time.hpp"
 
@@ -357,7 +359,7 @@ public:
     const double dt = ocp_.T / static_cast<double>(prm_.K);
 
     // clang-format off
-    auto g_spline = smooth::fit_cubic_bezier(
+    auto g_spline = smooth::fit_spline_cubic(
         std::views::iota(0u, prm_.K + 1) | std::views::transform([&](auto k) -> double { return dt * k; }),
         std::views::iota(0u, prm_.K + 1) | std::views::transform([&](auto k) -> G {
           if (k == 0) {
