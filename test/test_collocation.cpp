@@ -125,11 +125,11 @@ TEST(Collocation, TimeTrajectory)
   Eigen::VectorXd I = Eigen::VectorXd::Constant(1, 0);
 
   const Eigen::VectorXd residual =
-    std::get<0>(smooth::feedback::dynamics_constraint(f, m, t0, tf, X, U));
+    std::get<0>(smooth::feedback::dynamics_constraint(2, f, m, t0, tf, X, U));
   const Eigen::VectorXd path =
     std::get<0>(smooth::feedback::colloc_eval(2, c, m, t0, tf, X, U)).reshaped();
   const Eigen::VectorXd integral =
-    std::get<0>(smooth::feedback::integral_constraint(g, m, t0, tf, I, X, U));
+    std::get<0>(smooth::feedback::integral_constraint(1, g, m, t0, tf, I, X, U));
 
   ASSERT_EQ(residual.rows(), m.N_colloc());
   ASSERT_EQ(residual.cols(), 1);
@@ -183,8 +183,9 @@ TEST(Collocation, StateTrajectory)
 
   Eigen::VectorXd I = Eigen::VectorXd::Constant(1, 0);
 
-  const auto residual = std::get<0>(smooth::feedback::dynamics_constraint(f, m, t0, tf, X, U));
-  const auto integral = std::get<0>(smooth::feedback::integral_constraint(g, m, t0, tf, I, X, U));
+  const auto residual = std::get<0>(smooth::feedback::dynamics_constraint(2, f, m, t0, tf, X, U));
+  const auto integral =
+    std::get<0>(smooth::feedback::integral_constraint(1, g, m, t0, tf, I, X, U));
 
   ASSERT_LE(residual.cwiseAbs().maxCoeff(), 1e-8);
   ASSERT_NEAR(integral.x(), 0.00273752, 1e-4);

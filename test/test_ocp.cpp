@@ -32,68 +32,65 @@
 template<typename T>
 using Vec = Eigen::VectorX<T>;
 
-TEST(Ocp, Basic)
+TEST(Ocp, Jacobians)
 {
-  // Objective integrand function
-  const auto phi = []<typename T>(
-                     T, const Vec<T> &, const Vec<T> & u) -> T { return u.squaredNorm(); };
+  // objective integrand
+  auto phi = []<typename T>(T, Vec<T>, Vec<T> u) -> T { return u.squaredNorm(); };
 
-  // Objective end function
-  const auto theta = []<typename T>(T, const Vec<T> &, const Vec<T> &) -> T { return 0; };
+  // objective end
+  auto theta = []<typename T>(T, Vec<T>, Vec<T>) -> T { return 0; };
 
-  /// @brief System dynamics
-  const auto f = []<typename T>(T, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
+  // dynamics
+  auto f = []<typename T>(T, Vec<T> x, Vec<T> u) -> Vec<T> {
     Vec<T> ret(2);
     ret << x.y(), u.x();
     return ret;
   };
 
-  /// @brief System integrals
-  const auto g = []<typename T>(
-                   T, const Vec<T> &, const Vec<T> &) -> Vec<T> { return Vec<T>::Zero(0); };
+  // integrals
+  auto g = []<typename T>(T, Vec<T>, Vec<T>) -> Vec<T> { return Vec<T>::Ones(1); };
 
-  /// @brief Running constraint function
-  const auto cr = []<typename T>(
-                    T, const Vec<T> &, const Vec<T> &) -> Vec<T> { return Vec<T>::Zero(0); };
+  // running constraint
+  auto cr = []<typename T>(T, Vec<T>, Vec<T> u) -> Vec<T> { return u; };
 
-  /// @brief End constraint function
-  const auto ce = []<typename T>(
-                    T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
+  // end constraint
+  auto ce = []<typename T>(T, T tf, Vec<T> x0, Vec<T> xf, Vec<T>) -> Vec<T> {
     Vec<T> ret(5);
     ret << tf, x0, xf;
     return ret;
   };
 
-  OCP<decltype(phi), decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
-    .nx    = 2,
-    .nu    = 1,
-    .nq    = 0,
-    .ncr   = 0,
-    .nce   = 5,
-    .phi   = phi,
-    .theta = theta,
-    .f     = f,
-    .g     = g,
-    .cr    = cr,
-    .crl   = Vec<double>::Zero(0),
-    .cru   = Vec<double>::Zero(0),
-    .ce    = ce,
-    .cel   = Vec<double>::Zero(5),
-    .ceu   = Vec<double>::Zero(5),
-  };
-
-  std::cout << "Creating mesh" << std::endl;
+  smooth::feedback::
+    OCP<decltype(phi), decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
+      ocp{
+        .nx    = 2,
+        .nu    = 1,
+        .nq    = 1,
+        .ncr   = 1,
+        .nce   = 5,
+        .phi   = phi,
+        .theta = theta,
+        .f     = f,
+        .g     = g,
+        .cr    = cr,
+        .crl   = Vec<double>::Constant(1, -1),
+        .cru   = Vec<double>::Constant(1, 1),
+        .ce    = ce,
+        .cel   = Vec<double>::Zero(5),
+        .ceu   = Vec<double>::Zero(5),
+      };
 
   smooth::feedback::Mesh<5, 10> mesh;
-
-  std::cout << "Calling ocp_to_nlp" << std::endl;
-
-  auto nlp = ocp_to_nlp(ocp, mesh);
-
-  std::cout << "nlp has " << nlp.n << " vars and " << nlp.m << " constraints" << std::endl;
+  auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
 
   Eigen::VectorXd x = Eigen::VectorXd::Constant(nlp.n, 1);
 
-  std::cout << "f(x) = " << nlp.f(x) << std::endl;
-  std::cout << "g(x) = " << nlp.g(x).transpose() << std::endl;
+  const auto df_dx = nlp.df_dx(x);
+  const auto dg_dx = nlp.dg_dx(x);
+
+  const auto [fval, df_dx_num] = smooth::diff::dr(nlp.f, smooth::wrt(x));
+  const auto [gval, dg_dx_num] = smooth::diff::dr(nlp.g, smooth::wrt(x));
+
+  ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-6));
+  ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-6));
 }

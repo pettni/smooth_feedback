@@ -8,7 +8,12 @@
 
 #include <limits>
 
+#include <smooth/diff.hpp>
+#include <smooth/lie_group.hpp>
+
 #include "collocation.hpp"
+
+namespace smooth::feedback {
 
 /**
  * @brief Optimal control problem on the interval \f$ t \in [0, t_f] \f$.
@@ -158,25 +163,47 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
 
   // OBJECTIVE FUNCTION
 
-  std::cout << "objective function" << std::endl;
-
   auto f = [var_beg, var_len, nx = ocp.nx, theta = ocp.theta](const Eigen::VectorXd & x) -> double {
     const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    assert(x.size() == n);
+    assert(std::size_t(x.size()) == n);
 
-    const double OQ          = x(oqvar_B);
     const double tf          = x(tfvar_B);
     const Eigen::VectorXd x0 = x.segment(xvar_B, nx);
     const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - nx, nx);
 
-    return OQ + theta.template operator()<double>(tf, x0, xf);
+    return x(oqvar_B) + theta.template operator()<double>(tf, x0, xf);
+  };
+
+  // OBJECTIVE JACOBIAN
+
+  auto df_dx = [var_beg, var_len, nx = ocp.nx, theta = ocp.theta](
+                 const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
+    const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+
+    Eigen::SparseMatrix<double> ret(1, n);
+    ret.reserve(2 + 2 * nx);
+
+    const double tf          = x(tfvar_B);
+    const Eigen::VectorXd x0 = x.segment(xvar_B, nx);
+    const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - nx, nx);
+
+    auto [val, J] = diff::dr(theta, wrt(tf, x0, xf));
+
+    ret.insert(0, oqvar_B) = 1;
+    ret.insert(0, tfvar_B) = J(0);
+
+    for (auto i = 0u; i < nx; ++i) { ret.insert(0, xvar_B + i) = J(1 + i); }
+    for (auto i = 0u; i < nx; ++i) { ret.insert(0, xvar_B + xvar_L - nx + i) = J(1 + nx + i); }
+
+    ret.makeCompressed();
+
+    return ret;
   };
 
   // VARIABLE BOUNDS
-
-  std::cout << "variable bounds" << std::endl;
 
   Eigen::VectorXd xl = Eigen::VectorXd::Constant(n, -std::numeric_limits<double>::infinity());
   Eigen::VectorXd xu = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
@@ -184,8 +211,6 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
   xl.segment(tfvar_B, tfvar_L).setZero();  // tf lower bounded by zero
 
   // CONSTRAINT FUNCTION
-
-  std::cout << "constraint function" << std::endl;
 
   auto g = [var_beg, var_len, con_beg, con_len, mesh, ocp](
              const Eigen::VectorXd & x) -> Eigen::VectorXd {
@@ -195,9 +220,7 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
     const auto [dcon_B, oqcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
     const auto [dcon_L, oqcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
 
-    assert(x.size() == n);
-
-    std::cout << "extract vars" << std::endl;
+    assert(std::size_t(x.size()) == n);
 
     const double t0           = 0;
     const double tf           = x(tfvar_B);
@@ -210,34 +233,28 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
     const Eigen::VectorXd xf = Xm.rightCols(1);
 
     // dynamics constraint
-    std::cout << "call dyn" << std::endl;
     const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU] =
-      dynamics_constraint(ocp.f, mesh, t0, tf, Xm, Um);
+      dynamics_constraint(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
 
     // objective integral constraint
-    std::cout << "call integral" << std::endl;
     auto phi_wrap = [&ocp]<typename T>(const auto... vars) -> Eigen::VectorX<T> {
       const T val = ocp.phi.template operator()<T>(vars...);
       return Eigen::VectorX<T>::Constant(1, val);
     };
-    const auto [G1val, dG1_dt0, dG1_dtf, dG1_dI, dG1_dX, dG1_dU] =
-      integral_constraint(phi_wrap, mesh, t0, tf, OQm, Xm, Um);
+    const auto [G1val, dG1_dt0, dG1_dtf, dG1_dOQ, dG1_dX, dG1_dU] =
+      integral_constraint(1, phi_wrap, mesh, t0, tf, OQm, Xm, Um);
 
     // other integral constraint
-    std::cout << "call integral again" << std::endl;
     const auto [G2val, dG2_dt0, dG2_dtf, dG2_dI, dG2_dX, dG2_dU] =
-      integral_constraint(ocp.g, mesh, t0, tf, Qm, Xm, Um);
+      integral_constraint(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
 
     // running constraints
-    std::cout << "call running" << std::endl;
     const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU] =
       colloc_eval(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
 
     // end constraints
-    std::cout << "call ceval" << std::endl;
-    const Eigen::VectorXd CEval = ocp.ce.template operator()<double>(tf, x0, xf, Qm);
+    const Eigen::VectorXd CEval = ocp.ce.template operator()<double>(t0, tf, x0, xf, Qm);
 
-    std::cout << "fill" << std::endl;
     Eigen::VectorXd ret(m);
     ret.segment(dcon_B, dcon_L)   = Fval.reshaped();
     ret.segment(oqcon_B, oqcon_L) = G1val.reshaped();
@@ -247,9 +264,57 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
     return ret;
   };
 
-  // CONSTRAINT BOUNDS
+  // CONSTRAINT JACOBIAN
+  auto dg_dx = [var_beg, var_len, mesh, ocp](
+                 const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
+    const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-  std::cout << "constraint bounds" << std::endl;
+    assert(std::size_t(x.size()) == n);
+
+    const double t0           = 0;
+    const double tf           = x(tfvar_B);
+    const Eigen::VectorXd OQm = x.segment(oqvar_B, oqvar_L);
+    const Eigen::VectorXd Qm  = x.segment(qvar_B, qvar_L);
+    const Eigen::MatrixXd Xm  = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+    const Eigen::MatrixXd Um  = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+
+    // dynamics constraint
+    const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU] =
+      dynamics_constraint(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
+
+    // objective integral constraint
+    auto phi_wrap = [&ocp]<typename T>(const auto... vars) -> Eigen::VectorX<T> {
+      const T val = ocp.phi.template operator()<T>(vars...);
+      return Eigen::VectorX<T>::Constant(1, val);
+    };
+    const auto [G1val, dG1_dt0, dG1_dtf, dG1_dOQ, dG1_dX, dG1_dU] =
+      integral_constraint(1, phi_wrap, mesh, t0, tf, OQm, Xm, Um);
+
+    // other integral constraint
+    const auto [G2val, dG2_dt0, dG2_dtf, dG2_dQ, dG2_dX, dG2_dU] =
+      integral_constraint(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
+
+    // running constraints
+    const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU] =
+      colloc_eval(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
+
+    // end constraints
+    const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ] =
+      endpoint_eval(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
+
+    return sparse_block_matrix({
+      // clang-format off
+      {dF_dtf,      {},     {}, dF_dX,   dF_dU},
+      {dG1_dtf, dG1_dOQ,    {}, dG1_dX, dG1_dU},
+      {dG2_dtf,     {}, dG2_dQ, dG2_dX, dG2_dU},
+      {dCR_dtf,     {},     {}, dCR_dX, dCR_dU},
+      {dCE_dtf,     {}, dCE_dQ, dCE_dX,     {}},
+      // clang-format on
+    });
+  };
+
+  // CONSTRAINT BOUNDS
 
   Eigen::VectorXd gl(m);
   Eigen::VectorXd gu(m);
@@ -267,30 +332,12 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
   gu.segment(qcon_B, qcon_L).setZero();
 
   // running constraints
-  std::cout << "running" << std::endl;
   gl.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1);
   gu.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1);
-  std::cout << "/running" << std::endl;
 
   // end constraints
-  std::cout << "end" << std::endl;
   gl.segment(cecon_B, cecon_L) = ocp.cel;
   gu.segment(cecon_B, cecon_L) = ocp.ceu;
-  std::cout << "/end" << std::endl;
-
-  // OBJECTIVE JACOBIAN
-  auto df_dx = [n = n](const Eigen::VectorXd &) -> Eigen::SparseMatrix<double> {
-    Eigen::SparseMatrix<double> ret(n, n);
-    return ret;
-  };
-
-  // CONSTRAINT JACOBIAN
-  auto dg_dx = [n = n, m = m](const Eigen::VectorXd &) -> Eigen::SparseMatrix<double> {
-    Eigen::SparseMatrix<double> ret(m, n);
-    return ret;
-  };
-
-  std::cout << "returning NLP" << std::endl;
 
   return NLP{
     .n       = n,
@@ -307,5 +354,7 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
     .d2g_dx2 = {},
   };
 }
+
+}  // namespace smooth::feedback
 
 // solve_ocp_ipopt: convert inf to 2e19...

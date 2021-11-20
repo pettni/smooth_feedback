@@ -30,14 +30,12 @@
  * TODO list
  *
  * # Mesh refinement policy
- *   - Read literature
  *   - Convergence criteria
  *   - Rules for polynomial degrees
  *   - Easy way to evaluate functions on mesh to carry warmstart to finer mesh
  * # Calculate jacobians on demand
  * # Calculate Hessian function..
  * # Problem scaling
- * # Generalize to endpoint constraints b(t0, x0, tf, xf, q)
  * # Add parameters s?
  */
 
@@ -45,7 +43,9 @@
 #include <Eigen/Sparse>
 #include <autodiff/forward/real.hpp>
 #include <autodiff/forward/real/eigen.hpp>
+#include <smooth/diff.hpp>
 #include <smooth/internal/utils.hpp>
+#include <smooth/lie_group.hpp>
 #include <smooth/polynomial/quadrature.hpp>
 
 #include <cstddef>
@@ -357,8 +357,84 @@ auto colloc_eval(std::size_t nf,
 }
 
 /**
+ * @brief Evaluate a function at endpoints.
+ *
+ * Returns a nf vector
+ *
+ *  f(t_0, t_f, x_0, x_f)
+ *
+ * @param nf dimensionality of f image
+ * @param nf state space degrees of freedom
+ * @param f function (t0, tf, x0, xf, q) -> R^nf
+ * @param t0 initial time
+ * @param tf final time
+ * @param X state variables (size nx x N+1)
+ * @param q integrals
+ *
+ * @return {F, dF_dt0, dF_dtf, dF_dvecX},
+ */
+template<typename Fun>
+auto endpoint_eval(std::size_t nf,
+  std::size_t nx,
+  Fun && f,
+  const double t0,
+  const double tf,
+  const Eigen::MatrixXd & X,
+  const Eigen::VectorXd & q)
+{
+  assert(static_cast<std::size_t>(X.rows()) == nx);
+
+  const Eigen::VectorXd x0 = X.leftCols(1);
+  const Eigen::VectorXd xf = X.rightCols(1);
+
+  const auto [Fval, J] = diff::dr(f, wrt(t0, tf, x0, xf, q));
+
+  assert(static_cast<std::size_t>(Fval.rows()) == nf);
+  assert(static_cast<std::size_t>(J.rows()) == nf);
+  assert(static_cast<std::size_t>(J.cols()) == 2 + 2 * nx + q.size());
+
+  Eigen::SparseMatrix<double> dF_dt0(nf, 1);
+  dF_dt0.reserve(nf);
+  for (auto i = 0u; i < nf; ++i) { dF_dt0.insert(i, 0) = J(i, 0); }
+
+  Eigen::SparseMatrix<double> dF_dtf(nf, 1);
+  dF_dtf.reserve(nf);
+  for (auto i = 0u; i < nf; ++i) { dF_dtf.insert(i, 0) = J(i, 1); }
+
+  Eigen::SparseMatrix<double> dF_dvecX(nf, X.size());
+  Eigen::VectorXi pattern(X.size());
+  pattern.head(nx).setConstant(nf);
+  pattern.tail(nx).setConstant(nf);
+  dF_dvecX.reserve(pattern);
+
+  for (auto row = 0u; row < nf; ++row) {
+    for (auto col = 0u; col < nx; ++col) {
+      dF_dvecX.insert(row, col)                 = J(row, 2 + col);
+      dF_dvecX.insert(row, X.size() - nx + col) = J(row, 2 + nx + col);
+    }
+  }
+
+  Eigen::SparseMatrix<double> dF_dQ(nf, q.size());
+  dF_dQ.reserve(Eigen::VectorXi::Constant(q.size(), nf));
+
+  for (auto row = 0u; row < nf; ++row) {
+    for (auto col = 0u; col < q.size(); ++col) {
+      dF_dQ.insert(row, col) = J(row, 2 + 2 * nx + col);
+    }
+  }
+
+  dF_dt0.makeCompressed();
+  dF_dtf.makeCompressed();
+  dF_dvecX.makeCompressed();
+  dF_dQ.makeCompressed();
+
+  return std::make_tuple(Fval, dF_dt0, dF_dtf, dF_dvecX, dF_dQ);
+}
+
+/**
  * @brief Evaluate dynamics constraint in all collocation points of a Mesh.
  *
+ * @param nx state space degrees of freedom
  * @param f right-hand side of dynamics with signature (t, x, u) -> dx where x and dx are size nx
  * x 1 and u is size nu x 1
  * @param m mesh with a total of N collocation points
@@ -370,7 +446,8 @@ auto colloc_eval(std::size_t nf,
  * where vec(X) stacks the columns of X into a single column vector.
  */
 template<typename F, std::size_t Kmin, std::size_t Kmax>
-auto dynamics_constraint(F && f,
+auto dynamics_constraint(std::size_t nx,
+  F && f,
   const Mesh<Kmin, Kmax> & m,
   const double t0,
   const double tf,
@@ -379,8 +456,7 @@ auto dynamics_constraint(F && f,
 {
   assert(m.N_colloc() + 1 == static_cast<std::size_t>(X.cols()));  // extra at the end
   assert(m.N_colloc() == static_cast<std::size_t>(U.cols()));      // one per collocation point
-
-  const std::size_t nx = X.rows();
+  assert(nx == static_cast<std::size_t>(X.rows()));                // one per collocation point
 
   const auto [Fval, dvecF_dt0, dvecF_dtf, dFvec_dvecX, dvecF_dvecU] =
     colloc_eval(nx, std::forward<F>(f), m, t0, tf, X, U);
@@ -439,12 +515,13 @@ auto dynamics_constraint(F && f,
 /**
  * @brief Evaluate integral constraint on Mesh.
  *
- * @param g integrand with signature (t, x, u) -> double where x is size nx x 1 and u is size nu x
+ * @param nq number of integrals
+ * @param g integrand with signature (t, x, u) -> R^{nq} where x is size nx x 1 and u is size nu x
  * 1
  * @param m mesh
  * @param t0 initial time (variable of size 1)
  * @param tf final time (variable of size 1)
- * @param I values (variable of size 1)
+ * @param I values (variable of size nq)
  * @param X state values (variable of size nx x N+1)
  * @param U input values (variable of size nu x N)
  *
@@ -452,24 +529,26 @@ auto dynamics_constraint(F && f,
  * where vec(X) stacks the columns of X into a single column vector.
  */
 template<typename G, std::size_t Kmin, std::size_t Kmax>
-auto integral_constraint(G && g,
+auto integral_constraint(std::size_t nq,
+  G && g,
   const Mesh<Kmin, Kmax> & m,
   const double & t0,
   const double & tf,
-  const Eigen::MatrixXd & I,
+  const Eigen::VectorXd & I,
   const Eigen::MatrixXd & X,
   const Eigen::MatrixXd & U)
 {
-  static constexpr std::size_t mi = 1;
-  const std::size_t N             = m.N_colloc();
+  assert(static_cast<std::size_t>(I.size()) == nq);
+
+  const std::size_t N = m.N_colloc();
 
   const auto [Gv, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU] =
-    colloc_eval(mi, std::forward<G>(g), m, t0, tf, X, U);
+    colloc_eval(nq, std::forward<G>(g), m, t0, tf, X, U);
 
   const auto [n, w]          = m.all_nodes_and_weights();
   const Eigen::VectorXd Iest = Gv * w.head(N);
 
-  const Eigen::SparseMatrix<double> w_kron_I = (tf - t0) * kron_identity(w.head(N).transpose(), mi);
+  const Eigen::SparseMatrix<double> w_kron_I = (tf - t0) * kron_identity(w.head(N).transpose(), nq);
 
   Eigen::VectorXd Rv = (tf - t0) * Iest - I;
 
@@ -479,7 +558,7 @@ auto integral_constraint(G && g,
   Eigen::SparseMatrix<double> dR_dtf = w_kron_I * dvecG_dtf;
   for (auto i = 0u; i < Iest.size(); ++i) { dR_dtf.coeffRef(i, 0) += Iest(i); }
 
-  Eigen::SparseMatrix<double> dR_dvecI = -sparse_identity(mi);
+  Eigen::SparseMatrix<double> dR_dvecI = -sparse_identity(nq);
 
   Eigen::SparseMatrix<double> dR_dvecX = w_kron_I * dvecG_dvecX;
 
