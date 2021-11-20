@@ -27,6 +27,7 @@
 
 #include <Eigen/Core>
 
+#include "smooth/compat/autodiff.hpp"
 #include "smooth/feedback/nlp.hpp"
 
 template<typename T>
@@ -34,21 +35,16 @@ using Vec = Eigen::VectorX<T>;
 
 TEST(Ocp, Jacobians)
 {
-  // objective integrand
-  auto phi = []<typename T>(T, Vec<T>, Vec<T> u) -> T { return u.squaredNorm(); };
-
-  // objective end
-  auto theta = []<typename T>(T, Vec<T>, Vec<T>) -> T { return 0; };
-
-  // dynamics
-  auto f = []<typename T>(T, Vec<T> x, Vec<T> u) -> Vec<T> {
-    Vec<T> ret(2);
-    ret << x.y(), u.x();
-    return ret;
+  // objective
+  auto theta = []<typename T>(T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> T {
+    return tf + x0.sum() + xf.sum() + q.sum();
   };
 
+  // dynamics
+  auto f = []<typename T>(T, Vec<T> x, Vec<T> u) -> Vec<T> { return Vec<T>{{x.y(), u.x()}}; };
+
   // integrals
-  auto g = []<typename T>(T, Vec<T>, Vec<T>) -> Vec<T> { return Vec<T>::Ones(1); };
+  auto g = []<typename T>(T, Vec<T>, Vec<T> u) -> Vec<T> { return Vec<T>{{u.squaredNorm()}}; };
 
   // running constraint
   auto cr = []<typename T>(T, Vec<T>, Vec<T> u) -> Vec<T> { return u; };
@@ -60,25 +56,22 @@ TEST(Ocp, Jacobians)
     return ret;
   };
 
-  smooth::feedback::
-    OCP<decltype(phi), decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
-      ocp{
-        .nx    = 2,
-        .nu    = 1,
-        .nq    = 1,
-        .ncr   = 1,
-        .nce   = 5,
-        .phi   = phi,
-        .theta = theta,
-        .f     = f,
-        .g     = g,
-        .cr    = cr,
-        .crl   = Vec<double>::Constant(1, -1),
-        .cru   = Vec<double>::Constant(1, 1),
-        .ce    = ce,
-        .cel   = Vec<double>::Zero(5),
-        .ceu   = Vec<double>::Zero(5),
-      };
+  smooth::feedback::OCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
+    .nx    = 2,
+    .nu    = 1,
+    .nq    = 1,
+    .ncr   = 1,
+    .nce   = 5,
+    .theta = theta,
+    .f     = f,
+    .g     = g,
+    .cr    = cr,
+    .crl   = Vec<double>{{-1}},
+    .cru   = Vec<double>{{1}},
+    .ce    = ce,
+    .cel   = Vec<double>::Zero(5),
+    .ceu   = Vec<double>::Zero(5),
+  };
 
   smooth::feedback::Mesh<5, 10> mesh;
   auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
@@ -88,9 +81,11 @@ TEST(Ocp, Jacobians)
   const auto df_dx = nlp.df_dx(x);
   const auto dg_dx = nlp.dg_dx(x);
 
-  const auto [fval, df_dx_num] = smooth::diff::dr(nlp.f, smooth::wrt(x));
-  const auto [gval, dg_dx_num] = smooth::diff::dr(nlp.g, smooth::wrt(x));
+  const auto [fval, df_dx_num] =
+    smooth::diff::dr<smooth::diff::Type::NUMERICAL>(nlp.f, smooth::wrt(x));
+  const auto [gval, dg_dx_num] =
+    smooth::diff::dr<smooth::diff::Type::NUMERICAL>(nlp.g, smooth::wrt(x));
 
-  ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-6));
-  ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-6));
+  ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-4));
+  ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-4));
 }

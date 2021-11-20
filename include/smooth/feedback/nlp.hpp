@@ -5,11 +5,9 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
+#include <smooth/diff.hpp>
 
 #include <limits>
-
-#include <smooth/diff.hpp>
-#include <smooth/lie_group.hpp>
 
 #include "collocation.hpp"
 
@@ -19,7 +17,7 @@ namespace smooth::feedback {
  * @brief Optimal control problem on the interval \f$ t \in [0, t_f] \f$.
  * \f[
  * \begin{cases}
- *  \min        & \int_{0}^{t_f} \phi(t, x(t), u(t)) \mathrm{d}t + \theta(t_f, x_0, x_f)  \\
+ *  \min        & \theta(t_f, x_0, x_f, q)                                              \\
  *  \text{s.t.} & x(0) = x_0                                                            \\
  *              & x(t_f) = x_f                                                          \\
  *              & \dot x(t) = f(t, x(t), u(t))                                          \\
@@ -28,26 +26,22 @@ namespace smooth::feedback {
  *              & c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu}                         \\
  * \end{cases}
  * \f]
- *
- * TODO make this into a concept...
  */
-template<typename Phi, typename Theta, typename F, typename G, typename CR, typename CE>
+template<typename Theta, typename F, typename G, typename CR, typename CE>
 struct OCP
 {
   /// @brief State dimension
   std::size_t nx;
   /// @brief Input dimension
   std::size_t nu;
-  /// @brief Number of additional integrals
+  /// @brief Number of integrals
   std::size_t nq;
   /// @brief Number of running constraints
   std::size_t ncr;
   /// @brief Number of end constraints
   std::size_t nce;
 
-  /// @brief Objective integrand
-  Phi phi;
-  /// @brief Objective end function
+  /// @brief Objective function
   Theta theta;
   /// @brief Function defining system dynamics
   F f;
@@ -130,73 +124,72 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
   std::size_t N = mesh.N_colloc();
 
   // variable layout
-  std::array<std::size_t, 5> var_len{
+  std::array<std::size_t, 4> var_len{
     1,                 // tf
-    1,                 // objective integral
-    ocp.nq,            // other integrals
+    ocp.nq,            // integrals
     ocp.nx * (N + 1),  // states
     ocp.nu * N,        // inputs
   };
 
   // constraint layout
-  std::array<std::size_t, 5> con_len{
+  std::array<std::size_t, 4> con_len{
     ocp.nx * N,   // derivatives
-    1,            // objective integral
     ocp.nq,       // other integrals
     ocp.ncr * N,  // running constraints
     ocp.nce,      // end constraints
   };
 
-  std::array<std::size_t, 6> var_beg;
+  std::array<std::size_t, 5> var_beg;
   var_beg[0] = 0;
   std::partial_sum(var_len.begin(), var_len.end(), var_beg.begin() + 1);
 
-  std::array<std::size_t, 6> con_beg;
+  std::array<std::size_t, 5> con_beg;
   con_beg[0] = 0;
   std::partial_sum(con_len.begin(), con_len.end(), con_beg.begin() + 1);
 
-  const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
-  const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+  const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+  const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-  const auto [dcon_B, oqcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
-  const auto [dcon_L, oqcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
+  const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
+  const auto [dcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
 
   // OBJECTIVE FUNCTION
 
   auto f = [var_beg, var_len, nx = ocp.nx, theta = ocp.theta](const Eigen::VectorXd & x) -> double {
-    const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
-    const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+    const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
     assert(std::size_t(x.size()) == n);
 
     const double tf          = x(tfvar_B);
+    const Eigen::VectorXd q  = x.segment(qvar_B, qvar_L);
     const Eigen::VectorXd x0 = x.segment(xvar_B, nx);
     const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - nx, nx);
 
-    return x(oqvar_B) + theta.template operator()<double>(tf, x0, xf);
+    return theta.template operator()<double>(tf, x0, xf, q);
   };
 
   // OBJECTIVE JACOBIAN
 
-  auto df_dx = [var_beg, var_len, nx = ocp.nx, theta = ocp.theta](
+  auto df_dx = [var_beg, var_len, nq = ocp.nq, nx = ocp.nx, theta = ocp.theta](
                  const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
-    const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
-    const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
-
-    Eigen::SparseMatrix<double> ret(1, n);
-    ret.reserve(2 + 2 * nx);
+    const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
     const double tf          = x(tfvar_B);
+    const Eigen::VectorXd q  = x.segment(qvar_B, qvar_L);
     const Eigen::VectorXd x0 = x.segment(xvar_B, nx);
     const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - nx, nx);
 
-    auto [val, J] = diff::dr(theta, wrt(tf, x0, xf));
+    auto [val, J] = diff::dr(theta, wrt(tf, x0, xf, q));
 
-    ret.insert(0, oqvar_B) = 1;
+    Eigen::SparseMatrix<double> ret(1, n);
+    ret.reserve(1 + 2 * nx + nq);
+
     ret.insert(0, tfvar_B) = J(0);
-
     for (auto i = 0u; i < nx; ++i) { ret.insert(0, xvar_B + i) = J(1 + i); }
     for (auto i = 0u; i < nx; ++i) { ret.insert(0, xvar_B + xvar_L - nx + i) = J(1 + nx + i); }
+    for (auto i = 0u; i < nq; ++i) { ret.insert(0, qvar_B + i) = J(1 + 2 * nx + i); }
 
     ret.makeCompressed();
 
@@ -214,20 +207,19 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
 
   auto g = [var_beg, var_len, con_beg, con_len, mesh, ocp](
              const Eigen::VectorXd & x) -> Eigen::VectorXd {
-    const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
-    const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+    const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    const auto [dcon_B, oqcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
-    const auto [dcon_L, oqcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
+    const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
+    const auto [dcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
 
     assert(std::size_t(x.size()) == n);
 
-    const double t0           = 0;
-    const double tf           = x(tfvar_B);
-    const Eigen::VectorXd OQm = x.segment(oqvar_B, oqvar_L);
-    const Eigen::VectorXd Qm  = x.segment(qvar_B, qvar_L);
-    const Eigen::MatrixXd Xm  = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-    const Eigen::MatrixXd Um  = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+    const double t0          = 0;
+    const double tf          = x(tfvar_B);
+    const Eigen::VectorXd Qm = x.segment(qvar_B, qvar_L);
+    const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+    const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
     const Eigen::VectorXd x0 = Xm.leftCols(1);
     const Eigen::VectorXd xf = Xm.rightCols(1);
@@ -236,16 +228,8 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
     const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU] =
       dynamics_constraint(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
 
-    // objective integral constraint
-    auto phi_wrap = [&ocp]<typename T>(const auto... vars) -> Eigen::VectorX<T> {
-      const T val = ocp.phi.template operator()<T>(vars...);
-      return Eigen::VectorX<T>::Constant(1, val);
-    };
-    const auto [G1val, dG1_dt0, dG1_dtf, dG1_dOQ, dG1_dX, dG1_dU] =
-      integral_constraint(1, phi_wrap, mesh, t0, tf, OQm, Xm, Um);
-
-    // other integral constraint
-    const auto [G2val, dG2_dt0, dG2_dtf, dG2_dI, dG2_dX, dG2_dU] =
+    // integral constraint
+    const auto [Gval, dG_dt0, dG_dtf, dG_dI, dG_dX, dG_dU] =
       integral_constraint(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
 
     // running constraints
@@ -253,12 +237,12 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
       colloc_eval(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
 
     // end constraints
-    const Eigen::VectorXd CEval = ocp.ce.template operator()<double>(t0, tf, x0, xf, Qm);
+    const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ] =
+      endpoint_eval(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
 
     Eigen::VectorXd ret(m);
     ret.segment(dcon_B, dcon_L)   = Fval.reshaped();
-    ret.segment(oqcon_B, oqcon_L) = G1val.reshaped();
-    ret.segment(qcon_B, qcon_L)   = G2val.reshaped();
+    ret.segment(qcon_B, qcon_L)   = Gval.reshaped();
     ret.segment(crcon_B, crcon_L) = CRval.reshaped();
     ret.segment(cecon_B, cecon_L) = CEval.reshaped();
     return ret;
@@ -267,32 +251,23 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
   // CONSTRAINT JACOBIAN
   auto dg_dx = [var_beg, var_len, mesh, ocp](
                  const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
-    const auto [tfvar_B, oqvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
-    const auto [tfvar_L, oqvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+    const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
     assert(std::size_t(x.size()) == n);
 
-    const double t0           = 0;
-    const double tf           = x(tfvar_B);
-    const Eigen::VectorXd OQm = x.segment(oqvar_B, oqvar_L);
-    const Eigen::VectorXd Qm  = x.segment(qvar_B, qvar_L);
-    const Eigen::MatrixXd Xm  = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-    const Eigen::MatrixXd Um  = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+    const double t0          = 0;
+    const double tf          = x(tfvar_B);
+    const Eigen::VectorXd Qm = x.segment(qvar_B, qvar_L);
+    const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+    const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
     // dynamics constraint
     const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU] =
       dynamics_constraint(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
 
-    // objective integral constraint
-    auto phi_wrap = [&ocp]<typename T>(const auto... vars) -> Eigen::VectorX<T> {
-      const T val = ocp.phi.template operator()<T>(vars...);
-      return Eigen::VectorX<T>::Constant(1, val);
-    };
-    const auto [G1val, dG1_dt0, dG1_dtf, dG1_dOQ, dG1_dX, dG1_dU] =
-      integral_constraint(1, phi_wrap, mesh, t0, tf, OQm, Xm, Um);
-
-    // other integral constraint
-    const auto [G2val, dG2_dt0, dG2_dtf, dG2_dQ, dG2_dX, dG2_dU] =
+    // integral constraint
+    const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] =
       integral_constraint(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
 
     // running constraints
@@ -305,11 +280,10 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
 
     return sparse_block_matrix({
       // clang-format off
-      {dF_dtf,      {},     {}, dF_dX,   dF_dU},
-      {dG1_dtf, dG1_dOQ,    {}, dG1_dX, dG1_dU},
-      {dG2_dtf,     {}, dG2_dQ, dG2_dX, dG2_dU},
-      {dCR_dtf,     {},     {}, dCR_dX, dCR_dU},
-      {dCE_dtf,     {}, dCE_dQ, dCE_dX,     {}},
+      {dF_dtf,      {}, dF_dX,   dF_dU},
+      {dG_dtf,   dG_dQ, dG_dX,   dG_dU},
+      {dCR_dtf,     {}, dCR_dX, dCR_dU},
+      {dCE_dtf, dCE_dQ, dCE_dX,     {}},
       // clang-format on
     });
   };
@@ -319,15 +293,11 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
   Eigen::VectorXd gl(m);
   Eigen::VectorXd gu(m);
 
-  // derivative constraints are equality constraints
+  // derivative constraints are equalities
   gl.segment(dcon_B, dcon_L).setZero();
   gu.segment(dcon_B, dcon_L).setZero();
 
-  // objective integral is an equality constraint
-  gl.segment(oqcon_B, oqcon_L).setZero();
-  gu.segment(oqcon_B, oqcon_L).setZero();
-
-  // ... so are remaining integral constraints
+  // integral constraints are equalities
   gl.segment(qcon_B, qcon_L).setZero();
   gu.segment(qcon_B, qcon_L).setZero();
 

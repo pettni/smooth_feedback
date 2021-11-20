@@ -41,11 +41,8 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include <autodiff/forward/real.hpp>
-#include <autodiff/forward/real/eigen.hpp>
 #include <smooth/diff.hpp>
 #include <smooth/internal/utils.hpp>
-#include <smooth/lie_group.hpp>
 #include <smooth/polynomial/quadrature.hpp>
 
 #include <cstddef>
@@ -307,39 +304,28 @@ auto colloc_eval(std::size_t nf,
   dvecF_dvecX.reserve(FX_pattern);
   dvecF_dvecU.reserve(Eigen::Matrix<int, -1, 1>::Constant(U.size(), nf));
 
-  Eigen::SparseMatrix<double> d2lF_dvecX2(X.size(), X.size());
-
-  // TODO: calculate Hessian on demand
-
   for (auto i = 0u; i + 1 < tau_s.size(); ++i) {
-    autodiff::VectorXreal var_ad(1 + nx + nu);
-    var_ad << autodiff::real(t0 + (tf - t0) * tau_s(i)), X.col(i).template cast<autodiff::real>(),
-      U.col(i).template cast<autodiff::real>();
+    const double T = t0 + (tf - t0) * tau_s(i);
 
-    autodiff::VectorXreal Fval_ad;
-    const Eigen::MatrixXd dF = autodiff::jacobian(
-      [&](const autodiff::VectorXreal & var) -> autodiff::VectorXreal {
-        return f.template operator()<autodiff::real>(
-          var(0), var.segment(1, nx), var.segment(1 + nx, nu));
-      },
-      autodiff::wrt(var_ad),
-      autodiff::at(var_ad),
-      Fval_ad);
+    const Eigen::VectorXd x = X.col(i);
+    const Eigen::VectorXd u = U.col(i);
 
-    assert(Fval_ad.rows() == Eigen::Index(nf));
-    assert(dF.rows() == Eigen::Index(nf));
-    assert(dF.cols() == Eigen::Index(1 + nu + nx));
+    const auto [fval, dfval] = diff::dr(f, wrt(T, x, u));
 
-    Fval.col(i) = Fval_ad.template cast<double>();
+    assert(fval.rows() == Eigen::Index(nf));
+    assert(dfval.rows() == Eigen::Index(nf));
+    assert(dfval.cols() == Eigen::Index(1 + nu + nx));
+
+    Fval.col(i) = fval;
 
     for (auto row = 0u; row < nf; ++row) {
-      dvecF_dt0.insert(nf * i + row, 0) = dF(row, 0) * (1. - tau_s(i));
-      dvecF_dtf.insert(nf * i + row, 0) = dF(row, 0) * tau_s(i);
+      dvecF_dt0.insert(nf * i + row, 0) = dfval(row, 0) * (1. - tau_s(i));
+      dvecF_dtf.insert(nf * i + row, 0) = dfval(row, 0) * tau_s(i);
       for (auto col = 0u; col < nx; ++col) {
-        dvecF_dvecX.insert(nf * i + row, i * nx + col) = dF(row, 1 + col);
+        dvecF_dvecX.insert(nf * i + row, i * nx + col) = dfval(row, 1 + col);
       }
       for (auto col = 0u; col < nu; ++col) {
-        dvecF_dvecU.insert(nf * i + row, i * nu + col) = dF(row, 1 + nx + col);
+        dvecF_dvecU.insert(nf * i + row, i * nu + col) = dfval(row, 1 + nx + col);
       }
     }
   }

@@ -30,10 +30,9 @@
 #include "smooth/feedback/collocation.hpp"
 
 template<typename T>
-using state_t = Eigen::Matrix<T, 1, 1>;
+using Vec = Eigen::VectorX<T>;
 
-template<typename T>
-using input_t = Eigen::Matrix<T, 1, 1>;
+using Vecd = Vec<double>;
 
 TEST(Collocation, Mesh)
 {
@@ -79,36 +78,37 @@ TEST(Collocation, Mesh)
 TEST(Collocation, TimeTrajectory)
 {
   // given trajectory
-  const auto x = [](double t) { return state_t<double>{0.1 * t * t - 0.4 * t + 0.2}; };
+  std::size_t nx = 1;
+  const auto x = [](double t) -> Vec<double> { return Vec<double>{{0.1 * t * t - 0.4 * t + 0.2}}; };
 
-  // path function
-  const auto c = []<typename T>(
-                   const T &, const state_t<T> & x, const input_t<T> & u) -> Eigen::Vector2<T> {
-    return Eigen::Vector2<T>{x.x(), u.x()};
+  // running constraints
+  std::size_t ncr = 2;
+  const auto cr   = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{x.x(), 0}};
   };
 
   // system dynamics
-  const auto f = []<typename T>(const T & t, const state_t<T> &, const input_t<T> &) -> state_t<T> {
-    return state_t<T>{0.2 * t - 0.4};
+  std::size_t nu = 0;
+  const auto f   = []<typename T>(const T & t, const Vec<T> &, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{0.2 * t - 0.4}};
   };
 
   // integrand
-  const auto g = []<typename T>(
-                   const T &, const state_t<T> & x, const input_t<T> & u) -> Eigen::VectorX<T> {
-    return Eigen::VectorX<T>::Constant(1, 0.1 + x.squaredNorm() + 2 * u.squaredNorm());
+  std::size_t nq = 1;
+  const auto g   = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{0.1 + x.squaredNorm()}};
   };
 
-  double t0   = 3;
-  double tf   = 5;
-  double uval = 0.3;
+  double t0 = 3;
+  double tf = 5;
 
   smooth::feedback::Mesh<5, 5> m;
   m.refine_ph(0, 40);
   ASSERT_EQ(m.N_ivals(), 8);
 
-  Eigen::MatrixXd X(1, m.N_colloc() + 1);
-  Eigen::MatrixXd U = Eigen::MatrixXd::Constant(1, m.N_colloc(), uval);
-  Eigen::MatrixXd C(2, m.N_colloc());
+  Eigen::MatrixXd X(nx, m.N_colloc() + 1);
+  Eigen::MatrixXd U(nu, m.N_colloc());
+  Eigen::MatrixXd C(ncr, m.N_colloc());
 
   // fill X with curve values at the two intervals
   std::size_t M = 0;
@@ -116,51 +116,49 @@ TEST(Collocation, TimeTrajectory)
     const auto [tau_s, w_s] = m.interval_nodes_and_weights(p);
     for (auto i = 0u; i + 1 < tau_s.size(); ++i) {
       X.col(M + i) = x(t0 + (tf - t0) * tau_s[i]);
-      C.col(M + i) = c.operator()<double>(0, X.col(M + i), U.col(M + i));
+      C.col(M + i) = cr.operator()<double>(0, X.col(M + i), U.col(M + i));
     }
     M += m.N_colloc_ival(p);
   }
   X.col(m.N_colloc()) = x(tf);
 
-  Eigen::VectorXd I = Eigen::VectorXd::Constant(1, 0);
+  Eigen::VectorXd Q{{0}};
 
-  const Eigen::VectorXd residual =
-    std::get<0>(smooth::feedback::dynamics_constraint(2, f, m, t0, tf, X, U));
-  const Eigen::VectorXd path =
-    std::get<0>(smooth::feedback::colloc_eval(2, c, m, t0, tf, X, U)).reshaped();
-  const Eigen::VectorXd integral =
-    std::get<0>(smooth::feedback::integral_constraint(1, g, m, t0, tf, I, X, U));
+  const Eigen::VectorXd dyn_vals =
+    std::get<0>(smooth::feedback::dynamics_constraint(nx, f, m, t0, tf, X, U));
+  ASSERT_EQ(dyn_vals.rows(), m.N_colloc());
+  ASSERT_EQ(dyn_vals.cols(), 1);
+  ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
 
-  ASSERT_EQ(residual.rows(), m.N_colloc());
-  ASSERT_EQ(residual.cols(), 1);
+  const Eigen::VectorXd cr_vals =
+    std::get<0>(smooth::feedback::colloc_eval(ncr, cr, m, t0, tf, X, U)).reshaped();
+  ASSERT_EQ(cr_vals.rows(), 2 * m.N_colloc());
+  ASSERT_EQ(cr_vals.cols(), 1);
+  ASSERT_TRUE(C.reshaped().isApprox(cr_vals));
 
-  ASSERT_EQ(path.rows(), 2 * m.N_colloc());
-  ASSERT_EQ(path.cols(), 1);
-
-  ASSERT_LE(residual.cwiseAbs().maxCoeff(), 1e-8);
-  ASSERT_TRUE(C.reshaped().isApprox(path));
-  ASSERT_NEAR(integral.x(), 0.217333 + 0.1 * (tf - t0) + 2 * uval * uval * (tf - t0), 1e-4);
+  const Eigen::VectorXd q_vals =
+    std::get<0>(smooth::feedback::integral_constraint(nq, g, m, t0, tf, Q, X, U));
+  ASSERT_NEAR(q_vals.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
 }
 
 TEST(Collocation, StateTrajectory)
 {
-  // system dynamics
-  const auto f = []<typename T>(const T &, const state_t<T> & x, const input_t<T> &) -> state_t<T> {
-    return state_t<T>{-x.x()};
+  // given trajectory and system dynamics
+  std::size_t nx = 1;
+  std::size_t nu = 0;
+  const auto x   = [](double t) { return Vec<double>{{1.5 * exp(-t)}}; };
+  const auto f   = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{-x.x()}};
   };
 
-  // given trajectory
-  const auto x = [](double t) { return state_t<double>{1.5 * exp(-t)}; };
-
-  // integrand
-  const auto g = []<typename T>(
-                   const T &, const state_t<T> & x, const input_t<T> &) -> Eigen::VectorX<T> {
-    return Eigen::VectorX<T>::Constant(1, x.squaredNorm());
+  // integrals
+  std::size_t nq = 1;
+  const auto g   = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{x.squaredNorm()}};
   };
 
   double t0   = 3;
   double tf   = 5;
-  double uval = 0;
 
   smooth::feedback::Mesh<5, 5> m;
 
@@ -179,14 +177,12 @@ TEST(Collocation, StateTrajectory)
   }
   X.col(m.N_colloc()) = x(tf);
 
-  Eigen::MatrixXd U = Eigen::MatrixXd::Constant(1, m.N_colloc(), uval);
+  Eigen::MatrixXd U(nu, m.N_colloc());
+  Eigen::VectorXd Q{{0}};
 
-  Eigen::VectorXd I = Eigen::VectorXd::Constant(1, 0);
+  const auto dyn_vals = std::get<0>(smooth::feedback::dynamics_constraint(nx, f, m, t0, tf, X, U));
+  ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
 
-  const auto residual = std::get<0>(smooth::feedback::dynamics_constraint(2, f, m, t0, tf, X, U));
-  const auto integral =
-    std::get<0>(smooth::feedback::integral_constraint(1, g, m, t0, tf, I, X, U));
-
-  ASSERT_LE(residual.cwiseAbs().maxCoeff(), 1e-8);
-  ASSERT_NEAR(integral.x(), 0.00273752, 1e-4);
+  const auto q_vals = std::get<0>(smooth::feedback::integral_constraint(nq, g, m, t0, tf, Q, X, U));
+  ASSERT_NEAR(q_vals.x(), 0.00273752, 1e-4);
 }
