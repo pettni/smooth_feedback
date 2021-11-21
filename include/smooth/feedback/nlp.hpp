@@ -23,41 +23,48 @@ namespace smooth::feedback {
  *              & \dot x(t) = f(t, x(t), u(t))                                          \\
  *              & q = \int_{0}^{t_f} g(t, x(t), u(t)) \mathrm{d}t                       \\
  *              & c_{rl} \leq c_r(t, x(t), u(t)) \leq c_{ru} \quad t \in [0, t_f]       \\
- *              & c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu}                         \\
+ *              & c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu}
  * \end{cases}
  * \f]
+ *
+ * The optimal control problem depends on arbitrary functions \f$ \theta, f, g, c_r, c_e \f$.
+ * The type of those functions are template pararamters in this structure.
+ *
+ * @note To enable automatic differentiation \f$ \theta, g, c_r, c_e \f$ must be templated over the
+ * scalar type.
  */
 template<typename Theta, typename F, typename G, typename CR, typename CE>
 struct OCP
 {
-  /// @brief State dimension
+  /// @brief State dimension \f$ n_{x} \f$
   std::size_t nx;
-  /// @brief Input dimension
+  /// @brief Input dimension \f$ n_{u} \f$
   std::size_t nu;
-  /// @brief Number of integrals
+  /// @brief Number of integrals \f$ n_{q} \f$
   std::size_t nq;
-  /// @brief Number of running constraints
+  /// @brief Number of running constraints \f$ n_{cr} \f$
   std::size_t ncr;
-  /// @brief Number of end constraints
+  /// @brief Number of end constraints \f$ n_{ce} \f$
   std::size_t nce;
 
   /// @brief Objective function
   Theta theta;
-  /// @brief Function defining system dynamics
+  /// @brief System dynamics \f$ f : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_x} \f$
   F f;
-  /// @brief Integrals function
+  /// @brief Integrals \f$ g : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_q} \f$
   G g;
-  /// @brief Running constraint function
+  /// @brief Integrals \f$ c_r : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_{cr}} \f$
   CR cr;
-  /// @brief Running constraint lower bound
+  /// @brief Running constraint lower bound \f$ c_{rl} \in R^{n_{cr}} \f$
   Eigen::VectorXd crl;
-  /// @brief Running constraint upper bound
+  /// @brief Running constraint upper bound \f$ c_{ru} \in R^{n_{cr}} \f$
   Eigen::VectorXd cru;
-  /// @brief End constraint function
+  /// @brief End constraint \f$ c_e : R \times R^{n_x} \times R^{n_x} \times R^{n_q} \rightarrow
+  /// R^{n_{ce}} \f$
   CE ce;
-  /// @brief End constraint lower
+  /// @brief End constraint lower bound \f$ c_{el} \in R^{n_{ce}} \f$
   Eigen::VectorXd cel;
-  /// @brief End constraint upper bound
+  /// @brief End constraint upper bound \f$ c_{eu} \in R^{n_{ce}} \f$
   Eigen::VectorXd ceu;
 };
 
@@ -99,12 +106,12 @@ struct NLP
   /// @brief Jacobian of constraint function (R^n -> R^{m x n})
   std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)> dg_dx;
 
-  /// @brief Hessian of objective function (R^n -> R^{n x n})
+  /// @brief Hessian of objective function (R^n -> R^{n x n}) [optional]
   std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd, Eigen::VectorXd)>>
     d2f_dx2 = std::nullopt;
 
   /**
-   * @brief Projected Hessian of constraint function (R^m, R^n -> R^{n x n})
+   * @brief Projected Hessian of constraint function (R^m, R^n -> R^{n x n}) [optional]
    *
    * Returns the derivative
    * \f[
@@ -117,9 +124,18 @@ struct NLP
 
 /**
  * @brief Formulate an OCP as a NLP using collocation on a mesh.
+ *
+ * @param ocp Optimal control problem definition
+ * @param mesh Mesh that describes collocation point structure
  */
-template<typename OCP, typename MeshType>
-auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
+template<typename Theta,
+  typename F,
+  typename G,
+  typename CR,
+  typename CE,
+  std::size_t Kmin,
+  std::size_t Kmax>
+auto ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
 {
   std::size_t N = mesh.N_colloc();
 
@@ -139,12 +155,10 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
     ocp.nce,      // end constraints
   };
 
-  std::array<std::size_t, 5> var_beg;
-  var_beg[0] = 0;
+  std::array<std::size_t, 5> var_beg{0};
   std::partial_sum(var_len.begin(), var_len.end(), var_beg.begin() + 1);
 
-  std::array<std::size_t, 5> con_beg;
-  con_beg[0] = 0;
+  std::array<std::size_t, 5> con_beg{0};
   std::partial_sum(con_len.begin(), con_len.end(), con_beg.begin() + 1);
 
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
@@ -155,7 +169,7 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
 
   // OBJECTIVE FUNCTION
 
-  auto f = [var_beg, var_len, nx = ocp.nx, theta = ocp.theta](const Eigen::VectorXd & x) -> double {
+  auto f = [var_beg, var_len, ocp = ocp](const Eigen::VectorXd & x) -> double {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -163,33 +177,35 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
 
     const double tf          = x(tfvar_B);
     const Eigen::VectorXd q  = x.segment(qvar_B, qvar_L);
-    const Eigen::VectorXd x0 = x.segment(xvar_B, nx);
-    const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - nx, nx);
+    const Eigen::VectorXd x0 = x.segment(xvar_B, ocp.nx);
+    const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - ocp.nx, ocp.nx);
 
-    return theta.template operator()<double>(tf, x0, xf, q);
+    return ocp.theta.template operator()<double>(tf, x0, xf, q);
   };
 
   // OBJECTIVE JACOBIAN
 
-  auto df_dx = [var_beg, var_len, nq = ocp.nq, nx = ocp.nx, theta = ocp.theta](
+  auto df_dx = [var_beg, var_len, ocp = ocp](
                  const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
     const double tf          = x(tfvar_B);
     const Eigen::VectorXd q  = x.segment(qvar_B, qvar_L);
-    const Eigen::VectorXd x0 = x.segment(xvar_B, nx);
-    const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - nx, nx);
+    const Eigen::VectorXd x0 = x.segment(xvar_B, ocp.nx);
+    const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - ocp.nx, ocp.nx);
 
-    auto [val, J] = diff::dr(theta, wrt(tf, x0, xf, q));
+    auto [val, J] = diff::dr(ocp.theta, wrt(tf, x0, xf, q));
 
     Eigen::SparseMatrix<double> ret(1, n);
-    ret.reserve(1 + 2 * nx + nq);
+    ret.reserve(1 + 2 * ocp.nx + ocp.nq);
 
     ret.insert(0, tfvar_B) = J(0);
-    for (auto i = 0u; i < nx; ++i) { ret.insert(0, xvar_B + i) = J(1 + i); }
-    for (auto i = 0u; i < nx; ++i) { ret.insert(0, xvar_B + xvar_L - nx + i) = J(1 + nx + i); }
-    for (auto i = 0u; i < nq; ++i) { ret.insert(0, qvar_B + i) = J(1 + 2 * nx + i); }
+    for (auto i = 0u; i < ocp.nx; ++i) { ret.insert(0, xvar_B + i) = J(1 + i); }
+    for (auto i = 0u; i < ocp.nx; ++i) {
+      ret.insert(0, xvar_B + xvar_L - ocp.nx + i) = J(1 + ocp.nx + i);
+    }
+    for (auto i = 0u; i < ocp.nq; ++i) { ret.insert(0, qvar_B + i) = J(1 + 2 * ocp.nx + i); }
 
     ret.makeCompressed();
 
@@ -205,7 +221,7 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
 
   // CONSTRAINT FUNCTION
 
-  auto g = [var_beg, var_len, con_beg, con_len, mesh, ocp](
+  auto g = [var_beg, var_len, con_beg, con_len, mesh, ocp = ocp](
              const Eigen::VectorXd & x) -> Eigen::VectorXd {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
@@ -225,20 +241,16 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
     const Eigen::VectorXd xf = Xm.rightCols(1);
 
     // dynamics constraint
-    const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU] =
-      dynamics_constraint(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
+    const auto Fval = dynamics_constraint<false>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
 
     // integral constraint
-    const auto [Gval, dG_dt0, dG_dtf, dG_dI, dG_dX, dG_dU] =
-      integral_constraint(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
+    const auto Gval = integral_constraint<false>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
 
     // running constraints
-    const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU] =
-      colloc_eval(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
+    const auto CRval = colloc_eval<false>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
 
     // end constraints
-    const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ] =
-      endpoint_eval(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
+    const auto CEval = endpoint_eval<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
 
     Eigen::VectorXd ret(m);
     ret.segment(dcon_B, dcon_L)   = Fval.reshaped();
@@ -249,8 +261,7 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
   };
 
   // CONSTRAINT JACOBIAN
-  auto dg_dx = [var_beg, var_len, mesh, ocp](
-                 const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
+  auto dg_dx = [var_beg, var_len, mesh, ocp = ocp](const Eigen::VectorXd & x) {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -264,19 +275,19 @@ auto ocp_to_nlp(OCP && ocp, const MeshType & mesh)
 
     // dynamics constraint
     const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU] =
-      dynamics_constraint(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
+      dynamics_constraint<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
 
     // integral constraint
     const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] =
-      integral_constraint(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
+      integral_constraint<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
 
     // running constraints
     const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU] =
-      colloc_eval(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
+      colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
 
     // end constraints
     const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ] =
-      endpoint_eval(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
+      endpoint_eval<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
 
     return sparse_block_matrix({
       // clang-format off

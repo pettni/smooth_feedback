@@ -3,7 +3,9 @@
 #define SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_
 
 #include <Eigen/Sparse>
+
 #include <numeric>
+#include <optional>
 
 namespace smooth::feedback
 
