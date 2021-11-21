@@ -124,8 +124,7 @@ TEST(Collocation, TimeTrajectory)
 
   Eigen::VectorXd Q{{0}};
 
-  const Eigen::VectorXd dyn_vals =
-    smooth::feedback::dynamics_constraint<false>(nx, f, m, t0, tf, X, U);
+  const Eigen::VectorXd dyn_vals = smooth::feedback::colloc_dyn<false>(nx, f, m, t0, tf, X, U);
   ASSERT_EQ(dyn_vals.rows(), m.N_colloc());
   ASSERT_EQ(dyn_vals.cols(), 1);
   ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
@@ -136,8 +135,7 @@ TEST(Collocation, TimeTrajectory)
   ASSERT_EQ(cr_vals.cols(), 1);
   ASSERT_TRUE(C.reshaped().isApprox(cr_vals));
 
-  const Eigen::VectorXd q_vals =
-    smooth::feedback::integral_constraint<false>(nq, g, m, t0, tf, Q, X, U);
+  const Eigen::VectorXd q_vals = smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X, U);
   ASSERT_NEAR(q_vals.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
 }
 
@@ -180,9 +178,9 @@ TEST(Collocation, StateTrajectory)
   Eigen::MatrixXd U(nu, m.N_colloc());
   Eigen::VectorXd Q{{0}};
 
-  const auto dyn_vals = smooth::feedback::dynamics_constraint<false>(nx, f, m, t0, tf, X, U);
+  const auto dyn_vals = smooth::feedback::colloc_dyn<false>(nx, f, m, t0, tf, X, U);
   ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
 
-  const auto q_vals = smooth::feedback::integral_constraint<false>(nq, g, m, t0, tf, Q, X, U);
+  const auto q_vals = smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X, U);
   ASSERT_NEAR(q_vals.x(), 0.00273752, 1e-4);
 }

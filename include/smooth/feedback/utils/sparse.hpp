@@ -94,6 +94,11 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   return ret;
 }
 
+/**
+ * @brief nxn sparse identity matrix
+ *
+ * @param n matrix square dimension
+ */
 inline Eigen::SparseMatrix<double> sparse_identity(std::size_t n)
 {
   Eigen::SparseMatrix<double> ret(n, n);

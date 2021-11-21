@@ -47,18 +47,22 @@ struct OCP
   /// @brief Number of end constraints \f$ n_{ce} \f$
   std::size_t nce;
 
-  /// @brief Objective function
+  /// @brief Objective function \f$ \theta : R \times R^{n_x} \times R^{n_x} \times R^{n_q}
+  /// \rightarrow R \f$
   Theta theta;
+
   /// @brief System dynamics \f$ f : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_x} \f$
   F f;
   /// @brief Integrals \f$ g : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_q} \f$
   G g;
-  /// @brief Integrals \f$ c_r : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_{cr}} \f$
+
+  /// @brief Running constraint \f$ c_r : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_{cr}} \f$
   CR cr;
   /// @brief Running constraint lower bound \f$ c_{rl} \in R^{n_{cr}} \f$
   Eigen::VectorXd crl;
   /// @brief Running constraint upper bound \f$ c_{ru} \in R^{n_{cr}} \f$
   Eigen::VectorXd cru;
+
   /// @brief End constraint \f$ c_e : R \times R^{n_x} \times R^{n_x} \times R^{n_q} \rightarrow
   /// R^{n_{ce}} \f$
   CE ce;
@@ -88,16 +92,16 @@ struct NLP
   /// @brief Number of constraints
   std::size_t m;
 
-  /// @brief Objective function
+  /// @brief Objective function (R^n -> R)
   std::function<double(Eigen::VectorXd)> f;
-  //
-  /// @brief Variable bounds
+
+  /// @brief Variable bounds (R^n)
   Eigen::VectorXd xl, xu;
 
-  /// @brief Constraint function
+  /// @brief Constraint function (R^n -> R^m)
   std::function<Eigen::VectorXd(Eigen::VectorXd)> g;
 
-  /// @brief Constaint bounds
+  /// @brief Constaint bounds (R^m)
   Eigen::VectorXd gl, gu;
 
   /// @brief Jacobian of objective function (R^n -> R^{n x n})
@@ -113,7 +117,7 @@ struct NLP
   /**
    * @brief Projected Hessian of constraint function (R^m, R^n -> R^{n x n}) [optional]
    *
-   * Returns the derivative
+   * Should return the derivative
    * \f[
    *  H_g(\lambda, x) = \nabla^2_x \lambda^T g(x), \quad \lambda \in \mathbb{R}^m, x \in
    * \mathbb{R}^n \f]
@@ -127,6 +131,7 @@ struct NLP
  *
  * @param ocp Optimal control problem definition
  * @param mesh Mesh that describes collocation point structure
+ * @param NLP encoding of ocp as a nonlinear program
  */
 template<typename Theta,
   typename F,
@@ -135,7 +140,7 @@ template<typename Theta,
   typename CE,
   std::size_t Kmin,
   std::size_t Kmax>
-auto ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
+NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
 {
   std::size_t N = mesh.N_colloc();
 
@@ -175,12 +180,12 @@ auto ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & m
 
     assert(std::size_t(x.size()) == n);
 
-    const double tf          = x(tfvar_B);
-    const Eigen::VectorXd q  = x.segment(qvar_B, qvar_L);
-    const Eigen::VectorXd x0 = x.segment(xvar_B, ocp.nx);
-    const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - ocp.nx, ocp.nx);
+    const double t0         = 0;
+    const double tf         = x(tfvar_B);
+    const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
+    const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
 
-    return ocp.theta.template operator()<double>(tf, x0, xf, q);
+    return colloc_eval_endpt<false>(1, ocp.nx, ocp.theta, t0, tf, X, Q);
   };
 
   // OBJECTIVE JACOBIAN
@@ -190,26 +195,15 @@ auto ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & m
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    const double tf          = x(tfvar_B);
-    const Eigen::VectorXd q  = x.segment(qvar_B, qvar_L);
-    const Eigen::VectorXd x0 = x.segment(xvar_B, ocp.nx);
-    const Eigen::VectorXd xf = x.segment(xvar_B + xvar_L - ocp.nx, ocp.nx);
+    const double t0         = 0;
+    const double tf         = x(tfvar_B);
+    const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
+    const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
 
-    auto [val, J] = diff::dr(ocp.theta, wrt(tf, x0, xf, q));
+    auto [fval, df_dt0, df_dtf, df_dvecX, df_dQ] =
+      colloc_eval_endpt<true>(1, ocp.nx, ocp.theta, t0, tf, X, Q);
 
-    Eigen::SparseMatrix<double> ret(1, n);
-    ret.reserve(1 + 2 * ocp.nx + ocp.nq);
-
-    ret.insert(0, tfvar_B) = J(0);
-    for (auto i = 0u; i < ocp.nx; ++i) { ret.insert(0, xvar_B + i) = J(1 + i); }
-    for (auto i = 0u; i < ocp.nx; ++i) {
-      ret.insert(0, xvar_B + xvar_L - ocp.nx + i) = J(1 + ocp.nx + i);
-    }
-    for (auto i = 0u; i < ocp.nq; ++i) { ret.insert(0, qvar_B + i) = J(1 + 2 * ocp.nx + i); }
-
-    ret.makeCompressed();
-
-    return ret;
+    return sparse_block_matrix({{df_dtf, df_dQ, df_dvecX, Eigen::SparseMatrix<double>(1, uvar_L)}});
   };
 
   // VARIABLE BOUNDS
@@ -231,32 +225,19 @@ auto ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & m
 
     assert(std::size_t(x.size()) == n);
 
-    const double t0          = 0;
-    const double tf          = x(tfvar_B);
-    const Eigen::VectorXd Qm = x.segment(qvar_B, qvar_L);
-    const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-    const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
-
-    const Eigen::VectorXd x0 = Xm.leftCols(1);
-    const Eigen::VectorXd xf = Xm.rightCols(1);
-
-    // dynamics constraint
-    const auto Fval = dynamics_constraint<false>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
-
-    // integral constraint
-    const auto Gval = integral_constraint<false>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
-
-    // running constraints
-    const auto CRval = colloc_eval<false>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
-
-    // end constraints
-    const auto CEval = endpoint_eval<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
+    const double t0         = 0;
+    const double tf         = x(tfvar_B);
+    const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
+    const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+    const Eigen::MatrixXd U = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
     Eigen::VectorXd ret(m);
-    ret.segment(dcon_B, dcon_L)   = Fval.reshaped();
-    ret.segment(qcon_B, qcon_L)   = Gval.reshaped();
-    ret.segment(crcon_B, crcon_L) = CRval.reshaped();
-    ret.segment(cecon_B, cecon_L) = CEval.reshaped();
+    // clang-format off
+    ret.segment(dcon_B, dcon_L)  = colloc_dyn<false>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
+    ret.segment(qcon_B, qcon_L)  = colloc_int<false>(ocp.nq, ocp.g, mesh, t0, tf, Q, X, U).reshaped();
+    ret.segment(crcon_B, crcon_L) = colloc_eval<false>(ocp.ncr, ocp.cr, mesh, t0, tf, X, U).reshaped();
+    ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X, Q).reshaped();
+    // clang-format on
     return ret;
   };
 
@@ -273,26 +254,17 @@ auto ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & m
     const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
     const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
-    // dynamics constraint
-    const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU] =
-      dynamics_constraint<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
-
-    // integral constraint
-    const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] =
-      integral_constraint<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
-
-    // running constraints
-    const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU] =
-      colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
-
-    // end constraints
-    const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ] =
-      endpoint_eval<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
+    // clang-format off
+    const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
+    const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] = colloc_int<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
+    const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU]   = colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
+    const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
+    // clang-format on
 
     return sparse_block_matrix({
       // clang-format off
-      {dF_dtf,      {}, dF_dX,   dF_dU},
-      {dG_dtf,   dG_dQ, dG_dX,   dG_dU},
+      {dF_dtf,      {},  dF_dX,  dF_dU},
+      {dG_dtf,   dG_dQ,  dG_dX,  dG_dU},
       {dCR_dtf,     {}, dCR_dX, dCR_dU},
       {dCE_dtf, dCE_dQ, dCE_dX,     {}},
       // clang-format on
@@ -320,7 +292,7 @@ auto ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & m
   gl.segment(cecon_B, cecon_L) = ocp.cel;
   gu.segment(cecon_B, cecon_L) = ocp.ceu;
 
-  return NLP{
+  return {
     .n       = n,
     .m       = m,
     .f       = std::move(f),

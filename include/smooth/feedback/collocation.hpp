@@ -364,7 +364,7 @@ auto colloc_eval(std::size_t nf,
  *
  * Returns a nf vector
  *
- *  F = f(t_0, t_f, x_0, x_f)
+ *  F = f(t_0, t_f, x_0, x_f, q)
  *
  * @tparam Der return derivatives w.r.t variables
  *
@@ -377,16 +377,16 @@ auto colloc_eval(std::size_t nf,
  * @param q integrals
  *
  * @return If Deriv == false,
- * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dvecX},
+ * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dvecX, dF_dQ},
  */
 template<bool Deriv, typename Fun>
-auto endpoint_eval(std::size_t nf,
+auto colloc_eval_endpt(std::size_t nf,
   std::size_t nx,
   Fun && f,
   const double t0,
   const double tf,
   const Eigen::MatrixXd & X,
-  const Eigen::VectorXd & q)
+  const Eigen::VectorXd & Q)
 {
   assert(static_cast<std::size_t>(X.rows()) == nx);
 
@@ -394,13 +394,12 @@ auto endpoint_eval(std::size_t nf,
   const Eigen::VectorXd xf = X.rightCols(1);
 
   if constexpr (!Deriv) {
-    return f(t0, tf, x0, xf, q);
+    return f(t0, tf, x0, xf, Q);
   } else {
-    const auto [Fval, J] = diff::dr(f, wrt(t0, tf, x0, xf, q));
+    const auto [Fval, J] = diff::dr(f, wrt(t0, tf, x0, xf, Q));
 
-    assert(static_cast<std::size_t>(Fval.rows()) == nf);
     assert(static_cast<std::size_t>(J.rows()) == nf);
-    assert(static_cast<std::size_t>(J.cols()) == 2 + 2 * nx + q.size());
+    assert(static_cast<std::size_t>(J.cols()) == 2 + 2 * nx + Q.size());
 
     Eigen::SparseMatrix<double> dF_dt0, dF_dtf, dF_dvecX, dF_dQ;
 
@@ -413,7 +412,7 @@ auto endpoint_eval(std::size_t nf,
     for (auto i = 0u; i < nf; ++i) { dF_dtf.insert(i, 0) = J(i, 1); }
 
     dF_dvecX.resize(nf, X.size());
-    Eigen::VectorXi pattern(X.size());
+    Eigen::VectorXi pattern = Eigen::VectorXi::Zero(X.size());
     pattern.head(nx).setConstant(nf);
     pattern.tail(nx).setConstant(nf);
     dF_dvecX.reserve(pattern);
@@ -425,11 +424,11 @@ auto endpoint_eval(std::size_t nf,
       }
     }
 
-    dF_dQ.resize(nf, q.size());
-    dF_dQ.reserve(Eigen::VectorXi::Constant(q.size(), nf));
+    dF_dQ.resize(nf, Q.size());
+    dF_dQ.reserve(Eigen::VectorXi::Constant(Q.size(), nf));
 
     for (auto row = 0u; row < nf; ++row) {
-      for (auto col = 0u; col < q.size(); ++col) {
+      for (auto col = 0u; col < Q.size(); ++col) {
         dF_dQ.insert(row, col) = J(row, 2 + 2 * nx + col);
       }
     }
@@ -460,7 +459,7 @@ auto endpoint_eval(std::size_t nf,
  * where vec(X) stacks the columns of X into a single column vector.
  */
 template<bool Deriv, typename F, std::size_t Kmin, std::size_t Kmax>
-auto dynamics_constraint(std::size_t nx,
+auto colloc_dyn(std::size_t nx,
   F && f,
   const Mesh<Kmin, Kmax> & m,
   const double t0,
@@ -561,7 +560,7 @@ auto dynamics_constraint(std::size_t nx,
  * where vec(X) stacks the columns of X into a single column vector.
  */
 template<bool Deriv, typename G, std::size_t Kmin, std::size_t Kmax>
-auto integral_constraint(std::size_t nq,
+auto colloc_int(std::size_t nq,
   G && g,
   const Mesh<Kmin, Kmax> & m,
   const double & t0,
