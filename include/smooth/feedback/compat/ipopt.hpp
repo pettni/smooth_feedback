@@ -224,7 +224,9 @@ public:
     }
 
     sol_.x = Eigen::Map<const Eigen::VectorXd>(x, n);
-    sol_.z = Eigen::Map<const Eigen::VectorXd>(lambda, m);
+    sol_.zl = Eigen::Map<const Eigen::VectorXd>(z_L, n);
+    sol_.zu = Eigen::Map<const Eigen::VectorXd>(z_U, n);
+    sol_.lambda = Eigen::Map<const Eigen::VectorXd>(lambda, m);
   }
 
 private:

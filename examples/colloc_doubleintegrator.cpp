@@ -63,7 +63,7 @@ int main()
 
   // define mesh
   smooth::feedback::Mesh mesh;
-  mesh.refine_ph(0, 8 * 5);
+  mesh.refine_ph(0, 4 * 5);
   const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
   // transcribe optimal control problem to nonlinear programming problem
@@ -81,8 +81,11 @@ int main()
       {"derivative_test", "first-order"},
     },
     {
-      {"tol", 1e-6},
+      {"tol", 1e-8},
     });
+
+  std::cout << "MULTIPLIERS" << std::endl;
+  std::cout << nlp_sol.lambda.transpose() << std::endl;
 
   // convert solution of nlp insto solution of ocp
   const auto ocp_sol = smooth::feedback::nlp_sol_to_ocp_sol(ocp, mesh, nlp_sol);
@@ -101,8 +104,18 @@ int main()
   matplot::legend({"pos", "vel", "nodes"});
 
   figure();
-  plot(tt, r2v(tt | std::views::transform([&ocp_sol](double t) { return ocp_sol.u(t).x(); })), "-")
-    ->line_width(2);
+  hold(on);
+  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_dyn(t).x(); }), "-r")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_dyn(t).y(); }), "-b")->line_width(2);
+  matplot::legend({"lambda_x", "lambda_y"});
+
+  figure();
+  hold(on);
+  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_cr(t).x(); }), "-r")->line_width(2);
+  matplot::legend(std::vector<std::string>{"lambda_{cr}"});
+
+  figure();
+  plot(tt, transform(tt, [&ocp_sol](double t) { return ocp_sol.u(t).x(); }), "-")->line_width(2);
   matplot::legend(std::vector<std::string>{"input"});
 
   show();

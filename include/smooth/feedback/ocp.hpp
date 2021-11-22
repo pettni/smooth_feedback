@@ -107,6 +107,18 @@ struct OCPSolution
 
   std::function<Eigen::VectorXd(double)> u;
   std::function<Eigen::VectorXd(double)> x;
+
+  /// @brief Multipliers for integral constraints
+  Eigen::VectorXd lambda_q;
+
+  /// @brief Multipliers for endpoint constraints
+  Eigen::VectorXd lambda_ce;
+
+  /// @brief Multipliers for dynamics equality constraint
+  std::function<Eigen::VectorXd(double)> lambda_dyn;
+
+  /// @brief Multipliers for active running constraints
+  std::function<Eigen::VectorXd(double)> lambda_cr;
 };
 
 namespace detail {
@@ -214,8 +226,8 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
 
     Eigen::VectorXd ret(m);
     // clang-format off
-    ret.segment(dcon_B, dcon_L)  = colloc_dyn<false>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
-    ret.segment(qcon_B, qcon_L)  = colloc_int<false>(ocp.nq, ocp.g, mesh, t0, tf, Q, X, U).reshaped();
+    ret.segment(dcon_B, dcon_L)   = colloc_dyn<false>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
+    ret.segment(qcon_B, qcon_L)   = colloc_int<false>(ocp.nq, ocp.g, mesh, t0, tf, Q, X, U).reshaped();
     ret.segment(crcon_B, crcon_L) = colloc_eval<false>(ocp.ncr, ocp.cr, mesh, t0, tf, X, U).reshaped();
     ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X, Q).reshaped();
     // clang-format on
@@ -313,10 +325,15 @@ OCPSolution nlp_sol_to_ocp_sol(
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
   const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
+  const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
+  const auto [dcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
+
   const double t0 = 0;
   const double tf = nlp_sol.x(tfvar_B);
 
   const Eigen::VectorXd Q = nlp_sol.x.segment(qvar_B, qvar_L);
+
+  // state vector has a value at the endpoint
 
   Eigen::MatrixXd X(ocp.nx, N + 1);
   X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
@@ -325,7 +342,8 @@ OCPSolution nlp_sol_to_ocp_sol(
     return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise());
   };
 
-  // repeat last input since there is no input at mesh endpoint
+  // for these we repeat last point since there are no values for endpoint
+
   Eigen::MatrixXd U(ocp.nu, N + 1);
   U.leftCols(N) = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
   U.col(N)      = U.col(N - 1);
@@ -334,12 +352,35 @@ OCPSolution nlp_sol_to_ocp_sol(
     return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), U.colwise());
   };
 
+  // repeat last lambda
+
+  Eigen::MatrixXd Ldyn(ocp.nx, N + 1);
+  Ldyn.leftCols(N) = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.nx, dcon_L / ocp.nx);
+  Ldyn.col(N)      = Ldyn.col(N - 1);
+
+  auto ldfun = [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](
+                 double t) -> Eigen::VectorXd {
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Ldyn.colwise());
+  };
+
+  Eigen::MatrixXd Lcr(ocp.ncr, N + 1);
+  Lcr.leftCols(N) = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.ncr, crcon_L / ocp.ncr);
+  Lcr.col(N)      = Lcr.col(N - 1);
+
+  auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::VectorXd {
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Lcr.colwise());
+  };
+
   return OCPSolution{
-    .t0 = t0,
-    .tf = tf,
-    .Q  = std::move(Q),
-    .u  = std::move(ufun),
-    .x  = std::move(xfun),
+    .t0         = t0,
+    .tf         = tf,
+    .Q          = std::move(Q),
+    .u          = std::move(ufun),
+    .x          = std::move(xfun),
+    .lambda_q   = nlp_sol.lambda.segment(qcon_B, qcon_L),
+    .lambda_ce  = nlp_sol.lambda.segment(cecon_B, cecon_L),
+    .lambda_dyn = std::move(ldfun),
+    .lambda_cr  = std::move(lcrfun),
   };
 }
 

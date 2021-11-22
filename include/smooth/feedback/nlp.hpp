@@ -110,8 +110,11 @@ struct NLPSolution
   /// @brief Variable values
   Eigen::VectorXd x;
 
-  /// @brief Dual values
-  Eigen::VectorXd z;
+  /// @brief Inequality multipliers
+  Eigen::VectorXd zl, zu;
+
+  /// @brief Constraint multipliers
+  Eigen::VectorXd lambda;
 };
 
 }  // namespace smooth::feedback
