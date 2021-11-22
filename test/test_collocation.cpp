@@ -184,3 +184,36 @@ TEST(Collocation, StateTrajectory)
   const auto q_vals = smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X, U);
   ASSERT_NEAR(q_vals.x(), 0.00273752, 1e-4);
 }
+
+TEST(Collocation, FunctionEval)
+{
+  smooth::feedback::Mesh m(5, 5);
+
+  {
+    Eigen::MatrixXd vals = Eigen::MatrixXd::Ones(3, m.N_colloc() + 1);
+
+    const auto x1 = m.eval<Eigen::VectorXd>(0, vals.colwise());
+    ASSERT_TRUE(x1.isApprox(Eigen::VectorXd::Ones(3)));
+
+    const auto x2 = m.eval<Eigen::VectorXd>(0.5, vals.colwise());
+    ASSERT_TRUE(x2.isApprox(Eigen::VectorXd::Ones(3)));
+
+    const auto x3 = m.eval<Eigen::VectorXd>(1, vals.colwise());
+    ASSERT_TRUE(x3.isApprox(Eigen::VectorXd::Ones(3)));
+  }
+
+  m.refine_ph(0, 40);
+
+  {
+    Eigen::MatrixXd vals_refined = Eigen::MatrixXd::Ones(3, m.N_colloc() + 1);
+
+    const auto x1 = m.eval<Eigen::VectorXd>(0, vals_refined.colwise());
+    ASSERT_TRUE(x1.isApprox(Eigen::VectorXd::Ones(3)));
+
+    const auto x2 = m.eval<Eigen::VectorXd>(0.5, vals_refined.colwise());
+    ASSERT_TRUE(x2.isApprox(Eigen::VectorXd::Ones(3)));
+
+    const auto x3 = m.eval<Eigen::VectorXd>(1, vals_refined.colwise());
+    ASSERT_TRUE(x3.isApprox(Eigen::VectorXd::Ones(3)));
+  }
+}

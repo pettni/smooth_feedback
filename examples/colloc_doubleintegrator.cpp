@@ -88,19 +88,24 @@ int main()
   const auto ocp_sol = smooth::feedback::nlp_sol_to_ocp_sol(ocp, mesh, nlp_sol);
 
 #ifdef ENABLE_PLOTTING
-  matplot::figure();
-  matplot::plot(r2v(ocp_sol.tf * nodes), r2v(ocp_sol.X.row(0)), "-x")->line_width(2);
-  matplot::title("pos");
+  using namespace matplot;
 
-  matplot::figure();
-  matplot::plot(r2v(ocp_sol.tf * nodes), r2v(ocp_sol.X.row(1)), "-x")->line_width(2);
-  matplot::title("vel");
+  const auto tt       = linspace(ocp_sol.t0, ocp_sol.tf, 500);
+  const auto tt_nodes = r2v(ocp_sol.tf * nodes);
 
-  matplot::figure();
-  matplot::plot(r2v(ocp_sol.tf * nodes), r2v(ocp_sol.U.row(0)), "-x")->line_width(2);
-  matplot::title("input");
+  figure();
+  hold(on);
+  plot(tt, transform(tt, [&](double t) { return ocp_sol.x(t).x(); }), "-r")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return ocp_sol.x(t).y(); }), "-b")->line_width(2);
+  plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
+  matplot::legend({"pos", "vel", "nodes"});
 
-  matplot::show();
+  figure();
+  plot(tt, r2v(tt | std::views::transform([&ocp_sol](double t) { return ocp_sol.u(t).x(); })), "-")
+    ->line_width(2);
+  matplot::legend(std::vector<std::string>{"input"});
+
+  show();
 #endif
 
   return EXIT_SUCCESS;

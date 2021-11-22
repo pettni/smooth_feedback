@@ -80,9 +80,9 @@ constexpr std::pair<std::array<double, K + 1>, std::array<double, K + 1>> lgr_pl
 /**
  * @brief Inline pre-computed LGR nodes, weights, and differentiation matrices.
  */
-inline std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::MatrixXd>> kLgrNodeInfo =
-  []() {
-    std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::MatrixXd>> ret;
+inline std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXd>>
+  kLgrNodeInfo = []() {
+    std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXd>> ret;
 
     utils::static_for<kKmax + 1 - kKmin>([&ret](auto i) {
       constexpr auto K    = kKmin + i;
@@ -92,10 +92,12 @@ inline std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::MatrixXd>
 
       Eigen::VectorXd n = Eigen::Map<const Eigen::VectorXd>(nw_s.first.data(), K + 1);
       Eigen::VectorXd w = Eigen::Map<const Eigen::VectorXd>(nw_s.second.data(), K + 1);
+      Eigen::MatrixXd B = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
+        B_s[0].data(), K + 1, K + 1);
       Eigen::MatrixXd D = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
         D_s[0].data(), K + 1, K + 1);
 
-      ret.push_back(std::make_tuple(n, w, D));
+      ret.push_back(std::make_tuple(n, w, B, D));
     });
 
     return ret;
@@ -249,7 +251,62 @@ public:
     const double tau0 = intervals_[i].tau0;
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
 
-    return (2 / (tauf - tau0)) * std::get<2>(detail::kLgrNodeInfo[K - kKmin]).block(0, 0, K + 1, K);
+    return (2 / (tauf - tau0)) * std::get<3>(detail::kLgrNodeInfo[K - kKmin]).block(0, 0, K + 1, K);
+  }
+
+  /**
+   * @brief Find interval index that contains t
+   */
+  std::size_t interval_find(double t) const
+  {
+    if (t < 0) { return 0; }
+    if (t > 1) { return intervals_.size() - 1; }
+    auto it = utils::binary_interval_search(
+      intervals_, t, [](const auto & ival, double _t) { return ival.tau0 <=> _t; });
+    if (it != intervals_.end()) { return std::distance(intervals_.begin(), it); }
+    return 0;
+  }
+
+  /**
+   * @brief Evaluate a function on an interval
+   *
+   * @tparam RetT return value type
+   *
+   * @param t time value in [0, 1]
+   * @param r values for the collocation points (size N + 1)
+   * @param derivative to evaluate
+   */
+  template<typename RetT, std::ranges::sized_range R>
+  RetT eval(double t, const R & r, std::size_t p = 0) const
+  {
+    const std::size_t N = N_colloc();
+
+    assert(std::ranges::size(r) == N + 1);
+
+    const std::size_t ival = interval_find(t);
+    const std::size_t k    = intervals_[ival].K;
+
+    const double tau0 = intervals_[ival].tau0;
+    const double tauf = ival + 1 < intervals_.size() ? intervals_[ival + 1].tau0 : 1.;
+
+    const double u = 2 * (t - tau0) / (tauf - tau0) - 1;
+    const auto U   = monomial_derivative_runtime(u, k, p);
+    const auto & B = std::get<2>(detail::kLgrNodeInfo[k - kKmin]);
+
+    const Eigen::RowVectorXd W = U * B;
+
+    assert(std::size_t(W.size()) == k + 1);
+
+    std::size_t N_before = 0;
+    for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
+
+    const auto r_ival = r | std::views::drop(N_before);
+
+    RetT ret = W(0) * *std::ranges::begin(r_ival);
+    for (auto i = 1; const auto & v : r_ival | std::views::drop(1) | std::views::take(k)) {
+      ret += W(i++) * v;
+    }
+    return ret;
   }
 
 private:

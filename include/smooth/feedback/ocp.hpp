@@ -104,8 +104,9 @@ struct OCPSolution
   double tf;
 
   Eigen::VectorXd Q;
-  Eigen::MatrixXd U;
-  Eigen::MatrixXd X;
+
+  std::function<Eigen::VectorXd(double)> u;
+  std::function<Eigen::VectorXd(double)> x;
 };
 
 namespace detail {
@@ -306,20 +307,40 @@ template<typename Theta, typename F, typename G, typename CR, typename CE>
 OCPSolution nlp_sol_to_ocp_sol(
   const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
 {
+  const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
   const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-  OCPSolution ret;
-  ret.t0 = 0;
-  ret.tf = nlp_sol.x(tfvar_B);
+  const double t0 = 0;
+  const double tf = nlp_sol.x(tfvar_B);
 
-  ret.Q = nlp_sol.x.segment(qvar_B, qvar_L);
-  ret.X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-  ret.U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+  const Eigen::VectorXd Q = nlp_sol.x.segment(qvar_B, qvar_L);
 
-  return ret;
+  Eigen::MatrixXd X(ocp.nx, N + 1);
+  X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+
+  auto xfun = [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::VectorXd {
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise());
+  };
+
+  // repeat last input since there is no input at mesh endpoint
+  Eigen::MatrixXd U(ocp.nu, N + 1);
+  U.leftCols(N) = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+  U.col(N)      = U.col(N - 1);
+
+  auto ufun = [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::VectorXd {
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), U.colwise());
+  };
+
+  return OCPSolution{
+    .t0 = t0,
+    .tf = tf,
+    .Q  = std::move(Q),
+    .u  = std::move(ufun),
+    .x  = std::move(xfun),
+  };
 }
 
 }  // namespace smooth::feedback
