@@ -1,3 +1,28 @@
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson, John B. Mains
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #ifndef SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
 #define SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
 
@@ -10,33 +35,31 @@
 
 namespace smooth::feedback {
 
-using Ipopt::Index, Ipopt::Number;
-
 class IpoptNLP : public Ipopt::TNLP
 {
 public:
   /**
    * @brief Ipopt wrapper for NLP (rvlaue version).
    */
-  IpoptNLP(NLP && nlp) : nlp_(std::move(nlp)) {}
+  inline IpoptNLP(NLP && nlp) : nlp_(std::move(nlp)) {}
 
   /**
    * @brief Ipopt wrapper for NLP (lvalue version).
    */
-  IpoptNLP(const NLP & nlp) : nlp_(nlp) {}
+  inline IpoptNLP(const NLP & nlp) : nlp_(nlp) {}
 
   /**
    * @brief Access solution.
    */
-  const NLPSolution & sol() const { return sol_; }
+  inline const NLPSolution & sol() const { return sol_; }
 
   /**
    * @brief IPOPT info overload
    */
-  bool get_nlp_info(Index & n,
-    Index & m,
-    Index & nnz_jac_g,
-    Index & nnz_h_lag,
+  inline bool get_nlp_info(Ipopt::Index & n,
+    Ipopt::Index & m,
+    Ipopt::Index & nnz_jac_g,
+    Ipopt::Index & nnz_h_lag,
     IndexStyleEnum & index_style) override
   {
     n = nlp_.n;
@@ -54,8 +77,12 @@ public:
   /**
    * @brief IPOPT bounds overload
    */
-  bool get_bounds_info(
-    Index n, Number * x_l, Number * x_u, Index m, Number * g_l, Number * g_u) override
+  inline bool get_bounds_info(Ipopt::Index n,
+    Ipopt::Number * x_l,
+    Ipopt::Number * x_u,
+    Ipopt::Index m,
+    Ipopt::Number * g_l,
+    Ipopt::Number * g_u) override
   {
     Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl;
     Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu;
@@ -68,15 +95,15 @@ public:
   /**
    * @brief IPOPT initial guess overload
    */
-  bool get_starting_point(Index n,
+  inline bool get_starting_point(Ipopt::Index n,
     bool init_x,
-    Number * x,
+    Ipopt::Number * x,
     bool init_z,
-    [[maybe_unused]] Number * z_L,
-    [[maybe_unused]] Number * z_U,
-    [[maybe_unused]] Index m,
+    [[maybe_unused]] Ipopt::Number * z_L,
+    [[maybe_unused]] Ipopt::Number * z_U,
+    [[maybe_unused]] Ipopt::Index m,
     bool init_lambda,
-    [[maybe_unused]] Number * lambda) override
+    [[maybe_unused]] Ipopt::Number * lambda) override
   {
     assert(init_x == true);
     assert(init_z == false);
@@ -90,10 +117,10 @@ public:
   /**
    * @brief IPOPT objective overload
    */
-  bool eval_f([[maybe_unused]] Index n,
-    const Number * x,
+  inline bool eval_f(Ipopt::Index n,
+    const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
-    Number & obj_value) override
+    Ipopt::Number & obj_value) override
   {
     obj_value = nlp_.f(Eigen::Map<const Eigen::VectorXd>(x, n));
     return true;
@@ -102,12 +129,12 @@ public:
   /**
    * @brief IPOPT method to define initial guess
    */
-  bool eval_grad_f(Index n,
-    [[maybe_unused]] const Number * x,
+  inline bool eval_grad_f(Ipopt::Index n,
+    const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
-    Number * grad_f) override
+    Ipopt::Number * grad_f) override
   {
-    Eigen::Map<Eigen::VectorXd>(grad_f, n) =
+    Eigen::Map<Eigen::RowVectorXd>(grad_f, n) =
       Eigen::MatrixXd(nlp_.df_dx(Eigen::Map<const Eigen::VectorXd>(x, n)));
     return true;
   }
@@ -115,11 +142,11 @@ public:
   /**
    * @brief IPOPT method to define initial guess
    */
-  bool eval_g([[maybe_unused]] Index n,
-    const Number * x,
+  inline bool eval_g(Ipopt::Index n,
+    const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
-    Index m,
-    Number * g) override
+    Ipopt::Index m,
+    Ipopt::Number * g) override
   {
     Eigen::Map<Eigen::VectorXd>(g, m) = nlp_.g(Eigen::Map<const Eigen::VectorXd>(x, n));
     return true;
@@ -128,19 +155,15 @@ public:
   /**
    * @brief IPOPT method to define initial guess
    */
-  bool eval_jac_g(Index n,
-    const Number * x,
+  inline bool eval_jac_g(Ipopt::Index n,
+    const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
-    Index m,
-    Index nele_jac,
-    Index * iRow,
-    Index * jCol,
-    Number * values) override
+    [[maybe_unused]] Ipopt::Index m,
+    Ipopt::Index nele_jac,
+    Ipopt::Index * iRow,
+    Ipopt::Index * jCol,
+    Ipopt::Number * values) override
   {
-    assert(n == Nvars_beg().back());
-    assert(m == Ncons_beg().back());
-
-
     if (values == NULL) {
       const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
       assert(nele_jac == J.nonZeros());
@@ -165,21 +188,40 @@ public:
   }
 
   /**
-   * @brief IPOPT method to define initial guess
+   * @brief IPOPT method called after optimization done
    */
-  void finalize_solution([[maybe_unused]] Ipopt::SolverReturn status,
-    [[maybe_unused]] Index n,
-    const Number * x,
-    [[maybe_unused]] const Number * z_L,
-    [[maybe_unused]] const Number * z_U,
-    [[maybe_unused]] Index m,
-    [[maybe_unused]] const Number * g,
-    [[maybe_unused]] const Number * lambda,
-    [[maybe_unused]] Number obj_value,
+  inline void finalize_solution(Ipopt::SolverReturn status,
+    Ipopt::Index n,
+    const Ipopt::Number * x,
+    [[maybe_unused]] const Ipopt::Number * z_L,
+    [[maybe_unused]] const Ipopt::Number * z_U,
+    Ipopt::Index m,
+    [[maybe_unused]] const Ipopt::Number * g,
+    [[maybe_unused]] const Ipopt::Number * lambda,
+    [[maybe_unused]] Ipopt::Number obj_value,
     [[maybe_unused]] const Ipopt::IpoptData * ip_data,
     [[maybe_unused]] Ipopt::IpoptCalculatedQuantities * ip_cq) override
   {
-    assert(n == Nvar);
+    switch (status) {
+    case Ipopt::SolverReturn::SUCCESS:
+      sol_.status = NLPSolution::Status::Optimal;
+      break;
+    case Ipopt::SolverReturn::MAXITER_EXCEEDED:
+      sol_.status = NLPSolution::Status::MaxIterations;
+      break;
+    case Ipopt::SolverReturn::CPUTIME_EXCEEDED:
+      sol_.status = NLPSolution::Status::MaxTime;
+      break;
+    case Ipopt::SolverReturn::LOCAL_INFEASIBILITY:
+      sol_.status = NLPSolution::Status::PrimalInfeasible;
+      break;
+    case Ipopt::SolverReturn::DIVERGING_ITERATES:
+      sol_.status = NLPSolution::Status::DualInfeasible;
+      break;
+    default:
+      sol_.status = NLPSolution::Status::Unknown;
+      break;
+    }
 
     sol_.x = Eigen::Map<const Eigen::VectorXd>(x, n);
     sol_.z = Eigen::Map<const Eigen::VectorXd>(lambda, m);
@@ -190,18 +232,27 @@ private:
   NLPSolution sol_;
 };
 
-inline NLPSolution solve_nlp_ipopt(const NLP & nlp)
+/**
+ * @brief Solve an NLP with the Ipopt solver
+ *
+ * @param nlp problem to solve
+ * @param opts_integer key-value list of Ipopt integer options
+ * @param opts_string key-value list of Ipopt string options
+ * @param opts_numeric key-value list of Ipopt numeric options
+ *
+ * @see https://coin-or.github.io/Ipopt/OPTIONS.html for a list of available options
+ */
+inline NLPSolution solve_nlp_ipopt(const NLP & nlp,
+  std::vector<std::pair<std::string, int>> opts_integer        = {},
+  std::vector<std::pair<std::string, std::string>> opts_string = {},
+  std::vector<std::pair<std::string, double>> opts_numeric     = {})
 {
   Ipopt::SmartPtr<IpoptNLP> ipopt_nlp          = new IpoptNLP(nlp);
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
-  app->Options()->SetIntegerValue("print_level", 5);
-  app->Options()->SetStringValue("print_timing_statistics", "yes");
-  app->Options()->SetNumericValue("tol", 1e-6);
-  app->Options()->SetStringValue("linear_solver", "mumps");
-  app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-  app->Options()->SetStringValue("derivative_test", "first-order");
-  app->Options()->SetNumericValue("derivative_test_tol", 1e-3);
+  for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
+  for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }
+  for (auto [opt, val] : opts_numeric) { app->Options()->SetNumericValue(opt, val); }
 
   app->Initialize();
   app->OptimizeTNLP(ipopt_nlp);

@@ -1,17 +1,22 @@
 add_executable(asif_doubleintegrator asif_doubleintegrator.cpp)
 target_link_libraries(asif_doubleintegrator feedback)
+target_compile_options(asif_doubleintegrator PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(mpc_doubleintegrator mpc_doubleintegrator.cpp)
 target_link_libraries(mpc_doubleintegrator feedback)
+target_compile_options(mpc_doubleintegrator PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(mpc_asif_vehicle mpc_asif_vehicle.cpp)
 target_link_libraries(mpc_asif_vehicle feedback)
+target_compile_options(mpc_asif_vehicle PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(pid_se2 pid_se2.cpp)
 target_link_libraries(pid_se2 feedback)
+target_compile_options(pid_se2 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(colloc_doubleintegrator colloc_doubleintegrator.cpp)
 target_link_libraries(colloc_doubleintegrator feedback ipopt)
+target_compile_options(colloc_doubleintegrator PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(snippets snippets.cpp)
 target_link_libraries(snippets feedback)

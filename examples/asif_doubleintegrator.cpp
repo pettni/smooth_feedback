@@ -59,7 +59,7 @@ int main()
   };
 
   // backup controller
-  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
+  auto bu = []<typename T>(T, const G<T> &) -> U<T> { return U<T>(-0.6); };
 
   // parameters
   smooth::feedback::ASIFilterParams<Ud> prm{
@@ -125,15 +125,15 @@ int main()
 
   plot(tvec, xvec)->line_width(2);
   plot(tvec, vvec)->line_width(2);
-  plot(tvec, transform(tvec, [&](auto t) { return 3; }), "--")->line_width(2);
-  plot(tvec, transform(tvec, [&](auto t) { return 1.5; }), "--")->line_width(2);
+  plot(tvec, transform(tvec, [&](auto) { return 3; }), "--")->line_width(2);
+  plot(tvec, transform(tvec, [&](auto) { return 1.5; }), "--")->line_width(2);
   legend({"x", "v", "x_{max}", "v_{max}"});
 
   figure();
   hold(on);
   title("Input");
   plot(tvec, uvec)->line_width(2);
-  plot(tvec, transform(tvec, [](auto t) { return 1; }), "--")->line_width(2);
+  plot(tvec, transform(tvec, [](auto) { return 1; }), "--")->line_width(2);
 
   show();
 #else

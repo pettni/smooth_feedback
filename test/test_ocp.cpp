@@ -28,7 +28,7 @@
 #include <Eigen/Core>
 
 // #include "smooth/compat/autodiff.hpp"
-#include "smooth/feedback/nlp.hpp"
+#include "smooth/feedback/ocp.hpp"
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;

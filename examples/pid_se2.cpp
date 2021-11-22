@@ -63,7 +63,7 @@ int main()
   using State = smooth::Bundle<smooth::SE2d, Eigen::Vector3d>;
   using Deriv = typename State::Tangent;
   runge_kutta4<State, double, Deriv, double, vector_space_algebra> stepper{};
-  const auto ode = [&u](const State & x, Deriv & d, double t) {
+  const auto ode = [&u](const State & x, Deriv & d, double) {
     d.template head<3>() = x.part<1>();
     d.template tail<3>() << u(0), 0, u(1);
   };
