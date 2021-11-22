@@ -1,3 +1,6 @@
+#ifndef SMOOTH__FEEDBACK__NLP_HPP_
+#define SMOOTH__FEEDBACK__NLP_HPP_
+
 /**
  * @file
  * @brief Nonlinear programming
@@ -73,6 +76,19 @@ struct OCP
 };
 
 /**
+ * @brief Solution to OCP problem.
+ */
+struct OCPSolution
+{
+  double t0;
+  double tf;
+
+  Eigen::VectorXd Q;
+  Eigen::MatrixXd U;
+  Eigen::MatrixXd X;
+};
+
+/**
  * @brief Nonlinear Programming Problem
  * \f[
  *  \begin{cases}
@@ -126,13 +142,19 @@ struct NLP
     d2g_dx2 = std::nullopt;
 };
 
-/**
- * @brief Formulate an OCP as a NLP using collocation on a mesh.
- *
- * @param ocp Optimal control problem definition
- * @param mesh Mesh that describes collocation point structure
- * @param NLP encoding of ocp as a nonlinear program
- */
+struct NLPSolution
+{
+  /// @brief Solver status
+
+  /// @brief Variable values
+  Eigen::VectorXd x;
+
+  /// @brief Dual values
+  Eigen::VectorXd z;
+};
+
+namespace detail {
+
 template<typename Theta,
   typename F,
   typename G,
@@ -140,7 +162,7 @@ template<typename Theta,
   typename CE,
   std::size_t Kmin,
   std::size_t Kmax>
-NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
+auto ocp_nlp_structure(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
 {
   std::size_t N = mesh.N_colloc();
 
@@ -166,6 +188,29 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
   std::array<std::size_t, 5> con_beg{0};
   std::partial_sum(con_len.begin(), con_len.end(), con_beg.begin() + 1);
 
+  return std::make_tuple(var_beg, var_len, con_beg, con_len);
+}
+
+}  // namespace detail
+
+/**
+ * @brief Formulate an OCP as a NLP using collocation on a mesh.
+ *
+ * @param ocp Optimal control problem definition
+ * @param mesh Mesh that describes collocation point structure
+ * @param NLP encoding of ocp as a nonlinear program
+ */
+template<typename Theta,
+  typename F,
+  typename G,
+  typename CR,
+  typename CE,
+  std::size_t Kmin,
+  std::size_t Kmax>
+NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
+{
+  const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
+
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
   const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -174,7 +219,7 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
 
   // OBJECTIVE FUNCTION
 
-  auto f = [var_beg, var_len, ocp = ocp](const Eigen::VectorXd & x) -> double {
+  auto f = [var_beg = var_beg, var_len = var_len, ocp = ocp](const Eigen::VectorXd & x) -> double {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -190,7 +235,7 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
 
   // OBJECTIVE JACOBIAN
 
-  auto df_dx = [var_beg, var_len, ocp = ocp](
+  auto df_dx = [var_beg = var_beg, var_len = var_len, ocp = ocp](
                  const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
@@ -215,8 +260,9 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
 
   // CONSTRAINT FUNCTION
 
-  auto g = [var_beg, var_len, con_beg, con_len, mesh, ocp = ocp](
-             const Eigen::VectorXd & x) -> Eigen::VectorXd {
+  auto g =
+    [var_beg = var_beg, var_len = var_len, con_beg = con_beg, con_len = con_len, mesh = mesh, ocp = ocp](
+      const Eigen::VectorXd & x) -> Eigen::VectorXd {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -242,7 +288,7 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
   };
 
   // CONSTRAINT JACOBIAN
-  auto dg_dx = [var_beg, var_len, mesh, ocp = ocp](const Eigen::VectorXd & x) {
+  auto dg_dx = [var_beg = var_beg, var_len = var_len, mesh = mesh, ocp = ocp](const Eigen::VectorXd & x) {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -285,8 +331,8 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
   gu.segment(qcon_B, qcon_L).setZero();
 
   // running constraints
-  gl.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1);
-  gu.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1);
+  gl.segment(crcon_B, crcon_L) = ocp.crl.replicate(mesh.N_colloc(), 1);
+  gu.segment(crcon_B, crcon_L) = ocp.cru.replicate(mesh.N_colloc(), 1);
 
   // end constraints
   gl.segment(cecon_B, cecon_L) = ocp.cel;
@@ -308,6 +354,35 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
   };
 }
 
+template<typename Theta,
+  typename F,
+  typename G,
+  typename CR,
+  typename CE,
+  std::size_t Kmin,
+  std::size_t Kmax>
+OCPSolution nlp_sol_to_ocp_sol(
+  const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh, const NLPSolution & nlp_sol)
+{
+  const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
+
+  const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+  const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+
+  const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
+  const auto [dcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
+
+  OCPSolution ret;
+  ret.t0 = 0;
+  ret.tf = nlp_sol.x(tfvar_B);
+
+  ret.Q = nlp_sol.x.segment(qvar_B, qvar_L);
+  ret.X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+  ret.U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+
+  return ret;
+}
+
 }  // namespace smooth::feedback
 
-// solve_ocp_ipopt: convert inf to 2e19...
+#endif  // SMOOTH__FEEDBACK__NLP_HPP_

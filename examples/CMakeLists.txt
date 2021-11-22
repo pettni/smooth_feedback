@@ -10,6 +10,9 @@ target_link_libraries(mpc_asif_vehicle feedback)
 add_executable(pid_se2 pid_se2.cpp)
 target_link_libraries(pid_se2 feedback)
 
+add_executable(colloc_doubleintegrator colloc_doubleintegrator.cpp)
+target_link_libraries(colloc_doubleintegrator feedback ipopt)
+
 add_executable(snippets snippets.cpp)
 target_link_libraries(snippets feedback)
 
@@ -27,6 +30,9 @@ if(${Matplot++_FOUND})
 
   target_compile_definitions(pid_se2 PRIVATE ENABLE_PLOTTING)
   target_link_libraries(pid_se2 Matplot++::matplot)
+
+  target_compile_definitions(colloc_doubleintegrator PRIVATE ENABLE_PLOTTING)
+  target_link_libraries(colloc_doubleintegrator Matplot++::matplot)
 else()
   message(WARNING "Matplot++ not found, plotting disabled")
 endif()
