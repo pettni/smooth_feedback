@@ -79,7 +79,7 @@ TEST(Ocp, Jacobians)
     .ceu   = Vec<double>::Constant(6, 1),
   };
 
-  smooth::feedback::Mesh<5, 10> mesh;
+  smooth::feedback::Mesh mesh(5, 5);
   mesh.refine_ph(0, 8 * 5);
 
   auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);

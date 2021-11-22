@@ -36,7 +36,7 @@ using Vecd = Vec<double>;
 
 TEST(Collocation, Mesh)
 {
-  smooth::feedback::Mesh<5, 10> m;
+  smooth::feedback::Mesh m(5, 10);
   m.refine_ph(0, 5 * 10);
   ASSERT_EQ(m.N_ivals(), 10);
 
@@ -102,7 +102,7 @@ TEST(Collocation, TimeTrajectory)
   double t0 = 3;
   double tf = 5;
 
-  smooth::feedback::Mesh<5, 5> m;
+  smooth::feedback::Mesh m(5, 5);
   m.refine_ph(0, 40);
   ASSERT_EQ(m.N_ivals(), 8);
 
@@ -158,7 +158,7 @@ TEST(Collocation, StateTrajectory)
   double t0 = 3;
   double tf = 5;
 
-  smooth::feedback::Mesh<5, 5> m;
+  smooth::feedback::Mesh m(5, 5);
 
   // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
   m.refine_ph(0, 16 * 5);

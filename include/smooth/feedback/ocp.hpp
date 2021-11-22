@@ -42,15 +42,13 @@ namespace smooth::feedback {
  * @brief Rn optimal control problem on the interval \f$ t \in [0, t_f] \f$.
  * \f[
  * \begin{cases}
- *  \min_{t_f, u(\cdot), x(\cdot)} & \theta(t_f, x_0, x_f, q)                                        \\
- *  \text{s.t.}                    & x(0) = x_0                                                      \\
- *                                 & x(t_f) = x_f                                                    \\
- *                                 & \dot x(t) = f(t, x(t), u(t))                                    \\
- *                                 & q = \int_{0}^{t_f} g(t, x(t), u(t)) \mathrm{d}t                 \\
- *                                 & c_{rl} \leq c_r(t, x(t), u(t)) \leq c_{ru} \quad t \in [0, t_f] \\
- *                                 & c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu}
- * \end{cases}
- * \f]
+ *  \min_{t_f, u(\cdot), x(\cdot)} & \theta(t_f, x_0, x_f, q) \\
+ *  \text{s.t.}                    & x(0) = x_0 \\
+ *                                 & x(t_f) = x_f \\
+ *                                 & \dot x(t) = f(t, x(t), u(t)) \\
+ *                                 & q = \int_{0}^{t_f} g(t, x(t), u(t)) \mathrm{d}t \\
+ *                                 & c_{rl} \leq c_r(t, x(t), u(t)) \leq c_{ru} \quad t \in [0, t_f]
+ * \\ & c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu} \end{cases} \f]
  *
  * The optimal control problem depends on arbitrary functions \f$ \theta, f, g, c_r, c_e \f$.
  * The type of those functions are template pararamters in this structure.
@@ -113,14 +111,8 @@ struct OCPSolution
 namespace detail {
 
 /// @brief Variable and constraint structure of an OCP NLP
-template<typename Theta,
-  typename F,
-  typename G,
-  typename CR,
-  typename CE,
-  std::size_t Kmin,
-  std::size_t Kmax>
-auto ocp_nlp_structure(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
+template<typename Theta, typename F, typename G, typename CR, typename CE>
+auto ocp_nlp_structure(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
 {
   std::size_t N = mesh.N_colloc();
 
@@ -158,14 +150,8 @@ auto ocp_nlp_structure(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Km
  * @param mesh Mesh that describes collocation point structure
  * @param NLP encoding of ocp as a nonlinear program
  */
-template<typename Theta,
-  typename F,
-  typename G,
-  typename CR,
-  typename CE,
-  std::size_t Kmin,
-  std::size_t Kmax>
-NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh)
+template<typename Theta, typename F, typename G, typename CR, typename CE>
+NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
 {
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
@@ -316,15 +302,9 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & me
   };
 }
 
-template<typename Theta,
-  typename F,
-  typename G,
-  typename CR,
-  typename CE,
-  std::size_t Kmin,
-  std::size_t Kmax>
+template<typename Theta, typename F, typename G, typename CR, typename CE>
 OCPSolution nlp_sol_to_ocp_sol(
-  const OCP<Theta, F, G, CR, CE> & ocp, const Mesh<Kmin, Kmax> & mesh, const NLPSolution & nlp_sol)
+  const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
 {
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 

@@ -62,7 +62,7 @@ int main()
   };
 
   // define mesh
-  smooth::feedback::Mesh<5, 10> mesh;
+  smooth::feedback::Mesh mesh;
   mesh.refine_ph(0, 8 * 5);
   const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
