@@ -12,6 +12,7 @@ include(CTest)
 include(GoogleTest)
 
 find_package(Boost REQUIRED)
+find_package(PkgConfig REQUIRED)
 find_package(smooth REQUIRED)
 
 # ---------------------------------------------------------------------------------------
@@ -152,4 +153,13 @@ if(BUILD_TESTING)
   add_executable(test_ocp test/test_ocp.cpp)
   target_link_libraries(test_ocp PRIVATE feedback GTest::Main)
   gtest_discover_tests(test_ocp)
+
+  pkg_check_modules(IPOPT ipopt QUIET)
+  if (${IPOPT_FOUND})
+    add_executable(test_ocp_ipopt test/test_ocp_ipopt.cpp)
+    target_include_directories(test_ocp_ipopt SYSTEM PRIVATE ${IPOPT_INCLUDE_DIRS})
+    target_link_libraries(test_ocp_ipopt PRIVATE feedback ${IPOPT_LIBRARIES} GTest::Main)
+    gtest_discover_tests(test_ocp_ipopt)
+  endif()
+
 endif()

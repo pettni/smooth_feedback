@@ -316,7 +316,7 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
 }
 
 template<typename Theta, typename F, typename G, typename CR, typename CE>
-OCPSolution nlp_sol_to_ocp_sol(
+OCPSolution nlpsol_to_ocpsol(
   const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
 {
   const std::size_t N                             = mesh.N_colloc();
@@ -381,6 +381,56 @@ OCPSolution nlp_sol_to_ocp_sol(
     .lambda_ce  = nlp_sol.lambda.segment(cecon_B, cecon_L),
     .lambda_dyn = std::move(ldfun),
     .lambda_cr  = std::move(lcrfun),
+  };
+}
+
+template<typename Theta, typename F, typename G, typename CR, typename CE>
+NLPSolution ocpsol_to_nlpsol(
+  const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh, const OCPSolution & ocpsol)
+{
+  const std::size_t N                             = mesh.N_colloc();
+  const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
+
+  const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+  const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+
+  const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
+  const auto [dcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
+
+  const auto [nodes, weights] = mesh.all_nodes_and_weights();
+
+  const double t0 = 0;
+  const double tf = ocpsol.tf;
+
+  Eigen::VectorXd x(n);
+  Eigen::VectorXd zl(n), zu(n);
+  Eigen::VectorXd lambda(m);
+
+  zl.setZero();
+  zu.setZero();
+
+  x(tfvar_B)                = ocpsol.tf;
+  x.segment(qvar_B, qvar_L) = ocpsol.Q;
+
+  lambda.segment(qcon_B, qcon_L)   = ocpsol.lambda_q;
+  lambda.segment(cecon_B, cecon_L) = ocpsol.lambda_ce;
+
+  for (auto i = 0u; const auto tau : nodes) {
+    x.segment(xvar_B + i * ocp.nx, ocp.nx) = ocpsol.x(t0 + tau * (tf - t0));
+    if (i < N) {
+      x.segment(uvar_B + i * ocp.nu, ocp.nu)         = ocpsol.u(t0 + tau * (tf - t0));
+      lambda.segment(dcon_B + i * ocp.nx, ocp.nx)    = ocpsol.lambda_dyn(t0 + tau * (tf - t0));
+      lambda.segment(crcon_B + i * ocp.ncr, ocp.ncr) = ocpsol.lambda_cr(t0 + tau * (tf - t0));
+    }
+    ++i;
+  }
+
+  return NLPSolution{
+    .status = NLPSolution::Status::Unknown,
+    .x      = std::move(x),
+    .zl     = Eigen::VectorXd::Zero(n),
+    .zu     = Eigen::VectorXd::Zero(n),
+    .lambda = std::move(lambda),
   };
 }
 

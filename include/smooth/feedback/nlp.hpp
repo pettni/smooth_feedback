@@ -107,6 +107,9 @@ struct NLPSolution
     Unknown,
   } status;
 
+  /// @brief Number of iterations
+  std::size_t iter{0};
+
   /// @brief Variable values
   Eigen::VectorXd x;
 
@@ -115,6 +118,9 @@ struct NLPSolution
 
   /// @brief Constraint multipliers
   Eigen::VectorXd lambda;
+
+  /// @brief Objective
+  double objective{0};
 };
 
 }  // namespace smooth::feedback

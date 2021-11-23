@@ -27,8 +27,9 @@
 #define SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
 
 #define HAVE_CSTDDEF
-#include <coin/IpIpoptApplication.hpp>
-#include <coin/IpTNLP.hpp>
+#include <IpIpoptApplication.hpp>
+#include <IpIpoptData.hpp>
+#include <IpTNLP.hpp>
 #undef HAVE_CSTDDEF
 
 #include "smooth/feedback/nlp.hpp"
@@ -51,7 +52,7 @@ public:
   /**
    * @brief Access solution.
    */
-  inline const NLPSolution & sol() const { return sol_; }
+  inline NLPSolution & sol() { return sol_; }
 
   /**
    * @brief IPOPT info overload
@@ -99,17 +100,20 @@ public:
     bool init_x,
     Ipopt::Number * x,
     bool init_z,
-    [[maybe_unused]] Ipopt::Number * z_L,
-    [[maybe_unused]] Ipopt::Number * z_U,
-    [[maybe_unused]] Ipopt::Index m,
+    Ipopt::Number * z_L,
+    Ipopt::Number * z_U,
+    Ipopt::Index m,
     bool init_lambda,
-    [[maybe_unused]] Ipopt::Number * lambda) override
+    Ipopt::Number * lambda) override
   {
-    assert(init_x == true);
-    assert(init_z == false);
-    assert(init_lambda == false);
+    if (init_x) { Eigen::Map<Eigen::VectorXd>(x, n) = sol_.x; }
 
-    Eigen::Map<Eigen::VectorXd>(x, n).setZero();
+    if (init_z) {
+      Eigen::Map<Eigen::VectorXd>(z_L, n) = sol_.zl;
+      Eigen::Map<Eigen::VectorXd>(z_U, n) = sol_.zu;
+    }
+
+    if (init_lambda) { Eigen::Map<Eigen::VectorXd>(lambda, m) = sol_.lambda; }
 
     return true;
   }
@@ -198,12 +202,15 @@ public:
     Ipopt::Index m,
     [[maybe_unused]] const Ipopt::Number * g,
     [[maybe_unused]] const Ipopt::Number * lambda,
-    [[maybe_unused]] Ipopt::Number obj_value,
-    [[maybe_unused]] const Ipopt::IpoptData * ip_data,
+    Ipopt::Number obj_value,
+    const Ipopt::IpoptData * ip_data,
     [[maybe_unused]] Ipopt::IpoptCalculatedQuantities * ip_cq) override
   {
     switch (status) {
     case Ipopt::SolverReturn::SUCCESS:
+      sol_.status = NLPSolution::Status::Optimal;
+      break;
+    case Ipopt::SolverReturn::STOP_AT_ACCEPTABLE_POINT:
       sol_.status = NLPSolution::Status::Optimal;
       break;
     case Ipopt::SolverReturn::MAXITER_EXCEEDED:
@@ -223,10 +230,14 @@ public:
       break;
     }
 
-    sol_.x = Eigen::Map<const Eigen::VectorXd>(x, n);
-    sol_.zl = Eigen::Map<const Eigen::VectorXd>(z_L, n);
-    sol_.zu = Eigen::Map<const Eigen::VectorXd>(z_U, n);
+    sol_.iter = ip_data->iter_count();
+
+    sol_.x      = Eigen::Map<const Eigen::VectorXd>(x, n);
+    sol_.zl     = Eigen::Map<const Eigen::VectorXd>(z_L, n);
+    sol_.zu     = Eigen::Map<const Eigen::VectorXd>(z_U, n);
     sol_.lambda = Eigen::Map<const Eigen::VectorXd>(lambda, m);
+
+    sol_.objective = obj_value;
   }
 
 private:
@@ -238,6 +249,7 @@ private:
  * @brief Solve an NLP with the Ipopt solver
  *
  * @param nlp problem to solve
+ * @param warmstart problem warm-start point
  * @param opts_integer key-value list of Ipopt integer options
  * @param opts_string key-value list of Ipopt string options
  * @param opts_numeric key-value list of Ipopt numeric options
@@ -245,6 +257,7 @@ private:
  * @see https://coin-or.github.io/Ipopt/OPTIONS.html for a list of available options
  */
 inline NLPSolution solve_nlp_ipopt(const NLP & nlp,
+  std::optional<NLPSolution> warmstart                         = {},
   std::vector<std::pair<std::string, int>> opts_integer        = {},
   std::vector<std::pair<std::string, std::string>> opts_string = {},
   std::vector<std::pair<std::string, double>> opts_numeric     = {})
@@ -255,6 +268,16 @@ inline NLPSolution solve_nlp_ipopt(const NLP & nlp,
   for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
   for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }
   for (auto [opt, val] : opts_numeric) { app->Options()->SetNumericValue(opt, val); }
+
+  if (warmstart.has_value()) {
+    // initial guess is given
+    app->Options()->SetStringValue("warm_start_init_point", "yes");
+    ipopt_nlp->sol() = warmstart.value();
+  } else {
+    // initial guess is zero
+    app->Options()->SetStringValue("warm_start_init_point", "no");
+    ipopt_nlp->sol().x.setZero(nlp.n);
+  }
 
   app->Initialize();
   app->OptimizeTNLP(ipopt_nlp);

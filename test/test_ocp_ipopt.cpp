@@ -1,11 +1,34 @@
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EVecPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+#include <gtest/gtest.h>
+
 #include <Eigen/Core>
-#define HAVE_CSTDDEF
-#include <coin/IpIpoptApplication.hpp>
-#undef HAVE_CSTDDEF
+
 #include "smooth/feedback/compat/ipopt.hpp"
 #include "smooth/feedback/ocp.hpp"
-#include <iostream>
-#include <matplot/matplot.h>
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;
@@ -40,7 +63,7 @@ const auto ce = []<typename T>(
 const auto r2v = []<std::ranges::range R>(
                    const R & r) { return std::vector(std::ranges::begin(r), std::ranges::end(r)); };
 
-int main()
+TEST(OcpIpopt, Solve)
 {
   // define optimal control problem
   smooth::feedback::OCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
@@ -84,46 +107,35 @@ int main()
       {"tol", 1e-8},
     });
 
+  ASSERT_EQ(nlp_sol.status, smooth::feedback::NLPSolution::Status::Optimal);
+
   // convert solution of nlp insto solution of ocp
   const auto ocp_sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlp_sol);
 
   const auto nlp_sol_copy = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, ocp_sol);
 
-  std::cout << (nlp_sol.x - nlp_sol_copy.x).norm() << std::endl;
-  std::cout << (nlp_sol.lambda - nlp_sol_copy.lambda).norm() << std::endl;
-  std::cout << (nlp_sol.zl - nlp_sol_copy.zl).norm() << std::endl;
-  std::cout << (nlp_sol.zu - nlp_sol_copy.zu).norm() << std::endl;
+  ASSERT_LE((nlp_sol_copy.x - nlp_sol.x).norm(), 1e-8);
+  ASSERT_LE((nlp_sol_copy.zl - nlp_sol.zl).norm(), 1e-8);
+  ASSERT_LE((nlp_sol_copy.zu - nlp_sol.zu).norm(), 1e-8);
+  ASSERT_LE((nlp_sol_copy.lambda - nlp_sol.lambda).norm(), 1e-8);
 
-#ifdef ENABLE_PLOTTING
-  using namespace matplot;
+  // solve again with warmstart
+  const auto nlp_sol_warm = smooth::feedback::solve_nlp_ipopt(nlp,
+    nlp_sol_copy,
+    {
+      {"print_level", 5},
+    },
+    {
+      {"linear_solver", "mumps"},
+      {"hessian_approximation", "limited-memory"},
+      {"print_timing_statistics", "yes"},
+      {"derivative_test", "first-order"},
+    },
+    {
+      {"tol", 1e-8},
+    });
 
-  const auto tt       = linspace(ocp_sol.t0, ocp_sol.tf, 500);
-  const auto tt_nodes = r2v(ocp_sol.tf * nodes);
-
-  figure();
-  hold(on);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.x(t).x(); }), "-r")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.x(t).y(); }), "-b")->line_width(2);
-  plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
-  matplot::legend({"pos", "vel", "nodes"});
-
-  figure();
-  hold(on);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_dyn(t).x(); }), "-r")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_dyn(t).y(); }), "-b")->line_width(2);
-  matplot::legend({"lambda_x", "lambda_y"});
-
-  figure();
-  hold(on);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_cr(t).x(); }), "-r")->line_width(2);
-  matplot::legend(std::vector<std::string>{"lambda_{cr}"});
-
-  figure();
-  plot(tt, transform(tt, [&ocp_sol](double t) { return ocp_sol.u(t).x(); }), "-")->line_width(2);
-  matplot::legend(std::vector<std::string>{"input"});
-
-  show();
-#endif
-
-  return EXIT_SUCCESS;
+  std::cout << "Cold start iters " << nlp_sol.iter << std::endl;
+  std::cout << "Warm start iters " << nlp_sol_warm.iter << std::endl;
+  ASSERT_LE(nlp_sol_warm.iter, 8);
 }
