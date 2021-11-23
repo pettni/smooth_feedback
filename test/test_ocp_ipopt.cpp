@@ -95,7 +95,7 @@ TEST(OcpIpopt, Solve)
   const auto nlp_sol = smooth::feedback::solve_nlp_ipopt(nlp,
     std::nullopt,
     {
-      {"print_level", 5},
+      {"print_level", 0},
     },
     {
       {"linear_solver", "mumps"},
@@ -123,7 +123,7 @@ TEST(OcpIpopt, Solve)
   const auto nlp_sol_warm = smooth::feedback::solve_nlp_ipopt(nlp,
     nlp_sol_copy,
     {
-      {"print_level", 5},
+      {"print_level", 0},
     },
     {
       {"linear_solver", "mumps"},
@@ -135,7 +135,5 @@ TEST(OcpIpopt, Solve)
       {"tol", 1e-8},
     });
 
-  std::cout << "Cold start iters " << nlp_sol.iter << std::endl;
-  std::cout << "Warm start iters " << nlp_sol_warm.iter << std::endl;
   ASSERT_LE(nlp_sol_warm.iter, 8);
 }
