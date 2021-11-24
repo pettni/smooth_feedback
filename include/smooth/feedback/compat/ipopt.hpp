@@ -263,7 +263,7 @@ inline NLPSolution solve_nlp_ipopt(const NLP & nlp,
   std::vector<std::pair<std::string, double>> opts_numeric     = {})
 {
   Ipopt::SmartPtr<IpoptNLP> ipopt_nlp          = new IpoptNLP(nlp);
-  Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
+  Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication(false);
 
   for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
   for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }

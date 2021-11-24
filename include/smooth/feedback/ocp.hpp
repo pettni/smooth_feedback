@@ -103,8 +103,10 @@ struct OCPSolution
   double t0;
   double tf;
 
+  /// @brief Integral values
   Eigen::VectorXd Q;
 
+  /// @brief Callable functions for state and input
   std::function<Eigen::VectorXd(double)> u;
   std::function<Eigen::VectorXd(double)> x;
 

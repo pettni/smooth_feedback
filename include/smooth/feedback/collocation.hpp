@@ -199,8 +199,10 @@ public:
     if (D < intervals_[i].K) {
       return;
     } else if (D <= Kmax_) {
+      // refine by increasing degree in interval
       intervals_[i].K = D;
     } else {
+      // refine by splitting interval into n intervals, each with degree Kmin_
       std::size_t n = std::max<std::size_t>(2u, (D + Kmin_ - 1) / Kmin_);
 
       const double tau0 = intervals_[i].tau0;
@@ -208,7 +210,8 @@ public:
       const double taum = (tauf - tau0) / n;
 
       while (n-- > 1) {
-        intervals_.insert(intervals_.begin() + i + 1, Interval{.K = 5, .tau0 = tau0 + n * taum});
+        intervals_.insert(
+          intervals_.begin() + i + 1, Interval{.K = Kmin_, .tau0 = tau0 + n * taum});
       }
     }
   }
@@ -697,8 +700,8 @@ auto colloc_dyn(std::size_t nx,
  * @param m Mesh
  * @param t0 initial time variable
  * @param tf final time variable
- * @param X state variable (size nx x (N+1))
- * @param U input variable (size nu x N)
+ * @param x state trajectory
+ * @param u input trajectory
  *
  * @return vector with relative errors for every interval in m
  */
@@ -708,8 +711,8 @@ Eigen::VectorXd mesh_dyn_error(std::size_t nx,
   Mesh & m,
   double t0,
   double tf,
-  const Eigen::MatrixXd & X,
-  const Eigen::MatrixXd & U)
+  std::function<Eigen::VectorXd(double)> xfun,
+  std::function<Eigen::VectorXd(double)> ufun)
 {
   const auto N = m.N_ivals();
 
@@ -734,12 +737,14 @@ Eigen::VectorXd mesh_dyn_error(std::size_t nx,
     Eigen::MatrixXd Fval(nx, Kext + 1);
     Eigen::MatrixXd Xval(nx, Kext + 1);
     for (auto j = 0u; j < Kext + 1; ++j) {
+      const double tj = t0 + (tf - t0) * tau_s(j);
+
       // evaluate x and u values at tj using current degree polynomials
-      const auto Xj = m.eval<Eigen::VectorXd>(tau_s(j), X.colwise(), 0, true);
-      const auto Uj = m.eval<Eigen::VectorXd>(tau_s(j), U.colwise(), 0, false);
+      const auto Xj = xfun(tj);
+      const auto Uj = ufun(tj);
 
       // evaluate right-hand side of dynamics at tj
-      Fval.col(j) = f(t0 + (tf - t0) * tau_s(j), Xj, Uj);
+      Fval.col(j) = f(tj, Xj, Uj);
 
       // store x values for later comparison
       Xval.col(j) = Xj;
@@ -777,7 +782,7 @@ void mesh_refine(Mesh & m, const Eigen::VectorXd & errs, double target_err)
     const auto Ki  = m.N_colloc_ival(Nmi);
 
     if (errs(Nmi) > target_err) {
-      const auto Ktarget = std::lround(std::log(errs(Nmi) / target_err) / std::log(Ki) + 1);
+      const auto Ktarget = Ki + std::lround(std::log(errs(Nmi) / target_err) / std::log(Ki) + 1);
       m.refine_ph(Nmi, Ktarget);
     }
   }

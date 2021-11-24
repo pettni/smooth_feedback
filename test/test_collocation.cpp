@@ -170,7 +170,8 @@ TEST(Collocation, TimeTrajectory)
   ASSERT_NEAR(q_vals.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
 }
 
-TEST(Collocation, DynError) {
+TEST(Collocation, DynError)
+{
   // given trajectory
   std::size_t nx = 1;
   const auto x = [](double t) -> Vec<double> { return Vec<double>{{0.1 * t * t - 0.4 * t + 0.2}}; };
@@ -200,10 +201,12 @@ TEST(Collocation, DynError) {
   }
   X.col(m.N_colloc()) = x(tf);
 
-  // u is empty..
-  Eigen::MatrixXd U(nu, m.N_colloc());
+  auto xfun = [&](const double t) -> Eigen::VectorXd {
+    return m.eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise(), 0, true);
+  };
+  auto ufun = [&](const double) -> Eigen::VectorXd { return Eigen::VectorXd::Zero(nu); };
 
-  auto rel_errs = smooth::feedback::mesh_dyn_error(nx, f, m, t0, tf, X, U);
+  auto rel_errs = smooth::feedback::mesh_dyn_error(nx, f, m, t0, tf, xfun, ufun);
 
   ASSERT_LE(rel_errs.cwiseAbs().maxCoeff(), 1e-8);
 
@@ -212,7 +215,6 @@ TEST(Collocation, DynError) {
 
   ASSERT_EQ(m.N_ivals(), Npre);
 }
-
 
 TEST(Collocation, StateTrajectory)
 {

@@ -60,60 +60,81 @@ int main()
     .ceu   = Vec<double>{{6, 1, 1, 0, 0}},
   };
 
+  // target optimality
+  double target_err = 1e-6;
+
   // define mesh
-  smooth::feedback::Mesh mesh;
-  mesh.refine_ph(0, 4 * 5);
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
+  smooth::feedback::Mesh mesh(5, 10);
 
-  // transcribe optimal control problem to nonlinear programming problem
-  const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
+  // declare solution variable
+  smooth::feedback::OCPSolution sol;
 
-  // solve nonlinear programming problem
-  const auto nlp_sol = smooth::feedback::solve_nlp_ipopt(nlp,
-    std::nullopt,
-    {
-      {"print_level", 5},
-    },
-    {
-      {"linear_solver", "mumps"},
-      {"hessian_approximation", "limited-memory"},
-      {"print_timing_statistics", "yes"},
-      {"derivative_test", "first-order"},
-    },
-    {
-      {"tol", 1e-8},
-    });
+  for (auto iter = 0u; iter < 10; ++iter) {
+    std::cout << "---------- ITERATION " << iter << " ----------" << std::endl;
+    std::cout << "mesh: " << mesh.N_ivals() << " intervals" << std::endl;
+    std::cout << "colloc pts: " << mesh.all_nodes_and_weights().first.transpose() << std::endl;
+    // transcribe optimal control problem to nonlinear programming problem
+    const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
 
-  // convert solution of nlp insto solution of ocp
-  const auto ocp_sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlp_sol);
-  const auto nlp_sol_copy = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, ocp_sol);
+    // solve nonlinear programming problem
+    std::cout << "solving..." << std::endl;
+    const auto nlp_sol = smooth::feedback::solve_nlp_ipopt(nlp,
+      std::nullopt,
+      {
+        {"print_level", 0},
+      },
+      {
+        {"linear_solver", "mumps"},
+        {"hessian_approximation", "limited-memory"},
+      },
+      {
+        {"tol", 1e-8},
+      });
+
+    // convert solution of nlp insto solution of ocp
+    sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlp_sol);
+
+    // calculate errors
+    const auto errs =
+      smooth::feedback::mesh_dyn_error(ocp.nx, f, mesh, sol.t0, sol.tf, sol.x, sol.u);
+    const double maxerr = errs.maxCoeff();
+    std::cout << "interval errors " << errs.transpose() << std::endl;
+
+    if (maxerr > target_err) {
+      smooth::feedback::mesh_refine(mesh, errs, target_err);
+    } else {
+      break;
+    }
+  }
 
 #ifdef ENABLE_PLOTTING
   using namespace matplot;
 
-  const auto tt       = linspace(ocp_sol.t0, ocp_sol.tf, 500);
-  const auto tt_nodes = r2v(ocp_sol.tf * nodes);
+  const auto [nodes, weights] = mesh.all_nodes_and_weights();
+
+  const auto tt       = linspace(sol.t0, sol.tf, 500);
+  const auto tt_nodes = r2v(sol.tf * nodes);
 
   figure();
   hold(on);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.x(t).x(); }), "-r")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.x(t).y(); }), "-b")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return sol.x(t).x(); }), "-r")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return sol.x(t).y(); }), "-b")->line_width(2);
   plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
   matplot::legend({"pos", "vel", "nodes"});
 
   figure();
   hold(on);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_dyn(t).x(); }), "-r")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_dyn(t).y(); }), "-b")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(2);
   matplot::legend({"lambda_x", "lambda_y"});
 
   figure();
   hold(on);
-  plot(tt, transform(tt, [&](double t) { return ocp_sol.lambda_cr(t).x(); }), "-r")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(2);
   matplot::legend(std::vector<std::string>{"lambda_{cr}"});
 
   figure();
-  plot(tt, transform(tt, [&ocp_sol](double t) { return ocp_sol.u(t).x(); }), "-")->line_width(2);
+  plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-")->line_width(2);
   matplot::legend(std::vector<std::string>{"input"});
 
   show();
