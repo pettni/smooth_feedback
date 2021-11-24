@@ -327,9 +327,7 @@ public:
    * @param t time value in [0, 1]
    * @param r values for the collocation points (size N [extend=false] or N+1 [extend=true])
    * @param derivative to evaluate
-   * @param extend if true, polynomial on a given interval is defined by the K collocation points
-   * and the first collocation point from the next interval, otherwise it is defined only by the K
-   * collocation points
+   * @param extend set to true if a value is provided for t=+1
    */
   template<typename RetT, std::ranges::sized_range R>
   RetT eval(double t, const R & r, std::size_t p = 0, bool extend = true) const
@@ -352,7 +350,7 @@ public:
 
     Eigen::RowVectorXd W;
 
-    if (extend) {
+    if (extend || ival + 1 < intervals_.size()) {
       const auto & B = detail::kLgrNodeInfo[k - kKmin].B_ext;
       const auto U   = monomial_derivative_runtime(u, k, p);
       W              = U * B;
@@ -364,15 +362,14 @@ public:
       assert(std::size_t(W.size()) == k);
     }
 
+    using namespace std::views;
+
     std::size_t N_before = 0;
     for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
-    const auto r_ival = r | std::views::drop(N_before);
+    const auto r_ival = r | drop(N_before);
     RetT ret          = W(0) * *std::ranges::begin(r_ival);
 
-    for (auto i = 1u;
-         const auto & v : r_ival | std::views::drop(1) | std::views::take(W.size() - 1)) {
-      ret += W(i++) * v;
-    }
+    for (auto i = 1u; const auto & v : r_ival | drop(1) | take(W.size() - 1)) { ret += W(i++) * v; }
     return ret;
   }
 
