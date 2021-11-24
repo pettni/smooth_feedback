@@ -114,6 +114,8 @@ TEST(OcpIpopt, Solve)
 
   const auto nlp_sol_copy = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, ocp_sol);
 
+  std::cout << (nlp_sol.x - nlp_sol_copy.x).transpose() << std::endl;
+
   ASSERT_LE((nlp_sol_copy.x - nlp_sol.x).norm(), 1e-8);
   ASSERT_LE((nlp_sol_copy.zl - nlp_sol.zl).norm(), 1e-8);
   ASSERT_LE((nlp_sol_copy.zu - nlp_sol.zu).norm(), 1e-8);

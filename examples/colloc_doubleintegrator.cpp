@@ -86,13 +86,7 @@ int main()
 
   // convert solution of nlp insto solution of ocp
   const auto ocp_sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlp_sol);
-
   const auto nlp_sol_copy = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, ocp_sol);
-
-  std::cout << (nlp_sol.x - nlp_sol_copy.x).norm() << std::endl;
-  std::cout << (nlp_sol.lambda - nlp_sol_copy.lambda).norm() << std::endl;
-  std::cout << (nlp_sol.zl - nlp_sol_copy.zl).norm() << std::endl;
-  std::cout << (nlp_sol.zu - nlp_sol_copy.zu).norm() << std::endl;
 
 #ifdef ENABLE_PLOTTING
   using namespace matplot;

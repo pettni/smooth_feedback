@@ -339,36 +339,31 @@ OCPSolution nlpsol_to_ocpsol(
   X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
 
   auto xfun = [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise());
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise(), 0, true);
   };
 
   // for these we repeat last point since there are no values for endpoint
 
-  Eigen::MatrixXd U(ocp.nu, N + 1);
-  U.leftCols(N) = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
-  U.col(N)      = U.col(N - 1);
+  Eigen::MatrixXd U(ocp.nu, N);
+  U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
   auto ufun = [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), U.colwise());
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), U.colwise(), 0, false);
   };
 
-  // repeat last lambda
-
-  Eigen::MatrixXd Ldyn(ocp.nx, N + 1);
-  Ldyn.leftCols(N) = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.nx, dcon_L / ocp.nx);
-  Ldyn.col(N)      = Ldyn.col(N - 1);
+  Eigen::MatrixXd Ldyn(ocp.nx, N);
+  Ldyn = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.nx, dcon_L / ocp.nx);
 
   auto ldfun = [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](
                  double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Ldyn.colwise());
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
   };
 
-  Eigen::MatrixXd Lcr(ocp.ncr, N + 1);
-  Lcr.leftCols(N) = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.ncr, crcon_L / ocp.ncr);
-  Lcr.col(N)      = Lcr.col(N - 1);
+  Eigen::MatrixXd Lcr(ocp.ncr, N);
+  Lcr = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.ncr, crcon_L / ocp.ncr);
 
   auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Lcr.colwise());
+    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Lcr.colwise(), 0, false);
   };
 
   return OCPSolution{

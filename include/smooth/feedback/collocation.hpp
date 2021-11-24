@@ -39,6 +39,7 @@
  */
 
 #include <Eigen/Core>
+#include <Eigen/LU>
 #include <Eigen/Sparse>
 #include <smooth/diff.hpp>
 #include <smooth/internal/utils.hpp>
@@ -54,7 +55,7 @@
 namespace smooth::feedback {
 
 /// @brief Degrees for polynomial bounds for which to pre-compute LGR node info.
-static constexpr std::size_t kKmin = 2, kKmax = 30;
+static constexpr std::size_t kKmin = 2, kKmax = 12;
 
 namespace detail {
 
@@ -77,31 +78,57 @@ constexpr std::pair<std::array<double, K + 1>, std::array<double, K + 1>> lgr_pl
   return {ns, ws};
 }
 
+struct LGRInterval
+{
+  // The K+1 LGR nodes plus extra point at +1
+  Eigen::VectorXd nodes;
+  // Weights corresponding to LGR nodes
+  Eigen::VectorXd weights;
+  // KxK basis matrix for ext degree K-1 Lagrange polynomial defined on the K LGR nodes
+  Eigen::MatrixXd B;
+  // (K+1)x(K+1) basis matrix for ext degree K Lagrange polynomial defined on the K+1 LGR nodes
+  Eigen::MatrixXd B_ext;
+  // (K+1)xK derivative matrix for extended Lagrange polynomial
+  Eigen::MatrixXd D_ext;
+  // KxK integration matrix for extended Lagrange polynomial
+  Eigen::MatrixXd I_ext;
+};
+
 /**
  * @brief Inline pre-computed LGR nodes, weights, and differentiation matrices.
  */
-inline std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXd>>
-  kLgrNodeInfo = []() {
-    std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXd>> ret;
+inline std::vector<LGRInterval> kLgrNodeInfo = []() {
+  std::vector<LGRInterval> ret;
 
-    utils::static_for<kKmax + 1 - kKmin>([&ret](auto i) {
-      constexpr auto K    = kKmin + i;
-      constexpr auto nw_s = detail::lgr_plus_one<K>();
-      constexpr auto B_s  = lagrange_basis<K>(nw_s.first);
-      constexpr auto D_s  = polynomial_basis_derivatives<K, K + 1>(B_s, nw_s.first);
+  utils::static_for<kKmax + 1 - kKmin>([&ret](auto i) {
+    constexpr auto K = kKmin + i;
 
-      Eigen::VectorXd n = Eigen::Map<const Eigen::VectorXd>(nw_s.first.data(), K + 1);
-      Eigen::VectorXd w = Eigen::Map<const Eigen::VectorXd>(nw_s.second.data(), K + 1);
-      Eigen::MatrixXd B = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
-        B_s[0].data(), K + 1, K + 1);
-      Eigen::MatrixXd D = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
-        D_s[0].data(), K + 1, K + 1);
+    constexpr auto nw_s = lgr_nodes<K>();
+    constexpr auto B_s  = lagrange_basis<K - 1>(nw_s.first);
 
-      ret.push_back(std::make_tuple(n, w, B, D));
+    constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
+    constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
+    constexpr auto D_ext_s  = polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first)
+                               .template block<K + 1, K>(0, 0);
+    Eigen::MatrixXd D_ext =
+      Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(D_ext_s[0].data(), K + 1, K);
+
+    Eigen::MatrixXd I_ext = D_ext.block(1, 0, K, K).inverse();
+
+    ret.push_back(LGRInterval{
+      // clang-format off
+      .nodes      = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.first.data(), K+1),
+      .weights    = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.second.data(), K+1),
+      .B          = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(B_s[0].data(), K, K),
+      .B_ext = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(B_ext_s[0].data(), K + 1, K + 1),
+      .D_ext = std::move(D_ext),
+      .I_ext = std::move(I_ext),
+      // clang-format on
     });
+  });
 
-    return ret;
-  }();
+  return ret;
+}();
 
 }  // namespace detail
 
@@ -193,8 +220,8 @@ public:
   {
     const std::size_t K = intervals_[i].K;
 
-    const auto & ns = std::get<0>(detail::kLgrNodeInfo[K - kKmin]);
-    const auto & ws = std::get<1>(detail::kLgrNodeInfo[K - kKmin]);
+    const auto & ns = detail::kLgrNodeInfo[K - kKmin].nodes;
+    const auto & ws = detail::kLgrNodeInfo[K - kKmin].weights;
 
     const double tau0 = intervals_[i].tau0;
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
@@ -235,14 +262,13 @@ public:
   /**
    * @brief Interval differentiation matrix w.r.t. [0, 1] timescale.
    *
-   * Matrix K+1 x K matrix D s.t.
+   * Returns a \f$ (K+1 \times K) \f$ matrix \f$ D \f$ s.t.
    * \f[
    *   \begin{bmatrix} y'(\tau_{i, 0}) & y'(\tau_{i, 1}) & \cdots & y'(\tau_{i, K-1}) \end{bmatrix}
    *  =
-   *   \begin{bmatrix} y_{i, 0} & y_{i, 1} & \cdots & y_{i, K} \end{bmatrix} D
+   *   \begin{bmatrix} y(\tau_{i, 0}) & y(\tau_{i, 1}) & \cdots & y(\tau_{i, K}) \end{bmatrix} D
    * \f],
-   * where \f$ y_{i, j} \in \mathbb{R}^{d \times 1} \f$ is the function value at scaled time point
-   * \f$ \tau_{i, j} \f$.
+   * where \f$ y(\cdot) \in \mathbb{R}^{d \times 1} \f$ is a Lagrange polynomial in interval i.
    */
   inline Eigen::MatrixXd interval_diffmat(std::size_t i) const
   {
@@ -251,7 +277,33 @@ public:
     const double tau0 = intervals_[i].tau0;
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
 
-    return (2 / (tauf - tau0)) * std::get<3>(detail::kLgrNodeInfo[K - kKmin]).block(0, 0, K + 1, K);
+    return (2. / (tauf - tau0)) * detail::kLgrNodeInfo[K - kKmin].D_ext;
+  }
+
+  /**
+   * @brief Interval integration matrix w.r.t. [0, 1] timescale.
+   *
+   * Returns a \f$ (K \times K) \f$ matrix \f$ I \f$ s.t.
+   * \f[
+   *   \begin{bmatrix}
+   *      y(\tau_{i, 1}) & y(\tau_{i, 2}) & \cdots & y(\tau_{i, K})
+   *   \end{bmatrix}
+   *  = y(\tau_{i, 0}) \begin{bmatrix} 1 & \ldots & 1 \end{bmatrix}
+   *    + \begin{bmatrix}
+   *        \dot y(\tau_{i, 0}) & \dot y(\tau_{i, 1}) & \cdots & \dot y(\tau_{i, K-1})
+   *      \end{bmatrix} I
+   * \f],
+   * where \f$ y(\cdot) \in \mathbb{R}^{d \times 1} \f$ is a Lagrange
+   * polynomial in interval i.
+   */
+  inline Eigen::MatrixXd interval_intmat(std::size_t i) const
+  {
+    const std::size_t K = intervals_[i].K;
+
+    const double tau0 = intervals_[i].tau0;
+    const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+
+    return ((tauf - tau0) / 2) * detail::kLgrNodeInfo[K - kKmin].I_ext;
   }
 
   /**
@@ -268,20 +320,27 @@ public:
   }
 
   /**
-   * @brief Evaluate a function on an interval
+   * @brief Evaluate a function
    *
    * @tparam RetT return value type
    *
    * @param t time value in [0, 1]
-   * @param r values for the collocation points (size N + 1)
+   * @param r values for the collocation points (size N [extend=false] or N+1 [extend=true])
    * @param derivative to evaluate
+   * @param extend if true, polynomial on a given interval is defined by the K collocation points
+   * and the first collocation point from the next interval, otherwise it is defined only by the K
+   * collocation points
    */
   template<typename RetT, std::ranges::sized_range R>
-  RetT eval(double t, const R & r, std::size_t p = 0) const
+  RetT eval(double t, const R & r, std::size_t p = 0, bool extend = true) const
   {
     const std::size_t N = N_colloc();
 
-    assert(std::ranges::size(r) == N + 1);
+    if (extend) {
+      assert(std::ranges::size(r) == N + 1);
+    } else {
+      assert(std::ranges::size(r) == N);
+    }
 
     const std::size_t ival = interval_find(t);
     const std::size_t k    = intervals_[ival].K;
@@ -290,20 +349,28 @@ public:
     const double tauf = ival + 1 < intervals_.size() ? intervals_[ival + 1].tau0 : 1.;
 
     const double u = 2 * (t - tau0) / (tauf - tau0) - 1;
-    const auto U   = monomial_derivative_runtime(u, k, p);
-    const auto & B = std::get<2>(detail::kLgrNodeInfo[k - kKmin]);
 
-    const Eigen::RowVectorXd W = U * B;
+    Eigen::RowVectorXd W;
 
-    assert(std::size_t(W.size()) == k + 1);
+    if (extend) {
+      const auto & B = detail::kLgrNodeInfo[k - kKmin].B_ext;
+      const auto U   = monomial_derivative_runtime(u, k, p);
+      W              = U * B;
+      assert(std::size_t(W.size()) == k + 1);
+    } else {
+      const auto & B = detail::kLgrNodeInfo[k - kKmin].B;
+      const auto U   = monomial_derivative_runtime(u, k - 1, p);
+      W              = U * B;
+      assert(std::size_t(W.size()) == k);
+    }
 
     std::size_t N_before = 0;
     for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
-
     const auto r_ival = r | std::views::drop(N_before);
+    RetT ret          = W(0) * *std::ranges::begin(r_ival);
 
-    RetT ret = W(0) * *std::ranges::begin(r_ival);
-    for (auto i = 1; const auto & v : r_ival | std::views::drop(1) | std::views::take(k)) {
+    for (auto i = 1u;
+         const auto & v : r_ival | std::views::drop(1) | std::views::take(W.size() - 1)) {
       ret += W(i++) * v;
     }
     return ret;
