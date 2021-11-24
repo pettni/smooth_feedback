@@ -163,7 +163,7 @@ public:
     const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
     [[maybe_unused]] Ipopt::Index m,
-    Ipopt::Index nele_jac,
+    [[maybe_unused]] Ipopt::Index nele_jac,
     Ipopt::Index * iRow,
     Ipopt::Index * jCol,
     Ipopt::Number * values) override
@@ -263,11 +263,14 @@ inline NLPSolution solve_nlp_ipopt(const NLP & nlp,
   std::vector<std::pair<std::string, double>> opts_numeric     = {})
 {
   Ipopt::SmartPtr<IpoptNLP> ipopt_nlp          = new IpoptNLP(nlp);
-  Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication(false);
+  Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
   for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
   for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }
   for (auto [opt, val] : opts_numeric) { app->Options()->SetNumericValue(opt, val); }
+
+  // silence welcome message
+  app->Options()->SetStringValue("sb", "yes");
 
   if (warmstart.has_value()) {
     // initial guess is given

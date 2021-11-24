@@ -81,11 +81,12 @@ int main()
     const auto nlp_sol = smooth::feedback::solve_nlp_ipopt(nlp,
       std::nullopt,
       {
-        {"print_level", 0},
+        {"print_level", 3},
       },
       {
         {"linear_solver", "mumps"},
         {"hessian_approximation", "limited-memory"},
+        // {"print_timing_statistics", "yes"},
       },
       {
         {"tol", 1e-8},

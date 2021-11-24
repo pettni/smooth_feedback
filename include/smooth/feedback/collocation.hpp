@@ -347,7 +347,7 @@ public:
   template<typename RetT, std::ranges::sized_range R>
   RetT eval(double t, const R & r, std::size_t p = 0, bool extend = true) const
   {
-    const std::size_t N = N_colloc();
+    [[maybe_unused]] const std::size_t N = N_colloc();
 
     if (extend) {
       assert(std::ranges::size(r) == N + 1);
