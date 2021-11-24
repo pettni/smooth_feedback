@@ -156,7 +156,7 @@ public:
   {
     assert(kKmin <= Kmin);
     assert(Kmin <= Kmax);
-    assert(Kmax <= kKmax);
+    assert(Kmax + 1 <= kKmax);  // need one more for error estimate
   }
 
   /**
@@ -211,6 +211,18 @@ public:
         intervals_.insert(intervals_.begin() + i + 1, Interval{.K = 5, .tau0 = tau0 + n * taum});
       }
     }
+  }
+
+  /**
+   * @brief Set the number of collocation points in interval i to K
+   * @param i interval index
+   * @param K number of collocation points
+   */
+  inline void set_N_colloc_ival(std::size_t i, std::size_t K)
+  {
+    assert(kKmin <= K);
+    assert(K <= kKmax);
+    intervals_[i].K = K;
   }
 
   /**
@@ -678,6 +690,100 @@ auto colloc_dyn(std::size_t nx,
 }
 
 /**
+ * @brief Calculate relative dynamics errors for each interval in mesh.
+ *
+ * @param nx state space dimension
+ * @param f dynamics function
+ * @param m Mesh
+ * @param t0 initial time variable
+ * @param tf final time variable
+ * @param X state variable (size nx x (N+1))
+ * @param U input variable (size nu x N)
+ *
+ * @return vector with relative errors for every interval in m
+ */
+template<typename F>
+Eigen::VectorXd mesh_dyn_error(std::size_t nx,
+  F && f,
+  Mesh & m,
+  double t0,
+  double tf,
+  const Eigen::MatrixXd & X,
+  const Eigen::MatrixXd & U)
+{
+  const auto N = m.N_ivals();
+
+  // create a new mesh where each interval is extended
+  Mesh mext = m;
+  for (auto i = 0u; i < N; ++i) {
+    const std::size_t K = m.N_colloc_ival(i);
+    mext.set_N_colloc_ival(i, K + 1);
+  }
+
+  Eigen::VectorXd ival_errs(N);
+
+  // for each interval
+  for (auto i = 0u, M = 0u; i < N; M += m.N_colloc_ival(i), ++i) {
+    const std::size_t Kext = mext.N_colloc_ival(i);
+
+    const auto [tau_s, weights] = mext.interval_nodes_and_weights(i);
+
+    assert(std::size_t(tau_s.size()) == Kext + 1);
+
+    // evaluate X and F at those points
+    Eigen::MatrixXd Fval(nx, Kext + 1);
+    Eigen::MatrixXd Xval(nx, Kext + 1);
+    for (auto j = 0u; j < Kext + 1; ++j) {
+      // evaluate x and u values at tj using current degree polynomials
+      const auto Xj = m.eval<Eigen::VectorXd>(tau_s(j), X.colwise(), 0, true);
+      const auto Uj = m.eval<Eigen::VectorXd>(tau_s(j), U.colwise(), 0, false);
+
+      // evaluate right-hand side of dynamics at tj
+      Fval.col(j) = f(t0 + (tf - t0) * tau_s(j), Xj, Uj);
+
+      // store x values for later comparison
+      Xval.col(j) = Xj;
+    }
+
+    // "integrate" system inside interval
+    const Eigen::MatrixXd Xval_est =
+      Xval.col(0).replicate(1, Kext) + (tf - t0) * Fval.leftCols(Kext) * mext.interval_intmat(i);
+
+    // absolute error in interval
+    Eigen::VectorXd e_abs = (Xval_est - Xval.rightCols(Kext)).colwise().norm();
+    Eigen::VectorXd e_rel = e_abs / (1. + Xval.rightCols(Kext).colwise().norm().maxCoeff());
+
+    // mex relative error on interval
+    ival_errs(i) = e_rel.maxCoeff();
+  }
+
+  return ival_errs;
+}
+
+/**
+ * @brief Refine intervals in mesh to satisfy a target error criterion.
+ * @param[in, out] m mesh to refine
+ * @param[in] errs relative errors for all intervals (@see mesh_dyn_error())
+ * @param[in] target_err target relative error
+ */
+void mesh_refine(Mesh & m, const Eigen::VectorXd & errs, double target_err)
+{
+  const auto N = m.N_ivals();
+
+  assert(N == std::size_t(errs.size()));
+
+  for (auto i = 0u; i < N; ++i) {
+    const auto Nmi = N - 1 - i;
+    const auto Ki  = m.N_colloc_ival(Nmi);
+
+    if (errs(Nmi) > target_err) {
+      const auto Ktarget = std::lround(std::log(errs(Nmi) / target_err) / std::log(Ki) + 1);
+      m.refine_ph(Nmi, Ktarget);
+    }
+  }
+}
+
+/**
  * @brief Evaluate integral constraint on Mesh.
  *
  * @tparam Der return derivatives w.r.t variables
@@ -699,8 +805,8 @@ template<bool Deriv, typename G>
 auto colloc_int(std::size_t nq,
   G && g,
   const Mesh & m,
-  const double & t0,
-  const double & tf,
+  double t0,
+  double tf,
   const Eigen::VectorXd & I,
   const Eigen::MatrixXd & X,
   const Eigen::MatrixXd & U)

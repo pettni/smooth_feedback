@@ -170,6 +170,50 @@ TEST(Collocation, TimeTrajectory)
   ASSERT_NEAR(q_vals.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
 }
 
+TEST(Collocation, DynError) {
+  // given trajectory
+  std::size_t nx = 1;
+  const auto x = [](double t) -> Vec<double> { return Vec<double>{{0.1 * t * t - 0.4 * t + 0.2}}; };
+
+  // system dynamics
+  std::size_t nu = 0;
+  const auto f   = []<typename T>(const T & t, const Vec<T> &, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{0.2 * t - 0.4}};
+  };
+
+  double t0 = 3;
+  double tf = 5;
+
+  smooth::feedback::Mesh m(5, 5);
+
+  // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
+  m.refine_ph(0, 16 * 5);
+  ASSERT_EQ(m.N_ivals(), 16);
+
+  // fill X with curve values at the two intervals
+  std::size_t M = 0;
+  Eigen::MatrixXd X(nx, m.N_colloc() + 1);
+  for (auto p = 0u; p < m.N_ivals(); ++p) {
+    const auto [tau_s, w_s] = m.interval_nodes_and_weights(p);
+    for (auto i = 0u; i + 1 < tau_s.size(); ++i) { X.col(M + i) = x(t0 + (tf - t0) * tau_s[i]); }
+    M += m.N_colloc_ival(p);
+  }
+  X.col(m.N_colloc()) = x(tf);
+
+  // u is empty..
+  Eigen::MatrixXd U(nu, m.N_colloc());
+
+  auto rel_errs = smooth::feedback::mesh_dyn_error(nx, f, m, t0, tf, X, U);
+
+  ASSERT_LE(rel_errs.cwiseAbs().maxCoeff(), 1e-8);
+
+  const auto Npre = m.N_ivals();
+  smooth::feedback::mesh_refine(m, rel_errs, 1e-8);
+
+  ASSERT_EQ(m.N_ivals(), Npre);
+}
+
+
 TEST(Collocation, StateTrajectory)
 {
   // given trajectory and system dynamics
