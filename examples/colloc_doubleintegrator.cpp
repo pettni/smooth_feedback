@@ -1,18 +1,45 @@
+// smooth: Lie Theory for Robotics
+// https://github.com/pettni/smooth
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include <Eigen/Core>
-#define HAVE_CSTDDEF
-#include <coin/IpIpoptApplication.hpp>
-#undef HAVE_CSTDDEF
-#include "smooth/feedback/compat/ipopt.hpp"
-#include "smooth/feedback/ocp.hpp"
+#include <smooth/feedback/compat/ipopt.hpp>
+#include <smooth/feedback/ocp.hpp>
+
 #include <iostream>
+
+#ifdef ENABLE_PLOTTING
 #include <matplot/matplot.h>
+#endif
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;
 
 /// @brief Objective function
-const auto theta = []<typename T>(
-                     T, T, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T { return q.x(); };
+const auto obj = []<typename T>(T, T tf, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T {
+  return tf + q.x();
+};
 
 /// @brief Dynamics
 const auto f = []<typename T>(T, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
@@ -25,12 +52,12 @@ const auto g = []<typename T>(T, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
 };
 
 /// @brief Running constraints
-const auto cr = []<typename T>(
-                  T, const Vec<T> &, const Vec<T> & u) -> Vec<T> { return Vec<T>{{u.x()}}; };
+const auto cr = []<typename T>(T, const Vec<T> &, const Vec<T> & u) -> Vec<T> {
+  return Vec<T>{{u.x()}};
+};
 
 /// @brief End constraints
-const auto ce = []<typename T>(
-                  T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
+const auto ce = []<typename T>(T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
   Vec<T> ret(5);
   ret << tf, x0, xf;
   return ret;
@@ -43,21 +70,21 @@ const auto r2v = []<std::ranges::range R>(
 int main()
 {
   // define optimal control problem
-  smooth::feedback::OCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
+  smooth::feedback::OCP<decltype(obj), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
     .nx    = 2,
     .nu    = 1,
     .nq    = 1,
     .ncr   = 1,
     .nce   = 5,
-    .theta = theta,
+    .theta = obj,
     .f     = f,
     .g     = g,
     .cr    = cr,
     .crl   = Vec<double>{{-1}},
     .cru   = Vec<double>{{1}},
     .ce    = ce,
-    .cel   = Vec<double>{{3, 1, 1, 0, 0}},
-    .ceu   = Vec<double>{{6, 1, 1, 0, 0}},
+    .cel   = Vec<double>{{3, 1, 1, 0.1, 0}},
+    .ceu   = Vec<double>{{15, 1, 1, 0.1, 0}},
   };
 
   // target optimality
@@ -68,32 +95,32 @@ int main()
 
   // declare solution variable
   smooth::feedback::OCPSolution sol;
+  std::optional<smooth::feedback::NLPSolution> nlpsol;
 
   for (auto iter = 0u; iter < 10; ++iter) {
     std::cout << "---------- ITERATION " << iter << " ----------" << std::endl;
-    std::cout << "mesh: " << mesh.N_ivals() << " intervals" << std::endl;
-    std::cout << "colloc pts: " << mesh.all_nodes_and_weights().first.transpose() << std::endl;
+    std::cout << "mesh: " << mesh.N_ivals() << " intervals, " << mesh.N_colloc()
+              << " collocation pts" << std::endl;
     // transcribe optimal control problem to nonlinear programming problem
     const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
 
     // solve nonlinear programming problem
     std::cout << "solving..." << std::endl;
-    const auto nlp_sol = smooth::feedback::solve_nlp_ipopt(nlp,
-      std::nullopt,
+    nlpsol = smooth::feedback::solve_nlp_ipopt(nlp,
+      nlpsol,
       {
-        {"print_level", 3},
+        {"print_level", 5},
       },
       {
-        {"linear_solver", "mumps"},
-        {"hessian_approximation", "limited-memory"},
+        {"linear_solver", "mumps"}, {"hessian_approximation", "limited-memory"},
         // {"print_timing_statistics", "yes"},
       },
       {
-        {"tol", 1e-8},
+        {"tol", 1e-6},
       });
 
     // convert solution of nlp insto solution of ocp
-    sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlp_sol);
+    sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlpsol.value());
 
     // calculate errors
     const auto errs =
@@ -103,6 +130,7 @@ int main()
 
     if (maxerr > target_err) {
       smooth::feedback::mesh_refine(mesh, errs, target_err);
+      nlpsol = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, sol);
     } else {
       break;
     }

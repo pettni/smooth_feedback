@@ -381,7 +381,7 @@ public:
 
     std::size_t N_before = 0;
     for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
-    const auto r_ival = r | drop(N_before);
+    const auto r_ival = r | drop(int64_t(N_before));
     RetT ret          = W(0) * *std::ranges::begin(r_ival);
 
     for (auto i = 1u; const auto & v : r_ival | drop(1) | take(W.size() - 1)) { ret += W(i++) * v; }
