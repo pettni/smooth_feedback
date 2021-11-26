@@ -40,6 +40,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <optional>
 
 namespace smooth::feedback {
 

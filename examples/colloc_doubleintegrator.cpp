@@ -94,7 +94,7 @@ int main()
   smooth::feedback::Mesh mesh(5, 10);
 
   // declare solution variable
-  smooth::feedback::OCPSolution sol;
+  std::vector<smooth::feedback::OCPSolution> sols;
   std::optional<smooth::feedback::NLPSolution> nlpsol;
 
   for (auto iter = 0u; iter < 10; ++iter) {
@@ -112,7 +112,9 @@ int main()
         {"print_level", 5},
       },
       {
-        {"linear_solver", "mumps"}, {"hessian_approximation", "limited-memory"},
+        {"linear_solver", "mumps"},
+        {"hessian_approximation", "limited-memory"},
+        // {"derivative_test", "first-order"},
         // {"print_timing_statistics", "yes"},
       },
       {
@@ -120,7 +122,8 @@ int main()
       });
 
     // convert solution of nlp insto solution of ocp
-    sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlpsol.value());
+    auto sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlpsol.value());
+    sols.push_back(sol);
 
     // calculate errors
     const auto errs =
@@ -141,30 +144,40 @@ int main()
 
   const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
-  const auto tt       = linspace(sol.t0, sol.tf, 500);
-  const auto tt_nodes = r2v(sol.tf * nodes);
+  const auto tt       = linspace(sols.back().t0, sols.back().tf, 500);
+  const auto tt_nodes = r2v(sols.back().tf * nodes);
 
   figure();
-  hold(on);
-  plot(tt, transform(tt, [&](double t) { return sol.x(t).x(); }), "-r")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return sol.x(t).y(); }), "-b")->line_width(2);
+  for (auto it = 0; const auto & sol : sols) {
+    hold(on);
+    plot(tt, transform(tt, [&](double t) { return sol.x(t).x(); }), "-r")->line_width(2);
+    plot(tt, transform(tt, [&](double t) { return sol.x(t).y(); }), "-b")->line_width(2);
+    ++it;
+  }
   plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
-  matplot::legend({"pos", "vel", "nodes"});
+  legend({"pos", "vel", "nodes"});
 
   figure();
   hold(on);
-  plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(2);
-  matplot::legend({"lambda_x", "lambda_y"});
+  for (const auto & sol : sols) {
+    plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(2);
+    plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(2);
+  }
+  legend({"lambda_x", "lambda_y"});
 
   figure();
   hold(on);
-  plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(2);
-  matplot::legend(std::vector<std::string>{"lambda_{cr}"});
+  for (const auto & sol : sols) {
+    plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(2);
+  }
+  legend(std::vector<std::string>{"lambda_{cr}"});
 
   figure();
-  plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-")->line_width(2);
-  matplot::legend(std::vector<std::string>{"input"});
+  hold(on);
+  for (const auto & sol : sols) {
+    plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-")->line_width(2);
+  }
+  legend(std::vector<std::string>{"input"});
 
   show();
 #endif

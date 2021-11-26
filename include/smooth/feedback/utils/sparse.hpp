@@ -7,9 +7,7 @@
 #include <numeric>
 #include <optional>
 
-namespace smooth::feedback
-
-{
+namespace smooth::feedback {
 
 /**
  * @brief Block sparse matrix construction.

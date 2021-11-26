@@ -140,7 +140,6 @@ inline std::vector<LGRInterval> kLgrNodeInfo = []() {
  */
 class Mesh
 {
-private:
 public:
   /**
    * @brief Create a mesh consisting of a single interval [0, 1].
@@ -324,7 +323,7 @@ public:
   /**
    * @brief Find interval index that contains t
    */
-  std::size_t interval_find(double t) const
+  inline std::size_t interval_find(double t) const
   {
     if (t < 0) { return 0; }
     if (t > 1) { return intervals_.size() - 1; }
@@ -663,6 +662,20 @@ auto colloc_dyn(std::size_t nx,
 
   Eigen::VectorXd Fv = (XD - (tf - t0) * Fval).reshaped();
 
+  // scale equalities by by quadrature weights
+  const auto N      = m.N_colloc();
+  const auto [n, w] = m.all_nodes_and_weights();
+
+  // vec(A * W) = kron(W', I) * vec(A), so we apply kron(W', I) on the left
+
+  Eigen::SparseMatrix<double> W(N, N);
+  W.reserve(Eigen::VectorXi::Ones(N));
+  for (auto i = 0u; i < N; ++i) { W.insert(i, i) = w(i); }
+
+  const Eigen::SparseMatrix<double> W_kron_I = kron_identity(W, nx);
+
+  Fv.applyOnTheLeft(W_kron_I);
+
   if constexpr (!Deriv) {
     return Fv;
   } else {
@@ -670,14 +683,17 @@ auto colloc_dyn(std::size_t nx,
 
     Eigen::SparseMatrix<double> dF_dt0 = -(tf - t0) * dvecF_dt0;
     dF_dt0 += Fval.reshaped().sparseView();  // OK since dvecF_dtf is dense
+    dF_dt0 = W_kron_I * dF_dt0;
 
     Eigen::SparseMatrix<double> dF_dtf = -(tf - t0) * dvecF_dtf;
     dF_dtf -= Fval.reshaped().sparseView();  // OK since dvecF_dtf is dense
+    dF_dtf = W_kron_I * dF_dtf;
 
     Eigen::SparseMatrix<double> dF_dvecX = dvecXD_dvecX;
     dF_dvecX -= (tf - t0) * dvecF_dvecX;
+    dF_dvecX = W_kron_I * dF_dvecX;
 
-    Eigen::SparseMatrix<double> dF_dvecU = -(tf - t0) * dvecF_dvecU;
+    Eigen::SparseMatrix<double> dF_dvecU = -(tf - t0) * W_kron_I * dvecF_dvecU;
 
     dF_dt0.makeCompressed();
     dF_dtf.makeCompressed();
