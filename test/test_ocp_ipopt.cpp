@@ -100,8 +100,6 @@ TEST(OcpIpopt, Solve)
     {
       {"linear_solver", "mumps"},
       {"hessian_approximation", "limited-memory"},
-      {"print_timing_statistics", "yes"},
-      {"derivative_test", "first-order"},
     },
     {
       {"tol", 1e-8},
@@ -113,8 +111,6 @@ TEST(OcpIpopt, Solve)
   const auto ocp_sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlp_sol);
 
   const auto nlp_sol_copy = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, ocp_sol);
-
-  std::cout << (nlp_sol.x - nlp_sol_copy.x).transpose() << std::endl;
 
   ASSERT_LE((nlp_sol_copy.x - nlp_sol.x).norm(), 1e-8);
   ASSERT_LE((nlp_sol_copy.zl - nlp_sol.zl).norm(), 1e-8);
@@ -130,12 +126,10 @@ TEST(OcpIpopt, Solve)
     {
       {"linear_solver", "mumps"},
       {"hessian_approximation", "limited-memory"},
-      {"print_timing_statistics", "yes"},
-      {"derivative_test", "first-order"},
     },
     {
       {"tol", 1e-8},
     });
 
-  ASSERT_LE(nlp_sol_warm.iter, 8);
+  ASSERT_LE(nlp_sol_warm.iter, 6);
 }

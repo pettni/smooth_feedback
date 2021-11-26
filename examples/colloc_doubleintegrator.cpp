@@ -156,34 +156,37 @@ int main()
   const auto tt_nodes = r2v(sols.back().tf * nodes);
 
   figure();
+  hold(on);
   plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
-  for (auto it = 0; const auto & sol : sols) {
-    hold(on);
-    plot(tt, transform(tt, [&](double t) { return sol.x(t).x(); }), "-r")->line_width(2);
-    plot(tt, transform(tt, [&](double t) { return sol.x(t).y(); }), "-b")->line_width(2);
-    ++it;
+  for (auto it = 0u; const auto & sol : sols) {
+    int lw = it++ + 1 < sols.size() ? 1 : 2;
+    plot(tt, transform(tt, [&](double t) { return sol.x(t).x(); }), "-r")->line_width(lw);
+    plot(tt, transform(tt, [&](double t) { return sol.x(t).y(); }), "-b")->line_width(lw);
   }
   legend({"nodes", "pos", "vel"});
 
   figure();
   hold(on);
-  for (const auto & sol : sols) {
-    plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(2);
-    plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(2);
+  for (auto it = 0u; const auto & sol : sols) {
+    int lw = it++ + 1 < sols.size() ? 1 : 2;
+    plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(lw);
+    plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(lw);
   }
   legend({"lambda_x", "lambda_y"});
 
   figure();
   hold(on);
-  for (const auto & sol : sols) {
-    plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(2);
+  for (auto it = 0u; const auto & sol : sols) {
+    int lw = it++ + 1 < sols.size() ? 1 : 2;
+    plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(lw);
   }
   legend(std::vector<std::string>{"lambda_{cr}"});
 
   figure();
   hold(on);
-  for (const auto & sol : sols) {
-    plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-r")->line_width(2);
+  for (auto it = 0u; const auto & sol : sols) {
+    int lw = it++ + 1 < sols.size() ? 1 : 2;
+    plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-r")->line_width(lw);
   }
   legend(std::vector<std::string>{"input"});
 
