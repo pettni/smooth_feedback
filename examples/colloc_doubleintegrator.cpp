@@ -27,6 +27,7 @@
 #include <smooth/feedback/compat/ipopt.hpp>
 #include <smooth/feedback/ocp.hpp>
 
+#include <chrono>
 #include <iostream>
 
 #ifdef ENABLE_PLOTTING
@@ -97,10 +98,13 @@ int main()
   std::vector<smooth::feedback::OCPSolution> sols;
   std::optional<smooth::feedback::NLPSolution> nlpsol;
 
+  const auto t0 = std::chrono::high_resolution_clock::now();
+
   for (auto iter = 0u; iter < 10; ++iter) {
     std::cout << "---------- ITERATION " << iter << " ----------" << std::endl;
     std::cout << "mesh: " << mesh.N_ivals() << " intervals, " << mesh.N_colloc()
               << " collocation pts" << std::endl;
+
     // transcribe optimal control problem to nonlinear programming problem
     const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
 
@@ -126,18 +130,22 @@ int main()
     sols.push_back(sol);
 
     // calculate errors
-    const auto errs =
-      smooth::feedback::mesh_dyn_error(ocp.nx, f, mesh, sol.t0, sol.tf, sol.x, sol.u);
-    const double maxerr = errs.maxCoeff();
+    auto errs = smooth::feedback::mesh_dyn_error(ocp.nx, f, mesh, sol.t0, sol.tf, sol.x, sol.u);
+
     std::cout << "interval errors " << errs.transpose() << std::endl;
 
-    if (maxerr > target_err) {
-      smooth::feedback::mesh_refine(mesh, errs, target_err);
+    if (errs.maxCoeff() > target_err) {
+      smooth::feedback::mesh_refine(mesh, errs, 0.1 * target_err);
       nlpsol = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, sol);
     } else {
       break;
     }
   }
+
+  const auto dur = std::chrono::high_resolution_clock::now() - t0;
+
+  std::cout << "TOTAL TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()
+            << "ms" << std::endl;
 
 #ifdef ENABLE_PLOTTING
   using namespace matplot;
@@ -148,14 +156,14 @@ int main()
   const auto tt_nodes = r2v(sols.back().tf * nodes);
 
   figure();
+  plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
   for (auto it = 0; const auto & sol : sols) {
     hold(on);
     plot(tt, transform(tt, [&](double t) { return sol.x(t).x(); }), "-r")->line_width(2);
     plot(tt, transform(tt, [&](double t) { return sol.x(t).y(); }), "-b")->line_width(2);
     ++it;
   }
-  plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
-  legend({"pos", "vel", "nodes"});
+  legend({"nodes", "pos", "vel"});
 
   figure();
   hold(on);
@@ -175,7 +183,7 @@ int main()
   figure();
   hold(on);
   for (const auto & sol : sols) {
-    plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-")->line_width(2);
+    plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-r")->line_width(2);
   }
   legend(std::vector<std::string>{"input"});
 
