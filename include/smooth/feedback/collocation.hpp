@@ -29,10 +29,6 @@
 /**
  * TODO list
  *
- * # Mesh refinement policy
- *   - Convergence criteria
- *   - Rules for polynomial degrees
- *   - Easy way to evaluate functions on mesh to carry warmstart to finer mesh
  * # Calculate Hessian function..?
  * # Problem scaling
  * # Add parameters s?
@@ -63,7 +59,6 @@ namespace detail {
  * @brief Legendre-Gauss-Radau nodes including an extra node at +1.
  */
 template<std::size_t K, std::size_t I = 8>
-  requires(K <= 40)
 constexpr std::pair<std::array<double, K + 1>, std::array<double, K + 1>> lgr_plus_one()
 {
   auto lgr_norm = ::smooth::lgr_nodes<K, I>();
@@ -426,9 +421,9 @@ private:
  * If Deriv == true, {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU}, where vec(X) stacks the
  * columns of X into a single column vector.
  */
-template<bool Deriv, typename Fun>
+template<bool Deriv>
 auto colloc_eval(std::size_t nf,
-  Fun && f,
+  auto && f,
   const Mesh & m,
   const double t0,
   const double tf,
@@ -529,10 +524,10 @@ auto colloc_eval(std::size_t nf,
  * @return If Deriv == false,
  * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dvecX, dF_dQ},
  */
-template<bool Deriv, typename Fun>
+template<bool Deriv>
 auto colloc_eval_endpt(std::size_t nf,
   std::size_t nx,
-  Fun && f,
+  auto && f,
   const double t0,
   const double tf,
   const Eigen::MatrixXd & X,
@@ -608,9 +603,9 @@ auto colloc_eval_endpt(std::size_t nf,
  * @return {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU},
  * where vec(X) stacks the columns of X into a single column vector.
  */
-template<bool Deriv, typename F>
+template<bool Deriv>
 auto colloc_dyn(std::size_t nx,
-  F && f,
+  auto && f,
   const Mesh & m,
   const double t0,
   const double tf,
@@ -626,10 +621,10 @@ auto colloc_dyn(std::size_t nx,
   Eigen::SparseMatrix<double> dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU, dvecXD_dvecX;
 
   if constexpr (!Deriv) {
-    Fval = colloc_eval<0>(nx, std::forward<F>(f), m, t0, tf, X, U);
+    Fval = colloc_eval<0>(nx, f, m, t0, tf, X, U);
   } else {
     std::tie(Fval, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU) =
-      colloc_eval<1>(nx, std::forward<F>(f), m, t0, tf, X, U);
+      colloc_eval<1>(nx, f, m, t0, tf, X, U);
 
     dvecXD_dvecX.resize(XD.size(), X.size());
 
@@ -721,9 +716,8 @@ auto colloc_dyn(std::size_t nx,
  *
  * @return vector with relative errors for every interval in m
  */
-template<typename F>
 Eigen::VectorXd mesh_dyn_error(std::size_t nx,
-  F && f,
+  auto && f,
   Mesh & m,
   double t0,
   double tf,
@@ -822,9 +816,9 @@ void mesh_refine(Mesh & m, const Eigen::VectorXd & errs, double target_err)
  * @return {G, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU},
  * where vec(X) stacks the columns of X into a single column vector.
  */
-template<bool Deriv, typename G>
+template<bool Deriv>
 auto colloc_int(std::size_t nq,
-  G && g,
+  auto && g,
   const Mesh & m,
   double t0,
   double tf,
@@ -839,13 +833,13 @@ auto colloc_int(std::size_t nq,
   const auto [n, w] = m.all_nodes_and_weights();
 
   if constexpr (Deriv == false) {
-    const auto Gv              = colloc_eval<Deriv>(nq, std::forward<G>(g), m, t0, tf, X, U);
+    const auto Gv              = colloc_eval<Deriv>(nq, g, m, t0, tf, X, U);
     const Eigen::VectorXd Iest = Gv * w.head(N);
     Eigen::VectorXd Rv         = (tf - t0) * Iest - I;
     return Rv;
   } else {
     const auto [Gv, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU] =
-      colloc_eval<Deriv>(nq, std::forward<G>(g), m, t0, tf, X, U);
+      colloc_eval<Deriv>(nq, g, m, t0, tf, X, U);
     const Eigen::VectorXd Iest = Gv * w.head(N);
 
     Eigen::VectorXd Rv = (tf - t0) * Iest - I;

@@ -35,6 +35,7 @@
 
 #include "collocation.hpp"
 #include "nlp.hpp"
+#include "traits.hpp"
 
 namespace smooth::feedback {
 
@@ -95,6 +96,10 @@ struct OCP
   Eigen::VectorXd ceu;
 };
 
+/// @brief Concept that is true for OCPs
+template<typename T>
+concept OCPType = is_specialization_of_v<T, OCP>;
+
 /**
  * @brief Solution to OCP problem.
  */
@@ -126,8 +131,7 @@ struct OCPSolution
 namespace detail {
 
 /// @brief Variable and constraint structure of an OCP NLP
-template<typename Theta, typename F, typename G, typename CR, typename CE>
-auto ocp_nlp_structure(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
+auto ocp_nlp_structure(const OCPType auto & ocp, const Mesh & mesh)
 {
   std::size_t N = mesh.N_colloc();
 
@@ -163,10 +167,11 @@ auto ocp_nlp_structure(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
  *
  * @param ocp Optimal control problem definition
  * @param mesh Mesh that describes collocation point structure
- * @param NLP encoding of ocp as a nonlinear program
+ * @return encoding of ocp as a nonlinear program
+ *
+ * @see ocpsol_to_nlpsol(), nlpsol_to_ocpsol()
  */
-template<typename Theta, typename F, typename G, typename CR, typename CE>
-NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
+NLP ocp_to_nlp(const OCPType auto & ocp, const Mesh & mesh)
 {
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
@@ -317,9 +322,11 @@ NLP ocp_to_nlp(const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh)
   };
 }
 
-template<typename Theta, typename F, typename G, typename CR, typename CE>
+/**
+ * @brief Convert nonlinear program solution to ocp solution
+ */
 OCPSolution nlpsol_to_ocpsol(
-  const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
+  const OCPType auto & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
@@ -381,9 +388,11 @@ OCPSolution nlpsol_to_ocpsol(
   };
 }
 
-template<typename Theta, typename F, typename G, typename CR, typename CE>
+/**
+ * @brief Convert ocp  solution to nonlinear program
+ */
 NLPSolution ocpsol_to_nlpsol(
-  const OCP<Theta, F, G, CR, CE> & ocp, const Mesh & mesh, const OCPSolution & ocpsol)
+  const OCPType auto & ocp, const Mesh & mesh, const OCPSolution & ocpsol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
