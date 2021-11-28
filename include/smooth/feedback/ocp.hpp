@@ -98,7 +98,7 @@ struct OCP
 
 /// @brief Concept that is true for OCPs
 template<typename T>
-concept OCPType = is_specialization_of_v<T, OCP>;
+concept OCPType = traits::is_specialization_of_v<T, OCP>;
 
 /**
  * @brief Solution to OCP problem.
@@ -163,10 +163,10 @@ auto ocp_nlp_structure(const OCPType auto & ocp, const Mesh & mesh)
 }  // namespace detail
 
 /**
- * @brief Formulate an OCP as a NLP using collocation on a mesh.
+ * @brief Formulate an OCP as a NLP using collocation on a Mesh.
  *
  * @param ocp Optimal control problem definition
- * @param mesh Mesh that describes collocation point structure
+ * @param mesh collocation point structure
  * @return encoding of ocp as a nonlinear program
  *
  * @see ocpsol_to_nlpsol(), nlpsol_to_ocpsol()
@@ -203,20 +203,22 @@ NLP ocp_to_nlp(const OCPType auto & ocp, const Mesh & mesh)
     const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
     const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
 
-    auto [fval, df_dt0, df_dtf, df_dvecX, df_dQ] =
+    const auto [fval, df_dt0, df_dtf, df_dvecX, df_dQ] =
       colloc_eval_endpt<true>(1, ocp.nx, ocp.theta, t0, tf, X, Q);
 
-    return sparse_block_matrix({{df_dtf, df_dQ, df_dvecX, Eigen::SparseMatrix<double>(1, uvar_L)}});
+    return sparse_block_matrix({
+      {df_dtf, df_dQ, df_dvecX, Eigen::SparseMatrix<double>(1, uvar_L)},
+    });
   };
 
   // CONSTRAINT FUNCTION
 
-  auto g = [var_beg  = var_beg,
-             var_len = var_len,
-             con_beg = con_beg,
-             con_len = con_len,
-             mesh    = mesh,
-             ocp     = ocp](const Eigen::VectorXd & x) -> Eigen::VectorXd {
+  auto g = [var_beg = var_beg,
+            var_len = var_len,
+            con_beg = con_beg,
+            con_len = con_len,
+            mesh    = mesh,
+            ocp     = ocp](const Eigen::VectorXd & x) -> Eigen::VectorXd {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -242,35 +244,35 @@ NLP ocp_to_nlp(const OCPType auto & ocp, const Mesh & mesh)
   };
 
   // CONSTRAINT JACOBIAN
-  auto dg_dx = [var_beg = var_beg, var_len = var_len, mesh = mesh, ocp = ocp](
-                 const Eigen::VectorXd & x) {
-    const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
-    const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+  auto dg_dx =
+    [var_beg = var_beg, var_len = var_len, mesh = mesh, ocp = ocp](const Eigen::VectorXd & x) {
+      const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+      const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    assert(std::size_t(x.size()) == n);
+      assert(std::size_t(x.size()) == n);
 
-    const double t0          = 0;
-    const double tf          = x(tfvar_B);
-    const Eigen::VectorXd Qm = x.segment(qvar_B, qvar_L);
-    const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-    const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+      const double t0          = 0;
+      const double tf          = x(tfvar_B);
+      const Eigen::VectorXd Qm = x.segment(qvar_B, qvar_L);
+      const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+      const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
-    // clang-format off
-    const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
-    const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] = colloc_int<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
-    const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU]   = colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
-    const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
-    // clang-format on
-
-    return sparse_block_matrix({
       // clang-format off
-      {dF_dtf,      {},  dF_dX,  dF_dU},
-      {dG_dtf,   dG_dQ,  dG_dX,  dG_dU},
-      {dCR_dtf,     {}, dCR_dX, dCR_dU},
-      {dCE_dtf, dCE_dQ, dCE_dX,     {}},
+      const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
+      const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] = colloc_int<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
+      const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU]   = colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
+      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
       // clang-format on
-    });
-  };
+
+      return sparse_block_matrix({
+        // clang-format off
+        { dF_dtf,     {},  dF_dX,  dF_dU},
+        { dG_dtf,  dG_dQ,  dG_dX,  dG_dU},
+        {dCR_dtf,     {}, dCR_dX, dCR_dU},
+        {dCE_dtf, dCE_dQ, dCE_dX,     {}},
+        // clang-format on
+      });
+    };
 
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
   const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
@@ -325,8 +327,8 @@ NLP ocp_to_nlp(const OCPType auto & ocp, const Mesh & mesh)
 /**
  * @brief Convert nonlinear program solution to ocp solution
  */
-OCPSolution nlpsol_to_ocpsol(
-  const OCPType auto & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
+OCPSolution
+nlpsol_to_ocpsol(const OCPType auto & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
@@ -363,8 +365,8 @@ OCPSolution nlpsol_to_ocpsol(
   Eigen::MatrixXd Ldyn(ocp.nx, N);
   Ldyn = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.nx, dcon_L / ocp.nx);
 
-  auto ldfun = [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](
-                 double t) -> Eigen::VectorXd {
+  auto ldfun =
+    [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](double t) -> Eigen::VectorXd {
     return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
   };
 
@@ -375,7 +377,7 @@ OCPSolution nlpsol_to_ocpsol(
     return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Lcr.colwise(), 0, false);
   };
 
-  return OCPSolution{
+  return {
     .t0         = t0,
     .tf         = tf,
     .Q          = std::move(Q),
@@ -391,8 +393,8 @@ OCPSolution nlpsol_to_ocpsol(
 /**
  * @brief Convert ocp  solution to nonlinear program
  */
-NLPSolution ocpsol_to_nlpsol(
-  const OCPType auto & ocp, const Mesh & mesh, const OCPSolution & ocpsol)
+NLPSolution
+ocpsol_to_nlpsol(const OCPType auto & ocp, const Mesh & mesh, const OCPSolution & ocpsol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
@@ -431,7 +433,7 @@ NLPSolution ocpsol_to_nlpsol(
     ++i;
   }
 
-  return NLPSolution{
+  return {
     .status = NLPSolution::Status::Unknown,
     .x      = std::move(x),
     .zl     = Eigen::VectorXd::Zero(n),

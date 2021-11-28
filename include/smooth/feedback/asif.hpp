@@ -109,9 +109,10 @@ public:
 
     assert((prm_.nh == std::invoke_result_t<SS, Scalar<G>, G>::RowsAtCompileTime));
 
-    auto f = [this, &t]<typename _T>(double t_loc,
-               const CastT<_T, G> & vx,
-               const CastT<_T, U> & vu) { return f_(time_trait<T>::plus(t, t_loc), vx, vu); };
+    auto f = [this,
+              &t]<typename _T>(double t_loc, const CastT<_T, G> & vx, const CastT<_T, U> & vu) {
+      return f_(time_trait<T>::plus(t, t_loc), vx, vu);
+    };
 
     ASIFProblem<G, U> pbm{
       .T     = prm_.T,

@@ -108,8 +108,9 @@ TEST(Asif, Filter)
   using Time = std::chrono::duration<double>;
 
   // dynamics
-  auto f = []<typename T>(
-             Time, const X<T> &, const U<T> & u) -> smooth::Tangent<X<T>> { return u; };
+  auto f = []<typename T>(Time, const X<T> &, const U<T> & u) -> smooth::Tangent<X<T>> {
+    return u;
+  };
 
   // safety set
   auto h = []<typename T>(T, const X<T> & g) -> Eigen::Vector3<T> { return g.log(); };

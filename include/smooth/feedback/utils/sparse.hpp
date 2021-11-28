@@ -27,22 +27,22 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   const auto n_rows = l.size();
   const auto n_cols = std::begin(l)->size();
 
-  std::vector<Eigen::Index> dims_rows(n_rows, -1);
-  std::vector<Eigen::Index> dims_cols(n_cols, -1);
+  Eigen::VectorXi dims_rows = Eigen::VectorXi::Constant(n_rows, -1);
+  Eigen::VectorXi dims_cols = Eigen::VectorXi::Constant(n_cols, -1);
 
   // figure block row and col dimensions
   for (auto krow = 0u; const auto & row : l) {
     for (auto kcol = 0u; const auto & item : row) {
       if (item.has_value()) {
-        if (dims_cols[kcol] == -1) {
-          dims_cols[kcol] = item->cols();
+        if (dims_cols(kcol) == -1) {
+          dims_cols(kcol) = item->cols();
         } else {
-          assert(dims_cols[kcol] == item->cols());
+          assert(dims_cols(kcol) == item->cols());
         }
-        if (dims_rows[krow] == -1) {
-          dims_rows[krow] = item->rows();
+        if (dims_rows(krow) == -1) {
+          dims_rows(krow) = item->rows();
         } else {
-          assert(dims_rows[krow] == item->rows());
+          assert(dims_rows(krow) == item->rows());
         }
       }
       ++kcol;
@@ -50,9 +50,13 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
     ++krow;
   }
 
+  // check that all dimensions are defined by input args
+  assert(dims_rows.minCoeff() > -1);
+  assert(dims_cols.minCoeff() > -1);
+
   // figure starting indices
-  const Eigen::Index n_row = std::accumulate(dims_rows.begin(), dims_rows.end(), 0u);
-  const Eigen::Index n_col = std::accumulate(dims_cols.begin(), dims_cols.end(), 0u);
+  const auto n_row = std::accumulate(std::cbegin(dims_rows), std::cend(dims_rows), 0u);
+  const auto n_col = std::accumulate(std::cbegin(dims_cols), std::cend(dims_cols), 0u);
 
   Eigen::SparseMatrix<double> ret(n_row, n_col);
 
@@ -62,11 +66,11 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   for (const auto & row : l) {
     for (auto kcol = 0u, col0 = 0u; const auto &item : row) {
       if (item.has_value()) {
-        for (auto col = 0u; col < dims_cols[kcol]; ++col) {
+        for (auto col = 0; col < dims_cols(kcol); ++col) {
           pattern(col0 + col) += item->outerIndexPtr()[col + 1] - item->outerIndexPtr()[col];
         }
       }
-      col0 += dims_cols[kcol++];
+      col0 += dims_cols(kcol++);
     }
   }
 
@@ -76,15 +80,15 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   for (auto krow = 0u, row0 = 0u; const auto &row : l) {
     for (auto kcol = 0u, col0 = 0u; const auto &item : row) {
       if (item.has_value()) {
-        for (auto col = 0u; col < dims_cols[kcol]; ++col) {
+        for (auto col = 0; col < dims_cols(kcol); ++col) {
           for (typename std::decay_t<decltype(*item)>::InnerIterator it(*item, col); it; ++it) {
             ret.insert(row0 + it.index(), col0 + col) = it.value();
           }
         }
       }
-      col0 += dims_cols[kcol++];
+      col0 += dims_cols(kcol++);
     }
-    row0 += dims_rows[krow++];
+    row0 += dims_rows(krow++);
   }
 
   ret.makeCompressed();
@@ -116,9 +120,9 @@ inline Eigen::SparseMatrix<double> sparse_identity(std::size_t n)
 template<typename Derived>
 inline auto kron_identity(const Eigen::SparseCompressedBase<Derived> & X, std::size_t n)
 {
-  Eigen::SparseMatrix<typename Derived::Scalar,
-    Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor>
-    ret(X.rows() * n, X.cols() * n);
+  Eigen::
+    SparseMatrix<typename Derived::Scalar, Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor>
+      ret(X.rows() * n, X.cols() * n);
 
   Eigen::Matrix<int, -1, 1> pattern(X.outerSize() * n);
 

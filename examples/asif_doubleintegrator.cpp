@@ -67,9 +67,9 @@ int main()
     .nh = 2,
     .ulim =
       {
-        .A = Eigen::Matrix<double, 1, 1>(1),
-        .l = Eigen::Matrix<double, 1, 1>(-1),
-        .u = Eigen::Matrix<double, 1, 1>(1),
+        .A = U<double>{{1.}},
+        .l = U<double>{{-1.}},
+        .u = U<double>{{1.}},
       },
     .asif =
       {
@@ -93,8 +93,9 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](
-                     const Gd & x, smooth::Tangent<Gd> & d, double t) { d = f(Time(t), x, u); };
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) {
+    d = f(Time(t), x, u);
+  };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system

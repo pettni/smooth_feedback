@@ -34,8 +34,9 @@ template<typename T>
 using Vec = Eigen::VectorX<T>;
 
 /// @brief Objective function
-const auto theta = []<typename T>(
-                     T, T, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T { return q.x(); };
+const auto theta = []<typename T>(T, T, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T {
+  return q.x();
+};
 
 /// @brief Dynamics
 const auto f = []<typename T>(T, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
@@ -48,20 +49,22 @@ const auto g = []<typename T>(T, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
 };
 
 /// @brief Running constraints
-const auto cr = []<typename T>(
-                  T, const Vec<T> &, const Vec<T> & u) -> Vec<T> { return Vec<T>{{u.x()}}; };
+const auto cr = []<typename T>(T, const Vec<T> &, const Vec<T> & u) -> Vec<T> {
+  return Vec<T>{{u.x()}};
+};
 
 /// @brief End constraints
-const auto ce = []<typename T>(
-                  T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
+const auto ce =
+  []<typename T>(T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
   Vec<T> ret(5);
   ret << tf, x0, xf;
   return ret;
 };
 
 /// @brief Range to std::vector
-const auto r2v = []<std::ranges::range R>(
-                   const R & r) { return std::vector(std::ranges::begin(r), std::ranges::end(r)); };
+const auto r2v = []<std::ranges::range R>(const R & r) {
+  return std::vector(std::ranges::begin(r), std::ranges::end(r));
+};
 
 TEST(OcpIpopt, Solve)
 {
@@ -92,7 +95,8 @@ TEST(OcpIpopt, Solve)
   const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
 
   // solve nonlinear programming problem
-  const auto nlp_sol = smooth::feedback::solve_nlp_ipopt(nlp,
+  const auto nlp_sol = smooth::feedback::solve_nlp_ipopt(
+    nlp,
     std::nullopt,
     {
       {"print_level", 0},
@@ -118,7 +122,8 @@ TEST(OcpIpopt, Solve)
   ASSERT_LE((nlp_sol_copy.lambda - nlp_sol.lambda).norm(), 1e-8);
 
   // solve again with warmstart
-  const auto nlp_sol_warm = smooth::feedback::solve_nlp_ipopt(nlp,
+  const auto nlp_sol_warm = smooth::feedback::solve_nlp_ipopt(
+    nlp,
     nlp_sol_copy,
     {
       {"print_level", 0},

@@ -149,7 +149,8 @@ struct LinearizationInfo
  * @param[in] lin_con set to true to allocate K * Nu state linearization constraints
  */
 template<LieGroup G, Manifold U>
-void ocp_to_qp_allocate(const OptimalControlProblem<G, U> & pbm,
+void ocp_to_qp_allocate(
+  const OptimalControlProblem<G, U> & pbm,
   std::size_t K,
   QuadraticProgramSparse<double> & qp,
   bool lin_con = false)
@@ -220,7 +221,8 @@ void ocp_to_qp_allocate(const OptimalControlProblem<G, U> & pbm,
  * @brief Fill QP matrices (part 2 of ocp_to_qp()).
  */
 template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
-void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
+void ocp_to_qp_fill(
+  const OptimalControlProblem<G, U> & pbm,
   std::size_t K,
   const Dyn & f,
   const LinearizationInfo<G, U> & lin,
@@ -402,8 +404,9 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   for (auto k = 0u; k < K; ++k) {
     for (auto i = 0u; i != Nu; ++i) {
       const Eigen::Index Pci = k * Nu + i;
-      assert(qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
-             == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
+      assert(
+        qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
+        == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
 
       for (auto j = 0u; j != i + 1; ++j) {
         qp.P.coeffRef(k * Nu + j, Pci) = pbm.weights.R(j, i) * dt;
@@ -418,8 +421,9 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   for (auto k = 1u; k < K; ++k) {
     for (auto i = 0u; i != Nx; ++i) {
       const Eigen::Index Pci = NU + (k - 1) * Nx + i;
-      assert(qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
-             == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
+      assert(
+        qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
+        == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
 
       for (auto j = 0u; j != i + 1; ++j) {
         qp.P.coeffRef(NU + (k - 1) * Nx + j, Pci) = pbm.weights.Q(j, i) * dt;
@@ -432,8 +436,9 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
   // last state x(K) ~ x(T)
   for (auto i = 0u; i != Nx; ++i) {
     const Eigen::Index Pci = NU + (K - 1) * Nx + i;
-    assert(qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
-           == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
+    assert(
+      qp.P.outerIndexPtr()[Pci + 1] - qp.P.outerIndexPtr()[Pci]
+      == static_cast<decltype(qp.P)::StorageIndex>(i) + 1);
 
     for (auto j = 0u; j != i + 1; ++j) {
       qp.P.coeffRef(NU + (K - 1) * Nx + j, Pci) = pbm.weights.QT(j, i);
@@ -484,7 +489,8 @@ void ocp_to_qp_fill(const OptimalControlProblem<G, U> & pbm,
  * method this means that it must be templated on the scalar type.
  */
 template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
-QuadraticProgramSparse<double> ocp_to_qp(const OptimalControlProblem<G, U> & pbm,
+QuadraticProgramSparse<double> ocp_to_qp(
+  const OptimalControlProblem<G, U> & pbm,
   std::size_t K,
   const Dyn & f,
   const LinearizationInfo<G, U> & lin)

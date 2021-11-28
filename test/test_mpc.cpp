@@ -176,7 +176,8 @@ TEST(Mpc, BasicEigenInput)
     return Eigen::Vector3<T>(u(0), T(0), u(1));
   };
 
-  smooth::feedback::MPC<Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(std::move(f),
+  smooth::feedback::MPC<Time, smooth::SE2d, Eigen::Vector2d, decltype(f)> mpc(
+    std::move(f),
     smooth::feedback::MPCParams<smooth::SE2d, Eigen::Vector2d>{
       .K                           = 3,
       .relinearize_around_solution = true,

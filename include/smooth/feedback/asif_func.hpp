@@ -120,13 +120,15 @@ void asif_to_qp_allocate(
  *
  * Note that the (dense) QP matrices must be pre-allocated and filled with zeros.
  */
-template<LieGroup G,
+template<
+  LieGroup G,
   Manifold U,
   typename Dyn,
   typename SafeSet,
   typename BackupU,
   diff::Type DT = diff::Type::DEFAULT>
-void asif_to_qp_fill(const ASIFProblem<G, U> & pbm,
+void asif_to_qp_fill(
+  const ASIFProblem<G, U> & pbm,
   const ASIFtoQPParams & prm,
   Dyn && f,
   SafeSet && h,
@@ -165,8 +167,9 @@ void asif_to_qp_fill(const ASIFProblem<G, U> & pbm,
   TangentMap<G> dx_dx0 = TangentMap<G>::Identity();
 
   // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](
-                       const G & xx, Tangent<G> & dd, double tt) { dd = f(tt, xx, bu(tt, xx)); };
+  const auto x_ode = [&f, &bu](const G & xx, Tangent<G> & dd, double tt) {
+    dd = f(tt, xx, bu(tt, xx));
+  };
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
     auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
@@ -264,7 +267,8 @@ void asif_to_qp_fill(const ASIFProblem<G, U> & pbm,
  *
  * @return QuadraticProgram modeling the ASIF filtering problem
  */
-template<LieGroup G,
+template<
+  LieGroup G,
   Manifold U,
   typename Dyn,
   typename SS,

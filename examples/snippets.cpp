@@ -76,13 +76,15 @@ void ekf_snippet()
   };
 
   // PREDICT STEP: propagate filter over time
-  ekf.predict(SigmaCL,
+  ekf.predict(
+    SigmaCL,
     Eigen::Matrix<double, 6, 6>::Identity(),  // motion covariance Q
     1.                                        // time step length
   );
 
   // UPDATE STEP: register a measurement of the known landmark
-  ekf.update(h,
+  ekf.update(
+    h,
     Eigen::Vector2d(0.3, 0.6),   // measurement result y
     Eigen::Matrix2d::Identity()  // measurement covariance R
   );

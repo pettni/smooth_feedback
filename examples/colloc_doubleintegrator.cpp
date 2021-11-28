@@ -58,15 +58,17 @@ const auto cr = []<typename T>(T, const Vec<T> &, const Vec<T> & u) -> Vec<T> {
 };
 
 /// @brief End constraints
-const auto ce = []<typename T>(T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
+const auto ce =
+  []<typename T>(T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
   Vec<T> ret(5);
   ret << tf, x0, xf;
   return ret;
 };
 
 /// @brief Range to std::vector
-const auto r2v = []<std::ranges::range R>(
-                   const R & r) { return std::vector(std::ranges::begin(r), std::ranges::end(r)); };
+const auto r2v = []<std::ranges::range R>(const R & r) {
+  return std::vector(std::ranges::begin(r), std::ranges::end(r));
+};
 
 int main()
 {
@@ -110,14 +112,14 @@ int main()
 
     // solve nonlinear programming problem
     std::cout << "solving..." << std::endl;
-    nlpsol = smooth::feedback::solve_nlp_ipopt(nlp,
+    nlpsol = smooth::feedback::solve_nlp_ipopt(
+      nlp,
       nlpsol,
       {
         {"print_level", 5},
       },
       {
-        {"linear_solver", "mumps"},
-        {"hessian_approximation", "limited-memory"},
+        {"linear_solver", "mumps"}, {"hessian_approximation", "limited-memory"},
         // {"derivative_test", "first-order"},
         // {"print_timing_statistics", "yes"},
       },

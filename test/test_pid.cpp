@@ -72,7 +72,8 @@ TEST(PID, SetDesiredCurve)
 
     std::vector<double> tt{0, 1, 2, 3};
 
-    std::vector<smooth::SE2d> gg{smooth::SE2d::Random(),
+    std::vector<smooth::SE2d> gg{
+      smooth::SE2d::Random(),
       smooth::SE2d::Random(),
       smooth::SE2d::Random(),
       smooth::SE2d::Random()};

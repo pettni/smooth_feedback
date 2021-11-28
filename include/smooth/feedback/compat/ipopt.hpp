@@ -57,7 +57,8 @@ public:
   /**
    * @brief IPOPT info overload
    */
-  inline bool get_nlp_info(Ipopt::Index & n,
+  inline bool get_nlp_info(
+    Ipopt::Index & n,
     Ipopt::Index & m,
     Ipopt::Index & nnz_jac_g,
     Ipopt::Index & nnz_h_lag,
@@ -78,17 +79,18 @@ public:
   /**
    * @brief IPOPT bounds overload
    */
-  inline bool get_bounds_info(Ipopt::Index n,
+  inline bool get_bounds_info(
+    Ipopt::Index n,
     Ipopt::Number * x_l,
     Ipopt::Number * x_u,
     Ipopt::Index m,
     Ipopt::Number * g_l,
     Ipopt::Number * g_u) override
   {
-    Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl;
-    Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu;
-    Eigen::Map<Eigen::VectorXd>(g_l, m) = nlp_.gl;
-    Eigen::Map<Eigen::VectorXd>(g_u, m) = nlp_.gu;
+    Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl.cwiseMax(Eigen::VectorXd::Constant(n, -2e19));
+    Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu.cwiseMin(Eigen::VectorXd::Constant(n, 2e19));
+    Eigen::Map<Eigen::VectorXd>(g_l, m) = nlp_.gl.cwiseMax(Eigen::VectorXd::Constant(m, -2e19));
+    Eigen::Map<Eigen::VectorXd>(g_u, m) = nlp_.gu.cwiseMin(Eigen::VectorXd::Constant(m, 2e19));
 
     return true;
   }
@@ -96,7 +98,8 @@ public:
   /**
    * @brief IPOPT initial guess overload
    */
-  inline bool get_starting_point(Ipopt::Index n,
+  inline bool get_starting_point(
+    Ipopt::Index n,
     bool init_x,
     Ipopt::Number * x,
     bool init_z,
@@ -121,7 +124,8 @@ public:
   /**
    * @brief IPOPT objective overload
    */
-  inline bool eval_f(Ipopt::Index n,
+  inline bool eval_f(
+    Ipopt::Index n,
     const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
     Ipopt::Number & obj_value) override
@@ -133,7 +137,8 @@ public:
   /**
    * @brief IPOPT method to define initial guess
    */
-  inline bool eval_grad_f(Ipopt::Index n,
+  inline bool eval_grad_f(
+    Ipopt::Index n,
     const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
     Ipopt::Number * grad_f) override
@@ -146,7 +151,8 @@ public:
   /**
    * @brief IPOPT method to define initial guess
    */
-  inline bool eval_g(Ipopt::Index n,
+  inline bool eval_g(
+    Ipopt::Index n,
     const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
     Ipopt::Index m,
@@ -159,7 +165,8 @@ public:
   /**
    * @brief IPOPT method to define initial guess
    */
-  inline bool eval_jac_g(Ipopt::Index n,
+  inline bool eval_jac_g(
+    Ipopt::Index n,
     const Ipopt::Number * x,
     [[maybe_unused]] bool new_x,
     [[maybe_unused]] Ipopt::Index m,
@@ -194,7 +201,8 @@ public:
   /**
    * @brief IPOPT method called after optimization done
    */
-  inline void finalize_solution(Ipopt::SolverReturn status,
+  inline void finalize_solution(
+    Ipopt::SolverReturn status,
     Ipopt::Index n,
     const Ipopt::Number * x,
     const Ipopt::Number * z_L,
@@ -256,7 +264,8 @@ private:
  *
  * @see https://coin-or.github.io/Ipopt/OPTIONS.html for a list of available options
  */
-inline NLPSolution solve_nlp_ipopt(const NLP & nlp,
+inline NLPSolution solve_nlp_ipopt(
+  const NLP & nlp,
   std::optional<NLPSolution> warmstart                         = {},
   std::vector<std::pair<std::string, int>> opts_integer        = {},
   std::vector<std::pair<std::string, std::string>> opts_string = {},
@@ -277,7 +286,7 @@ inline NLPSolution solve_nlp_ipopt(const NLP & nlp,
     app->Options()->SetStringValue("warm_start_init_point", "yes");
     ipopt_nlp->sol() = warmstart.value();
   } else {
-    // initial guess is zero
+    // initial guess not given, set to zero
     app->Options()->SetStringValue("warm_start_init_point", "no");
     ipopt_nlp->sol().x.setZero(nlp.n);
   }

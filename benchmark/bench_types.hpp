@@ -28,11 +28,9 @@ smooth::feedback::QuadraticProgram<-1, -1> random_qp(int m, int n, double densit
     Eigen::MatrixXd::NullaryExpr(m, n, [&](int, int) { return bdist(rng) ? udist(rng) : 0.; });
   Eigen::MatrixXd Lrand =
     Eigen::MatrixXd::NullaryExpr(n, n, [&](int, int) { return bdist(rng) ? udist(rng) : 0.; });
-  Eigen::MatrixXd L = Eigen::MatrixXd::Zero(n, n);
+  Eigen::MatrixXd L                         = Eigen::MatrixXd::Zero(n, n);
   L.template triangularView<Eigen::Lower>() = Lrand.template triangularView<Eigen::Lower>();
-  for (int i = 0; i < n; ++i) {
-    L(i, i) = std::max({L(i, i), -L(i, i), 0.05});
-  }
+  for (int i = 0; i < n; ++i) { L(i, i) = std::max({L(i, i), -L(i, i), 0.05}); }
 
   Eigen::VectorXd v     = Eigen::VectorXd::NullaryExpr(n, [&](int) { return udist(rng); });
   Eigen::VectorXd delta = Eigen::VectorXd::NullaryExpr(m, [&](int) { return udist(rng); });
@@ -49,8 +47,8 @@ smooth::feedback::QuadraticProgram<-1, -1> random_qp(int m, int n, double densit
 /**
  * @brief Create a random sparse quadratic program of dimension m x n.
  */
-inline smooth::feedback::QuadraticProgramSparse<double> qp_dense_to_sparse(
-  const smooth::feedback::QuadraticProgram<-1, -1, double> & qp)
+inline smooth::feedback::QuadraticProgramSparse<double>
+qp_dense_to_sparse(const smooth::feedback::QuadraticProgram<-1, -1, double> & qp)
 {
   smooth::feedback::QuadraticProgramSparse<double> qps;
 

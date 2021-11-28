@@ -146,7 +146,7 @@ public:
    * constants that define which LGR nodes to pre-compute.
    */
   inline Mesh(std::size_t Kmin = 5, std::size_t Kmax = 5)
-      : Kmin_(Kmin), Kmax_(Kmax), intervals_{Interval{.K = Kmin, .tau0 = 0}}
+      : Kmin_(Kmin), Kmax_(Kmax), intervals_(1, Interval{.K = Kmin, .tau0 = 0})
   {
     assert(kKmin <= Kmin);
     assert(Kmin <= Kmax);
@@ -422,7 +422,8 @@ private:
  * columns of X into a single column vector.
  */
 template<bool Deriv>
-auto colloc_eval(std::size_t nf,
+auto colloc_eval(
+  std::size_t nf,
   auto && f,
   const Mesh & m,
   const double t0,
@@ -494,7 +495,8 @@ auto colloc_eval(std::size_t nf,
     dvecF_dvecX.makeCompressed();
     dvecF_dvecU.makeCompressed();
 
-    return std::make_tuple(std::move(Fval),
+    return std::make_tuple(
+      std::move(Fval),
       std::move(dvecF_dt0),
       std::move(dvecF_dtf),
       std::move(dvecF_dvecX),
@@ -525,7 +527,8 @@ auto colloc_eval(std::size_t nf,
  * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dvecX, dF_dQ},
  */
 template<bool Deriv>
-auto colloc_eval_endpt(std::size_t nf,
+auto colloc_eval_endpt(
+  std::size_t nf,
   std::size_t nx,
   auto && f,
   const double t0,
@@ -604,7 +607,8 @@ auto colloc_eval_endpt(std::size_t nf,
  * where vec(X) stacks the columns of X into a single column vector.
  */
 template<bool Deriv>
-auto colloc_dyn(std::size_t nx,
+auto colloc_dyn(
+  std::size_t nx,
   auto && f,
   const Mesh & m,
   const double t0,
@@ -695,7 +699,8 @@ auto colloc_dyn(std::size_t nx,
     dF_dvecX.makeCompressed();
     dF_dvecU.makeCompressed();
 
-    return std::make_tuple(std::move(Fv),
+    return std::make_tuple(
+      std::move(Fv),
       std::move(dF_dt0),
       std::move(dF_dtf),
       std::move(dF_dvecX),
@@ -716,7 +721,8 @@ auto colloc_dyn(std::size_t nx,
  *
  * @return vector with relative errors for every interval in m
  */
-Eigen::VectorXd mesh_dyn_error(std::size_t nx,
+Eigen::VectorXd mesh_dyn_error(
+  std::size_t nx,
   auto && f,
   Mesh & m,
   double t0,
@@ -817,7 +823,8 @@ void mesh_refine(Mesh & m, const Eigen::VectorXd & errs, double target_err)
  * where vec(X) stacks the columns of X into a single column vector.
  */
 template<bool Deriv>
-auto colloc_int(std::size_t nq,
+auto colloc_int(
+  std::size_t nq,
   auto && g,
   const Mesh & m,
   double t0,
@@ -865,7 +872,8 @@ auto colloc_int(std::size_t nq,
     dR_dvecX.makeCompressed();
     dR_dvecU.makeCompressed();
 
-    return std::make_tuple(std::move(Rv),
+    return std::make_tuple(
+      std::move(Rv),
       std::move(dR_dt0),
       std::move(dR_dtf),
       std::move(dR_dvecI),
