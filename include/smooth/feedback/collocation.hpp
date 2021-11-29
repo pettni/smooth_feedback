@@ -26,14 +26,6 @@
 #ifndef SMOOTH__FEEDBACK__COLLOCATION_HPP_
 #define SMOOTH__FEEDBACK__COLLOCATION_HPP_
 
-/**
- * TODO list
- *
- * # Calculate Hessian function..?
- * # Problem scaling
- * # Add parameters s?
- */
-
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Sparse>
@@ -46,12 +38,10 @@
 #include <ranges>
 #include <vector>
 
+#include "traits.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
-
-/// @brief Degrees for polynomial bounds for which to pre-compute LGR node info.
-static constexpr std::size_t kKmin = 2, kKmax = 12;
 
 namespace detail {
 
@@ -73,69 +63,28 @@ constexpr std::pair<std::array<double, K + 1>, std::array<double, K + 1>> lgr_pl
   return {ns, ws};
 }
 
-struct LGRInterval
-{
-  // The K+1 LGR nodes plus extra point at +1
-  Eigen::VectorXd nodes;
-  // Weights corresponding to LGR nodes
-  Eigen::VectorXd weights;
-  // KxK basis matrix for ext degree K-1 Lagrange polynomial defined on the K LGR nodes
-  Eigen::MatrixXd B;
-  // (K+1)x(K+1) basis matrix for ext degree K Lagrange polynomial defined on the K+1 LGR nodes
-  Eigen::MatrixXd B_ext;
-  // (K+1)xK derivative matrix for extended Lagrange polynomial
-  Eigen::MatrixXd D_ext;
-  // KxK integration matrix for extended Lagrange polynomial
-  Eigen::MatrixXd I_ext;
-};
-
-/**
- * @brief Inline pre-computed LGR nodes, weights, and differentiation matrices.
- */
-inline std::vector<LGRInterval> kLgrNodeInfo = []() {
-  std::vector<LGRInterval> ret;
-
-  utils::static_for<kKmax + 1 - kKmin>([&ret](auto i) {
-    constexpr auto K = kKmin + i;
-
-    constexpr auto nw_s = lgr_nodes<K>();
-    constexpr auto B_s  = lagrange_basis<K - 1>(nw_s.first);
-
-    constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
-    constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
-    constexpr auto D_ext_s  = polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first)
-                               .template block<K + 1, K>(0, 0);
-    Eigen::MatrixXd D_ext =
-      Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(D_ext_s[0].data(), K + 1, K);
-
-    Eigen::MatrixXd I_ext = D_ext.block(1, 0, K, K).inverse();
-
-    ret.push_back(LGRInterval{
-      // clang-format off
-      .nodes      = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.first.data(), K+1),
-      .weights    = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.second.data(), K+1),
-      .B          = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(B_s[0].data(), K, K),
-      .B_ext = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(B_ext_s[0].data(), K + 1, K + 1),
-      .D_ext = std::move(D_ext),
-      .I_ext = std::move(I_ext),
-      // clang-format on
-    });
-  });
-
-  return ret;
-}();
-
 }  // namespace detail
 
 /**
  * @brief Collocation mesh of interval [0, 1].
+ * @tparam _Kmin minimal number of collocation points per interval
+ * @tparam _Kmax maximal number of collocation points per interval
  *
  * [0, 1] is divided into non-overlapping intervals I_i, and each interval I_i has K_i LGR
  * collocation points.
  */
+template<std::size_t _Kmin = 5, std::size_t _Kmax = 10>
+  requires(_Kmin <= _Kmax)
 class Mesh
 {
+  using MatMap = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>;
+
 public:
+  /// @brief Minimal number of collocation points per interval
+  static constexpr auto Kmin = _Kmin;
+  /// @brief Maximal number of collocation points per interval
+  static constexpr auto Kmax = _Kmax;
+
   /**
    * @brief Create a mesh consisting of a single interval [0, 1].
    *
@@ -145,13 +94,7 @@ public:
    * @note It must hold that kKmin <= Kmin <= Kmax <= kKmax, where kKmin and kKmax are compile-time
    * constants that define which LGR nodes to pre-compute.
    */
-  inline Mesh(std::size_t Kmin = 5, std::size_t Kmax = 5)
-      : Kmin_(Kmin), Kmax_(Kmax), intervals_(1, Interval{.K = Kmin, .tau0 = 0})
-  {
-    assert(kKmin <= Kmin);
-    assert(Kmin <= Kmax);
-    assert(Kmax + 1 <= kKmax);  // need one more for error estimate
-  }
+  inline Mesh() : intervals_(1, Interval{.K = Kmin, .tau0 = 0}) {}
 
   /**
    * @brief Number of intervals in mesh.
@@ -183,42 +126,41 @@ public:
    * @param i index of interval to refine
    * @param D target number of collocation points in refined interval
    *
-   * If D < current degree, then nothing is done.
-   * If D <= Kmax,          then the polynomial degree is increased to D.
-   * If D > Kmax,           then the interval is divided into n = max(2, ceil(D / Kmin))
-   *                        intervals with degree Kmin
+   * If D > Kmax, or current degree > Kmax    then the interval is divided into
+   *                                          n = max(2, ceil(D / Kmin)) intervals with deg Kmin
+   * If D < current degree,                   then nothing is done.
+   * If D <= Kmax,                            then the polynomial degree is increased to D.
    */
   inline void refine_ph(std::size_t i, std::size_t D)
   {
-    if (D < intervals_[i].K) {
-      return;
-    } else if (D <= Kmax_) {
-      // refine by increasing degree in interval
-      intervals_[i].K = D;
-    } else {
+    if (D > Kmax || intervals_[i].K > Kmax) {
       // refine by splitting interval into n intervals, each with degree Kmin_
-      std::size_t n = std::max<std::size_t>(2u, (D + Kmin_ - 1) / Kmin_);
+      std::size_t n = std::max<std::size_t>(2u, (D + Kmin - 1) / Kmin);
 
       const double tau0 = intervals_[i].tau0;
       const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
       const double taum = (tauf - tau0) / n;
 
       while (n-- > 1) {
-        intervals_.insert(
-          intervals_.begin() + i + 1, Interval{.K = Kmin_, .tau0 = tau0 + n * taum});
+        intervals_.insert(intervals_.begin() + i + 1, Interval{.K = Kmin, .tau0 = tau0 + n * taum});
       }
+    } else if (D < intervals_[i].K) {
+      return;
+    } else if (D <= Kmax) {
+      // refine by increasing degree in interval
+      intervals_[i].K = D;
     }
   }
 
   /**
    * @brief Set the number of collocation points in interval i to K
    * @param i interval index
-   * @param K number of collocation points
+   * @param K number of collocation points s.t. (Kmin <= K <= Kmax + 1)
    */
   inline void set_N_colloc_ival(std::size_t i, std::size_t K)
   {
-    assert(kKmin <= K);
-    assert(K <= kKmax);
+    assert(Kmin <= K);
+    assert(K <= Kmax);
     intervals_[i].K = K;
   }
 
@@ -227,18 +169,25 @@ public:
    */
   inline std::pair<Eigen::VectorXd, Eigen::VectorXd> interval_nodes_and_weights(std::size_t i) const
   {
-    const std::size_t K = intervals_[i].K;
+    const std::size_t k = intervals_[i].K;
 
-    const auto & ns = detail::kLgrNodeInfo[K - kKmin].nodes;
-    const auto & ws = detail::kLgrNodeInfo[K - kKmin].weights;
+    Eigen::VectorXd ns, ws;
+    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
+      static constexpr auto K = Kmin + i;
+      if (K == k) {
+        static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
+        ns = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.first.data(), k + 1);
+        ws = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.second.data(), k + 1);
+      }
+    });
 
-    const double tau0 = intervals_[i].tau0;
-    const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+    const double tau0  = intervals_[i].tau0;
+    const double tauf  = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+    const double alpha = (tauf - tau0) / 2;
 
     return {
-      Eigen::VectorXd::Constant(ns.size(), tau0)
-        + (tauf - tau0) * (ns + Eigen::VectorXd::Constant(ns.size(), 1)) / 2,
-      ((tauf - tau0) / 2.) * ws,
+      Eigen::VectorXd::Constant(ns.size(), tau0) + alpha * (ns + Eigen::VectorXd::Ones(ns.size())),
+      alpha * ws,
     };
   }
 
@@ -281,12 +230,26 @@ public:
    */
   inline Eigen::MatrixXd interval_diffmat(std::size_t i) const
   {
-    const std::size_t K = intervals_[i].K;
+    const std::size_t k = intervals_[i].K;
 
     const double tau0 = intervals_[i].tau0;
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
 
-    return (2. / (tauf - tau0)) * detail::kLgrNodeInfo[K - kKmin].D_ext;
+    Eigen::MatrixXd ret;
+    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
+      static constexpr auto K = Kmin + i;
+      if (K == k) {
+        static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
+        static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
+        static constexpr auto D_ext_s =
+          polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first)
+            .template block<K + 1, K>(0, 0);
+        ret = MatMap(D_ext_s[0].data(), k + 1, k);
+        ;
+      }
+    });
+
+    return (2. / (tauf - tau0)) * ret;
   }
 
   /**
@@ -307,12 +270,8 @@ public:
    */
   inline Eigen::MatrixXd interval_intmat(std::size_t i) const
   {
-    const std::size_t K = intervals_[i].K;
-
-    const double tau0 = intervals_[i].tau0;
-    const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
-
-    return ((tauf - tau0) / 2) * detail::kLgrNodeInfo[K - kKmin].I_ext;
+    const std::size_t k = intervals_[i].K;
+    return interval_diffmat(i).block(1, 0, k, k).inverse();
   }
 
   /**
@@ -359,17 +318,24 @@ public:
 
     Eigen::RowVectorXd W;
 
-    if (extend || ival + 1 < intervals_.size()) {
-      const auto & B = detail::kLgrNodeInfo[k - kKmin].B_ext;
-      const auto U   = monomial_derivative_runtime(u, k, p);
-      W              = U * B;
-      assert(std::size_t(W.size()) == k + 1);
-    } else {
-      const auto & B = detail::kLgrNodeInfo[k - kKmin].B;
-      const auto U   = monomial_derivative_runtime(u, k - 1, p);
-      W              = U * B;
-      assert(std::size_t(W.size()) == k);
-    }
+    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
+      static constexpr auto K = Kmin + i;
+      if (K == k) {
+        if (extend || ival + 1 < intervals_.size()) {
+          static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
+          static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
+          const auto U                   = monomial_derivative<K>(u, p);
+          W = MatMap(U[0].data(), 1, k + 1) * MatMap(B_ext_s[0].data(), k + 1, k + 1);
+          assert(std::size_t(W.size()) == k + 1);
+        } else {
+          static constexpr auto nw_s = lgr_nodes<K>();
+          static constexpr auto B_s  = lagrange_basis<K - 1>(nw_s.first);
+          const auto U               = monomial_derivative<K - 1>(u, p);
+          W                          = MatMap(U[0].data(), 1, k) * MatMap(B_s[0].data(), k, k);
+          assert(std::size_t(W.size()) == k);
+        }
+      }
+    });
 
     using namespace std::views;
 
@@ -383,9 +349,6 @@ public:
   }
 
 private:
-  /// @brief Min and max degrees for intervals in Mesh
-  std::size_t Kmin_, Kmax_;
-
   struct Interval
   {
     /// @brief Polynomial degree in interval
@@ -397,6 +360,10 @@ private:
   /// @brief Mesh intervals
   std::vector<Interval> intervals_;
 };
+
+/// @brief MeshType is a specialization of Mesh
+template<typename T>
+concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
 
 /**
  * @brief Evaluate a function on all collocation points.
@@ -425,7 +392,7 @@ template<bool Deriv>
 auto colloc_eval(
   std::size_t nf,
   auto && f,
-  const Mesh & m,
+  const MeshType auto & m,
   const double t0,
   const double tf,
   const Eigen::MatrixXd & X,
@@ -610,7 +577,7 @@ template<bool Deriv>
 auto colloc_dyn(
   std::size_t nx,
   auto && f,
-  const Mesh & m,
+  const MeshType auto & m,
   const double t0,
   const double tf,
   const Eigen::MatrixXd & X,
@@ -724,7 +691,7 @@ auto colloc_dyn(
 Eigen::VectorXd mesh_dyn_error(
   std::size_t nx,
   auto && f,
-  Mesh & m,
+  MeshType auto & m,
   double t0,
   double tf,
   std::function<Eigen::VectorXd(double)> xfun,
@@ -787,7 +754,7 @@ Eigen::VectorXd mesh_dyn_error(
  * @param[in] errs relative errors for all intervals (@see mesh_dyn_error())
  * @param[in] target_err target relative error
  */
-void mesh_refine(Mesh & m, const Eigen::VectorXd & errs, double target_err)
+void mesh_refine(MeshType auto & m, const Eigen::VectorXd & errs, double target_err)
 {
   const auto N = m.N_ivals();
 
@@ -826,7 +793,7 @@ template<bool Deriv>
 auto colloc_int(
   std::size_t nq,
   auto && g,
-  const Mesh & m,
+  const MeshType auto & m,
   double t0,
   double tf,
   const Eigen::VectorXd & I,

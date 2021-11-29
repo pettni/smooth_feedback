@@ -36,7 +36,7 @@ using Vecd = Vec<double>;
 
 TEST(Collocation, Mesh)
 {
-  smooth::feedback::Mesh m(5, 10);
+  smooth::feedback::Mesh<5, 10> m;
   m.refine_ph(0, 5 * 10);
   ASSERT_EQ(m.N_ivals(), 10);
 
@@ -77,7 +77,7 @@ TEST(Collocation, Mesh)
 
 TEST(Collocation, DifferentiationIntegration)
 {
-  smooth::feedback::Mesh m(8, 8);
+  smooth::feedback::Mesh<8, 8> m;
   m.refine_ph(0, 40);
 
   // define a function and its derivative
@@ -133,7 +133,7 @@ TEST(Collocation, TimeTrajectory)
   double t0 = 3;
   double tf = 5;
 
-  smooth::feedback::Mesh m(5, 5);
+  smooth::feedback::Mesh<5, 5> m;
   m.refine_ph(0, 40);
   ASSERT_EQ(m.N_ivals(), 8);
 
@@ -185,7 +185,7 @@ TEST(Collocation, DynError)
   double t0 = 3;
   double tf = 5;
 
-  smooth::feedback::Mesh m(5, 5);
+  smooth::feedback::Mesh<5, 5> m;
 
   // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
   m.refine_ph(0, 16 * 5);
@@ -235,7 +235,7 @@ TEST(Collocation, StateTrajectory)
   double t0 = 3;
   double tf = 5;
 
-  smooth::feedback::Mesh m(5, 5);
+  smooth::feedback::Mesh<5, 5> m;
 
   // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
   m.refine_ph(0, 16 * 5);
@@ -264,7 +264,7 @@ TEST(Collocation, StateTrajectory)
 
 TEST(Collocation, FunctionEval)
 {
-  smooth::feedback::Mesh m(5, 5);
+  smooth::feedback::Mesh<5, 5> m;
 
   {
     Eigen::MatrixXd vals = Eigen::MatrixXd::Ones(3, m.N_colloc() + 1);

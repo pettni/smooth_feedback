@@ -94,7 +94,7 @@ int main()
   double target_err = 1e-6;
 
   // define mesh
-  smooth::feedback::Mesh mesh(5, 10);
+  smooth::feedback::Mesh<5, 10> mesh;
 
   // declare solution variable
   std::vector<smooth::feedback::OCPSolution> sols;

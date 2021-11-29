@@ -131,7 +131,7 @@ struct OCPSolution
 namespace detail {
 
 /// @brief Variable and constraint structure of an OCP NLP
-auto ocp_nlp_structure(const OCPType auto & ocp, const Mesh & mesh)
+auto ocp_nlp_structure(const OCPType auto & ocp, const MeshType auto & mesh)
 {
   std::size_t N = mesh.N_colloc();
 
@@ -171,7 +171,7 @@ auto ocp_nlp_structure(const OCPType auto & ocp, const Mesh & mesh)
  *
  * @see ocpsol_to_nlpsol(), nlpsol_to_ocpsol()
  */
-NLP ocp_to_nlp(const OCPType auto & ocp, const Mesh & mesh)
+NLP ocp_to_nlp(const OCPType auto & ocp, const MeshType auto & mesh)
 {
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
@@ -328,7 +328,7 @@ NLP ocp_to_nlp(const OCPType auto & ocp, const Mesh & mesh)
  * @brief Convert nonlinear program solution to ocp solution
  */
 OCPSolution
-nlpsol_to_ocpsol(const OCPType auto & ocp, const Mesh & mesh, const NLPSolution & nlp_sol)
+nlpsol_to_ocpsol(const OCPType auto & ocp, const MeshType auto & mesh, const NLPSolution & nlp_sol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
@@ -350,7 +350,7 @@ nlpsol_to_ocpsol(const OCPType auto & ocp, const Mesh & mesh, const NLPSolution 
   X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
 
   auto xfun = [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise(), 0, true);
+    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise(), 0, true);
   };
 
   // for these we repeat last point since there are no values for endpoint
@@ -359,7 +359,7 @@ nlpsol_to_ocpsol(const OCPType auto & ocp, const Mesh & mesh, const NLPSolution 
   U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
   auto ufun = [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), U.colwise(), 0, false);
+    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), U.colwise(), 0, false);
   };
 
   Eigen::MatrixXd Ldyn(ocp.nx, N);
@@ -367,14 +367,14 @@ nlpsol_to_ocpsol(const OCPType auto & ocp, const Mesh & mesh, const NLPSolution 
 
   auto ldfun =
     [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
+    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
   };
 
   Eigen::MatrixXd Lcr(ocp.ncr, N);
   Lcr = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.ncr, crcon_L / ocp.ncr);
 
   auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::VectorXd {
-    return mesh.eval<Eigen::VectorXd>((t - t0) / (tf - t0), Lcr.colwise(), 0, false);
+    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Lcr.colwise(), 0, false);
   };
 
   return {
@@ -394,7 +394,7 @@ nlpsol_to_ocpsol(const OCPType auto & ocp, const Mesh & mesh, const NLPSolution 
  * @brief Convert ocp  solution to nonlinear program
  */
 NLPSolution
-ocpsol_to_nlpsol(const OCPType auto & ocp, const Mesh & mesh, const OCPSolution & ocpsol)
+ocpsol_to_nlpsol(const OCPType auto & ocp, const MeshType auto & mesh, const OCPSolution & ocpsol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
