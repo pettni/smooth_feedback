@@ -32,6 +32,7 @@
  */
 
 #include <Eigen/Core>
+#include <smooth/lie_group.hpp>
 
 #include "collocation.hpp"
 #include "nlp.hpp"
@@ -40,16 +41,22 @@
 namespace smooth::feedback {
 
 /**
- * @brief Rn optimal control problem on the interval \f$ t \in [0, t_f] \f$.
+ * @brief Optimal control problem definition
+ * @tparam _X state space
+ * @tparam _U input space
+ *
+ * Problem is defined on the interval \f$ t \in [0, t_f] \f$.
  * \f[
  * \begin{cases}
- *  \min_{t_f, u(\cdot), x(\cdot)} & \theta(t_f, x_0, x_f, q) \\
- *  \text{s.t.}                    & x(0) = x_0 \\
- *                                 & x(t_f) = x_f \\
- *                                 & \dot x(t) = f(t, x(t), u(t)) \\
- *                                 & q = \int_{0}^{t_f} g(t, x(t), u(t)) \mathrm{d}t \\
- *                                 & c_{rl} \leq c_r(t, x(t), u(t)) \leq c_{ru} \quad t \in [0, t_f]
- * \\ & c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu} \end{cases} \f]
+ *  \min              & \theta(t_f, x_0, x_f, q)                                         \\
+ *  \text{s.t.}       & x(0) = x_0                                                       \\
+ *                    & x(t_f) = x_f                                                     \\
+ *                    & \dot x(t) = f(t, x(t), u(t))                                     \\
+ *                    & q = \int_{0}^{t_f} g(t, x(t), u(t)) \mathrm{d}t                  \\
+ *                    & c_{rl} \leq c_r(t, x(t), u(t)) \leq c_{ru} \quad t \in [0, t_f]  \\
+ *                    & c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu}
+ * \end{cases}
+ * \f]
  *
  * The optimal control problem depends on arbitrary functions \f$ \theta, f, g, c_r, c_e \f$.
  * The type of those functions are template pararamters in this structure.
@@ -57,9 +64,12 @@ namespace smooth::feedback {
  * @note To enable automatic differentiation \f$ \theta, g, c_r, c_e \f$ must be templated over the
  * scalar type.
  */
-template<typename Theta, typename F, typename G, typename CR, typename CE>
+template<LieGroup _X, Manifold _U, typename Theta, typename F, typename G, typename CR, typename CE>
 struct OCP
 {
+  using X = _X;
+  using U = _U;
+
   /// @brief State dimension \f$ n_{x} \f$
   std::size_t nx;
   /// @brief Input dimension \f$ n_{u} \f$
@@ -71,24 +81,22 @@ struct OCP
   /// @brief Number of end constraints \f$ n_{ce} \f$
   std::size_t nce;
 
-  /// @brief Objective function \f$ \theta : R \times R^{n_x} \times R^{n_x} \times R^{n_q}
-  /// \rightarrow R \f$
+  /// @brief Objective function \f$ \theta : R \times G \times G \times R^{n_q} \rightarrow R \f$
   Theta theta;
 
-  /// @brief System dynamics \f$ f : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_x} \f$
+  /// @brief System dynamics \f$ f : R \times G \times U \rightarrow G \f$
   F f;
-  /// @brief Integrals \f$ g : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_q} \f$
+  /// @brief Integrals \f$ g : R \times G \times U \rightarrow R^{n_q} \f$
   G g;
 
-  /// @brief Running constraint \f$ c_r : R \times R^{n_x} \times R^{n_u} \rightarrow R^{n_{cr}} \f$
+  /// @brief Running constraint \f$ c_r : R \times G \times U \rightarrow R^{n_{cr}} \f$
   CR cr;
   /// @brief Running constraint lower bound \f$ c_{rl} \in R^{n_{cr}} \f$
   Eigen::VectorXd crl;
   /// @brief Running constraint upper bound \f$ c_{ru} \in R^{n_{cr}} \f$
   Eigen::VectorXd cru;
 
-  /// @brief End constraint \f$ c_e : R \times R^{n_x} \times R^{n_x} \times R^{n_q} \rightarrow
-  /// R^{n_{ce}} \f$
+  /// @brief End constraint \f$ c_e : R \times G \times G \times R^{n_q} \rightarrow R^{n_{ce}} \f$
   CE ce;
   /// @brief End constraint lower bound \f$ c_{el} \in R^{n_{ce}} \f$
   Eigen::VectorXd cel;
@@ -96,13 +104,23 @@ struct OCP
   Eigen::VectorXd ceu;
 };
 
-/// @brief Concept that is true for OCPs
+/// @brief Concept that is true for OCP specializations
 template<typename T>
 concept OCPType = traits::is_specialization_of_v<T, OCP>;
+
+/// @brief OCP defined on flat spaces
+template<typename Theta, typename F, typename G, typename CR, typename CE>
+using FlatOCP = OCP<Eigen::VectorXd, Eigen::VectorXd, Theta, F, G, CR, CE>;
+
+/// @brief Concept that is true for FlatOCP specializations
+template<typename T>
+concept FlatOCPType = OCPType<T> &&(
+  std::is_same_v<typename T::X, Eigen::VectorXd> && std::is_same_v<typename T::U, Eigen::VectorXd>);
 
 /**
  * @brief Solution to OCP problem.
  */
+template<LieGroup G, Manifold U>
 struct OCPSolution
 {
   double t0;
@@ -112,8 +130,8 @@ struct OCPSolution
   Eigen::VectorXd Q;
 
   /// @brief Callable functions for state and input
-  std::function<Eigen::VectorXd(double)> u;
-  std::function<Eigen::VectorXd(double)> x;
+  std::function<G(double)> u;
+  std::function<U(double)> x;
 
   /// @brief Multipliers for integral constraints
   Eigen::VectorXd lambda_q;
@@ -128,10 +146,13 @@ struct OCPSolution
   std::function<Eigen::VectorXd(double)> lambda_cr;
 };
 
+/// @brief Solution to OCP problem defined on flat spaces
+using FlatOCPSolution = OCPSolution<Eigen::VectorXd, Eigen::VectorXd>;
+
 namespace detail {
 
 /// @brief Variable and constraint structure of an OCP NLP
-auto ocp_nlp_structure(const OCPType auto & ocp, const MeshType auto & mesh)
+auto ocp_nlp_structure(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 {
   std::size_t N = mesh.N_colloc();
 
@@ -171,7 +192,7 @@ auto ocp_nlp_structure(const OCPType auto & ocp, const MeshType auto & mesh)
  *
  * @see ocpsol_to_nlpsol(), nlpsol_to_ocpsol()
  */
-NLP ocp_to_nlp(const OCPType auto & ocp, const MeshType auto & mesh)
+NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 {
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
@@ -327,8 +348,8 @@ NLP ocp_to_nlp(const OCPType auto & ocp, const MeshType auto & mesh)
 /**
  * @brief Convert nonlinear program solution to ocp solution
  */
-OCPSolution
-nlpsol_to_ocpsol(const OCPType auto & ocp, const MeshType auto & mesh, const NLPSolution & nlp_sol)
+FlatOCPSolution nlpsol_to_ocpsol(
+  const FlatOCPType auto & ocp, const MeshType auto & mesh, const NLPSolution & nlp_sol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
@@ -393,8 +414,8 @@ nlpsol_to_ocpsol(const OCPType auto & ocp, const MeshType auto & mesh, const NLP
 /**
  * @brief Convert ocp  solution to nonlinear program
  */
-NLPSolution
-ocpsol_to_nlpsol(const OCPType auto & ocp, const MeshType auto & mesh, const OCPSolution & ocpsol)
+NLPSolution ocpsol_to_nlpsol(
+  const FlatOCPType auto & ocp, const MeshType auto & mesh, const FlatOCPSolution & ocpsol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);

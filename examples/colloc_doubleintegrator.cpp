@@ -73,22 +73,23 @@ const auto r2v = []<std::ranges::range R>(const R & r) {
 int main()
 {
   // define optimal control problem
-  smooth::feedback::OCP<decltype(obj), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
-    .nx    = 2,
-    .nu    = 1,
-    .nq    = 1,
-    .ncr   = 1,
-    .nce   = 5,
-    .theta = obj,
-    .f     = f,
-    .g     = g,
-    .cr    = cr,
-    .crl   = Vec<double>{{-1}},
-    .cru   = Vec<double>{{1}},
-    .ce    = ce,
-    .cel   = Vec<double>{{3, 1, 1, 0.1, 0}},
-    .ceu   = Vec<double>{{15, 1, 1, 0.1, 0}},
-  };
+  smooth::feedback::FlatOCP<decltype(obj), decltype(f), decltype(g), decltype(cr), decltype(ce)>
+    ocp{
+      .nx    = 2,
+      .nu    = 1,
+      .nq    = 1,
+      .ncr   = 1,
+      .nce   = 5,
+      .theta = obj,
+      .f     = f,
+      .g     = g,
+      .cr    = cr,
+      .crl   = Vec<double>{{-1}},
+      .cru   = Vec<double>{{1}},
+      .ce    = ce,
+      .cel   = Vec<double>{{3, 1, 1, 0.1, 0}},
+      .ceu   = Vec<double>{{15, 1, 1, 0.1, 0}},
+    };
 
   // target optimality
   double target_err = 1e-6;
@@ -97,7 +98,7 @@ int main()
   smooth::feedback::Mesh<5, 10> mesh;
 
   // declare solution variable
-  std::vector<smooth::feedback::OCPSolution> sols;
+  std::vector<smooth::feedback::FlatOCPSolution> sols;
   std::optional<smooth::feedback::NLPSolution> nlpsol;
 
   const auto t0 = std::chrono::high_resolution_clock::now();

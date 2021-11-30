@@ -160,7 +160,7 @@ public:
   inline void set_N_colloc_ival(std::size_t i, std::size_t K)
   {
     assert(Kmin <= K);
-    assert(K <= Kmax);
+    assert(K <= Kmax + 1);
     intervals_[i].K = K;
   }
 

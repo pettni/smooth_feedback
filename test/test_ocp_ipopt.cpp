@@ -69,22 +69,23 @@ const auto r2v = []<std::ranges::range R>(const R & r) {
 TEST(OcpIpopt, Solve)
 {
   // define optimal control problem
-  smooth::feedback::OCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
-    .nx    = 2,
-    .nu    = 1,
-    .nq    = 1,
-    .ncr   = 1,
-    .nce   = 5,
-    .theta = theta,
-    .f     = f,
-    .g     = g,
-    .cr    = cr,
-    .crl   = Vec<double>{{-1}},
-    .cru   = Vec<double>{{1}},
-    .ce    = ce,
-    .cel   = Vec<double>{{3, 1, 1, 0, 0}},
-    .ceu   = Vec<double>{{6, 1, 1, 0, 0}},
-  };
+  smooth::feedback::FlatOCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
+    ocp{
+      .nx    = 2,
+      .nu    = 1,
+      .nq    = 1,
+      .ncr   = 1,
+      .nce   = 5,
+      .theta = theta,
+      .f     = f,
+      .g     = g,
+      .cr    = cr,
+      .crl   = Vec<double>{{-1}},
+      .cru   = Vec<double>{{1}},
+      .ce    = ce,
+      .cel   = Vec<double>{{3, 1, 1, 0, 0}},
+      .ceu   = Vec<double>{{6, 1, 1, 0, 0}},
+    };
 
   // define mesh
   smooth::feedback::Mesh mesh;

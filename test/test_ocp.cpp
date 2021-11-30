@@ -62,7 +62,7 @@ TEST(Ocp, Jacobians)
     return ret;
   };
 
-  smooth::feedback::OCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
+  smooth::feedback::FlatOCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
     .nx    = 2,
     .nu    = 1,
     .nq    = 1,
