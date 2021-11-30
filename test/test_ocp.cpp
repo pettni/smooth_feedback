@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 
 #include <Eigen/Core>
+#include <smooth/so3.hpp>
 
 // #include "smooth/compat/autodiff.hpp"
 #include "smooth/feedback/ocp.hpp"
@@ -62,22 +63,26 @@ TEST(Ocp, Jacobians)
     return ret;
   };
 
-  smooth::feedback::FlatOCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)> ocp{
-    .nx    = 2,
-    .nu    = 1,
-    .nq    = 1,
-    .ncr   = 4,
-    .nce   = 6,
-    .theta = theta,
-    .f     = f,
-    .g     = g,
-    .cr    = cr,
-    .crl   = Vec<double>::Constant(4, -1),
-    .cru   = Vec<double>::Constant(4, 1),
-    .ce    = ce,
-    .cel   = Vec<double>::Constant(6, -1),
-    .ceu   = Vec<double>::Constant(6, 1),
-  };
+  const smooth::feedback::
+    FlatOCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
+      ocp{
+        .nx    = 2,
+        .nu    = 1,
+        .nq    = 1,
+        .ncr   = 4,
+        .nce   = 6,
+        .theta = theta,
+        .f     = f,
+        .g     = g,
+        .cr    = cr,
+        .crl   = Vec<double>::Constant(4, -1),
+        .cru   = Vec<double>::Constant(4, 1),
+        .ce    = ce,
+        .cel   = Vec<double>::Constant(6, -1),
+        .ceu   = Vec<double>::Constant(6, 1),
+      };
+
+  ASSERT_TRUE(smooth::feedback::check_ocp(ocp, Eigen::VectorXd{{1, 1}}, Eigen::VectorXd{{1}}));
 
   smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 8 * 5);
@@ -96,4 +101,78 @@ TEST(Ocp, Jacobians)
 
   ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-8));
   ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-8));
+}
+
+TEST(OCP, Flatten)
+{
+  // objective
+  auto theta = []<typename T>(T tf, smooth::SO3<T>, smooth::SO3<T>, Vec<T> q) -> T {
+    return (tf - 2) * (tf - 2) + q.sum();
+  };
+
+  // dynamics
+  auto f = []<typename T>(T, smooth::SO3<T> x, Eigen::Vector2<T> u) -> Vec<T> {
+    return Vec<T>{{u.x(), -u.y(), 0.01 * x.log().x()}};
+  };
+
+  // integrals
+  auto g = []<typename T>(T t, smooth::SO3<T> x, Eigen::Vector2<T> u) -> Vec<T> {
+    return Vec<T>{{t + x.log().squaredNorm() + u.squaredNorm()}};
+  };
+
+  // running constraint
+  auto cr = []<typename T>(T t, smooth::SO3<T>, Eigen::Vector2<T> u) -> Vec<T> {
+    Vec<T> ret(3);
+    ret << t, u;
+    return ret;
+  };
+
+  // end constraint
+  auto ce = []<typename T>(T tf, smooth::SO3<T> x0, smooth::SO3<T> xf, Vec<T>) -> Vec<T> {
+    Vec<T> ret(7);
+    ret << tf, x0.log(), xf.log();
+    return ret;
+  };
+
+  const smooth::feedback::OCP<
+    smooth::SO3d,
+    Eigen::Vector2d,
+    decltype(theta),
+    decltype(f),
+    decltype(g),
+    decltype(cr),
+    decltype(ce)>
+    ocp{
+      .nx    = 3,
+      .nu    = 2,
+      .nq    = 1,
+      .ncr   = 3,
+      .nce   = 7,
+      .theta = theta,
+      .f     = f,
+      .g     = g,
+      .cr    = cr,
+      .crl   = Vec<double>::Constant(3, -1),
+      .cru   = Vec<double>::Constant(3, 1),
+      .ce    = ce,
+      .cel   = Vec<double>::Constant(7, -1),
+      .ceu   = Vec<double>::Constant(7, 1),
+    };
+
+  const auto xl_fun = []<typename T>(T) -> smooth::SO3<T> { return smooth::SO3<T>::Identity(); };
+
+  const auto ul_fun = []<typename T>(T) -> Eigen::Vector2<T> { return Eigen::Vector2<T>::Zero(); };
+
+  smooth::SO3d x = smooth::SO3d::Random();
+  Eigen::Vector2d u = Eigen::Vector2d::Random();
+
+  ASSERT_TRUE(smooth::feedback::check_ocp(ocp, x, u));
+
+  const auto flat_ocp = smooth::feedback::flatten_ocp(ocp, xl_fun, ul_fun);
+
+  Eigen::Vector3d xflat = Eigen::Vector3d::Random();
+  Eigen::Vector2d uflat = Eigen::Vector2d::Random();
+
+
+  ASSERT_TRUE(smooth::feedback::check_ocp(flat_ocp, xflat, uflat));
 }

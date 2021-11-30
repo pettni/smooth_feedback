@@ -118,6 +118,125 @@ concept FlatOCPType = OCPType<T> &&(
   std::is_same_v<typename T::X, Eigen::VectorXd> && std::is_same_v<typename T::U, Eigen::VectorXd>);
 
 /**
+ * @brief Check if an OCP is properly defined.
+ *
+ * TODO remove input args after Default<> is fixed.
+ */
+inline bool check_ocp(const OCPType auto & ocp, const auto & x, const auto & u)
+{
+  // using X = typename std::decay_t<decltype(ocp)>::X;
+  // using U = typename std::decay_t<decltype(ocp)>::U;
+
+  double t = 0;
+  // X x      = Default<X>();
+  // U u      = Default<U>();
+
+  if (!(static_cast<std::size_t>(dof(x)) == ocp.nx)) { return false; }
+  if (!(static_cast<std::size_t>(dof(u)) == ocp.nu)) { return false; }
+
+  const auto dx = ocp.f.template operator()<double>(t, x, u);
+  if (!(static_cast<std::size_t>(dx.size()) == ocp.nx)) { return false; }
+
+  const auto g = ocp.g.template operator()<double>(t, x, u);
+  if (!(static_cast<std::size_t>(g.size()) == ocp.nq)) { return false; }
+
+  [[maybe_unused]] const double obj = ocp.theta.template operator()<double>(t, x, x, g);
+
+  const auto cr = ocp.cr.template operator()<double>(t, x, u);
+  if (!(static_cast<std::size_t>(cr.size()) == ocp.ncr)) { return false; }
+  if (!(static_cast<std::size_t>(ocp.crl.size()) == ocp.ncr)) { return false; }
+  if (!(static_cast<std::size_t>(ocp.cru.size()) == ocp.ncr)) { return false; }
+
+  const auto ce = ocp.ce.template operator()<double>(t, x, x, g);
+  if (!(static_cast<std::size_t>(ce.size()) == ocp.nce)) { return false; }
+  if (!(static_cast<std::size_t>(ocp.cel.size()) == ocp.nce)) { return false; }
+  if (!(static_cast<std::size_t>(ocp.ceu.size()) == ocp.nce)) { return false; }
+
+  return true;
+}
+
+/**
+ * @brief Flatten a LieGroup OCP by defining it in the tangent space around a trajectory.
+ *
+ * @param ocp OCPType defined on a LieGroup
+ * @param xl nominal state trajectory
+ * @param ul nominal state trajectory
+ *
+ * @return FlatOCPType in variables (xe, ue) obtained via variables change x = xl ⊕ xe, u = ul ⊕ ue,
+ */
+inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun)
+{
+  using Eigen::VectorX;
+  using X = typename std::decay_t<decltype(ocp)>::X;
+  using U = typename std::decay_t<decltype(ocp)>::U;
+
+  static_assert(Dof<X> > 0);
+  static_assert(Dof<U> > 0);
+
+  assert(ocp.nx == Dof<X>);
+  assert(ocp.nu == Dof<U>);
+
+  auto f_new = [f = ocp.f, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
+                 const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
+    // can not double-differentiate, so we neglect derivative of linearization w.r.t. t
+    const double tdbl    = static_cast<double>(t);
+    const auto [xl, dxl] = diff::dr(xl_fun, wrt(tdbl));
+    const auto ul        = ul_fun(tdbl);
+
+    const X x = rplus(xl, xe);
+    const U u = rplus(ul, ue);
+
+    return dr_expinv<X>(xe) * f.template operator()<T>(t, x, u) - dl_expinv<X>(xe) * dxl;
+  };
+
+  auto g_new = [g = ocp.g, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
+                 const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
+    return g.template operator()<T>(t, rplus(xl_fun(t), xe), rplus(ul_fun(t), ue));
+  };
+
+  auto cr_new = [cr = ocp.cr, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
+                  const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
+    return cr.template operator()<T>(t, rplus(xl_fun(t), xe), rplus(ul_fun(t), ue));
+  };
+
+  auto theta_new =
+    [theta = ocp.theta, xl_fun = xl_fun]<typename T>(
+      const T & tf, const VectorX<T> & xe0, const VectorX<T> & xef, const VectorX<T> & q) -> T {
+    return theta.template operator()<T>(tf, rplus(xl_fun(0.), xe0), rplus(xl_fun(tf), xef), q);
+  };
+
+  auto ce_new = [ce = ocp.ce, xl_fun = xl_fun]<typename T>(
+                  const T & tf,
+                  const VectorX<T> & xe0,
+                  const VectorX<T> & xef,
+                  const VectorX<T> & q) -> VectorX<T> {
+    return ce.template operator()<T>(tf, rplus(xl_fun(0.), xe0), rplus(xl_fun(tf), xef), q);
+  };
+
+  return FlatOCP<
+    decltype(theta_new),
+    decltype(f_new),
+    decltype(g_new),
+    decltype(cr_new),
+    decltype(ce_new)>{
+    .nx    = Dof<X>,
+    .nu    = Dof<U>,
+    .nq    = ocp.nq,
+    .ncr   = ocp.ncr,
+    .nce   = ocp.nce,
+    .theta = std::move(theta_new),
+    .f     = std::move(f_new),
+    .g     = std::move(g_new),
+    .cr    = std::move(cr_new),
+    .crl   = ocp.crl,
+    .cru   = ocp.cru,
+    .ce    = std::move(ce_new),
+    .cel   = ocp.cel,
+    .ceu   = ocp.ceu,
+  };
+}
+
+/**
  * @brief Solution to OCP problem.
  */
 template<LieGroup G, Manifold U>
