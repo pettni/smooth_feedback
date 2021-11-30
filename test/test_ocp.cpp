@@ -36,7 +36,7 @@ using Vec = Eigen::VectorX<T>;
 TEST(Ocp, Jacobians)
 {
   // objective
-  auto theta = []<typename T>(T, T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> T {
+  auto theta = []<typename T>(T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> T {
     return (tf - 2) * (tf - 2) + x0.squaredNorm() + xf.squaredNorm() + q.sum();
   };
 
@@ -56,7 +56,7 @@ TEST(Ocp, Jacobians)
   };
 
   // end constraint
-  auto ce = []<typename T>(T, T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> Vec<T> {
+  auto ce = []<typename T>(T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> Vec<T> {
     Vec<T> ret(6);
     ret << tf, x0, xf, q;
     return ret;

@@ -38,7 +38,7 @@ template<typename T>
 using Vec = Eigen::VectorX<T>;
 
 /// @brief Objective function
-const auto obj = []<typename T>(T, T tf, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T {
+const auto obj = []<typename T>(T tf, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T {
   return tf + q.x();
 };
 
@@ -59,7 +59,7 @@ const auto cr = []<typename T>(T, const Vec<T> &, const Vec<T> & u) -> Vec<T> {
 
 /// @brief End constraints
 const auto ce =
-  []<typename T>(T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
+  []<typename T>(T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
   Vec<T> ret(5);
   ret << tf, x0, xf;
   return ret;
@@ -154,7 +154,7 @@ int main()
 
   const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
-  const auto tt       = linspace(sols.back().t0, sols.back().tf, 500);
+  const auto tt       = linspace(0., sols.back().tf, 500);
   const auto tt_nodes = r2v(sols.back().tf * nodes);
 
   figure();

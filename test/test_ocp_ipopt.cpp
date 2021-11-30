@@ -34,7 +34,7 @@ template<typename T>
 using Vec = Eigen::VectorX<T>;
 
 /// @brief Objective function
-const auto theta = []<typename T>(T, T, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T {
+const auto theta = []<typename T>(T, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T {
   return q.x();
 };
 
@@ -55,7 +55,7 @@ const auto cr = []<typename T>(T, const Vec<T> &, const Vec<T> & u) -> Vec<T> {
 
 /// @brief End constraints
 const auto ce =
-  []<typename T>(T, T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
+  []<typename T>(T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
   Vec<T> ret(5);
   ret << tf, x0, xf;
   return ret;

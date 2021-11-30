@@ -390,7 +390,7 @@ concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
  */
 template<bool Deriv>
 auto colloc_eval(
-  std::size_t nf,
+  const std::size_t nf,
   auto && f,
   const MeshType auto & m,
   const double t0,
@@ -495,36 +495,39 @@ auto colloc_eval(
  */
 template<bool Deriv>
 auto colloc_eval_endpt(
-  std::size_t nf,
-  std::size_t nx,
+  const std::size_t nf,
+  const std::size_t nx,
   auto && f,
-  const double t0,
+  [[maybe_unused]] const double t0,
   const double tf,
   const Eigen::MatrixXd & X,
   const Eigen::VectorXd & Q)
 {
   assert(static_cast<std::size_t>(X.rows()) == nx);
 
+  // NOTE: for now t0 = 0 and we don't want t0 in signatures
+  assert(t0 == 0);
+
   const Eigen::VectorXd x0 = X.leftCols(1);
   const Eigen::VectorXd xf = X.rightCols(1);
 
   if constexpr (!Deriv) {
-    return f(t0, tf, x0, xf, Q);
+    return f(tf, x0, xf, Q);
   } else {
-    const auto [Fval, J] = diff::dr(f, wrt(t0, tf, x0, xf, Q));
+    const auto [Fval, J] = diff::dr(f, wrt(tf, x0, xf, Q));
 
     assert(static_cast<std::size_t>(J.rows()) == nf);
-    assert(static_cast<std::size_t>(J.cols()) == 2 + 2 * nx + Q.size());
+    assert(static_cast<std::size_t>(J.cols()) == 1 + 2 * nx + Q.size());
 
     Eigen::SparseMatrix<double> dF_dt0, dF_dtf, dF_dvecX, dF_dQ;
 
     dF_dt0.resize(nf, 1);
-    dF_dt0.reserve(nf);
-    for (auto i = 0u; i < nf; ++i) { dF_dt0.insert(i, 0) = J(i, 0); }
+    // dF_dt0.reserve(nf);
+    // for (auto i = 0u; i < nf; ++i) { dF_dt0.insert(i, 0) = J(i, 0); }
 
     dF_dtf.resize(nf, 1);
     dF_dtf.reserve(nf);
-    for (auto i = 0u; i < nf; ++i) { dF_dtf.insert(i, 0) = J(i, 1); }
+    for (auto i = 0u; i < nf; ++i) { dF_dtf.insert(i, 0) = J(i, 0); }
 
     dF_dvecX.resize(nf, X.size());
     Eigen::VectorXi pattern = Eigen::VectorXi::Zero(X.size());
@@ -534,8 +537,8 @@ auto colloc_eval_endpt(
 
     for (auto row = 0u; row < nf; ++row) {
       for (auto col = 0u; col < nx; ++col) {
-        dF_dvecX.insert(row, col)                 = J(row, 2 + col);
-        dF_dvecX.insert(row, X.size() - nx + col) = J(row, 2 + nx + col);
+        dF_dvecX.insert(row, col)                 = J(row, 1 + col);
+        dF_dvecX.insert(row, X.size() - nx + col) = J(row, 1 + nx + col);
       }
     }
 
@@ -544,7 +547,7 @@ auto colloc_eval_endpt(
 
     for (auto row = 0u; row < nf; ++row) {
       for (auto col = 0u; col < Q.size(); ++col) {
-        dF_dQ.insert(row, col) = J(row, 2 + 2 * nx + col);
+        dF_dQ.insert(row, col) = J(row, 1 + 2 * nx + col);
       }
     }
 
@@ -575,7 +578,7 @@ auto colloc_eval_endpt(
  */
 template<bool Deriv>
 auto colloc_dyn(
-  std::size_t nx,
+  const std::size_t nx,
   auto && f,
   const MeshType auto & m,
   const double t0,
@@ -689,13 +692,13 @@ auto colloc_dyn(
  * @return vector with relative errors for every interval in m
  */
 Eigen::VectorXd mesh_dyn_error(
-  std::size_t nx,
+  const std::size_t nx,
   auto && f,
-  MeshType auto & m,
-  double t0,
-  double tf,
-  std::function<Eigen::VectorXd(double)> xfun,
-  std::function<Eigen::VectorXd(double)> ufun)
+  const MeshType auto & m,
+  const double t0,
+  const double tf,
+  const std::function<Eigen::VectorXd(double)> xfun,
+  const std::function<Eigen::VectorXd(double)> ufun)
 {
   const auto N = m.N_ivals();
 
@@ -754,7 +757,7 @@ Eigen::VectorXd mesh_dyn_error(
  * @param[in] errs relative errors for all intervals (@see mesh_dyn_error())
  * @param[in] target_err target relative error
  */
-void mesh_refine(MeshType auto & m, const Eigen::VectorXd & errs, double target_err)
+void mesh_refine(MeshType auto & m, const Eigen::VectorXd & errs, const double target_err)
 {
   const auto N = m.N_ivals();
 
@@ -791,11 +794,11 @@ void mesh_refine(MeshType auto & m, const Eigen::VectorXd & errs, double target_
  */
 template<bool Deriv>
 auto colloc_int(
-  std::size_t nq,
+  const std::size_t nq,
   auto && g,
   const MeshType auto & m,
-  double t0,
-  double tf,
+  const double t0,
+  const double tf,
   const Eigen::VectorXd & I,
   const Eigen::MatrixXd & X,
   const Eigen::MatrixXd & U)

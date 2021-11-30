@@ -6,7 +6,6 @@ IndentWidth: 2
 ContinuationIndentWidth: 2
 
 AlignAfterOpenBracket: AlwaysBreak
-AlignArrayOfStructures: None
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: Left
