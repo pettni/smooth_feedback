@@ -1,13 +1,10 @@
 var searchData=
 [
-  ['manifoldbounds_34',['ManifoldBounds',['../structsmooth_1_1feedback_1_1ManifoldBounds.html',1,'smooth::feedback']]],
-  ['manifoldbounds_3c_20g_20_3e_35',['ManifoldBounds&lt; G &gt;',['../structsmooth_1_1feedback_1_1ManifoldBounds.html',1,'smooth::feedback']]],
-  ['manifoldbounds_3c_20u_20_3e_36',['ManifoldBounds&lt; U &gt;',['../structsmooth_1_1feedback_1_1ManifoldBounds.html',1,'smooth::feedback']]],
-  ['max_5fiter_37',['max_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a24ef03d60c70af07fdd7b3adb233e2c4',1,'smooth::feedback::QPSolverParams']]],
-  ['max_5ftime_38',['max_time',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a5c2cccec6a21d902a8fa12bc85cf92a2',1,'smooth::feedback::QPSolverParams']]],
-  ['maxiterations_39',['MaxIterations',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feba89d18cc81de326d8fc836491777795e0',1,'smooth::feedback']]],
-  ['maxtime_40',['MaxTime',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feba9e8b9350c8f1716701ec1f9bbe76432e',1,'smooth::feedback']]],
-  ['mpc_41',['MPC',['../classsmooth_1_1feedback_1_1MPC.html#ac2cdb95529d87e2dc65c07b48e42e0bd',1,'smooth::feedback::MPC::MPC(Dyn &amp;&amp;f, MPCParams&lt; G, U &gt; &amp;&amp;prm=MPCParams&lt; G, U &gt;{})'],['../classsmooth_1_1feedback_1_1MPC.html#af6effac4dbe45bbab12f1172a5147fc6',1,'smooth::feedback::MPC::MPC(const Dyn &amp;f, const MPCParams&lt; G, U &gt; &amp;prm=MPCParams&lt; G, U &gt;{})'],['../classsmooth_1_1feedback_1_1MPC.html#a88a436a8657ab6c5788da8dbefbac406',1,'smooth::feedback::MPC::MPC()'],['../classsmooth_1_1feedback_1_1MPC.html#ac57118b4781fa905cdbd3e2fc7fa185c',1,'smooth::feedback::MPC::MPC(const MPC &amp;)=default'],['../classsmooth_1_1feedback_1_1MPC.html#a7ada870c124da67c6001849ccb7e2fb5',1,'smooth::feedback::MPC::MPC(MPC &amp;&amp;)=default'],['../classsmooth_1_1feedback_1_1MPC.html',1,'smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;']]],
-  ['mpc_5ffunc_2ehpp_42',['mpc_func.hpp',['../mpc__func_8hpp.html',1,'']]],
-  ['mpcparams_43',['MPCParams',['../structsmooth_1_1feedback_1_1MPCParams.html',1,'smooth::feedback']]]
+  ['l_55',['l',['../structsmooth_1_1feedback_1_1ManifoldBounds.html#a90ac2651e3f1dcbb614137fc7f3bef73',1,'smooth::feedback::ManifoldBounds::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgram.html#abb1555f458de94ff6c13ff522fa1ad58',1,'smooth::feedback::QuadraticProgram::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a59fa967c2807534e8f749993b4c82d9d',1,'smooth::feedback::QuadraticProgramSparse::l()']]],
+  ['lambda_56',['lambda',['../structsmooth_1_1feedback_1_1NLPSolution.html#a71bc6ea4c8baf88fea1251e56037c3bb',1,'smooth::feedback::NLPSolution']]],
+  ['lambda_5fce_57',['lambda_ce',['../structsmooth_1_1feedback_1_1OCPSolution.html#ab25c2c688c6caa7ccefe8a1fd026f18d',1,'smooth::feedback::OCPSolution']]],
+  ['lambda_5fcr_58',['lambda_cr',['../structsmooth_1_1feedback_1_1OCPSolution.html#abbf21e23f171f407ef51b4653fa58f4c',1,'smooth::feedback::OCPSolution']]],
+  ['lambda_5fdyn_59',['lambda_dyn',['../structsmooth_1_1feedback_1_1OCPSolution.html#afbf147b7eb657711869b5e588734a1df',1,'smooth::feedback::OCPSolution']]],
+  ['lambda_5fq_60',['lambda_q',['../structsmooth_1_1feedback_1_1OCPSolution.html#ad50561b8f4d71a5bfe988d1d9b288be2',1,'smooth::feedback::OCPSolution']]],
+  ['linearizationinfo_61',['LinearizationInfo',['../structsmooth_1_1feedback_1_1LinearizationInfo.html',1,'smooth::feedback']]]
 ];

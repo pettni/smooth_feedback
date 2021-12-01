@@ -124,10 +124,10 @@ PID Control</h2>
 <p><b>Example</b> PID controller on SE(2)</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedpack/pid.hpp&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID&lt;T, smooth::SE2d&gt;</a> pid;</div>
+<div class="line">smooth::feedback::PID&lt;T, smooth::SE2d&gt; pid;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// set desired motion</span></div>
-<div class="line">pid.<a class="code" href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">set_xdes</a>([](T T) -&gt; std::tuple&lt;smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d&gt; {</div>
+<div class="line">pid.set_xdes([](T T) -&gt; std::tuple&lt;smooth::SE2d, Eigen::Vector3d, Eigen::Vector3d&gt; {</div>
 <div class="line">  <span class="keywordflow">return</span> {</div>
 <div class="line">    smooth::SE2d::Identity(),  <span class="comment">// position</span></div>
 <div class="line">    Eigen::Vector3d::Zero(),   <span class="comment">// velocity (right derivative of position w.r.t. t)</span></div>
@@ -140,8 +140,6 @@ PID Control</h2>
 <div class="line">Eigen::Vector3d v = Eigen::Vector3d::Random();  <span class="comment">// current body velocity</span></div>
 <div class="line"> </div>
 <div class="line">Eigen::Vector3d u = pid(t, x, v);</div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1PID_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1PID.html">smooth::feedback::PID</a></div><div class="ttdoc">Proportional-Integral-Derivative controller for Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="pid_8hpp_source.html#l00062">pid.hpp:63</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1PID_html_a26592d43e8511f07fa4a5d64a744b426"><div class="ttname"><a href="classsmooth_1_1feedback_1_1PID.html#a26592d43e8511f07fa4a5d64a744b426">smooth::feedback::PID::set_xdes</a></div><div class="ttdeci">void set_xdes(T t0, const smooth::Curve&lt; G &gt; &amp;c)</div><div class="ttdoc">Set desired trajectory as a smooth::Curve.</div><div class="ttdef"><b>Definition:</b> <a href="pid_8hpp_source.html#l00165">pid.hpp:165</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md3"></a>
 Model-Predictive Control</h2>
 <ul>
@@ -162,8 +160,8 @@ Model-Predictive Control</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">// get control input for time t and state x</span></div>
 <div class="line"><span class="keyword">auto</span> [u, code] = mpc(t, x);</div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00120">mpc.hpp:121</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ad06de7436df1739680bb0afa044e5b37"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ad06de7436df1739680bb0afa044e5b37">smooth::feedback::MPC::set_udes</a></div><div class="ttdeci">void set_udes(std::function&lt; U(T)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired input trajectory (absolute time)</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00266">mpc.hpp:266</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00122">mpc.hpp:123</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ad06de7436df1739680bb0afa044e5b37"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ad06de7436df1739680bb0afa044e5b37">smooth::feedback::MPC::set_udes</a></div><div class="ttdeci">void set_udes(std::function&lt; U(T)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired input trajectory (absolute time)</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00269">mpc.hpp:269</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md4"></a>
 Active Set Invariance Filtering (ASIF)</h2>
 <ul>
@@ -212,7 +210,7 @@ Extended Kalman Filter</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;smooth/feedback/ekf.hpp&gt;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// create filter</span></div>
-<div class="line"><a class="code" href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF&lt;X&lt;double&gt;</a>&gt; ekf;</div>
+<div class="line">smooth::feedback::EKF&lt;X&lt;double&gt;&gt; ekf;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// measurement model</span></div>
 <div class="line">Eigen::Vector2d landmark(1, 1);</div>
@@ -221,25 +219,20 @@ Extended Kalman Filter</h2>
 <div class="line">};</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// PREDICT STEP: propagate filter over time</span></div>
-<div class="line">ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">predict</a>(SigmaCL,</div>
+<div class="line">ekf.predict(SigmaCL,</div>
 <div class="line">  Eigen::Matrix&lt;double, 6, 6&gt;::Identity(),  <span class="comment">// motion covariance Q</span></div>
 <div class="line">  1.                                        <span class="comment">// time step length</span></div>
 <div class="line">);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// UPDATE STEP: register a measurement of the known landmark</span></div>
-<div class="line">ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">update</a>(h,</div>
+<div class="line">ekf.update(h,</div>
 <div class="line">  Eigen::Vector2d(0.3, 0.6),   <span class="comment">// measurement result y</span></div>
 <div class="line">  Eigen::Matrix2d::Identity()  <span class="comment">// measurement covariance R</span></div>
 <div class="line">);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// access estimate</span></div>
-<div class="line"><span class="keyword">auto</span> x_hat = ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#a9195311596dd7eb2d0cbcc9dff2f7ca3">estimate</a>();</div>
-<div class="line"><span class="keyword">auto</span> P_hat = ekf.<a class="code" href="classsmooth_1_1feedback_1_1EKF.html#abc62dc4780a5e8a9e96e7bbfa9f29338">covariance</a>();</div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html">smooth::feedback::EKF</a></div><div class="ttdoc">Extended Kalman filter on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00054">ekf.hpp:55</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a57a23546447c59ae8dbfc4cacf23636e"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">smooth::feedback::EKF::update</a></div><div class="ttdeci">void update(F &amp;&amp;h, const Y &amp;y, const Eigen::MatrixBase&lt; RDev &gt; &amp;R)</div><div class="ttdoc">Update EKF with a measurement  where .</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00143">ekf.hpp:143</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a9195311596dd7eb2d0cbcc9dff2f7ca3"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a9195311596dd7eb2d0cbcc9dff2f7ca3">smooth::feedback::EKF::estimate</a></div><div class="ttdeci">G estimate() const</div><div class="ttdoc">Access filter state estimate.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00078">ekf.hpp:78</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_a9d57cbe2f7594295531de756ab98e85d"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#a9d57cbe2f7594295531de756ab98e85d">smooth::feedback::EKF::predict</a></div><div class="ttdeci">void predict(F &amp;&amp;f, const Eigen::MatrixBase&lt; QDer &gt; &amp;Q, Scalar&lt; G &gt; tau, std::optional&lt; Scalar&lt; G &gt;&gt; dt={})</div><div class="ttdoc">Propagate EKF through dynamics  with covariance  over a time interval .</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00104">ekf.hpp:104</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1EKF_html_abc62dc4780a5e8a9e96e7bbfa9f29338"><div class="ttname"><a href="classsmooth_1_1feedback_1_1EKF.html#abc62dc4780a5e8a9e96e7bbfa9f29338">smooth::feedback::EKF::covariance</a></div><div class="ttdeci">CovT covariance() const</div><div class="ttdoc">Access filter covariance.</div><div class="ttdef"><b>Definition:</b> <a href="ekf_8hpp_source.html#l00083">ekf.hpp:83</a></div></div>
+<div class="line"><span class="keyword">auto</span> x_hat = ekf.estimate();</div>
+<div class="line"><span class="keyword">auto</span> P_hat = ekf.covariance();</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md7"></a>
 Optimization</h1>
 <p>MPC and ASIF relies on online quadratic program optimization.</p>
@@ -260,7 +253,7 @@ Fast QP Solver</h2>
 <div class="line"><span class="comment">//  min 0.5 x&#39; * P * x + q&#39; * x</span></div>
 <div class="line"><span class="comment">//  s.t l &lt;= A * x &lt;= u</span></div>
 <div class="line"><a class="code" href="structsmooth_1_1feedback_1_1QuadraticProgram.html">smooth::feedback::QuadraticProgram</a>&lt;-1, -1&gt; qp{</div>
-<div class="line">  .<a class="code" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#a0f23929c20ff8fd2c8ee6ca09b057e13">P</a> = P,  <span class="comment">// n x n matrix</span></div>
+<div class="line">  .P = P,  <span class="comment">// n x n matrix</span></div>
 <div class="line">  .q = q,  <span class="comment">// n x 1 vector</span></div>
 <div class="line">  .A = A,  <span class="comment">// m x n matrix</span></div>
 <div class="line">  .l = l,  <span class="comment">// m x 1 vector</span></div>
@@ -270,10 +263,9 @@ Fast QP Solver</h2>
 <div class="line"><a class="code" href="structsmooth_1_1feedback_1_1QPSolverParams.html">smooth::feedback::QPSolverParams</a> prm{};</div>
 <div class="line"><span class="keyword">auto</span> sol = <a class="code" href="qp_8hpp.html#a2151e5a179ada80d491aaaa0e0e88479">smooth::feedback::solve_qp</a>(qp, prm);</div>
 <div class="ttc" id="aqp_8hpp_html"><div class="ttname"><a href="qp_8hpp.html">qp.hpp</a></div><div class="ttdoc">Quadratic Programming.</div></div>
-<div class="ttc" id="aqp_8hpp_html_a2151e5a179ada80d491aaaa0e0e88479"><div class="ttname"><a href="qp_8hpp.html#a2151e5a179ada80d491aaaa0e0e88479">smooth::feedback::solve_qp</a></div><div class="ttdeci">detail::qp_solution_t&lt; Pbm &gt; solve_qp(const Pbm &amp;pbm, const QPSolverParams &amp;prm, std::optional&lt; std::reference_wrapper&lt; const detail::qp_solution_t&lt; Pbm &gt;&gt;&gt; warmstart={})</div><div class="ttdoc">Solve a quadratic program using the operator splitting approach.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00574">qp.hpp:574</a></div></div>
-<div class="ttc" id="astructsmooth_1_1feedback_1_1QPSolverParams_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1QPSolverParams.html">smooth::feedback::QPSolverParams</a></div><div class="ttdoc">Options for solve_qp.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00143">qp.hpp:144</a></div></div>
-<div class="ttc" id="astructsmooth_1_1feedback_1_1QuadraticProgram_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1QuadraticProgram.html">smooth::feedback::QuadraticProgram</a></div><div class="ttdoc">Quadratic program definition.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00063">qp.hpp:64</a></div></div>
-<div class="ttc" id="astructsmooth_1_1feedback_1_1QuadraticProgram_html_a0f23929c20ff8fd2c8ee6ca09b057e13"><div class="ttname"><a href="structsmooth_1_1feedback_1_1QuadraticProgram.html#a0f23929c20ff8fd2c8ee6ca09b057e13">smooth::feedback::QuadraticProgram::P</a></div><div class="ttdeci">Eigen::Matrix&lt; Scalar, N, N &gt; P</div><div class="ttdoc">Positive semi-definite square cost (only upper trianglular part is used)</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00066">qp.hpp:66</a></div></div>
+<div class="ttc" id="aqp_8hpp_html_a2151e5a179ada80d491aaaa0e0e88479"><div class="ttname"><a href="qp_8hpp.html#a2151e5a179ada80d491aaaa0e0e88479">smooth::feedback::solve_qp</a></div><div class="ttdeci">detail::qp_solution_t&lt; Pbm &gt; solve_qp(const Pbm &amp;pbm, const QPSolverParams &amp;prm, std::optional&lt; std::reference_wrapper&lt; const detail::qp_solution_t&lt; Pbm &gt;&gt;&gt; warmstart={})</div><div class="ttdoc">Solve a quadratic program using the operator splitting approach.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00577">qp.hpp:577</a></div></div>
+<div class="ttc" id="astructsmooth_1_1feedback_1_1QPSolverParams_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1QPSolverParams.html">smooth::feedback::QPSolverParams</a></div><div class="ttdoc">Options for solve_qp.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00144">qp.hpp:145</a></div></div>
+<div class="ttc" id="astructsmooth_1_1feedback_1_1QuadraticProgram_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1QuadraticProgram.html">smooth::feedback::QuadraticProgram</a></div><div class="ttdoc">Quadratic program definition.</div><div class="ttdef"><b>Definition:</b> <a href="qp_8hpp_source.html#l00064">qp.hpp:65</a></div></div>
 </div><!-- fragment --> </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->

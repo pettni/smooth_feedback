@@ -1,11 +1,10 @@
 var searchData=
 [
-  ['u_103',['u',['../structsmooth_1_1feedback_1_1ManifoldBounds.html#a1855edf64431d8de01d5374d44d8f293',1,'smooth::feedback::ManifoldBounds::u()'],['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc',1,'smooth::feedback::LinearizationInfo::u()'],['../structsmooth_1_1feedback_1_1QuadraticProgram.html#a6308cf45596d755de52b198990530fd9',1,'smooth::feedback::QuadraticProgram::u()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a590786eb3c3230068cffb62700276c6c',1,'smooth::feedback::QuadraticProgramSparse::u()']]],
-  ['u_5fdes_104',['u_des',['../structsmooth_1_1feedback_1_1ASIFProblem.html#a0adfcff75d0b12743fa9e6b445e39fb5',1,'smooth::feedback::ASIFProblem']]],
-  ['u_5fweight_105',['u_weight',['../structsmooth_1_1feedback_1_1ASIFilterParams.html#a824b02c8d5ea99358a61012ab48ee640',1,'smooth::feedback::ASIFilterParams']]],
-  ['udes_106',['udes',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f',1,'smooth::feedback::OptimalControlProblem']]],
-  ['ulim_107',['ulim',['../structsmooth_1_1feedback_1_1ASIFilterParams.html#a15bac77c7c99c5dd3a46ba4065cb9130',1,'smooth::feedback::ASIFilterParams::ulim()'],['../structsmooth_1_1feedback_1_1ASIFProblem.html#ac872355a608a29ff0c280a9e10548b4f',1,'smooth::feedback::ASIFProblem::ulim()'],['../structsmooth_1_1feedback_1_1MPCParams.html#a359040f044d8dd3603e7a46844111b38',1,'smooth::feedback::MPCParams::ulim()'],['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#aed735251f2a513ab99716e1d9479b966',1,'smooth::feedback::OptimalControlProblem::ulim()']]],
-  ['unknown_108',['Unknown',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feba88183b946cc5f0e8c96b2e66e1c74a7e',1,'smooth::feedback']]],
-  ['update_109',['update',['../classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e',1,'smooth::feedback::EKF']]],
-  ['update_5fweights_110',['update_weights',['../classsmooth_1_1feedback_1_1MPC.html#a669381793e1de5cc51864b082d12a7dc',1,'smooth::feedback::MPC']]]
+  ['t_135',['T',['../structsmooth_1_1feedback_1_1ASIFilterParams.html#af2b8a4c5d58093b6293c51286c895dff',1,'smooth::feedback::ASIFilterParams::T()'],['../structsmooth_1_1feedback_1_1MPCParams.html#af5f181b92332704866601ee61e5174fa',1,'smooth::feedback::MPCParams::T()'],['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae31650695082bde65ca6c11eb7681e0c',1,'smooth::feedback::OptimalControlProblem::T()']]],
+  ['theta_136',['theta',['../structsmooth_1_1feedback_1_1OCP.html#a5bfd4ce7b7f2929684382a5220925c21',1,'smooth::feedback::OCP']]],
+  ['time_5ftrait_137',['time_trait',['../structsmooth_1_1feedback_1_1time__trait.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20rclcpp_3a_3atime_20_3e_138',['time_trait&lt; rclcpp::Time &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01rclcpp_1_1Time_01_4.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20std_3a_3achrono_3a_3aduration_3c_20rep_2c_20ratio_20_3e_20_3e_139',['time_trait&lt; std::chrono::duration&lt; Rep, Ratio &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1duration_3_01Rep_00_01Ratio_01_4_01_4.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20std_3a_3achrono_3a_3atime_5fpoint_3c_20clock_2c_20duration_20_3e_20_3e_140',['time_trait&lt; std::chrono::time_point&lt; Clock, Duration &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1time__point_3_01Clock_00_01Duration_01_4_01_4.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20t_20_3e_141',['time_trait&lt; T &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01T_01_4.html',1,'smooth::feedback']]]
 ];

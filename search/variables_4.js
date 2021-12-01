@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['g_192',['g',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#a3beb54cd87bec7db8a879e6d29178229',1,'smooth::feedback::LinearizationInfo']]],
-  ['g_5fdomain_193',['g_domain',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ac267b0228db56b5e353446d34e4e1135',1,'smooth::feedback::LinearizationInfo']]],
-  ['gdes_194',['gdes',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae0ada3eab3ed9642a05d28cc902fa13e',1,'smooth::feedback::OptimalControlProblem']]],
-  ['glim_195',['glim',['../structsmooth_1_1feedback_1_1MPCParams.html#a529dcc02320655f14e6210efbc82a6ad',1,'smooth::feedback::MPCParams::glim()'],['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a290a5e94b25491d733ec6f18def8f584',1,'smooth::feedback::OptimalControlProblem::glim()']]]
+  ['f_251',['f',['../structsmooth_1_1feedback_1_1NLP.html#a415c2ef04284e99570246e4728df9e5f',1,'smooth::feedback::NLP::f()'],['../structsmooth_1_1feedback_1_1OCP.html#a06f9058b2c20555bb33de8f2d6306dac',1,'smooth::feedback::OCP::f()']]],
+  ['flatocptype_252',['FlatOCPType',['../ocp_8hpp.html#a34190c0c40e0eb1e1950898905fe56e8',1,'smooth::feedback']]]
 ];

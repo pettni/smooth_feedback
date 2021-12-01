@@ -1,5 +1,5 @@
 <map id="include/smooth/feedback/qp.hpp" name="include/smooth/feedback/qp.hpp">
-<area shape="rect" id="node1" title="Quadratic Programming." alt="" coords="440,5,607,47"/>
+<area shape="rect" id="node1" title="Quadratic Programming." alt="" coords="505,5,672,47"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,95,116,121"/>
 <area shape="rect" id="node3" title=" " alt="" coords="140,95,235,121"/>
 <area shape="rect" id="node4" title=" " alt="" coords="259,95,358,121"/>
@@ -8,4 +8,5 @@
 <area shape="rect" id="node7" title=" " alt="" coords="643,95,710,121"/>
 <area shape="rect" id="node8" title=" " alt="" coords="734,95,806,121"/>
 <area shape="rect" id="node9" title=" " alt="" coords="830,95,883,121"/>
+<area shape="rect" id="node10" title=" " alt="" coords="907,95,974,121"/>
 </map>

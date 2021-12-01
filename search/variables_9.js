@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['nh_202',['nh',['../structsmooth_1_1feedback_1_1ASIFilterParams.html#a28a2152d6885392a15036babae5fe899',1,'smooth::feedback::ASIFilterParams']]],
-  ['nu_203',['Nu',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac5510c00ed2a9a2fcb61e28ab2bff47e',1,'smooth::feedback::OptimalControlProblem']]],
-  ['nx_204',['Nx',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a0d29993d746c52b35bb3d1f3e565aed4',1,'smooth::feedback::OptimalControlProblem']]]
+  ['m_267',['m',['../structsmooth_1_1feedback_1_1NLP.html#a09accc536de8163cdf6c44016fc3e180',1,'smooth::feedback::NLP']]],
+  ['max_5fiter_268',['max_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a24ef03d60c70af07fdd7b3adb233e2c4',1,'smooth::feedback::QPSolverParams']]],
+  ['max_5ftime_269',['max_time',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a5c2cccec6a21d902a8fa12bc85cf92a2',1,'smooth::feedback::QPSolverParams']]]
 ];

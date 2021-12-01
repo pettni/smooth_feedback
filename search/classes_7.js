@@ -1,8 +1,9 @@
 var searchData=
 [
-  ['time_5ftrait_140',['time_trait',['../structsmooth_1_1feedback_1_1time__trait.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20rclcpp_3a_3atime_20_3e_141',['time_trait&lt; rclcpp::Time &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01rclcpp_1_1Time_01_4.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20std_3a_3achrono_3a_3aduration_3c_20rep_2c_20ratio_20_3e_20_3e_142',['time_trait&lt; std::chrono::duration&lt; Rep, Ratio &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1duration_3_01Rep_00_01Ratio_01_4_01_4.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20std_3a_3achrono_3a_3atime_5fpoint_3c_20clock_2c_20duration_20_3e_20_3e_143',['time_trait&lt; std::chrono::time_point&lt; Clock, Duration &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1time__point_3_01Clock_00_01Duration_01_4_01_4.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20t_20_3e_144',['time_trait&lt; T &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01T_01_4.html',1,'smooth::feedback']]]
+  ['qpsolution_179',['QPSolution',['../structsmooth_1_1feedback_1_1QPSolution.html',1,'smooth::feedback']]],
+  ['qpsolverparams_180',['QPSolverParams',['../structsmooth_1_1feedback_1_1QPSolverParams.html',1,'smooth::feedback']]],
+  ['quadraticprogram_181',['QuadraticProgram',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
+  ['quadraticprogram_3c_2d1_2c_20_2d1_2c_20double_20_3e_182',['QuadraticProgram&lt;-1, -1, double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
+  ['quadraticprogramsparse_183',['QuadraticProgramSparse',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]],
+  ['quadraticprogramsparse_3c_20double_20_3e_184',['QuadraticProgramSparse&lt; double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]]
 ];
