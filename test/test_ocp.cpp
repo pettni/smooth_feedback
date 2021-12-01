@@ -82,7 +82,7 @@ TEST(Ocp, Jacobians)
         .ceu   = Vec<double>::Constant(6, 1),
       };
 
-  ASSERT_TRUE(smooth::feedback::check_ocp(ocp, Eigen::VectorXd{{1, 1}}, Eigen::VectorXd{{1}}));
+  ASSERT_TRUE(smooth::feedback::check_ocp(ocp));
 
   smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 8 * 5);
@@ -163,16 +163,9 @@ TEST(OCP, Flatten)
 
   const auto ul_fun = []<typename T>(T) -> Eigen::Vector2<T> { return Eigen::Vector2<T>::Zero(); };
 
-  smooth::SO3d x = smooth::SO3d::Random();
-  Eigen::Vector2d u = Eigen::Vector2d::Random();
-
-  ASSERT_TRUE(smooth::feedback::check_ocp(ocp, x, u));
+  ASSERT_TRUE(smooth::feedback::check_ocp(ocp));
 
   const auto flat_ocp = smooth::feedback::flatten_ocp(ocp, xl_fun, ul_fun);
 
-  Eigen::Vector3d xflat = Eigen::Vector3d::Random();
-  Eigen::Vector2d uflat = Eigen::Vector2d::Random();
-
-
-  ASSERT_TRUE(smooth::feedback::check_ocp(flat_ocp, xflat, uflat));
+  ASSERT_TRUE(smooth::feedback::check_ocp(flat_ocp));
 }

@@ -59,6 +59,7 @@ struct PIDParams
  * acceleration.
  */
 template<Time T, LieGroup G>
+  requires(Dof<G> > 0)
 class PID
 {
 public:

@@ -81,22 +81,22 @@ struct OCP
   /// @brief Number of end constraints \f$ n_{ce} \f$
   std::size_t nce;
 
-  /// @brief Objective function \f$ \theta : R \times G \times G \times R^{n_q} \rightarrow R \f$
+  /// @brief Objective function \f$ \theta : R \times X \times X \times R^{n_q} \rightarrow R \f$
   Theta theta;
 
-  /// @brief System dynamics \f$ f : R \times G \times U \rightarrow G \f$
+  /// @brief System dynamics \f$ f : R \times X \times U \rightarrow Tangent<X> \f$
   F f;
-  /// @brief Integrals \f$ g : R \times G \times U \rightarrow R^{n_q} \f$
+  /// @brief Integrals \f$ g : R \times X \times U \rightarrow R^{n_q} \f$
   G g;
 
-  /// @brief Running constraint \f$ c_r : R \times G \times U \rightarrow R^{n_{cr}} \f$
+  /// @brief Running constraint \f$ c_r : R \times X \times U \rightarrow R^{n_{cr}} \f$
   CR cr;
   /// @brief Running constraint lower bound \f$ c_{rl} \in R^{n_{cr}} \f$
   Eigen::VectorXd crl;
   /// @brief Running constraint upper bound \f$ c_{ru} \in R^{n_{cr}} \f$
   Eigen::VectorXd cru;
 
-  /// @brief End constraint \f$ c_e : R \times G \times G \times R^{n_q} \rightarrow R^{n_{ce}} \f$
+  /// @brief End constraint \f$ c_e : R \times X \times X \times R^{n_q} \rightarrow R^{n_{ce}} \f$
   CE ce;
   /// @brief End constraint lower bound \f$ c_{el} \in R^{n_{ce}} \f$
   Eigen::VectorXd cel;
@@ -119,17 +119,15 @@ concept FlatOCPType = OCPType<T> &&(
 
 /**
  * @brief Check if an OCP is properly defined.
- *
- * TODO remove input args after Default<> is fixed.
  */
-inline bool check_ocp(const OCPType auto & ocp, const auto & x, const auto & u)
+inline bool check_ocp(const OCPType auto & ocp)
 {
-  // using X = typename std::decay_t<decltype(ocp)>::X;
-  // using U = typename std::decay_t<decltype(ocp)>::U;
+  using X = typename std::decay_t<decltype(ocp)>::X;
+  using U = typename std::decay_t<decltype(ocp)>::U;
 
-  double t = 0;
-  // X x      = Default<X>();
-  // U u      = Default<U>();
+  const double t = 0;
+  const X x      = Default<X>(ocp.nx);
+  const U u      = Default<U>(ocp.nu);
 
   if (!(static_cast<std::size_t>(dof(x)) == ocp.nx)) { return false; }
   if (!(static_cast<std::size_t>(dof(u)) == ocp.nu)) { return false; }
@@ -170,11 +168,8 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
   using X = typename std::decay_t<decltype(ocp)>::X;
   using U = typename std::decay_t<decltype(ocp)>::U;
 
-  static_assert(Dof<X> > 0);
-  static_assert(Dof<U> > 0);
-
-  assert(ocp.nx == Dof<X>);
-  assert(ocp.nu == Dof<U>);
+  assert(Dof<X> == -1 || ocp.nx == Dof<X>);
+  assert(Dof<U> == -1 || ocp.nu == Dof<U>);
 
   auto f_new = [f = ocp.f, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
                  const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
@@ -219,8 +214,8 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
     decltype(g_new),
     decltype(cr_new),
     decltype(ce_new)>{
-    .nx    = Dof<X>,
-    .nu    = Dof<U>,
+    .nx    = ocp.nx,
+    .nu    = ocp.nu,
     .nq    = ocp.nq,
     .ncr   = ocp.ncr,
     .nce   = ocp.nce,
@@ -239,7 +234,7 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
 /**
  * @brief Solution to OCP problem.
  */
-template<LieGroup G, Manifold U>
+template<LieGroup X, Manifold U>
 struct OCPSolution
 {
   double t0;
@@ -249,8 +244,8 @@ struct OCPSolution
   Eigen::VectorXd Q;
 
   /// @brief Callable functions for state and input
-  std::function<G(double)> u;
-  std::function<U(double)> x;
+  std::function<U(double)> u;
+  std::function<X(double)> x;
 
   /// @brief Multipliers for integral constraints
   Eigen::VectorXd lambda_q;
@@ -267,6 +262,35 @@ struct OCPSolution
 
 /// @brief Solution to OCP problem defined on flat spaces
 using FlatOCPSolution = OCPSolution<Eigen::VectorXd, Eigen::VectorXd>;
+
+
+/**
+ * @brief Unflatten a FlatOCPSolution
+ *
+ * If flat_sol is a solution to flat_ocp = flatten_ocp(ocp, xl_fun, ul_fun),
+ * then unflatten_ocpsol(flat_sol, xl_fun, ul_fun) is a solution to ocp.
+ */
+template<LieGroup X, Manifold U>
+OCPSolution<X, U> unflatten_ocpsol(const FlatOCPSolution & flatsol, auto && xl_fun, auto && ul_fun)
+{
+  auto u_unflat = [ul_fun = std::forward<decltype(ul_fun)>(ul_fun),
+                   usol   = flatsol.u](double t) -> U { return rplus(ul_fun(t), usol(t)); };
+
+  auto x_unflat = [xl_fun = std::forward<decltype(xl_fun)>(xl_fun),
+                   xsol   = flatsol.x](double t) -> X { return rplus(xl_fun(t), xsol(t)); };
+
+  return {
+    .t0         = flatsol.t0,
+    .tf         = flatsol.tf,
+    .Q          = flatsol.Q,
+    .u          = std::move(u_unflat),
+    .x          = std::move(x_unflat),
+    .lambda_q   = flatsol.lambda_q,
+    .lambda_ce  = flatsol.lambda_ce,
+    .lambda_dyn = flatsol.lambda_dyn,
+    .lambda_cr  = flatsol.lambda_cr,
+  };
+}
 
 namespace detail {
 

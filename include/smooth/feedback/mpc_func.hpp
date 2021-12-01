@@ -149,6 +149,7 @@ struct LinearizationInfo
  * @param[in] lin_con set to true to allocate K * Nu state linearization constraints
  */
 template<LieGroup G, Manifold U>
+  requires(Dof<G> > 0 && Dof<U> > 0)
 void ocp_to_qp_allocate(
   const OptimalControlProblem<G, U> & pbm,
   std::size_t K,
@@ -221,6 +222,7 @@ void ocp_to_qp_allocate(
  * @brief Fill QP matrices (part 2 of ocp_to_qp()).
  */
 template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+  requires(Dof<G> > 0 && Dof<U> > 0)
 void ocp_to_qp_fill(
   const OptimalControlProblem<G, U> & pbm,
   std::size_t K,

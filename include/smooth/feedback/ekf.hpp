@@ -52,11 +52,10 @@ template<
   LieGroup G,
   diff::Type DiffType                 = diff::Type::DEFAULT,
   template<typename...> typename Stpr = boost::numeric::odeint::euler>
+  requires(Dof<G> > 0)
 class EKF
 {
 public:
-  static_assert(Dof<G> > 0, "Dynamic sizes not supported");
-
   //! Scalar type for computations.
   //! Degrees of freedom.
   using CovT = Eigen::Matrix<Scalar<G>, Dof<G>, Dof<G>>;
