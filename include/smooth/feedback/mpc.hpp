@@ -26,6 +26,8 @@
 #ifndef SMOOTH__FEEDBACK__MPC_HPP_
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
+#include <smooth/spline/fit.hpp>
+
 #include "mpc_func.hpp"
 #include "time.hpp"
 
@@ -168,7 +170,8 @@ public:
    *
    * @return {u, code}
    */
-  inline std::pair<U, QPSolutionStatus> operator()(const T & t,
+  inline std::pair<U, QPSolutionStatus> operator()(
+    const T & t,
     const G & g,
     std::optional<std::reference_wrapper<std::vector<U>>> u_traj = std::nullopt,
     std::optional<std::reference_wrapper<std::vector<G>>> x_traj = std::nullopt)
@@ -200,10 +203,10 @@ public:
     const double dt = ocp_.T / static_cast<double>(prm_.K);
 
     // define dynamics in "MPC time"
-    const auto dyn = [this, &t]<typename S>(
-                       double t_loc, const CastT<S, G> & vx, const CastT<S, U> & vu) {
-      return dyn_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
-    };
+    const auto dyn =
+      [this, &t]<typename S>(double t_loc, const CastT<S, G> & vx, const CastT<S, U> & vu) {
+        return dyn_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
+      };
 
     ocp_to_qp_fill<G, U, decltype(dyn), DiffT>(ocp_, prm_.K, dyn, lin_, qp_);
     auto sol = solve_qp(qp_, prm_.qp, warmstart_);
@@ -357,7 +360,7 @@ public:
     const double dt = ocp_.T / static_cast<double>(prm_.K);
 
     // clang-format off
-    auto g_spline = smooth::fit_cubic_bezier(
+    auto g_spline = smooth::fit_spline_cubic(
         std::views::iota(0u, prm_.K + 1) | std::views::transform([&](auto k) -> double { return dt * k; }),
         std::views::iota(0u, prm_.K + 1) | std::views::transform([&](auto k) -> G {
           if (k == 0) {

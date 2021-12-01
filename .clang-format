@@ -5,7 +5,7 @@ UseTab: Never
 IndentWidth: 2
 ContinuationIndentWidth: 2
 
-AlignAfterOpenBracket: DontAlign
+AlignAfterOpenBracket: AlwaysBreak
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: Left
@@ -41,6 +41,8 @@ BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeConceptDeclarations: true
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
+
+EmptyLineBeforeAccessModifier: Always
 
 FixNamespaceComments: true
 

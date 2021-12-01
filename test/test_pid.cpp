@@ -27,7 +27,7 @@
 
 #include <smooth/feedback/pid.hpp>
 #include <smooth/se2.hpp>
-#include <smooth/spline/curve.hpp>
+#include <smooth/spline/fit.hpp>
 
 #include <chrono>
 
@@ -72,12 +72,13 @@ TEST(PID, SetDesiredCurve)
 
     std::vector<double> tt{0, 1, 2, 3};
 
-    std::vector<smooth::SE2d> gg{smooth::SE2d::Random(),
+    std::vector<smooth::SE2d> gg{
+      smooth::SE2d::Random(),
       smooth::SE2d::Random(),
       smooth::SE2d::Random(),
       smooth::SE2d::Random()};
 
-    smooth::Curve<smooth::SE2d> c(smooth::fit_cubic_bezier(tt, gg));
+    auto c = smooth::fit_spline_cubic(tt, gg);
 
     pid.set_xdes(0.5s, c);
 

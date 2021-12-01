@@ -27,7 +27,7 @@
 #define SMOOTH__FEEDBACK__PID_HPP_
 
 #include <smooth/lie_group.hpp>
-#include <smooth/spline/curve.hpp>
+#include <smooth/spline/spline.hpp>
 
 #include <chrono>
 
@@ -59,6 +59,7 @@ struct PIDParams
  * acceleration.
  */
 template<Time T, LieGroup G>
+  requires(Dof<G> > 0)
 class PID
 {
 public:
@@ -157,17 +158,22 @@ public:
   inline void reset_integral() { i_err_.setZero(); }
 
   /**
-   * @brief Set desired trajectory as a smooth::Curve
+   * @brief Set desired trajectory as a smooth::Spline
    *
-   * @param c desired trajectory as a smooth::Curve
+   * @param c desired trajectory as a smooth::Spline
    * @param t0 curve initial time s.t. the desired position at time t is equal to c(t - t0)
    */
-  inline void set_xdes(T t0, const smooth::Curve<G> & c) { set_xdes(t0, smooth::Curve<G>(c)); }
+  template<std::size_t K>
+  inline void set_xdes(T t0, const smooth::Spline<K, G> & c)
+  {
+    set_xdes(t0, smooth::Spline<K, G>(c));
+  }
 
   /**
-   * @brief Set desired trajectory as a smooth::Curve (rvalue version)
+   * @brief Set desired trajectory as a smooth::Spline (rvalue version)
    */
-  inline void set_xdes(T t0, smooth::Curve<G> && c)
+  template<std::size_t K>
+  inline void set_xdes(T t0, smooth::Spline<K, G> && c)
   {
     set_xdes([t0 = std::move(t0), c = std::move(c)](T t) -> TrajectoryReturnT {
       Tangent<G> vel, acc;
@@ -180,8 +186,8 @@ public:
    * @brief Set desired trajectory.
    *
    * The trajectory is a function from time to (position, velocity, acceleration). To track a
-   * time-dependent trajectory consider using \p smooth::Curve and \ref set_xdes(T, const
-   * smooth::Curve<G> &) to set the desired trajectory.
+   * time-dependent trajectory consider using \p smooth::Spline and \ref set_xdes(T, const
+   * smooth::Spline<G> &) to set the desired trajectory.
    *
    * For a constant reference target the velocity and acceleration should be constantly zero.
    *

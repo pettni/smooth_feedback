@@ -20,7 +20,8 @@ namespace smooth::feedback {
  * call. For more fine-grained control use the low-level OSQP interface (https://osqp.org/).
  */
 template<typename Problem>
-QPSolution<-1, -1, double> solve_qp_osqp(const Problem & pbm,
+QPSolution<-1, -1, double> solve_qp_osqp(
+  const Problem & pbm,
   const QPSolverParams & prm,
   std::optional<std::reference_wrapper<const QPSolution<-1, -1, double>>> warmstart = {})
 {

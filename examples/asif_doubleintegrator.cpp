@@ -59,7 +59,7 @@ int main()
   };
 
   // backup controller
-  auto bu = []<typename T>(T, const G<T> & g) -> U<T> { return U<T>(-0.6); };
+  auto bu = []<typename T>(T, const G<T> &) -> U<T> { return U<T>(-0.6); };
 
   // parameters
   smooth::feedback::ASIFilterParams<Ud> prm{
@@ -67,9 +67,9 @@ int main()
     .nh = 2,
     .ulim =
       {
-        .A = Eigen::Matrix<double, 1, 1>(1),
-        .l = Eigen::Matrix<double, 1, 1>(-1),
-        .u = Eigen::Matrix<double, 1, 1>(1),
+        .A = U<double>{{1.}},
+        .l = U<double>{{-1.}},
+        .u = U<double>{{1.}},
       },
     .asif =
       {
@@ -93,8 +93,9 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](
-                     const Gd & x, smooth::Tangent<Gd> & d, double t) { d = f(Time(t), x, u); };
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) {
+    d = f(Time(t), x, u);
+  };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
@@ -125,15 +126,15 @@ int main()
 
   plot(tvec, xvec)->line_width(2);
   plot(tvec, vvec)->line_width(2);
-  plot(tvec, transform(tvec, [&](auto t) { return 3; }), "--")->line_width(2);
-  plot(tvec, transform(tvec, [&](auto t) { return 1.5; }), "--")->line_width(2);
+  plot(tvec, transform(tvec, [&](auto) { return 3; }), "--")->line_width(2);
+  plot(tvec, transform(tvec, [&](auto) { return 1.5; }), "--")->line_width(2);
   legend({"x", "v", "x_{max}", "v_{max}"});
 
   figure();
   hold(on);
   title("Input");
   plot(tvec, uvec)->line_width(2);
-  plot(tvec, transform(tvec, [](auto t) { return 1; }), "--")->line_width(2);
+  plot(tvec, transform(tvec, [](auto) { return 1; }), "--")->line_width(2);
 
   show();
 #else

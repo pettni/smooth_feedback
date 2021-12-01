@@ -40,6 +40,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <optional>
 
 namespace smooth::feedback {
 
@@ -441,7 +442,8 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
   // ITERATIVE REFINEMENT
 
   // factorize Hp
-  std::conditional_t<sparse,
+  std::conditional_t<
+    sparse,
     Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>,
     Eigen::LDLT<Eigen::Ref<decltype(H)>, Eigen::Upper>>
     ldlt(Hp);
@@ -467,7 +469,8 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
  * @brief Check stopping criterion for QP solver.
  */
 template<typename Pbm, typename D1, typename D2, typename D3, typename D4, typename D5>
-std::optional<QPSolutionStatus> qp_check_stopping(const Pbm & pbm,
+std::optional<QPSolutionStatus> qp_check_stopping(
+  const Pbm & pbm,
   const Eigen::MatrixBase<D1> & x,
   const Eigen::MatrixBase<D2> & y,
   const Eigen::MatrixBase<D3> & z,
@@ -571,7 +574,8 @@ std::optional<QPSolutionStatus> qp_check_stopping(const Pbm & pbm,
  * For the official C implementation, see https://osqp.org/.
  */
 template<typename Pbm>
-detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
+detail::qp_solution_t<Pbm> solve_qp(
+  const Pbm & pbm,
   const QPSolverParams & prm,
   std::optional<std::reference_wrapper<const detail::qp_solution_t<Pbm>>> warmstart = {})
 {
@@ -681,7 +685,8 @@ detail::qp_solution_t<Pbm> solve_qp(const Pbm & pbm,
   }
 
   // factorize H
-  std::conditional_t<sparse,
+  std::conditional_t<
+    sparse,
     Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>,
     Eigen::LDLT<Eigen::Ref<decltype(H)>, Eigen::Upper>>
     ldlt(H);

@@ -16,7 +16,8 @@ DEFINE_uint64(step_size, 1, "Step size");
 DEFINE_uint64(m_multiple, 1, "Number of inequalities as multiple of size");
 DEFINE_bool(verbose, false, "Print per problem information");
 
-void compare_results(const std::string & a_name,
+void compare_results(
+  const std::string & a_name,
   const BatchResult & a,
   const std::string & b_name,
   const BatchResult & b)
@@ -78,8 +79,9 @@ void compare_results(const std::string & a_name,
 
     double duration_ratio = duration_a / duration_b;
 
-    if (a_res.status == smooth::feedback::QPSolutionStatus::Optimal
-        && b_res.status == smooth::feedback::QPSolutionStatus::Optimal) {
+    if (
+      a_res.status == smooth::feedback::QPSolutionStatus::Optimal
+      && b_res.status == smooth::feedback::QPSolutionStatus::Optimal) {
       ++N_optim;
 
       double primal_diff = (b_res.solution - a_res.solution).norm();
@@ -94,13 +96,15 @@ void compare_results(const std::string & a_name,
       total_primal_diff += primal_diff;
       min_primal_diff = std::min(primal_diff, min_primal_diff);
       max_primal_diff = std::max(primal_diff, max_primal_diff);
-    } else if (a_res.status == smooth::feedback::QPSolutionStatus::PrimalInfeasible
-               && b_res.status == smooth::feedback::QPSolutionStatus::PrimalInfeasible) {
+    } else if (
+      a_res.status == smooth::feedback::QPSolutionStatus::PrimalInfeasible
+      && b_res.status == smooth::feedback::QPSolutionStatus::PrimalInfeasible) {
       ++N_pinfeas;
       total_pinfeas_duration_a += duration_a;
       total_pinfeas_duration_b += duration_b;
-    } else if (a_res.status == smooth::feedback::QPSolutionStatus::DualInfeasible
-               && b_res.status == smooth::feedback::QPSolutionStatus::DualInfeasible) {
+    } else if (
+      a_res.status == smooth::feedback::QPSolutionStatus::DualInfeasible
+      && b_res.status == smooth::feedback::QPSolutionStatus::DualInfeasible) {
       ++N_dinfeas;
       total_dinfeas_duration_a += duration_a;
       total_dinfeas_duration_b += duration_b;
@@ -200,9 +204,10 @@ int main(int argc, char ** argv)
       std::chrono::nanoseconds time_smooth_d(0);
       std::chrono::nanoseconds time_osqp(0);
       for (auto i = 0u; i != FLAGS_batch; ++i) {
-        if (smooth_d_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal
-            && smooth_s_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal
-            && osqp_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal) {
+        if (
+          smooth_d_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal
+          && smooth_s_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal
+          && osqp_res.results[i].status == smooth::feedback::QPSolutionStatus::Optimal) {
           ++N_tot;
           time_smooth_s += smooth_s_res.results[i].dt;
           time_smooth_d += smooth_d_res.results[i].dt;

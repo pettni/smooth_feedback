@@ -114,7 +114,8 @@ void test_predict_linear()
     Eigen::Matrix<double, Nx, 1> xhat = Eigen::Matrix<double, Nx, 1>::Random();
 
     // linear system
-    smooth::feedback::EKF<Eigen::Matrix<double, Nx, 1>,
+    smooth::feedback::EKF<
+      Eigen::Matrix<double, Nx, 1>,
       smooth::diff::Type::NUMERICAL,
       boost::numeric::odeint::runge_kutta4>
       ekf;
@@ -177,8 +178,9 @@ TEST(Ekf, PredictTimeCut)
   // propagate
   double tau = 0.7;
   ekf.predict(
-    [&b]<typename T>(
-      T, const Eigen::Matrix<T, 2, 1> &) -> Eigen::Matrix<T, 2, 1> { return b.template cast<T>(); },
+    [&b]<typename T>(T, const Eigen::Matrix<T, 2, 1> &) -> Eigen::Matrix<T, 2, 1> {
+      return b.template cast<T>();
+    },
     Q,
     tau,
     0.5);
