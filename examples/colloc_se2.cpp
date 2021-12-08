@@ -40,7 +40,7 @@ template<typename T>
 using X = smooth::Bundle<smooth::SE2<T>, Eigen::Vector3<T>>;
 
 template<typename T>
-using U = Eigen::Vector2d;
+using U = Eigen::Vector2<T>;
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;
@@ -53,7 +53,10 @@ const auto obj = []<typename T>(T tf, const X<T> &, const X<T> &, const Vec<T> &
 /// @brief Dynamics
 const auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
   smooth::Tangent<X<T>> ret;
-  ret << x.template part<1>(), u.x(), 0, u.y();
+  ret.segment(0, 3) = x.template part<1>();
+  ret(3)            = u.x();
+  ret(4)            = T(0);
+  ret(5)            = u.y();
   return ret;
 };
 
@@ -101,7 +104,7 @@ int main()
       };
 
   const auto xl = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
-  const auto ul = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Zero(); };
+  const auto ul = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Constant(0.01); };
 
   assert(smooth::feedback::check_ocp(ocp));
 

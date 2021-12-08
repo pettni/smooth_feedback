@@ -173,15 +173,19 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
 
   auto f_new = [f = ocp.f, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
                  const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
+    using X_T = smooth::CastT<T, X>;
+    using U_T = smooth::CastT<T, U>;
+
     // can not double-differentiate, so we neglect derivative of linearization w.r.t. t
     const double tdbl    = static_cast<double>(t);
     const auto [xl, dxl] = diff::dr(xl_fun, wrt(tdbl));
     const auto ul        = ul_fun(tdbl);
 
-    const X x = rplus(xl, xe);
-    const U u = rplus(ul, ue);
+    const X_T x = rplus(xl.template cast<T>(), xe);
+    const U_T u = rplus(ul.template cast<T>(), ue);
 
-    return dr_expinv<X>(xe) * f.template operator()<T>(t, x, u) - dl_expinv<X>(xe) * dxl;
+    return dr_expinv<X_T>(xe) * f.template operator()<T>(t, x, u)
+         - dl_expinv<X_T>(xe) * dxl.template cast<T>();
   };
 
   auto g_new = [g = ocp.g, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
@@ -197,7 +201,7 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
   auto theta_new =
     [theta = ocp.theta, xl_fun = xl_fun]<typename T>(
       const T & tf, const VectorX<T> & xe0, const VectorX<T> & xef, const VectorX<T> & q) -> T {
-    return theta.template operator()<T>(tf, rplus(xl_fun(0.), xe0), rplus(xl_fun(tf), xef), q);
+    return theta.template operator()<T>(tf, rplus(xl_fun(T(0.)), xe0), rplus(xl_fun(tf), xef), q);
   };
 
   auto ce_new = [ce = ocp.ce, xl_fun = xl_fun]<typename T>(
@@ -205,7 +209,7 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
                   const VectorX<T> & xe0,
                   const VectorX<T> & xef,
                   const VectorX<T> & q) -> VectorX<T> {
-    return ce.template operator()<T>(tf, rplus(xl_fun(0.), xe0), rplus(xl_fun(tf), xef), q);
+    return ce.template operator()<T>(tf, rplus(xl_fun(T(0.)), xe0), rplus(xl_fun(tf), xef), q);
   };
 
   return FlatOCP<
@@ -262,7 +266,6 @@ struct OCPSolution
 
 /// @brief Solution to OCP problem defined on flat spaces
 using FlatOCPSolution = OCPSolution<Eigen::VectorXd, Eigen::VectorXd>;
-
 
 /**
  * @brief Unflatten a FlatOCPSolution
