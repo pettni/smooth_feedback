@@ -140,7 +140,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a66b3122dce6e63b93eb4354b6e7a4171"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#a66b3122dce6e63b93eb4354b6e7a4171">smooth::feedback::requires</a> (Dof&lt; G &gt; &gt; 0 &amp;&amp;Dof&lt; U &gt; &gt; 0) struct ASIFProblem</td></tr>
 <tr class="memdesc:a66b3122dce6e63b93eb4354b6e7a4171"><td class="mdescLeft">&#160;</td><td class="mdescRight">Active set invariance problem definition.  <a href="asif__func_8hpp.html#a66b3122dce6e63b93eb4354b6e7a4171">More...</a><br /></td></tr>
 <tr class="separator:a66b3122dce6e63b93eb4354b6e7a4171"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55d35804c579e9ad9bd3d317d8515140"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename BackupU , diff::Type DT = diff::Type::DEFAULT&gt; </td></tr>
+<tr class="memitem:a55d35804c579e9ad9bd3d317d8515140"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename BackupU , diff::Type DT = diff::Type::Default&gt; </td></tr>
 <tr class="memitem:a55d35804c579e9ad9bd3d317d8515140"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#a55d35804c579e9ad9bd3d317d8515140">smooth::feedback::requires</a> (Dof&lt; G &gt; &gt; 0 &amp;&amp;Dof&lt; U &gt; &gt; 0) void asif_to_qp_fill(const ASIFProblem&lt; G</td></tr>
 <tr class="memdesc:a55d35804c579e9ad9bd3d317d8515140"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill QP matrices (part 2 of <a class="el" href="asif__func_8hpp.html#af66ded43f692c60a9a9fe3a6335468b6" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>)  <a href="asif__func_8hpp.html#a55d35804c579e9ad9bd3d317d8515140">More...</a><br /></td></tr>
 <tr class="separator:a55d35804c579e9ad9bd3d317d8515140"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -189,7 +189,7 @@ qp&#160;</td><td class="memItemRight" valign="bottom"><b>smooth::feedback::P</b>
 <tr class="memitem:a64ba39af143e3b7846c095008e9a8460"><td class="memItemLeft" align="right" valign="top"><a id="a64ba39af143e3b7846c095008e9a8460"></a>
 qp&#160;</td><td class="memItemRight" valign="bottom"><b>smooth::feedback::q</b> (nu)=0</td></tr>
 <tr class="separator:a64ba39af143e3b7846c095008e9a8460"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af66ded43f692c60a9a9fe3a6335468b6"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename BackupU , diff::Type DT = diff::Type::DEFAULT&gt; </td></tr>
+<tr class="memitem:af66ded43f692c60a9a9fe3a6335468b6"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename BackupU , diff::Type DT = diff::Type::Default&gt; </td></tr>
 <tr class="memitem:af66ded43f692c60a9a9fe3a6335468b6"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgram&lt;-1, -1, double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#af66ded43f692c60a9a9fe3a6335468b6">smooth::feedback::asif_to_qp</a> (const ASIFProblem&lt; G, U &gt; &amp;pbm, const ASIFtoQPParams &amp;prm, Dyn &amp;&amp;f, SS &amp;&amp;h, BackupU &amp;&amp;bu)</td></tr>
 <tr class="memdesc:af66ded43f692c60a9a9fe3a6335468b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert an ASIFProblem to a <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a>.  <a href="asif__func_8hpp.html#af66ded43f692c60a9a9fe3a6335468b6">More...</a><br /></td></tr>
 <tr class="separator:af66ded43f692c60a9a9fe3a6335468b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -261,7 +261,7 @@ TangentMap&lt; G &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoo
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename BackupU , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename BackupU , diff::Type DT = diff::Type::Default&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">QuadraticProgram&lt;-1, -1, double&gt; smooth::feedback::asif_to_qp </td>
@@ -421,7 +421,7 @@ template&lt;LieGroup G, Manifold U&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename BackupU , diff::Type DT = diff::Type::DEFAULT&gt; </div>
+template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename BackupU , diff::Type DT = diff::Type::Default&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">smooth::feedback::requires </td>
@@ -466,7 +466,7 @@ template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename B
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= diff::dr&lt;DT&gt;(</div>
+<b>Initial value:</b><div class="fragment"><div class="line">= diff::dr&lt;1, DT&gt;(</div>
 <div class="line">    [&amp;]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> CastT&lt;T, U&gt; &amp; vu) { <span class="keywordflow">return</span> f(T(t), cast&lt;T&gt;(x), vu); }, wrt(pbm.u_des))</div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00184">184</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
@@ -486,7 +486,7 @@ template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename B
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= [&amp;f, &amp;bu, &amp;x](<span class="keyword">const</span> <span class="keyword">auto</span> &amp; S_v, <span class="keyword">auto</span> &amp; dS_dt_v, <span class="keywordtype">double</span> tt) {</div>
 <div class="line">    <span class="keyword">auto</span> f_cl = [&amp;]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> CastT&lt;T, G&gt; &amp; vx) { <span class="keywordflow">return</span> f(T(tt), vx, bu(T(tt), vx)); };</div>
-<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> [fcl, dr_fcl_dx] = diff::dr&lt;DT&gt;(std::move(f_cl), wrt(x));</div>
+<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> [fcl, dr_fcl_dx] = diff::dr&lt;1, DT&gt;(std::move(f_cl), wrt(x));</div>
 <div class="line">    dS_dt_v                     = (-ad&lt;G&gt;(fcl) + dr_fcl_dx) * S_v;</div>
 <div class="line">  }</div>
 </div><!-- fragment -->

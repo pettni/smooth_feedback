@@ -171,7 +171,7 @@ struct smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</h3>
 \[ \begin{cases} \min &amp; \theta(t_f, x_0, x_f, q) \\ \text{s.t.} &amp; x(0) = x_0 \\ &amp; x(t_f) = x_f \\ &amp; \dot x(t) = f(t, x(t), u(t)) \\ &amp; q = \int_{0}^{t_f} g(t, x(t), u(t)) \mathrm{d}t \\ &amp; c_{rl} \leq c_r(t, x(t), u(t)) \leq c_{ru} \quad t \in [0, t_f] \\ &amp; c_{el} \leq c_e(t_f, x_0, x_f, q) \leq c_{eu} \end{cases} \]
 </p>
 <p>The optimal control problem depends on arbitrary functions \( \theta, f, g, c_r, c_e \). The type of those functions are template pararamters in this structure.</p>
-<dl class="section note"><dt>Note</dt><dd>To enable automatic differentiation \( \theta, g, c_r, c_e \) must be templated over the scalar type. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>To enable automatic differentiation \( \theta, f, g, c_r, c_e \) must be templated over the scalar type. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00068">68</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>

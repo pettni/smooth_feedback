@@ -134,7 +134,7 @@ $(function() {
 <div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1MPCParams.html#a21e521ca84b5fa08de1d8b394d671810">  102</a></span>&#160;  <a class="code" href="structsmooth_1_1feedback_1_1QPSolverParams.html">QPSolverParams</a> <a class="code" href="structsmooth_1_1feedback_1_1MPCParams.html#a21e521ca84b5fa08de1d8b394d671810">qp</a>{};</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;};</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keyword">template</span>&lt;Time T, LieGroup G, Manifold U, <span class="keyword">typename</span> Dyn, diff::Type DiffT = diff::Type::DEFAULT&gt;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keyword">template</span>&lt;Time T, LieGroup G, Manifold U, <span class="keyword">typename</span> Dyn, diff::Type DiffT = diff::Type::Default&gt;</div>
 <div class="line"><a name="l00122"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1MPC.html">  122</a></span>&#160;<span class="keyword">class </span><a class="code" href="classsmooth_1_1feedback_1_1MPC.html">MPC</a></div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;{</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<span class="keyword">public</span>:</div>
@@ -289,7 +289,7 @@ $(function() {
 <div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;  {</div>
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    <a class="code" href="classsmooth_1_1feedback_1_1MPC.html#ab02ecd1033d001a3d0acc5c6eea69123">set_xdes</a>([t0 = t0, f = std::forward&lt;Fun&gt;(f)](T t) -&gt; std::pair&lt;G, Tangent&lt;G&gt;&gt; {</div>
 <div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">double</span> t_rel = <a class="code" href="structsmooth_1_1feedback_1_1time__trait.html">time_trait&lt;T&gt;::minus</a>(t, t0);</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;      <span class="keywordflow">return</span> diff::dr&lt;DiffT&gt;(f, wrt(t_rel));</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;      <span class="keywordflow">return</span> diff::dr&lt;1, DiffT&gt;(f, wrt(t_rel));</div>
 <div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    });</div>
 <div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;  }</div>
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>

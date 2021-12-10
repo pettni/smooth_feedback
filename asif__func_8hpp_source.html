@@ -163,7 +163,7 @@ $(function() {
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;  <span class="keyword">typename</span> Dyn,</div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;  <span class="keyword">typename</span> SafeSet,</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;  <span class="keyword">typename</span> BackupU,</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;  diff::Type DT = diff::Type::DEFAULT&gt;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;  diff::Type DT = diff::Type::Default&gt;</div>
 <div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="asif__func_8hpp.html#a55d35804c579e9ad9bd3d317d8515140">  132</a></span>&#160;  <a class="code" href="asif__func_8hpp.html#a66b3122dce6e63b93eb4354b6e7a4171">requires</a>(Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;void asif_to_qp_fill(</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;  const ASIFProblem&lt;G, U&gt; &amp; pbm,</div>
@@ -211,18 +211,18 @@ $(function() {
 <div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> dx_dx0_ode = [&amp;f, &amp;bu, &amp;x](<span class="keyword">const</span> <span class="keyword">auto</span> &amp; S_v, <span class="keyword">auto</span> &amp; dS_dt_v, <span class="keywordtype">double</span> tt) {</div>
 <div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keyword">auto</span> f_cl = [&amp;]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> CastT&lt;T, G&gt; &amp; vx) { <span class="keywordflow">return</span> f(T(tt), vx, bu(T(tt), vx)); };</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> [fcl, dr_fcl_dx] = diff::dr&lt;DT&gt;(std::move(f_cl), wrt(x));</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> [fcl, dr_fcl_dx] = diff::dr&lt;1, DT&gt;(std::move(f_cl), wrt(x));</div>
 <div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    dS_dt_v                     = (-ad&lt;G&gt;(fcl) + dr_fcl_dx) * S_v;</div>
 <div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;  };</div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
 <div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;  <span class="comment">// value of dynamics at call time</span></div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> [f0, d_f0_du] = diff::dr&lt;DT&gt;(</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> [f0, d_f0_du] = diff::dr&lt;1, DT&gt;(</div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    [&amp;]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> CastT&lt;T, U&gt; &amp; vu) { <span class="keywordflow">return</span> f(T(t), cast&lt;T&gt;(x), vu); }, wrt(pbm.u_des));</div>
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160; </div>
 <div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;  <span class="comment">// loop over constraint number</span></div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;  <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k != prm.<a class="code" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aab99219680cef706f4858f4d548df1a1">K</a>; ++k) {</div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="comment">// differentiate barrier function w.r.t. x</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> [hval, dh_dtx] = diff::dr&lt;DT&gt;(</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> [hval, dh_dtx] = diff::dr&lt;1, DT&gt;(</div>
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;      [&amp;h]&lt;<span class="keyword">typename</span> T&gt;(<span class="keyword">const</span> T &amp; vt, <span class="keyword">const</span> CastT&lt;T, G&gt; &amp; vx) { <span class="keywordflow">return</span> h(vt, vx); }, wrt(t, x));</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160; </div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keyword">const</span> Eigen::Matrix&lt;double, nh, 1&gt; dh_dt  = dh_dtx.template leftCols&lt;1&gt;();</div>
@@ -268,7 +268,7 @@ $(function() {
 <div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;  <span class="keyword">typename</span> Dyn,</div>
 <div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;  <span class="keyword">typename</span> SS,</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;  <span class="keyword">typename</span> BackupU,</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;  diff::Type DT = diff::Type::DEFAULT&gt;</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;  diff::Type DT = diff::Type::Default&gt;</div>
 <div class="line"><a name="l00280"></a><span class="lineno"><a class="line" href="asif__func_8hpp.html#af66ded43f692c60a9a9fe3a6335468b6">  280</a></span>&#160;<a class="code" href="structsmooth_1_1feedback_1_1QuadraticProgram.html">QuadraticProgram</a>&lt;-1, -1, <span class="keywordtype">double</span>&gt; <a class="code" href="asif__func_8hpp.html#af66ded43f692c60a9a9fe3a6335468b6">asif_to_qp</a>(</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;  <span class="keyword">const</span> ASIFProblem&lt;G, U&gt; &amp; pbm, <span class="keyword">const</span> <a class="code" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html">ASIFtoQPParams</a> &amp; prm, Dyn &amp;&amp; f, SS &amp;&amp; h, BackupU &amp;&amp; bu)</div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;{</div>
