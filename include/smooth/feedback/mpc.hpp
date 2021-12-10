@@ -118,7 +118,7 @@ struct MPCParams
  * performance. See MPCParams for details. MPC likely performs better on models that
  * are control-affine.
  */
-template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DiffT = diff::Type::DEFAULT>
+template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DiffT = diff::Type::Default>
 class MPC
 {
 public:
@@ -335,7 +335,7 @@ public:
   {
     set_xdes([t0 = t0, f = std::forward<Fun>(f)](T t) -> std::pair<G, Tangent<G>> {
       const double t_rel = time_trait<T>::minus(t, t0);
-      return diff::dr<DiffT>(f, wrt(t_rel));
+      return diff::dr<1, DiffT>(f, wrt(t_rel));
     });
   }
 

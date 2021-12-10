@@ -128,7 +128,7 @@ template<
   typename Dyn,
   typename SafeSet,
   typename BackupU,
-  diff::Type DT = diff::Type::DEFAULT>
+  diff::Type DT = diff::Type::Default>
   requires(Dof<G> > 0 && Dof<U> > 0)
 void asif_to_qp_fill(
   const ASIFProblem<G, U> & pbm,
@@ -176,18 +176,18 @@ void asif_to_qp_fill(
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
     auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
-    const auto [fcl, dr_fcl_dx] = diff::dr<DT>(std::move(f_cl), wrt(x));
+    const auto [fcl, dr_fcl_dx] = diff::dr<1, DT>(std::move(f_cl), wrt(x));
     dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
-  const auto [f0, d_f0_du] = diff::dr<DT>(
+  const auto [f0, d_f0_du] = diff::dr<1, DT>(
     [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(pbm.u_des));
 
   // loop over constraint number
   for (auto k = 0u; k != prm.K; ++k) {
     // differentiate barrier function w.r.t. x
-    const auto [hval, dh_dtx] = diff::dr<DT>(
+    const auto [hval, dh_dtx] = diff::dr<1, DT>(
       [&h]<typename T>(const T & vt, const CastT<T, G> & vx) { return h(vt, vx); }, wrt(t, x));
 
     const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
@@ -276,7 +276,7 @@ template<
   typename Dyn,
   typename SS,
   typename BackupU,
-  diff::Type DT = diff::Type::DEFAULT>
+  diff::Type DT = diff::Type::Default>
 QuadraticProgram<-1, -1, double> asif_to_qp(
   const ASIFProblem<G, U> & pbm, const ASIFtoQPParams & prm, Dyn && f, SS && h, BackupU && bu)
 {

@@ -61,7 +61,7 @@ namespace smooth::feedback {
  * The optimal control problem depends on arbitrary functions \f$ \theta, f, g, c_r, c_e \f$.
  * The type of those functions are template pararamters in this structure.
  *
- * @note To enable automatic differentiation \f$ \theta, g, c_r, c_e \f$ must be templated over the
+ * @note To enable automatic differentiation \f$ \theta, f, g, c_r, c_e \f$ must be templated over the
  * scalar type.
  */
 template<LieGroup _X, Manifold _U, typename Theta, typename F, typename G, typename CR, typename CE>

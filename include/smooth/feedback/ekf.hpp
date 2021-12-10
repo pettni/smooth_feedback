@@ -50,7 +50,7 @@ namespace smooth::feedback {
  */
 template<
   LieGroup G,
-  diff::Type DiffType                 = diff::Type::DEFAULT,
+  diff::Type DiffType                 = diff::Type::Default,
   template<typename...> typename Stpr = boost::numeric::odeint::euler>
   requires(Dof<G> > 0)
 class EKF
@@ -110,7 +110,7 @@ public:
       const auto f_x = [&f, &t]<typename _T>(const CastT<_T, G> & x) -> Tangent<CastT<_T, G>> {
         return f(t, x);
       };
-      const auto [fv, dr] = diff::dr<DiffType>(f_x, wrt(g_hat_));
+      const auto [fv, dr] = diff::dr<1, DiffType>(f_x, wrt(g_hat_));
       const CovT A        = -ad<G>(fv) + dr;
       dcov = (A * cov + cov * A.transpose() + Q).template selfadjointView<Eigen::Upper>();
     };
@@ -143,7 +143,7 @@ public:
   template<typename F, typename RDev, Manifold Y = std::invoke_result_t<F, G>>
   void update(F && h, const Y & y, const Eigen::MatrixBase<RDev> & R)
   {
-    const auto [hval, H] = diff::dr<DiffType>(h, wrt(g_hat_));
+    const auto [hval, H] = diff::dr<1, DiffType>(h, wrt(g_hat_));
 
     using Result = std::decay_t<decltype(hval)>;
 

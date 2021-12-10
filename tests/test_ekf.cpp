@@ -116,7 +116,7 @@ void test_predict_linear()
     // linear system
     smooth::feedback::EKF<
       Eigen::Matrix<double, Nx, 1>,
-      smooth::diff::Type::NUMERICAL,
+      smooth::diff::Type::Numerical,
       boost::numeric::odeint::runge_kutta4>
       ekf;
 

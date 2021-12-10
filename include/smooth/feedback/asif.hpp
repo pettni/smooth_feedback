@@ -60,7 +60,7 @@ struct ASIFilterParams
  * recent solution for warmstarting, and facilitates working with time-varying
  * problems.
  */
-template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::Default>
 class ASIFilter
 {
 public:

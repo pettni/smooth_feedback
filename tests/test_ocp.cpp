@@ -95,9 +95,9 @@ TEST(Ocp, Jacobians)
   const auto dg_dx = nlp.dg_dx(x);
 
   const auto [fval, df_dx_num] =
-    smooth::diff::dr<smooth::diff::Type::NUMERICAL>(nlp.f, smooth::wrt(x));
+    smooth::diff::dr<1, smooth::diff::Type::Numerical>(nlp.f, smooth::wrt(x));
   const auto [gval, dg_dx_num] =
-    smooth::diff::dr<smooth::diff::Type::NUMERICAL>(nlp.g, smooth::wrt(x));
+    smooth::diff::dr<1, smooth::diff::Type::Numerical>(nlp.g, smooth::wrt(x));
 
   ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-8));
   ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-8));

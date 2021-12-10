@@ -221,7 +221,7 @@ void ocp_to_qp_allocate(
 /**
  * @brief Fill QP matrices (part 2 of ocp_to_qp()).
  */
-template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::Default>
   requires(Dof<G> > 0 && Dof<U> > 0)
 void ocp_to_qp_fill(
   const OptimalControlProblem<G, U> & pbm,
@@ -271,7 +271,7 @@ void ocp_to_qp_fill(
     const auto ul        = lin.u(t);
 
     // clang-format off
-    const auto [flin, df_xu] = diff::dr<DT>(
+    const auto [flin, df_xu] = diff::dr<1, DT>(
       [&f, &t]<typename T>(const CastT<T, G> & vx, const CastT<T, U> & vu) -> Tangent<CastT<T, G>> {
         return f(t, vx, vu);
       },
@@ -490,7 +490,7 @@ void ocp_to_qp_fill(
  * smooth::diff method (check \p smooth::diff::DefaultType). If using an automatic differentiation
  * method this means that it must be templated on the scalar type.
  */
-template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::DEFAULT>
+template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::Default>
 QuadraticProgramSparse<double> ocp_to_qp(
   const OptimalControlProblem<G, U> & pbm,
   std::size_t K,
