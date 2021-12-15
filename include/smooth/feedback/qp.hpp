@@ -672,15 +672,15 @@ detail::qp_solution_t<Pbm> solve_qp(
   const auto t_fill = std::chrono::high_resolution_clock::now();
 
   if (prm.verbose) {
-    using std::cout, std::left, std::endl, std::setw, std::right;
+    using std::cout, std::left, std::setw, std::right;
     // clang-format off
-    cout << "========================= QP Solver =========================" << endl;
-    cout << "Solving " << (sparse ? "sparse" : "dense") << " QP with n=" << n << ", m=" << m << endl;
+    cout << "========================= QP Solver =========================" << '\n';
+    cout << "Solving " << (sparse ? "sparse" : "dense") << " QP with n=" << n << ", m=" << m << '\n';
     cout << setw(8)  << right << "ITER"
          << setw(14) << right << "OBJ"
          << setw(14) << right << "PRI_RES"
          << setw(14) << right << "DUA_RES"
-         << setw(10) << right << "TIME" << std::endl;
+         << setw(10) << right << "TIME" << '\n';
     // clang-format on
   }
 
@@ -743,7 +743,7 @@ detail::qp_solution_t<Pbm> solve_qp(
       ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);
 
       if (prm.verbose) {
-        using std::cout, std::endl, std::setw, std::right, std::chrono::microseconds;
+        using std::cout, std::setw, std::right, std::chrono::microseconds;
         // clang-format off
         cout << setw(7) << right << iter << ":"
           << std::scientific
@@ -751,7 +751,7 @@ detail::qp_solution_t<Pbm> solve_qp(
           << setw(14) << right << (pbm.A * x_us - z_us).template lpNorm<Eigen::Infinity>()
           << setw(14) << right << (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).template lpNorm<Eigen::Infinity>()
           << setw(10) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
-          << std::endl;
+          << '\n';
         // clang-format on
       }
 
@@ -780,7 +780,7 @@ detail::qp_solution_t<Pbm> solve_qp(
   if (sol.code == QPSolutionStatus::Optimal && prm.polish) {
     if (detail::polish_qp(spbm, sol, prm)) {
       if (prm.verbose) {
-        using std::cout, std::endl, std::setw, std::right, std::chrono::microseconds;
+        using std::cout, std::setw, std::right, std::chrono::microseconds;
         x_us = S.template head<N>(n).cwiseProduct(sol.primal);          // NOTE: x std::moved to sol
         y_us = S.template segment<M>(n, m).cwiseProduct(sol.dual) / c;  // NOTE: y std::moved to sol
         z_us = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
@@ -791,12 +791,12 @@ detail::qp_solution_t<Pbm> solve_qp(
           << setw(14) << right << (pbm.A * x_us - z_us).template lpNorm<Eigen::Infinity>()
           << setw(14) << right << (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).template lpNorm<Eigen::Infinity>()
           << setw(10) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
-          << std::endl;
+          << '\n';
         // clang-format on
       }
 
     } else {
-      if (prm.verbose) { std::cout << "Polish failed" << std::endl; }
+      if (prm.verbose) { std::cout << "Polish failed" << '\n'; }
       sol.code = QPSolutionStatus::PolishFailed;
     }
   }
@@ -810,19 +810,19 @@ detail::qp_solution_t<Pbm> solve_qp(
   sol.objective = sol.primal.dot(0.5 * pbm.P * sol.primal + pbm.q);
 
   if (prm.verbose) {
-    using std::cout, std::left, std::right, std::setw, std::endl, std::chrono::microseconds;
+    using std::cout, std::left, std::right, std::setw, std::chrono::microseconds;
 
     // clang-format off
-    cout << "QP solver summary:" << endl;
-    cout << "Result " << static_cast<int>(sol.code) << endl;
+    cout << "QP solver summary:" << '\n';
+    cout << "Result " << static_cast<int>(sol.code) << '\n';
 
-    cout << setw(25) << left << "Iterations"        << setw(10) << right << iter - 1                                               << endl;
-    cout << setw(26) << left << "Total time (µs)"   << setw(10) << right << duration_cast<microseconds>(t_polish - t0).count()     << endl;
-    cout << setw(25) << left << "  Matrix filling"  << setw(10) << right << duration_cast<microseconds>(t_fill - t0).count()       << endl;
-    cout << setw(25) << left << "  Factorization"   << setw(10) << right << duration_cast<microseconds>(t_factor - t_fill).count() << endl;
-    cout << setw(25) << left << "  Iteration"       << setw(10) << right << duration_cast<microseconds>(t_iter - t_factor).count() << endl;
-    cout << setw(25) << left << "  Polish"          << setw(10) << right << duration_cast<microseconds>(t_polish - t_iter).count() << endl;
-    cout << "=============================================================" << endl;
+    cout << setw(25) << left << "Iterations"        << setw(10) << right << iter - 1                                               << '\n';
+    cout << setw(26) << left << "Total time (µs)"   << setw(10) << right << duration_cast<microseconds>(t_polish - t0).count()     << '\n';
+    cout << setw(25) << left << "  Matrix filling"  << setw(10) << right << duration_cast<microseconds>(t_fill - t0).count()       << '\n';
+    cout << setw(25) << left << "  Factorization"   << setw(10) << right << duration_cast<microseconds>(t_factor - t_fill).count() << '\n';
+    cout << setw(25) << left << "  Iteration"       << setw(10) << right << duration_cast<microseconds>(t_iter - t_factor).count() << '\n';
+    cout << setw(25) << left << "  Polish"          << setw(10) << right << duration_cast<microseconds>(t_polish - t_iter).count() << '\n';
+    cout << "=============================================================" << '\n';
     // clang-format on
   }
 

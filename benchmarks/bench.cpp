@@ -46,9 +46,9 @@ void compare_results(
   double total_dinfeas_duration_a = 0;
   double total_dinfeas_duration_b = 0;
 
-  std::cout << "-----------------------------------------------------------------" << std::endl;
-  std::cout << a_name << " (A) vs. " << b_name << " (B)" << std::endl;
-  std::cout << "-----------------------------------------------------------------" << std::endl;
+  std::cout << "-----------------------------------------------------------------" << '\n';
+  std::cout << a_name << " (A) vs. " << b_name << " (B)" << '\n';
+  std::cout << "-----------------------------------------------------------------" << '\n';
 
   for (auto i = 0u; i != N; ++i) {
     const auto & a_res = a.results[i];
@@ -58,23 +58,23 @@ void compare_results(
     double duration_b = std::chrono::duration<double>(b_res.dt).count();
 
     if (FLAGS_verbose) {
-      using std::cout, std::setw, std::endl;
-      cout << "Details for problem " << i << endl;
+      using std::cout, std::setw, '\n';
+      cout << "Details for problem " << i << '\n';
 
-      cout << setw(30) << a_name + " code " << static_cast<int>(a_res.status) << endl;
-      cout << setw(30) << b_name + " code " << static_cast<int>(b_res.status) << endl;
+      cout << setw(30) << a_name + " code " << static_cast<int>(a_res.status) << '\n';
+      cout << setw(30) << b_name + " code " << static_cast<int>(b_res.status) << '\n';
 
-      cout << setw(30) << a_name + " duration " << duration_a << endl;
-      cout << setw(30) << b_name + " duration " << duration_b << endl;
+      cout << setw(30) << a_name + " duration " << duration_a << '\n';
+      cout << setw(30) << b_name + " duration " << duration_b << '\n';
 
-      cout << setw(30) << a_name + " iterations " << a_res.iter << endl;
-      cout << setw(30) << b_name + " iterations " << b_res.iter << endl;
+      cout << setw(30) << a_name + " iterations " << a_res.iter << '\n';
+      cout << setw(30) << b_name + " iterations " << b_res.iter << '\n';
 
-      cout << setw(30) << a_name + " solution " << a_res.solution.transpose() << endl;
-      cout << setw(30) << b_name + " solution " << b_res.solution.transpose() << endl;
+      cout << setw(30) << a_name + " solution " << a_res.solution.transpose() << '\n';
+      cout << setw(30) << b_name + " solution " << b_res.solution.transpose() << '\n';
 
-      cout << setw(30) << a_name + " objective " << a_res.objective << endl;
-      cout << setw(30) << b_name + " objective " << b_res.objective << endl << endl;
+      cout << setw(30) << a_name + " objective " << a_res.objective << '\n';
+      cout << setw(30) << b_name + " objective " << b_res.objective << '\n' << '\n';
     }
 
     double duration_ratio = duration_a / duration_b;
@@ -111,24 +111,24 @@ void compare_results(
     }
   }
 
-  using std::cout, std::setw, std::endl;
+  using std::cout, std::setw;
 
-  cout << setw(30) << "Total number of problems: " << N << endl;
+  cout << setw(30) << "Total number of problems: " << N << '\n';
 
-  cout << setw(30) << a_name + " optimal:" << a.num_optimal << endl;
-  cout << setw(30) << b_name + " optimal:" << b.num_optimal << endl;
-  cout << setw(30) << "both optimal: " << N_optim << endl;
+  cout << setw(30) << a_name + " optimal:" << a.num_optimal << '\n';
+  cout << setw(30) << b_name + " optimal:" << b.num_optimal << '\n';
+  cout << setw(30) << "both optimal: " << N_optim << '\n';
 
-  cout << setw(30) << a_name + " avg duration: " << total_optim_duration_a / N_optim << endl;
-  cout << setw(30) << b_name + " avg duration: " << total_optim_duration_b / N_optim << endl;
+  cout << setw(30) << a_name + " avg duration: " << total_optim_duration_a / N_optim << '\n';
+  cout << setw(30) << b_name + " avg duration: " << total_optim_duration_b / N_optim << '\n';
 
-  cout << setw(30) << "Avg duration ratio " << std::pow(total_duration_ratio, 1. / N_optim) << endl;
-  cout << setw(30) << "Min duration ratio " << min_duration_ratio << endl;
-  cout << setw(30) << "Max duration ratio " << max_duration_ratio << endl;
+  cout << setw(30) << "Avg duration ratio " << std::pow(total_duration_ratio, 1. / N_optim) << '\n';
+  cout << setw(30) << "Min duration ratio " << min_duration_ratio << '\n';
+  cout << setw(30) << "Max duration ratio " << max_duration_ratio << '\n';
 
-  cout << setw(30) << "Avg primal diff " << total_primal_diff / N_optim << endl;
-  cout << setw(30) << "Min primal diff " << min_primal_diff << endl;
-  cout << setw(30) << "Max primal diff " << max_primal_diff << endl;
+  cout << setw(30) << "Avg primal diff " << total_primal_diff / N_optim << '\n';
+  cout << setw(30) << "Min primal diff " << min_primal_diff << '\n';
+  cout << setw(30) << "Max primal diff " << max_primal_diff << '\n';
 }
 
 struct PlotData
@@ -186,13 +186,13 @@ int main(int argc, char ** argv)
       auto osqp_res = solve_batch<OsqpWrapper<smooth::feedback::QuadraticProgramSparse<double>>>(
         qp_sparse_list, prm);
 
-      std::cout << "#################################################################" << std::endl;
-      std::cout << "#################################################################" << std::endl;
-      std::cout << "Variables: " << n << std::endl;
-      std::cout << "Constraints: " << m << std::endl;
-      std::cout << "Density: " << density << std::endl;
-      std::cout << "#################################################################" << std::endl;
-      std::cout << "#################################################################" << std::endl;
+      std::cout << "#################################################################" << '\n';
+      std::cout << "#################################################################" << '\n';
+      std::cout << "Variables: " << n << '\n';
+      std::cout << "Constraints: " << m << '\n';
+      std::cout << "Density: " << density << '\n';
+      std::cout << "#################################################################" << '\n';
+      std::cout << "#################################################################" << '\n';
 
       compare_results("smooth-d", smooth_d_res, "osqp", osqp_res);
       compare_results("smooth-s", smooth_s_res, "osqp", osqp_res);
