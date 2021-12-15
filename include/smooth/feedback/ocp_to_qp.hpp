@@ -110,6 +110,13 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   // TODO: allocate nonzero pattern in P an A
 
+  // Calculate linaerization values at all collocation points
+
+  const auto [nodes, weights] = mesh.all_nodes_and_weights();
+
+  auto Xlin = nodes | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
+  auto Ulin = nodes | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
+
   for (auto ival = 0u; ival < N_ivals; ++ival) {
 
     // let variables in interval be

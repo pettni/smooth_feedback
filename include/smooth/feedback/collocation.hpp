@@ -377,16 +377,15 @@ concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
  * @tparam Der return derivatives w.r.t variables
  *
  * @param nf dimensionality of f image
- * @param f function (t, X, U) -> R^nf
+ * @param f function (t, x, u) -> R^nf
  * @param m Mesh of time
  * @param t0 initial time variable
  * @param tf final time variable
- * @param X state variables (size nx x N+1)
- * @param U input variables (size nu x N)
+ * @param xs state variables (size N+1)
+ * @param us input variables (size N)
  *
  * @return If Deriv == false,
- * If Deriv == true, {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU}, where vec(X) stacks the
- * columns of X into a single column vector.
+ * If Deriv == true, {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU}
  */
 template<bool Deriv>
 auto colloc_eval(
@@ -395,14 +394,17 @@ auto colloc_eval(
   const MeshType auto & m,
   const double t0,
   const double tf,
-  const Eigen::MatrixXd & X,
-  const Eigen::MatrixXd & U)
+  std::ranges::sized_range auto && xs,
+  std::ranges::sized_range auto && us)
 {
-  assert(m.N_colloc() + 1 == static_cast<std::size_t>(X.cols()));  //  extra variable at the end
-  assert(m.N_colloc() == static_cast<std::size_t>(U.cols()));  // one input per collocation point
+  const auto numX = std::ranges::size(xs);
+  const auto numU = std::ranges::size(us);
 
-  const std::size_t nx = X.rows();
-  const std::size_t nu = U.rows();
+  assert(m.N_colloc() + 1 == numX);  //  extra variable at the end
+  assert(m.N_colloc() == numU);      // one input per collocation point
+
+  const std::size_t nx = dof(*std::ranges::begin(xs));
+  const std::size_t nu = dof(*std::ranges::begin(us));
 
   // all nodes in mesh
   const auto [tau_s, w_s] = m.all_nodes_and_weights();
@@ -414,26 +416,26 @@ auto colloc_eval(
   if constexpr (Deriv) {
     dvecF_dt0.resize(Fval.size(), 1);
     dvecF_dtf.resize(Fval.size(), 1);
-    dvecF_dvecX.resize(Fval.size(), X.size());
-    dvecF_dvecU.resize(Fval.size(), U.size());
+    dvecF_dvecX.resize(Fval.size(), nx * numX);
+    dvecF_dvecU.resize(Fval.size(), nu * numU);
 
     dvecF_dt0.reserve(Fval.size());
     dvecF_dtf.reserve(Fval.size());
 
-    Eigen::VectorXi FX_pattern = Eigen::VectorXi::Constant(X.size(), nf);
+    Eigen::VectorXi FX_pattern = Eigen::VectorXi::Constant(nx * numX, nf);
     FX_pattern.tail(nx).setZero();
     dvecF_dvecX.reserve(FX_pattern);
-    dvecF_dvecU.reserve(Eigen::VectorXi::Constant(U.size(), nf));
+    dvecF_dvecU.reserve(Eigen::VectorXi::Constant(nu * numU, nf));
   }
 
-  for (auto i = 0u; i + 1 < tau_s.size(); ++i) {
-    const double T = t0 + (tf - t0) * tau_s(i);
+  for (const auto & [i, tau, x, u] : utils::zip(std::views::iota(0u), tau_s, xs, us)) {
+    const double T = t0 + (tf - t0) * tau;
 
-    const Eigen::VectorXd x = X.col(i);
-    const Eigen::VectorXd u = U.col(i);
+    const PlainObject<std::decay_t<decltype(x)>> x_plain = x;
+    const PlainObject<std::decay_t<decltype(u)>> u_plain = u;
 
     if constexpr (Deriv) {
-      const auto [fval, dfval] = diff::dr(f, wrt(T, x, u));
+      const auto [fval, dfval] = diff::dr(f, wrt(T, x_plain, u_plain));
 
       assert(fval.rows() == Eigen::Index(nf));
       assert(dfval.rows() == Eigen::Index(nf));
@@ -442,8 +444,8 @@ auto colloc_eval(
       Fval.col(i) = fval;
 
       for (auto row = 0u; row < nf; ++row) {
-        dvecF_dt0.insert(nf * i + row, 0) = dfval(row, 0) * (1. - tau_s(i));
-        dvecF_dtf.insert(nf * i + row, 0) = dfval(row, 0) * tau_s(i);
+        dvecF_dt0.insert(nf * i + row, 0) = dfval(row, 0) * (1. - tau);
+        dvecF_dtf.insert(nf * i + row, 0) = dfval(row, 0) * tau;
         for (auto col = 0u; col < nx; ++col) {
           dvecF_dvecX.insert(nf * i + row, i * nx + col) = dfval(row, 1 + col);
         }
@@ -452,7 +454,7 @@ auto colloc_eval(
         }
       }
     } else {
-      Fval.col(i) = f(T, x, u);
+      Fval.col(i) = f(T, x_plain, u_plain);
     }
   }
 
@@ -487,7 +489,7 @@ auto colloc_eval(
  * @param f function (t0, tf, x0, xf, q) -> R^nf
  * @param t0 initial time
  * @param tf final time
- * @param X state variables (size nx x N+1)
+ * @param xs state variables (size N+1)
  * @param q integrals
  *
  * @return If Deriv == false,
@@ -500,16 +502,16 @@ auto colloc_eval_endpt(
   auto && f,
   [[maybe_unused]] const double t0,
   const double tf,
-  const Eigen::MatrixXd & X,
+  std::ranges::sized_range auto && xs,
   const Eigen::VectorXd & Q)
 {
-  assert(static_cast<std::size_t>(X.rows()) == nx);
+  const auto numX = std::ranges::size(xs);
 
   // NOTE: for now t0 = 0 and we don't want t0 in signatures
   assert(t0 == 0);
 
-  const Eigen::VectorXd x0 = X.leftCols(1);
-  const Eigen::VectorXd xf = X.rightCols(1);
+  const PlainObject<std::ranges::range_value_t<decltype(xs)>> x0 = *std::ranges::begin(xs);
+  const PlainObject<std::ranges::range_value_t<decltype(xs)>> xf = *std::prev(std::ranges::end(xs));
 
   if constexpr (!Deriv) {
     return f(tf, x0, xf, Q);
@@ -529,16 +531,16 @@ auto colloc_eval_endpt(
     dF_dtf.reserve(nf);
     for (auto i = 0u; i < nf; ++i) { dF_dtf.insert(i, 0) = J(i, 0); }
 
-    dF_dvecX.resize(nf, X.size());
-    Eigen::VectorXi pattern = Eigen::VectorXi::Zero(X.size());
+    dF_dvecX.resize(nf, nx * numX);
+    Eigen::VectorXi pattern = Eigen::VectorXi::Zero(nx * numX);
     pattern.head(nx).setConstant(nf);
     pattern.tail(nx).setConstant(nf);
     dF_dvecX.reserve(pattern);
 
     for (auto row = 0u; row < nf; ++row) {
       for (auto col = 0u; col < nx; ++col) {
-        dF_dvecX.insert(row, col)                 = J(row, 1 + col);
-        dF_dvecX.insert(row, X.size() - nx + col) = J(row, 1 + nx + col);
+        dF_dvecX.insert(row, col)                  = J(row, 1 + col);
+        dF_dvecX.insert(row, nx * numX - nx + col) = J(row, 1 + nx + col);
       }
     }
 
@@ -570,11 +572,11 @@ auto colloc_eval_endpt(
  * x 1 and u is size nu x 1
  * @param m mesh with a total of N collocation points
  * @param tf final time (variable of size 1)
- * @param x state values (variable of size nx x N+1)
- * @param u input values (variable of size nu x N)
+ * @param x state values (matrix of size nx x N+1)
+ * @param u input values (matrix of size nu x N)
  *
  * @return {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU},
- * where vec(X) stacks the columns of X into a single column vector.
+ * where vec(xs) stacks the columns of xs into a single column vector.
  */
 template<bool Deriv>
 auto colloc_dyn(
@@ -583,27 +585,27 @@ auto colloc_dyn(
   const MeshType auto & m,
   const double t0,
   const double tf,
-  const Eigen::MatrixXd & X,
-  const Eigen::MatrixXd & U)
+  const Eigen::MatrixXd & xs,
+  const Eigen::MatrixXd & us)
 {
-  assert(m.N_colloc() + 1 == static_cast<std::size_t>(X.cols()));  // extra at the end
-  assert(m.N_colloc() == static_cast<std::size_t>(U.cols()));      // one per collocation point
-  assert(nx == static_cast<std::size_t>(X.rows()));                // one per collocation point
+  assert(m.N_colloc() + 1 == static_cast<std::size_t>(xs.cols()));  // extra at the end
+  assert(m.N_colloc() == static_cast<std::size_t>(us.cols()));      // one per collocation point
+  assert(nx == static_cast<std::size_t>(xs.rows()));                // one per collocation point
 
   Eigen::MatrixXd Fval;
   Eigen::MatrixXd XD(nx, m.N_colloc());
   Eigen::SparseMatrix<double> dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU, dvecXD_dvecX;
 
   if constexpr (!Deriv) {
-    Fval = colloc_eval<0>(nx, f, m, t0, tf, X, U);
+    Fval = colloc_eval<0>(nx, f, m, t0, tf, xs.colwise(), us.colwise());
   } else {
     std::tie(Fval, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU) =
-      colloc_eval<1>(nx, f, m, t0, tf, X, U);
+      colloc_eval<1>(nx, f, m, t0, tf, xs.colwise(), us.colwise());
 
-    dvecXD_dvecX.resize(XD.size(), X.size());
+    dvecXD_dvecX.resize(XD.size(), xs.size());
 
     // reserve sparsity pattern
-    Eigen::VectorXi pattern = Eigen::VectorXi::Zero(X.size());
+    Eigen::VectorXi pattern = Eigen::VectorXi::Zero(xs.size());
     for (auto M = 0u, i = 0u; i < m.N_ivals(); ++i) {
       const std::size_t K = m.N_colloc_ival(i);
       pattern.segment(M, (K + 1) * nx) += Eigen::VectorXi::Constant((K + 1) * nx, K);
@@ -615,10 +617,10 @@ auto colloc_dyn(
   for (auto i = 0u, M = 0u; i < m.N_ivals(); M += m.N_colloc_ival(i), ++i) {
     const std::size_t K     = m.N_colloc_ival(i);
     const Eigen::MatrixXd D = m.interval_diffmat(i);
-    XD.block(0, M, nx, K)   = X.block(0, M, nx, K + 1) * D;
+    XD.block(0, M, nx, K)   = xs.block(0, M, nx, K + 1) * D;
 
     if constexpr (Deriv) {
-      // vec(X * D) = kron(D', I) * vec(X), so derivative w.r.t vec(X) = kron(D', I)
+      // vec(xs * D) = kron(D', I) * vec(xs), so derivative w.r.t vec(xs) = kron(D', I)
       for (auto i = 0u; i < K; ++i) {
         for (auto j = 0u; j < K + 1; ++j) {
           for (auto diag = 0u; diag < nx; ++diag) {
@@ -677,6 +679,83 @@ auto colloc_dyn(
       std::move(dF_dvecU));
   }
 }
+/**
+ * @brief Evaluate integral constraint on Mesh.
+ *
+ * @tparam Der return derivatives w.r.t variables
+ *
+ * @param nq number of integrals
+ * @param g integrand with signature (t, x, u) -> R^{nq} where x is size nx x 1 and u is size nu x
+ * 1
+ * @param m mesh
+ * @param t0 initial time (variable of size 1)
+ * @param tf final time (variable of size 1)
+ * @param I values (variable of size nq)
+ * @param xs state values (variable of size N+1)
+ * @param us input values (variable of size N)
+ *
+ * @return {G, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU},
+ * where vec(xs) stacks the columns of xs into a single column vector.
+ */
+template<bool Deriv>
+auto colloc_int(
+  const std::size_t nq,
+  auto && g,
+  const MeshType auto & m,
+  const double t0,
+  const double tf,
+  const Eigen::VectorXd & I,
+  std::ranges::sized_range auto && xs,
+  std::ranges::sized_range auto && us)
+{
+  assert(static_cast<std::size_t>(I.size()) == nq);
+
+  const std::size_t N = m.N_colloc();
+
+  const auto [n, w] = m.all_nodes_and_weights();
+
+  if constexpr (Deriv == false) {
+    const auto Gv              = colloc_eval<Deriv>(nq, g, m, t0, tf, xs, us);
+    const Eigen::VectorXd Iest = Gv * w.head(N);
+    Eigen::VectorXd Rv         = (tf - t0) * Iest - I;
+    return Rv;
+  } else {
+    const auto [Gv, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU] =
+      colloc_eval<Deriv>(nq, g, m, t0, tf, xs, us);
+    const Eigen::VectorXd Iest = Gv * w.head(N);
+
+    Eigen::VectorXd Rv = (tf - t0) * Iest - I;
+
+    const Eigen::SparseMatrix<double> w_kron_I =
+      (tf - t0) * kron_identity(w.head(N).transpose(), nq);
+
+    Eigen::SparseMatrix<double> dR_dt0 = w_kron_I * dvecG_dt0;
+    for (auto i = 0u; i < Iest.size(); ++i) { dR_dt0.coeffRef(i, 0) -= Iest(i); }
+
+    Eigen::SparseMatrix<double> dR_dtf = w_kron_I * dvecG_dtf;
+    for (auto i = 0u; i < Iest.size(); ++i) { dR_dtf.coeffRef(i, 0) += Iest(i); }
+
+    Eigen::SparseMatrix<double> dR_dvecI = -sparse_identity(nq);
+
+    Eigen::SparseMatrix<double> dR_dvecX = w_kron_I * dvecG_dvecX;
+
+    Eigen::SparseMatrix<double> dR_dvecU = w_kron_I * dvecG_dvecU;
+
+    dR_dt0.makeCompressed();
+    dR_dtf.makeCompressed();
+    dR_dvecI.makeCompressed();
+    dR_dvecX.makeCompressed();
+    dR_dvecU.makeCompressed();
+
+    return std::make_tuple(
+      std::move(Rv),
+      std::move(dR_dt0),
+      std::move(dR_dtf),
+      std::move(dR_dvecI),
+      std::move(dR_dvecX),
+      std::move(dR_dvecU));
+  }
+}
 
 /**
  * @brief Calculate relative dynamics errors for each interval in mesh.
@@ -719,7 +798,7 @@ Eigen::VectorXd mesh_dyn_error(
 
     assert(std::size_t(tau_s.size()) == Kext + 1);
 
-    // evaluate X and F at those points
+    // evaluate xs and F at those points
     Eigen::MatrixXd Fval(nx, Kext + 1);
     Eigen::MatrixXd Xval(nx, Kext + 1);
     for (auto j = 0u; j < Kext + 1; ++j) {
@@ -771,84 +850,6 @@ void mesh_refine(MeshType auto & m, const Eigen::VectorXd & errs, const double t
       const auto Ktarget = Ki + std::lround(std::log(errs(Nmi) / target_err) / std::log(Ki) + 1);
       m.refine_ph(Nmi, Ktarget);
     }
-  }
-}
-
-/**
- * @brief Evaluate integral constraint on Mesh.
- *
- * @tparam Der return derivatives w.r.t variables
- *
- * @param nq number of integrals
- * @param g integrand with signature (t, x, u) -> R^{nq} where x is size nx x 1 and u is size nu x
- * 1
- * @param m mesh
- * @param t0 initial time (variable of size 1)
- * @param tf final time (variable of size 1)
- * @param I values (variable of size nq)
- * @param X state values (variable of size nx x N+1)
- * @param U input values (variable of size nu x N)
- *
- * @return {G, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU},
- * where vec(X) stacks the columns of X into a single column vector.
- */
-template<bool Deriv>
-auto colloc_int(
-  const std::size_t nq,
-  auto && g,
-  const MeshType auto & m,
-  const double t0,
-  const double tf,
-  const Eigen::VectorXd & I,
-  const Eigen::MatrixXd & X,
-  const Eigen::MatrixXd & U)
-{
-  assert(static_cast<std::size_t>(I.size()) == nq);
-
-  const std::size_t N = m.N_colloc();
-
-  const auto [n, w] = m.all_nodes_and_weights();
-
-  if constexpr (Deriv == false) {
-    const auto Gv              = colloc_eval<Deriv>(nq, g, m, t0, tf, X, U);
-    const Eigen::VectorXd Iest = Gv * w.head(N);
-    Eigen::VectorXd Rv         = (tf - t0) * Iest - I;
-    return Rv;
-  } else {
-    const auto [Gv, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU] =
-      colloc_eval<Deriv>(nq, g, m, t0, tf, X, U);
-    const Eigen::VectorXd Iest = Gv * w.head(N);
-
-    Eigen::VectorXd Rv = (tf - t0) * Iest - I;
-
-    const Eigen::SparseMatrix<double> w_kron_I =
-      (tf - t0) * kron_identity(w.head(N).transpose(), nq);
-
-    Eigen::SparseMatrix<double> dR_dt0 = w_kron_I * dvecG_dt0;
-    for (auto i = 0u; i < Iest.size(); ++i) { dR_dt0.coeffRef(i, 0) -= Iest(i); }
-
-    Eigen::SparseMatrix<double> dR_dtf = w_kron_I * dvecG_dtf;
-    for (auto i = 0u; i < Iest.size(); ++i) { dR_dtf.coeffRef(i, 0) += Iest(i); }
-
-    Eigen::SparseMatrix<double> dR_dvecI = -sparse_identity(nq);
-
-    Eigen::SparseMatrix<double> dR_dvecX = w_kron_I * dvecG_dvecX;
-
-    Eigen::SparseMatrix<double> dR_dvecU = w_kron_I * dvecG_dvecU;
-
-    dR_dt0.makeCompressed();
-    dR_dtf.makeCompressed();
-    dR_dvecI.makeCompressed();
-    dR_dvecX.makeCompressed();
-    dR_dvecU.makeCompressed();
-
-    return std::make_tuple(
-      std::move(Rv),
-      std::move(dR_dt0),
-      std::move(dR_dtf),
-      std::move(dR_dvecI),
-      std::move(dR_dvecX),
-      std::move(dR_dvecU));
   }
 }
 

@@ -161,12 +161,13 @@ TEST(Collocation, TimeTrajectory)
   ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
 
   const Eigen::VectorXd cr_vals =
-    smooth::feedback::colloc_eval<false>(ncr, cr, m, t0, tf, X, U).reshaped();
+    smooth::feedback::colloc_eval<false>(ncr, cr, m, t0, tf, X.colwise(), U.colwise()).reshaped();
   ASSERT_EQ(cr_vals.rows(), 2 * m.N_colloc());
   ASSERT_EQ(cr_vals.cols(), 1);
   ASSERT_TRUE(C.reshaped().isApprox(cr_vals));
 
-  const Eigen::VectorXd q_vals = smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X, U);
+  const Eigen::VectorXd q_vals =
+    smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X.colwise(), U.colwise());
   ASSERT_NEAR(q_vals.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
 }
 
@@ -258,7 +259,8 @@ TEST(Collocation, StateTrajectory)
   const auto dyn_vals = smooth::feedback::colloc_dyn<false>(nx, f, m, t0, tf, X, U);
   ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
 
-  const auto q_vals = smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X, U);
+  const auto q_vals =
+    smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X.colwise(), U.colwise());
   ASSERT_NEAR(q_vals.x(), 0.00273752, 1e-4);
 }
 

@@ -61,8 +61,8 @@ namespace smooth::feedback {
  * The optimal control problem depends on arbitrary functions \f$ \theta, f, g, c_r, c_e \f$.
  * The type of those functions are template pararamters in this structure.
  *
- * @note To enable automatic differentiation \f$ \theta, f, g, c_r, c_e \f$ must be templated over the
- * scalar type.
+ * @note To enable automatic differentiation \f$ \theta, f, g, c_r, c_e \f$ must be templated over
+ * the scalar type.
  */
 template<LieGroup _X, Manifold _U, typename Theta, typename F, typename G, typename CR, typename CE>
 struct OCP
@@ -355,7 +355,7 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
     const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
 
-    return colloc_eval_endpt<false>(1, ocp.nx, ocp.theta, t0, tf, X, Q);
+    return colloc_eval_endpt<false>(1, ocp.nx, ocp.theta, t0, tf, X.colwise(), Q);
   };
 
   // OBJECTIVE JACOBIAN
@@ -371,7 +371,7 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
 
     const auto [fval, df_dt0, df_dtf, df_dvecX, df_dQ] =
-      colloc_eval_endpt<true>(1, ocp.nx, ocp.theta, t0, tf, X, Q);
+      colloc_eval_endpt<true>(1, ocp.nx, ocp.theta, t0, tf, X.colwise(), Q);
 
     return sparse_block_matrix({
       {df_dtf, df_dQ, df_dvecX, Eigen::SparseMatrix<double>(1, uvar_L)},
@@ -403,9 +403,9 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     Eigen::VectorXd ret(m);
     // clang-format off
     ret.segment(dcon_B, dcon_L)   = colloc_dyn<false>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
-    ret.segment(qcon_B, qcon_L)   = colloc_int<false>(ocp.nq, ocp.g, mesh, t0, tf, Q, X, U).reshaped();
-    ret.segment(crcon_B, crcon_L) = colloc_eval<false>(ocp.ncr, ocp.cr, mesh, t0, tf, X, U).reshaped();
-    ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X, Q).reshaped();
+    ret.segment(qcon_B, qcon_L)   = colloc_int<false>(ocp.nq, ocp.g, mesh, t0, tf, Q, X.colwise(), U.colwise()).reshaped();
+    ret.segment(crcon_B, crcon_L) = colloc_eval<false>(ocp.ncr, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise()).reshaped();
+    ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X.colwise(), Q).reshaped();
     // clang-format on
     return ret;
   };
@@ -426,9 +426,9 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
       // clang-format off
       const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
-      const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] = colloc_int<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm, Um);
-      const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU]   = colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm, Um);
-      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm, Qm);
+      const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] = colloc_int<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm.colwise(), Um.colwise());
+      const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU]   = colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm.colwise(), Um.colwise());
+      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm.colwise(), Qm);
       // clang-format on
 
       return sparse_block_matrix({
