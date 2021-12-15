@@ -609,15 +609,15 @@ $(function() {
 <div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;  <span class="keyword">const</span> <span class="keyword">auto</span> t_fill = std::chrono::high_resolution_clock::now();</div>
 <div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160; </div>
 <div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;  <span class="keywordflow">if</span> (prm.verbose) {</div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;    <span class="keyword">using</span> std::cout, std::left, std::endl, std::setw, std::right;</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;    <span class="keyword">using</span> std::cout, std::left, std::setw, std::right;</div>
 <div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;    <span class="comment">// clang-format off</span></div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;========================= QP Solver =========================&quot;</span> &lt;&lt; endl;</div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Solving &quot;</span> &lt;&lt; (sparse ? <span class="stringliteral">&quot;sparse&quot;</span> : <span class="stringliteral">&quot;dense&quot;</span>) &lt;&lt; <span class="stringliteral">&quot; QP with n=&quot;</span> &lt;&lt; n &lt;&lt; <span class="stringliteral">&quot;, m=&quot;</span> &lt;&lt; m &lt;&lt; endl;</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;========================= QP Solver =========================&quot;</span> &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Solving &quot;</span> &lt;&lt; (sparse ? <span class="stringliteral">&quot;sparse&quot;</span> : <span class="stringliteral">&quot;dense&quot;</span>) &lt;&lt; <span class="stringliteral">&quot; QP with n=&quot;</span> &lt;&lt; n &lt;&lt; <span class="stringliteral">&quot;, m=&quot;</span> &lt;&lt; m &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;    cout &lt;&lt; setw(8)  &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;ITER&quot;</span></div>
 <div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;OBJ&quot;</span></div>
 <div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;PRI_RES&quot;</span></div>
 <div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;         &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;DUA_RES&quot;</span></div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;         &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;TIME&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;         &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; <span class="stringliteral">&quot;TIME&quot;</span> &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;    <span class="comment">// clang-format on</span></div>
 <div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;  }</div>
 <div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160; </div>
@@ -680,7 +680,7 @@ $(function() {
 <div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;      ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);</div>
 <div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160; </div>
 <div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;      <span class="keywordflow">if</span> (prm.verbose) {</div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        <span class="keyword">using</span> std::cout, std::endl, std::setw, std::right, std::chrono::microseconds;</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        <span class="keyword">using</span> std::cout, std::setw, std::right, std::chrono::microseconds;</div>
 <div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;        <span class="comment">// clang-format off</span></div>
 <div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;        cout &lt;&lt; setw(7) &lt;&lt; right &lt;&lt; iter &lt;&lt; <span class="stringliteral">&quot;:&quot;</span></div>
 <div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;          &lt;&lt; std::scientific</div>
@@ -688,7 +688,7 @@ $(function() {
 <div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.A * x_us - z_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
 <div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
 <div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;          &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(std::chrono::high_resolution_clock::now() - t0).count()</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;          &lt;&lt; std::endl;</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;          &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;        <span class="comment">// clang-format on</span></div>
 <div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;      }</div>
 <div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160; </div>
@@ -717,7 +717,7 @@ $(function() {
 <div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;  <span class="keywordflow">if</span> (sol.code == QPSolutionStatus::Optimal &amp;&amp; prm.polish) {</div>
 <div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;    <span class="keywordflow">if</span> (detail::polish_qp(spbm, sol, prm)) {</div>
 <div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;      <span class="keywordflow">if</span> (prm.verbose) {</div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;        <span class="keyword">using</span> std::cout, std::endl, std::setw, std::right, std::chrono::microseconds;</div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;        <span class="keyword">using</span> std::cout, std::setw, std::right, std::chrono::microseconds;</div>
 <div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;        x_us = S.template head&lt;N&gt;(n).cwiseProduct(sol.primal);          <span class="comment">// NOTE: x std::moved to sol</span></div>
 <div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;        y_us = S.template segment&lt;M&gt;(n, m).cwiseProduct(sol.dual) / c;  <span class="comment">// NOTE: y std::moved to sol</span></div>
 <div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;        z_us = S.template segment&lt;M&gt;(n, m).cwiseInverse().cwiseProduct(z);</div>
@@ -728,12 +728,12 @@ $(function() {
 <div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.A * x_us - z_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
 <div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;          &lt;&lt; setw(14) &lt;&lt; right &lt;&lt; (pbm.P * x_us + pbm.q + pbm.A.transpose() * y_us).<span class="keyword">template</span> lpNorm&lt;Eigen::Infinity&gt;()</div>
 <div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;          &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(std::chrono::high_resolution_clock::now() - t0).count()</div>
-<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;          &lt;&lt; std::endl;</div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;          &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;        <span class="comment">// clang-format on</span></div>
 <div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;      }</div>
 <div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160; </div>
 <div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;      <span class="keywordflow">if</span> (prm.verbose) { std::cout &lt;&lt; <span class="stringliteral">&quot;Polish failed&quot;</span> &lt;&lt; std::endl; }</div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;      <span class="keywordflow">if</span> (prm.verbose) { std::cout &lt;&lt; <span class="stringliteral">&quot;Polish failed&quot;</span> &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>; }</div>
 <div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;      sol.code = QPSolutionStatus::PolishFailed;</div>
 <div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;    }</div>
 <div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;  }</div>
@@ -747,19 +747,19 @@ $(function() {
 <div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;  sol.objective = sol.primal.dot(0.5 * pbm.P * sol.primal + pbm.q);</div>
 <div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160; </div>
 <div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;  <span class="keywordflow">if</span> (prm.verbose) {</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;    <span class="keyword">using</span> std::cout, std::left, std::right, std::setw, std::endl, std::chrono::microseconds;</div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;    <span class="keyword">using</span> std::cout, std::left, std::right, std::setw, std::chrono::microseconds;</div>
 <div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160; </div>
 <div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;    <span class="comment">// clang-format off</span></div>
-<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;QP solver summary:&quot;</span> &lt;&lt; endl;</div>
-<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Result &quot;</span> &lt;&lt; <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(sol.code) &lt;&lt; endl;</div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;QP solver summary:&quot;</span> &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;Result &quot;</span> &lt;&lt; <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(sol.code) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160; </div>
-<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Iterations&quot;</span>        &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; iter - 1                                               &lt;&lt; endl;</div>
-<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;    cout &lt;&lt; setw(26) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Total time (µs)&quot;</span>   &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t0).count()     &lt;&lt; endl;</div>
-<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Matrix filling&quot;</span>  &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_fill - t0).count()       &lt;&lt; endl;</div>
-<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Factorization&quot;</span>   &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_factor - t_fill).count() &lt;&lt; endl;</div>
-<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Iteration&quot;</span>       &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_iter - t_factor).count() &lt;&lt; endl;</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Polish&quot;</span>          &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t_iter).count() &lt;&lt; endl;</div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;=============================================================&quot;</span> &lt;&lt; endl;</div>
+<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Iterations&quot;</span>        &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; iter - 1                                               &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;    cout &lt;&lt; setw(26) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;Total time (µs)&quot;</span>   &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t0).count()     &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Matrix filling&quot;</span>  &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_fill - t0).count()       &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Factorization&quot;</span>   &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_factor - t_fill).count() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Iteration&quot;</span>       &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_iter - t_factor).count() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;    cout &lt;&lt; setw(25) &lt;&lt; left &lt;&lt; <span class="stringliteral">&quot;  Polish&quot;</span>          &lt;&lt; setw(10) &lt;&lt; right &lt;&lt; duration_cast&lt;microseconds&gt;(t_polish - t_iter).count() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;    cout &lt;&lt; <span class="stringliteral">&quot;=============================================================&quot;</span> &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;    <span class="comment">// clang-format on</span></div>
 <div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;  }</div>
 <div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160; </div>
