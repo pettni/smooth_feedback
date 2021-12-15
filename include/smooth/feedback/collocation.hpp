@@ -521,7 +521,7 @@ auto colloc_eval_endpt(
   const X xf = *std::ranges::next(std::ranges::begin(xs), numX - 1);
 
   if constexpr (!Deriv) {
-    return f(tf, x0, xf, Q);
+    return f.template operator()<double>(tf, x0, xf, Q);
   } else {
     const auto [Fval, J] = diff::dr(f, wrt(tf, x0, xf, Q));
 

@@ -30,12 +30,13 @@
 #include <smooth/compat/autodiff.hpp>
 
 #include "smooth/feedback/ocp_to_qp.hpp"
+#include "smooth/feedback/ocp.hpp"
 
 template<typename T>
-using X = Eigen::Vector2<T>;
+using X = Eigen::VectorX<T>;
 
 template<typename T>
-using U = T;
+using U = Eigen::VectorX<T>;
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;
@@ -46,19 +47,19 @@ TEST(OcpToQp, Basic)
     return xf.squaredNorm() + 2 * q.sum();
   };
 
-  const auto f = []<typename T>(T, X<T> x, U<T> u) -> smooth::Tangent<X<T>> {
-    return smooth::Tangent<X<T>>{{x.y(), u}};
+  const auto f = []<typename T>(T, X<T> x, U<T> u) -> Vec<T> {
+    return smooth::Tangent<X<T>>{{x.y(), u.x()}};
   };
 
   const auto g = []<typename T>(T, X<T>, U<T> u) -> Vec<T> {
     Vec<T> ret(1);
-    ret << u * u;
+    ret << u.x() * u.x();
     return ret;
   };
 
   const auto cr = []<typename T>(T, X<T>, U<T> u) -> Vec<T> {
     Vec<T> ret(1);
-    ret << u;
+    ret << u.x();
     return ret;
   };
 
@@ -76,6 +77,7 @@ TEST(OcpToQp, Basic)
         .nq  = 1,
         .ncr = 1,
         .nce = 2,
+        .theta = theta,
         .f   = f,
         .g   = g,
         .cr  = cr,
@@ -88,18 +90,22 @@ TEST(OcpToQp, Basic)
 
   smooth::feedback::Mesh<5> mesh;
 
-  const auto xl_fun = []<typename T>(T t) -> X<T> { return X<T>{t, -t}; };
+  const auto xl_fun = []<typename T>(T t) -> X<T> { return X<T>{{t, -t}}; };
 
-  const auto ul_fun = []<typename T>(T) -> U<T> { return T(0); };
+  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>{{0}}; };
 
   const auto qp = smooth::feedback::ocp_to_qp(ocp, mesh, 1., xl_fun, ul_fun);
 
-  ASSERT_EQ(qp.P.cols() , qp.q.size());
-  ASSERT_EQ(qp.P.rows() , qp.q.size());
-  ASSERT_EQ(qp.P.cols() , qp.A.cols());
+  const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
 
-  ASSERT_EQ(qp.A.rows() , qp.l.size());
-  ASSERT_EQ(qp.A.rows() , qp.u.size());
+  ASSERT_EQ(qp.P.cols(), qp.q.size());
+  ASSERT_EQ(qp.P.rows(), qp.q.size());
+  ASSERT_EQ(qp.P.cols(), qp.A.cols());
+
+  ASSERT_EQ(qp.A.rows(), qp.l.size());
+  ASSERT_EQ(qp.A.rows(), qp.u.size());
+
+  std::cout << "NLP dg_dx\n" << Eigen::MatrixXd(nlp.dg_dx(Eigen::VectorXd::Zero(nlp.n))) << '\n';
 
   std::cout << "P\n" << Eigen::MatrixXd(qp.P) << '\n';
   std::cout << "q\n" << qp.q.transpose() << '\n';
@@ -107,4 +113,30 @@ TEST(OcpToQp, Basic)
   std::cout << "A\n" << Eigen::MatrixXd(qp.A) << '\n';
   std::cout << "l\n" << qp.l.transpose() << '\n';
   std::cout << "u\n" << qp.u.transpose() << '\n';
+
+  // check that simple trajectory satisfies constraints
+
+  static constexpr double x0 = 3;
+  static constexpr double v0 = -0.3;
+  static constexpr double u0 = 0.1;
+
+  const auto xtraj = [](double t) { return X<double>{{x0 + v0 * t + u0 * t * t / 2, v0 + u0 * t}}; };
+
+  Eigen::MatrixXd Xvar(ocp.nx, mesh.N_colloc() + 1);
+  Eigen::MatrixXd Uvar(ocp.nu, mesh.N_colloc());
+
+  const auto [nodes, weights] = mesh.all_nodes_and_weights();
+
+  for (const auto [i, t] : smooth::utils::zip(std::views::iota(0u), nodes)) {
+    Xvar.col(i) = xtraj(t);
+    if (i < mesh.N_colloc()) { Uvar.col(i).setConstant(u0); }
+  }
+
+  Eigen::VectorXd var(Xvar.size() + Uvar.size());
+
+  var.head(Xvar.size()) = Xvar.reshaped();
+  var.tail(Uvar.size()) = Uvar.reshaped();
+
+  std::cout << "lower " << (qp.A * var - qp.l).transpose() << std::endl;
+  std::cout << "upper " << (qp.A * var - qp.u).transpose() << std::endl;
 }

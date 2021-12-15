@@ -28,7 +28,6 @@
 
 #include <Eigen/Core>
 
-#include <smooth/compat/autodiff.hpp>
 #include <smooth/diff.hpp>
 #include <smooth/lie_group.hpp>
 
@@ -101,6 +100,8 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   //// COLLOCATION CONSTRAINTS ////
   /////////////////////////////////
 
+  std::cout << "Collocation constraints\n\n";
+
   Eigen::SparseMatrix<double> Adyn_X(dcon_L, xvar_L);
   Eigen::SparseMatrix<double> Adyn_U(dcon_L, uvar_L);
   Eigen::VectorXd bdyn(dcon_L);
@@ -160,17 +161,21 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   //// RUNNING COST ////
   //////////////////////
 
+  std::cout << "Running cost\n";
+
   const auto [gval, dg_dt0, dg_dtf, dg_dI, dg_dx, dg_du] =
     colloc_int<true>(1, ocp.g, mesh, 0., tf, q_dummy, xslin, uslin);
 
-  // TODO need second derivative (id for now)
-  Eigen::SparseMatrix<double> d2g_dx2 = sparse_identity(ocp.nx * (N + 1));
-  Eigen::SparseMatrix<double> d2g_dxdu(ocp.nx * (N + 1), ocp.nu * N);
-  Eigen::SparseMatrix<double> d2g_du2 = sparse_identity(ocp.nu * N);
+  // TODO need second derivative (set to id for now)
+  Eigen::SparseMatrix<double> d2g_dx2 = sparse_identity(xvar_L);
+  Eigen::SparseMatrix<double> d2g_dxdu(xvar_L, uvar_L);
+  Eigen::SparseMatrix<double> d2g_du2 = sparse_identity(uvar_L);
 
   /////////////////////////////
   //// RUNNING CONSTRAINTS ////
   /////////////////////////////
+
+  std::cout << "Running constr\n";
 
   const auto [crlin, dcrlin_dt0, dcrlin_dtf, dcrlin_dx, dcrlin_du] =
     colloc_eval<true>(ocp.ncr, ocp.cr, mesh, 0., tf, xslin, uslin);
@@ -179,12 +184,16 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   //// END CONSTRAINTS ////
   /////////////////////////
 
+  std::cout << "End constr\n";
+
   const auto [celin, dcelin_dt0, dcelin_dtf, dcelin_dx, dcelin_dq] =
     colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, 0., tf, xslin, q_dummy);
 
   /////////////////////
   //// ASSEMBLE QP ////
   /////////////////////
+
+  std::cout << "Assemble\n";
 
   Eigen::SparseMatrix<double> P = sparse_block_matrix({
     {d2g_dx2, d2g_dxdu},

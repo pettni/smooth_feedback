@@ -114,8 +114,8 @@ using FlatOCP = OCP<Eigen::VectorXd, Eigen::VectorXd, Theta, F, G, CR, CE>;
 
 /// @brief Concept that is true for FlatOCP specializations
 template<typename T>
-concept FlatOCPType = OCPType<T> &&(
-  std::is_same_v<typename T::X, Eigen::VectorXd> && std::is_same_v<typename T::U, Eigen::VectorXd>);
+concept FlatOCPType =
+  OCPType<T> &&(smooth::traits::RnType<typename T::X> && smooth::traits::RnType<typename T::U>);
 
 /**
  * @brief Check if an OCP is properly defined.
