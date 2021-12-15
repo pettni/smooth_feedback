@@ -165,7 +165,9 @@ public:
   }
 
   /**
-   * @brief Interval nodes and quadrature weights (DOES include extra point)
+   * @brief Interval nodes and quadrature weights.
+   *
+   * @note Includes extra point at 1, i.e. size of returned arrays is equal to N_colloc_ival(i)+1
    */
   inline std::pair<Eigen::VectorXd, Eigen::VectorXd> interval_nodes_and_weights(std::size_t i) const
   {
@@ -192,7 +194,9 @@ public:
   }
 
   /**
-   * @brief All Mesh nodes and quadrature weights (DOES include extra point)
+   * @brief All Mesh nodes and quadrature weights.
+   *
+   * @note Includes extra point at 1, i.e. size of returned arrays is equal to N_colloc()+1
    */
   inline std::pair<Eigen::VectorXd, Eigen::VectorXd> all_nodes_and_weights() const
   {
@@ -505,13 +509,16 @@ auto colloc_eval_endpt(
   std::ranges::sized_range auto && xs,
   const Eigen::VectorXd & Q)
 {
+  using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
+
   const auto numX = std::ranges::size(xs);
+  assert(numX >= 2);
 
   // NOTE: for now t0 = 0 and we don't want t0 in signatures
   assert(t0 == 0);
 
-  const PlainObject<std::ranges::range_value_t<decltype(xs)>> x0 = *std::ranges::begin(xs);
-  const PlainObject<std::ranges::range_value_t<decltype(xs)>> xf = *std::prev(std::ranges::end(xs));
+  const X x0 = *std::ranges::begin(xs);
+  const X xf = *std::ranges::next(std::ranges::begin(xs), numX - 1);
 
   if constexpr (!Deriv) {
     return f(tf, x0, xf, Q);
@@ -577,6 +584,8 @@ auto colloc_eval_endpt(
  *
  * @return {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU},
  * where vec(xs) stacks the columns of xs into a single column vector.
+ *
+ * @note This only works on flat spaces, which is why xs and us are matrices rather than ranges.
  */
 template<bool Deriv>
 auto colloc_dyn(

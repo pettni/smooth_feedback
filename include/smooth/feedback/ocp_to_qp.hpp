@@ -72,102 +72,54 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   std::cout << "qo_x0xf: " << std::endl << Qo_x0xf << std::endl;
   std::cout << "qo_q: " << std::endl << Qo_ql << std::endl;
 
-  // end constraint linearization
+  const auto N = mesh.N_colloc();
 
-  const auto [ce, dce] = diff::dr<1>(ocp.ce, wrt(tf, xl0, xlf, ql));
+  /////////////////////////
+  //// VARIABLE LAYOUT ////
+  /////////////////////////
 
-  [[maybe_unused]] const Mat Ace_tf = dce.middleCols(0, 1);
-  const Mat Ace_x0                  = dce.middleCols(1, ocp.nx);
-  const Mat Ace_xf                  = dce.middleCols(1 + ocp.nx, ocp.nx);
-  [[maybe_unused]] const Mat Ace_q  = dce.middleCols(1 + 2 * ocp.nx, ocp.nq);
+  // [x0 x1 ... xN u0 u1 ... uN-1]
 
-  std::cout << "Ace_x0" << std::endl << Ace_x0 << std::endl;
-  std::cout << "Ace_xf" << std::endl << Ace_xf << std::endl;
+  const auto xvar_L = ocp.nx * (N + 1);
+  const auto uvar_L = ocp.nu * N;
 
-  // TODO add end constraints to QP
+  const auto xvar_B = 0u;
+  const auto uvar_B = xvar_L;
 
-  // variable layout: [x0 x1 ... xN u0 u1 ... uN-1]
+  const auto dcon_L  = ocp.nx * N;
+  const auto crcon_L = ocp.ncr * N;
+  const auto cecon_L = ocp.nce;
 
-  const auto N_ivals = mesh.N_ivals();
-  const auto N       = mesh.N_colloc();
+  const auto dcon_B  = 0u;
+  const auto crcon_B = dcon_L;
+  const auto cecon_B = crcon_B + crcon_L;
 
-  const auto Nx = ocp.nx * (N + 1);
-  const auto Nu = ocp.nu * N;
+  const auto Nvar = xvar_L + uvar_L;
+  const auto Ncon = dcon_L + crcon_L + cecon_L;
 
-  const auto Nvar = Nx + Nu;
+  /////////////////////////////////
+  //// COLLOCATION CONSTRAINTS ////
+  /////////////////////////////////
 
-  const auto Ncon = ocp.nce      // end constraints (inequality)
-                  + N * ocp.ncr  // running constraints (inequality)
-                  + N * ocp.nx;  // collocation (equality)
+  Eigen::SparseMatrix<double> Adyn_X(dcon_L, xvar_L);
+  Eigen::SparseMatrix<double> Adyn_U(dcon_L, uvar_L);
+  Eigen::VectorXd bdyn(dcon_L);
 
-  QuadraticProgramSparse<double> ret;
-  ret.P.resize(Nvar, Nvar);
-  ret.q.resize(Nvar);
+  for (auto ival = 0u, M = 0u; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
+    const auto Nival        = mesh.N_colloc_ival(ival);               // number of nodes in interval
+    const auto [tau_s, w_s] = mesh.interval_nodes_and_weights(ival);  // node values (plus 1)
 
-  ret.A.resize(Ncon, Nvar);
-  ret.l.resize(Ncon);
-  ret.u.resize(Ncon);
-
-  // TODO: allocate nonzero pattern in P an A
-
-  // Calculate linaerization values at all collocation points
-
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
-
-  auto Xlin = nodes | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
-  auto Ulin = nodes | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
-
-  for (auto ival = 0u; ival < N_ivals; ++ival) {
-
-    // let variables in interval be
-    //     X = [xi0 xi1 ... xiN]
-    //     U = [ui0 ui1 ... uiN-1]
-
-    const auto Ni           = mesh.N_colloc_ival(ival);
-    const auto [tau_s, w_s] = mesh.interval_nodes_and_weights(ival);
-
-    /////////////////////////////////
-    //// COLLOCATION CONSTRAINTS ////
-    /////////////////////////////////
+    const Mat D = mesh.interval_diffmat(ival);
 
     // in each interval the collocation constraint is
     //
-    // [A0 ... Ak-1 0 B0 ... Bk-1] [X; U] + [E0 ... Ek-1] = X D
-    //           Ca                             Cb
+    // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = X D
 
-    // form coefficient matrices with linearized system dynamics
-    Mat Ca(ocp.nx, (Ni + 1) * ocp.nx + Ni * ocp.nu);
-    Mat Cb(ocp.nx, Ni);
-
-    for (auto i = 0u; i < Ni; ++i) {
+    for (auto i = 0u; i < Nival; ++i) {
       const auto tau_i         = tau_s[i];                       // scaled time
       const auto t_i           = tf * tau_i;                     // unscaled time
       const auto [xl_i, dxl_i] = diff::dr<1>(xl_fun, wrt(t_i));  // linearization trajectory
       const auto ul_i          = ul_fun(t_i);                    // linearization input
-
-      // LINEARIZE RUNNING COST
-      const auto [g, dg, d2g] =
-        diff::dr<2>([&ocp](auto &&... x) { return ocp.g(x...).x(); }, wrt(t_i, xl_i, ul_i));
-
-      [[maybe_unused]] const Vec g_ti = dg.segment(0, 1);
-      const Vec g_xiui                = dg.segment(1, ocp.nx + ocp.nu);
-      const Mat G_xiui                = d2g.block(1, 1, ocp.nx + ocp.nu, ocp.nx + ocp.nu);
-
-      std::cout << "g_xiui " << g_xiui.transpose() << std::endl;
-      std::cout << "G_xiui " << std::endl << G_xiui << std::endl;
-
-      // TODO: add integral over interval of quadratic function to QP (need Lagrange basis etc...)
-
-      // cost += w_i * [xi; ui] * G_xiui * [xi; ui] / 2 + g_xiui * [xi; ui]
-
-      // LINEARIZE RUNNING CONSTRAINTS
-      const auto [cr, dcr]              = diff::dr<1>(ocp.cr, wrt(t_i, xl_i, ul_i));
-      [[maybe_unused]] const Mat Acr_ti = dcr.middleCols(0, 1);
-      const Mat Acr_xiui                = dcr.middleCols(1, ocp.nx + ocp.nu);
-
-      std::cout << "Acr_xiui " << std::endl << Acr_xiui << std::endl;
-
-      // TODO: add constraint ocp.crl <= Acr_xiui [xi; ui] <= ocp.cru to QP
 
       // LINEARIZE DYNAMICS
       const auto [f_i, df_i] = diff::dr<1>(ocp.f, wrt(t_i, xl_i, ul_i));
@@ -176,37 +128,96 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
       const Mat B = df_i.middleCols(1 + ocp.nx, ocp.nu);
       const Vec E = f_i - dxl_i;
 
-      assert(A.rows() == ocp.nx);
-      assert(A.cols() == ocp.nx);
-      assert(B.rows() == ocp.nx);
-      assert(B.cols() == ocp.nu);
-      assert(E.rows() == ocp.nx);
-      assert(E.cols() == 1);
+      // insert new constraint A xi + B ui + E = [x0 ... XNi] di
 
-      // derivatives are w.r.t. scaled time tau \in [0, 1]
-      Ca.block(0, i * ocp.nx, ocp.nx, ocp.nx)                     = tf * A;
-      Ca.block(0, (Ni + 1) * ocp.nx + i * ocp.nu, ocp.nx, ocp.nu) = tf * B;
-      Cb.col(i)                                                   = tf * E;
+      for (auto j = 0u; j < Nival + 1; ++j) {
+        for (auto diag = 0u; diag < ocp.nx; ++diag) {
+          Adyn_X.coeffRef((M + i) * ocp.nx + diag, (M + j) * ocp.nx + diag) -= D(j, i);
+        }
+      }
+
+      for (auto row = 0u; row < ocp.nx; ++row) {
+        for (auto col = 0u; col < ocp.nx; ++col) {
+          Adyn_X.coeffRef((M + i) * ocp.nx + row, (M + i) * ocp.nx + col) = A(row, col);
+        }
+        for (auto col = 0u; col < ocp.nu; ++col) {
+          Adyn_U.coeffRef((M + i) * ocp.nx + row, (M + i) * ocp.nu + col) = B(row, col);
+        }
+      }
+      bdyn.segment((M + i) * ocp.nx, ocp.nx) = -E;
     }
-
-    const Mat D = mesh.interval_diffmat(ival);
-
-    // interval collocation constraint: kron(I, Ca) [X; U] - kron(D', I) X = -vec(Cb)
-
-    // TODO: add collocation constraint to QP
-
-    std::cout << "Ca" << std::endl << Ca << std::endl;
-    std::cout << "Cb" << std::endl << Cb << std::endl;
-    std::cout << "D" << std::endl << D << std::endl;
   }
 
-  // calculate linearized system \dot x = A(t) x + B(t) u + K(t)
+  const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
-  // linearize integral
+  auto xslin = nodes | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
+  auto uslin =
+    nodes | std::views::take(N) | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
 
-  // variables are [x0, x1, x2, ..., xN, u0, u1, ..., uN-1]
+  const Eigen::VectorXd q_dummy{{1.}};
 
-  return QuadraticProgramSparse<double>{};
+  //////////////////////
+  //// RUNNING COST ////
+  //////////////////////
+
+  const auto [gval, dg_dt0, dg_dtf, dg_dI, dg_dx, dg_du] =
+    colloc_int<true>(1, ocp.g, mesh, 0., tf, q_dummy, xslin, uslin);
+
+  // TODO need second derivative (id for now)
+  Eigen::SparseMatrix<double> d2g_dx2 = sparse_identity(ocp.nx * (N + 1));
+  Eigen::SparseMatrix<double> d2g_dxdu(ocp.nx * (N + 1), ocp.nu * N);
+  Eigen::SparseMatrix<double> d2g_du2 = sparse_identity(ocp.nu * N);
+
+  /////////////////////////////
+  //// RUNNING CONSTRAINTS ////
+  /////////////////////////////
+
+  const auto [crlin, dcrlin_dt0, dcrlin_dtf, dcrlin_dx, dcrlin_du] =
+    colloc_eval<true>(ocp.ncr, ocp.cr, mesh, 0., tf, xslin, uslin);
+
+  /////////////////////////
+  //// END CONSTRAINTS ////
+  /////////////////////////
+
+  const auto [celin, dcelin_dt0, dcelin_dtf, dcelin_dx, dcelin_dq] =
+    colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, 0., tf, xslin, q_dummy);
+
+  /////////////////////
+  //// ASSEMBLE QP ////
+  /////////////////////
+
+  Eigen::SparseMatrix<double> P = sparse_block_matrix({
+    {d2g_dx2, d2g_dxdu},
+    {d2g_dxdu.transpose(), d2g_du2},
+  });
+
+  Eigen::VectorXd q(Nvar);
+  q.segment(xvar_B, xvar_L) = Eigen::RowVectorXd(dg_dx).transpose();
+  q.segment(uvar_B, uvar_L) = Eigen::RowVectorXd(dg_du).transpose();
+
+  Eigen::SparseMatrix<double> A = sparse_block_matrix({
+    {Adyn_X, Adyn_U},
+    {dcrlin_dx, dcrlin_du},
+    {dcelin_dx, {}},
+  });
+
+  Eigen::VectorXd l(Ncon), u(Ncon);
+
+  l.segment(dcon_B, dcon_L)   = bdyn;
+  l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - crlin.reshaped();
+  l.segment(cecon_B, cecon_L) = ocp.cel - celin;
+
+  u.segment(dcon_B, dcon_L)   = bdyn;
+  u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - crlin.reshaped();
+  u.segment(cecon_B, cecon_L) = ocp.ceu - celin;
+
+  return QuadraticProgramSparse<double>{
+    .P = std::move(P),
+    .q = std::move(q),
+    .A = std::move(A),
+    .l = std::move(l),
+    .u = std::move(u),
+  };
 }
 
 }  // namespace smooth::feedback

@@ -27,6 +27,8 @@
 
 #include <Eigen/Core>
 
+#include <smooth/compat/autodiff.hpp>
+
 #include "smooth/feedback/ocp_to_qp.hpp"
 
 template<typename T>
@@ -77,8 +79,8 @@ TEST(OcpToQp, Basic)
         .f   = f,
         .g   = g,
         .cr  = cr,
-        .crl = Eigen::VectorXd(0),
-        .cru = Eigen::VectorXd(0),
+        .crl = Eigen::VectorXd{{-1}},
+        .cru = Eigen::VectorXd{{1}},
         .ce  = ce,
         .cel = Eigen::Vector2d{1, 1},
         .ceu = Eigen::Vector2d{1, 1},
@@ -91,4 +93,18 @@ TEST(OcpToQp, Basic)
   const auto ul_fun = []<typename T>(T) -> U<T> { return T(0); };
 
   const auto qp = smooth::feedback::ocp_to_qp(ocp, mesh, 1., xl_fun, ul_fun);
+
+  ASSERT_EQ(qp.P.cols() , qp.q.size());
+  ASSERT_EQ(qp.P.rows() , qp.q.size());
+  ASSERT_EQ(qp.P.cols() , qp.A.cols());
+
+  ASSERT_EQ(qp.A.rows() , qp.l.size());
+  ASSERT_EQ(qp.A.rows() , qp.u.size());
+
+  std::cout << "P\n" << Eigen::MatrixXd(qp.P) << '\n';
+  std::cout << "q\n" << qp.q.transpose() << '\n';
+
+  std::cout << "A\n" << Eigen::MatrixXd(qp.A) << '\n';
+  std::cout << "l\n" << qp.l.transpose() << '\n';
+  std::cout << "u\n" << qp.u.transpose() << '\n';
 }
