@@ -35,8 +35,8 @@
 #include <ranges>
 #include <vector>
 
-#include "mesh.hpp"
 #include "eval.hpp"
+#include "mesh.hpp"
 
 namespace smooth::feedback {
 
@@ -80,11 +80,9 @@ auto colloc_dyn(
   Eigen::MatrixXd XD(nx, m.N_colloc());
   Eigen::SparseMatrix<double> dvecXD_dvecX;
 
-  if constexpr (!Deriv) {
-    colloc_eval<0>(feval_res, f, m, t0, tf, xs.colwise(), us.colwise());
-  } else {
-    colloc_eval<1>(feval_res, f, m, t0, tf, xs.colwise(), us.colwise());
+  colloc_eval<Deriv>(feval_res, f, m, t0, tf, xs.colwise(), us.colwise());
 
+  if constexpr (Deriv == 1) {
     dvecXD_dvecX.resize(XD.size(), xs.size());
 
     // reserve sparsity pattern
@@ -134,19 +132,19 @@ auto colloc_dyn(
   } else {
     dvecXD_dvecX.makeCompressed();
 
-    Eigen::SparseMatrix<double> dF_dt0 = -(tf - t0) * feval_res.dvecF_dt0;
+    Eigen::SparseMatrix<double> dF_dt0 = -(tf - t0) * feval_res.dF_dt0;
     dF_dt0 += feval_res.F.reshaped().sparseView();  // OK since dvecF_dtf is dense
     dF_dt0 = W_kron_I * dF_dt0;
 
-    Eigen::SparseMatrix<double> dF_dtf = -(tf - t0) * feval_res.dvecF_dtf;
+    Eigen::SparseMatrix<double> dF_dtf = -(tf - t0) * feval_res.dF_dtf;
     dF_dtf -= feval_res.F.reshaped().sparseView();  // OK since dvecF_dtf is dense
     dF_dtf = W_kron_I * dF_dtf;
 
     Eigen::SparseMatrix<double> dF_dvecX = dvecXD_dvecX;
-    dF_dvecX -= (tf - t0) * feval_res.dvecF_dvecX;
+    dF_dvecX -= (tf - t0) * feval_res.dF_dX;
     dF_dvecX = W_kron_I * dF_dvecX;
 
-    Eigen::SparseMatrix<double> dF_dvecU = -(tf - t0) * W_kron_I * feval_res.dvecF_dvecU;
+    Eigen::SparseMatrix<double> dF_dvecU = -(tf - t0) * W_kron_I * feval_res.dF_dU;
 
     dF_dt0.makeCompressed();
     dF_dtf.makeCompressed();

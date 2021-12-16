@@ -51,39 +51,39 @@ struct CollocEvalResult
     F.resize(nf, N);
 
     // dense column vector
-    dvecF_dt0.resize(nf * N, 1);
-    dvecF_dt0.reserve(Eigen::VectorXi::Constant(1, nf * N));
+    dF_dt0.resize(nf * N, 1);
+    dF_dt0.reserve(Eigen::VectorXi::Constant(1, nf * N));
 
     // dense column vector
-    dvecF_dtf.resize(nf * N, 1);
-    dvecF_dt0.reserve(Eigen::VectorXi::Constant(1, nf * N));
+    dF_dtf.resize(nf * N, 1);
+    dF_dt0.reserve(Eigen::VectorXi::Constant(1, nf * N));
 
     // block diagonal matrix (blocks have size nf x nx)
-    dvecF_dvecX.resize(nf * N, nx * (N + 1));
+    dF_dX.resize(nf * N, nx * (N + 1));
     Eigen::VectorXi FX_pattern = Eigen::VectorXi::Constant(nx * (N + 1), nf);
     FX_pattern.tail(nx).setZero();
-    dvecF_dvecX.reserve(FX_pattern);
+    dF_dX.reserve(FX_pattern);
 
     // block diagonal matrix (blocks have size nf x nu)
-    dvecF_dvecU.resize(nf * N, nu * N);
-    dvecF_dvecU.reserve(Eigen::VectorXi::Constant(nu * N, nf));
+    dF_dU.resize(nf * N, nu * N);
+    dF_dU.reserve(Eigen::VectorXi::Constant(nu * N, nf));
   }
 
   inline void setZero()
   {
     F.setZero();
-    if (dvecF_dt0.isCompressed()) { dvecF_dt0.coeffs().setZero(); }
-    if (dvecF_dtf.isCompressed()) { dvecF_dtf.coeffs().setZero(); }
-    if (dvecF_dvecX.isCompressed()) { dvecF_dvecX.coeffs().setZero(); }
-    if (dvecF_dvecU.isCompressed()) { dvecF_dvecU.coeffs().setZero(); }
+    if (dF_dt0.isCompressed()) { dF_dt0.coeffs().setZero(); }
+    if (dF_dtf.isCompressed()) { dF_dtf.coeffs().setZero(); }
+    if (dF_dX.isCompressed()) { dF_dX.coeffs().setZero(); }
+    if (dF_dU.isCompressed()) { dF_dU.coeffs().setZero(); }
   }
 
   inline void makeCompressed()
   {
-    dvecF_dt0.makeCompressed();
-    dvecF_dtf.makeCompressed();
-    dvecF_dvecX.makeCompressed();
-    dvecF_dvecU.makeCompressed();
+    dF_dt0.makeCompressed();
+    dF_dtf.makeCompressed();
+    dF_dX.makeCompressed();
+    dF_dU.makeCompressed();
   }
 
   std::size_t nf, nx, nu, N;
@@ -91,13 +91,13 @@ struct CollocEvalResult
   /// @brief Function values (size nf x N)
   Eigen::MatrixXd F;
   /// @brief Function derivatives w.r.t. t0 (size N*nf x 1)
-  Eigen::SparseMatrix<double> dvecF_dt0;
+  Eigen::SparseMatrix<double> dF_dt0;
   /// @brief Function derivatives w.r.t. tf (size N*nf x 1)
-  Eigen::SparseMatrix<double> dvecF_dtf;
+  Eigen::SparseMatrix<double> dF_dtf;
   /// @brief Function derivatives w.r.t. X (size N*nf x nx*(N+1))
-  Eigen::SparseMatrix<double> dvecF_dvecX;
+  Eigen::SparseMatrix<double> dF_dX;
   /// @brief Function derivatives w.r.t. X (size N*nf x nu*N)
-  Eigen::SparseMatrix<double> dvecF_dvecU;
+  Eigen::SparseMatrix<double> dF_dU;
 };
 
 /**
@@ -132,11 +132,8 @@ void colloc_eval(
   using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
   using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
 
-  const auto numX = std::ranges::size(xs);
-  const auto numU = std::ranges::size(us);
-
-  assert(m.N_colloc() + 1 == numX);  //  extra variable at the end
-  assert(m.N_colloc() == numU);      // one input per collocation point
+  assert(m.N_colloc() + 1 == std::ranges::size(xs));  //  extra variable at the end
+  assert(m.N_colloc() == std::ranges::size(us));      // one input per collocation point
 
   res.setZero();
 
@@ -154,13 +151,13 @@ void colloc_eval(
       const auto [fval, dfval] = diff::dr<1>(f, wrt(ti, x_plain, u_plain));
       res.F.col(ival)          = fval;
       for (auto row = 0u; row < res.nf; ++row) {
-        res.dvecF_dt0.coeffRef(res.nf * ival + row, 0) = dfval(row, 0) * (1. - tau);
-        res.dvecF_dtf.coeffRef(res.nf * ival + row, 0) = dfval(row, 0) * tau;
+        res.dF_dt0.coeffRef(res.nf * ival + row, 0) = dfval(row, 0) * (1. - tau);
+        res.dF_dtf.coeffRef(res.nf * ival + row, 0) = dfval(row, 0) * tau;
         for (auto col = 0u; col < res.nx; ++col) {
-          res.dvecF_dvecX.coeffRef(res.nf * ival + row, ival * res.nx + col) = dfval(row, 1 + col);
+          res.dF_dX.coeffRef(res.nf * ival + row, ival * res.nx + col) = dfval(row, 1 + col);
         }
         for (auto col = 0u; col < res.nu; ++col) {
-          res.dvecF_dvecU.coeffRef(res.nf * ival + row, ival * res.nu + col) =
+          res.dF_dU.coeffRef(res.nf * ival + row, ival * res.nu + col) =
             dfval(row, 1 + res.nx + col);
         }
       }
@@ -188,7 +185,7 @@ void colloc_eval(
  * @param q integrals
  *
  * @return If Deriv == false,
- * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dvecX, dF_dQ},
+ * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dX, dF_dQ},
  */
 template<bool Deriv>
 auto colloc_eval_endpt(
@@ -219,7 +216,7 @@ auto colloc_eval_endpt(
     assert(static_cast<std::size_t>(J.rows()) == nf);
     assert(static_cast<std::size_t>(J.cols()) == 1 + 2 * nx + Q.size());
 
-    Eigen::SparseMatrix<double> dF_dt0, dF_dtf, dF_dvecX, dF_dQ;
+    Eigen::SparseMatrix<double> dF_dt0, dF_dtf, dF_dX, dF_dQ;
 
     dF_dt0.resize(nf, 1);
     // dF_dt0.reserve(nf);
@@ -229,16 +226,16 @@ auto colloc_eval_endpt(
     dF_dtf.reserve(nf);
     for (auto i = 0u; i < nf; ++i) { dF_dtf.insert(i, 0) = J(i, 0); }
 
-    dF_dvecX.resize(nf, nx * numX);
+    dF_dX.resize(nf, nx * numX);
     Eigen::VectorXi pattern = Eigen::VectorXi::Zero(nx * numX);
     pattern.head(nx).setConstant(nf);
     pattern.tail(nx).setConstant(nf);
-    dF_dvecX.reserve(pattern);
+    dF_dX.reserve(pattern);
 
     for (auto row = 0u; row < nf; ++row) {
       for (auto col = 0u; col < nx; ++col) {
-        dF_dvecX.insert(row, col)                  = J(row, 1 + col);
-        dF_dvecX.insert(row, nx * numX - nx + col) = J(row, 1 + nx + col);
+        dF_dX.insert(row, col)                  = J(row, 1 + col);
+        dF_dX.insert(row, nx * numX - nx + col) = J(row, 1 + nx + col);
       }
     }
 
@@ -253,10 +250,10 @@ auto colloc_eval_endpt(
 
     dF_dt0.makeCompressed();
     dF_dtf.makeCompressed();
-    dF_dvecX.makeCompressed();
+    dF_dX.makeCompressed();
     dF_dQ.makeCompressed();
 
-    return std::make_tuple(Fval, dF_dt0, dF_dtf, dF_dvecX, dF_dQ);
+    return std::make_tuple(Fval, dF_dt0, dF_dtf, dF_dX, dF_dQ);
   }
 }
 

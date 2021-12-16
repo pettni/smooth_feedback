@@ -54,10 +54,40 @@ struct CollocEvalReduceResult
     dF_dt0.reserve(Eigen::VectorXi::Constant(1, nf));
     dF_dtf.resize(nf, 1);
     dF_dtf.reserve(Eigen::VectorXi::Constant(1, nf));
-    dF_dvecX.resize(nf, nx * (N + 1));
-    dF_dvecX.reserve(Eigen::VectorXi::Constant(nx * (N + 1), nf));
-    dF_dvecU.resize(nf, nu * N);
-    dF_dvecU.reserve(Eigen::VectorXi::Constant(nu * N, nf));
+    dF_dX.resize(nf, nx * (N + 1));
+    dF_dX.reserve(Eigen::VectorXi::Constant(nx * (N + 1), nf));
+    dF_dU.resize(nf, nu * N);
+    dF_dU.reserve(Eigen::VectorXi::Constant(nu * N, nf));
+
+    d2F_dt0t0.resize(1, 1);
+    d2F_dt0t0.reserve(Eigen::VectorXi::Constant(1, 1));
+
+    d2F_dt0tf.resize(1, 1);
+    d2F_dt0tf.reserve(Eigen::VectorXi::Constant(1, 1));
+
+    d2F_dt0X.resize(1, nx * (N + 1));
+    d2F_dt0X.reserve(Eigen::VectorXi::Constant(nx * (N + 1), 1));
+
+    d2F_dt0U.resize(1, nu * N);
+    d2F_dt0U.reserve(Eigen::VectorXi::Constant(nu * N, 1));
+
+    d2F_dtftf.resize(1, 1);
+    d2F_dtftf.reserve(Eigen::VectorXi::Constant(1, 1));
+
+    d2F_dtfX.resize(1, nx * (N + 1));
+    d2F_dtfX.reserve(Eigen::VectorXi::Constant(nx * (N + 1), 1));
+
+    d2F_dtfU.resize(1, nu * N);
+    d2F_dtfU.reserve(Eigen::VectorXi::Constant(nu * N, 1));
+
+    d2F_dXX.resize(nx * (N + 1), nx * (N + 1));
+    d2F_dXX.reserve(Eigen::VectorXi::Constant(nx * (N + 1), nx));
+
+    d2F_dXU.resize(nx * (N + 1), nu * N);
+    d2F_dXU.reserve(Eigen::VectorXi::Constant(nu * N, nx));
+
+    d2F_dUU.resize(nu * N, nu * N);
+    d2F_dUU.reserve(Eigen::VectorXi::Constant(nu * N, nu));
   }
 
   inline void setZero()
@@ -65,18 +95,38 @@ struct CollocEvalReduceResult
     F.setZero();
     if (dF_dt0.isCompressed()) { dF_dt0.setZero(); }
     if (dF_dtf.isCompressed()) { dF_dtf.setZero(); }
-    if (dF_dvecX.isCompressed()) { dF_dvecX.setZero(); }
-    if (dF_dvecU.isCompressed()) { dF_dvecU.setZero(); }
+    if (dF_dX.isCompressed()) { dF_dX.setZero(); }
+    if (dF_dU.isCompressed()) { dF_dU.setZero(); }
 
-    // Eigen::Map<Eigen::VectorXd>(d2F.valuePtr(), d2F.nonZeros()).setZero();
+    if (d2F_dt0t0.isCompressed()) { d2F_dt0t0.setZero(); }
+    if (d2F_dt0tf.isCompressed()) { d2F_dt0tf.setZero(); }
+    if (d2F_dt0X.isCompressed()) { d2F_dt0X.setZero(); }
+    if (d2F_dt0U.isCompressed()) { d2F_dt0U.setZero(); }
+    if (d2F_dtftf.isCompressed()) { d2F_dtftf.setZero(); }
+    if (d2F_dtfX.isCompressed()) { d2F_dtfX.setZero(); }
+    if (d2F_dtfU.isCompressed()) { d2F_dtfU.setZero(); }
+    if (d2F_dXX.isCompressed()) { d2F_dXX.setZero(); }
+    if (d2F_dXU.isCompressed()) { d2F_dXU.setZero(); }
+    if (d2F_dUU.isCompressed()) { d2F_dUU.setZero(); }
   }
 
   inline void makeCompressed()
   {
     dF_dt0.makeCompressed();
     dF_dtf.makeCompressed();
-    dF_dvecX.makeCompressed();
-    dF_dvecU.makeCompressed();
+    dF_dX.makeCompressed();
+    dF_dU.makeCompressed();
+
+    d2F_dt0t0.makeCompressed();
+    d2F_dt0tf.makeCompressed();
+    d2F_dt0X.makeCompressed();
+    d2F_dt0U.makeCompressed();
+    d2F_dtftf.makeCompressed();
+    d2F_dtfX.makeCompressed();
+    d2F_dtfU.makeCompressed();
+    d2F_dXX.makeCompressed();
+    d2F_dXU.makeCompressed();
+    d2F_dUU.makeCompressed();
   }
 
   std::size_t nf, nx, nu, N;
@@ -88,11 +138,34 @@ struct CollocEvalReduceResult
   /// @brief Function derivatives w.r.t. tf (size nf x 1)
   Eigen::SparseMatrix<double> dF_dtf;
   /// @brief Function derivatives w.r.t. X (size nf x nx*(N+1))
-  Eigen::SparseMatrix<double> dF_dvecX;
+  Eigen::SparseMatrix<double> dF_dX;
   /// @brief Function derivatives w.r.t. X (size nf x nu*N)
-  Eigen::SparseMatrix<double> dF_dvecU;
-  /// @brief Second order derivative (side 2 + nx*(N+1) + nu*N)
-  // Eigen::SparseMatrix<double> d2F;
+  Eigen::SparseMatrix<double> dF_dU;
+
+  /// @brief Second order derivatives when F is scalar
+  //
+  //  dF =
+  //    [ 2F_dt0t0  d2F_dt0tf  d2F_dt0X  d2F_dt0U      <- 1
+  //         *      d2F_dtftf  d2F_dtfX  d2F_dtfU      <- 1
+  //         *          *       d2F_dXX   d2F_dXU      <- nX
+  //         *          *          *      d2F_dUU]     <- nU
+  //
+  //         ^          ^          ^         ^
+  //         1          1          nX        nU
+
+  Eigen::SparseMatrix<double> d2F_dt0t0;
+
+  Eigen::SparseMatrix<double> d2F_dt0tf;
+  Eigen::SparseMatrix<double> d2F_dtftf;
+
+  Eigen::SparseMatrix<double> d2F_dt0X;
+  Eigen::SparseMatrix<double> d2F_dtfX;
+  Eigen::SparseMatrix<double> d2F_dXX;
+
+  Eigen::SparseMatrix<double> d2F_dtfU;
+  Eigen::SparseMatrix<double> d2F_dt0U;
+  Eigen::SparseMatrix<double> d2F_dXU;
+  Eigen::SparseMatrix<double> d2F_dUU;
 };
 
 /**
@@ -148,18 +221,74 @@ void colloc_eval_reduce(
     if constexpr (Deriv == 0u) {
       res.F += l * f(ti, x_plain, u_plain);
     } else if constexpr (Deriv == 1u) {
-      const auto [fval, dfval] = diff::dr<1>(f, wrt(ti, x_plain, u_plain));
-      res.F += l * fval;
+      const auto [F, dF] = diff::dr<1>(f, wrt(ti, x_plain, u_plain));
+      res.F += l * F;
       for (auto row = 0u; row < res.nf; ++row) {
-        res.dF_dt0.coeffRef(row, 0) += l * dfval(row, 0) * (1. - tau);
-        res.dF_dtf.coeffRef(row, 0) += l * dfval(row, 0) * tau;
+        res.dF_dt0.coeffRef(row, 0) += l * dF(row, 0) * (1. - tau);
+        res.dF_dtf.coeffRef(row, 0) += l * dF(row, 0) * tau;
         for (auto col = 0u; col < res.nx; ++col) {
-          res.dF_dvecX.coeffRef(row, ival * res.nx + col) += l * dfval(row, 1 + col);
+          res.dF_dX.coeffRef(row, ival * res.nx + col) += l * dF(row, 1 + col);
         }
         for (auto col = 0u; col < res.nu; ++col) {
-          res.dF_dvecU.coeffRef(row, ival * res.nu + col) += l * dfval(row, 1 + res.nx + col);
+          res.dF_dU.coeffRef(row, ival * res.nu + col) += l * dF(row, 1 + res.nx + col);
         }
       }
+    } else if constexpr (Deriv == 2u) {
+
+      assert(res.nf == 1);
+
+      const auto [F, dF, d2F] = diff::dr<2>(
+        [&](auto &&... args) { return f(std::forward<decltype(args)>(args)...).x(); },
+        wrt(ti, x_plain, u_plain));
+      // value
+      res.F.x() += l * F;
+
+      // 1st deriv
+      for (auto row = 0u; row < res.nf; ++row) {
+        res.dF_dt0.coeffRef(row, 0) += l * dF(row, 0) * (1. - tau);
+        res.dF_dtf.coeffRef(row, 0) += l * dF(row, 0) * tau;
+        for (auto col = 0u; col < res.nx; ++col) {
+          res.dF_dX.coeffRef(row, ival * res.nx + col) += l * dF(row, 1 + col);
+        }
+        for (auto col = 0u; col < res.nu; ++col) {
+          res.dF_dU.coeffRef(row, ival * res.nu + col) += l * dF(row, 1 + res.nx + col);
+        }
+      }
+
+      // 2nd deriv
+
+      // first column
+      res.d2F_dt0t0.coeffRef(0, 0) += l * d2F(0, 0) * (1. - tau) * (1. - tau);
+
+      // second column
+      res.d2F_dt0tf.coeffRef(0, 0) += l * d2F(0, 0) * (1. - tau) * tau;
+      res.d2F_dtftf.coeffRef(0, 0) += l * d2F(0, 0) * tau * tau;
+
+      // third column
+      // clang-format off
+      for (auto col = 0u; col < res.nx; ++col) {
+        res.d2F_dt0X.coeffRef(0, ival * res.nx + col) += l * d2F(0, 1 + col) * (1. - tau);
+        res.d2F_dtfX.coeffRef(0, ival * res.nx + col) += l * d2F(0, 1 + col) * tau;
+
+        for (auto row = 0u; row < res.nx; ++row) {
+          res.d2F_dXX.coeffRef(ival * res.nx + row, ival * res.nx + col) += l * d2F(1 + row, 1 + col);
+        }
+      }
+
+      // fourth column
+      for (auto col = 0u; col < res.nu; ++col) {
+        res.d2F_dt0U.coeffRef(0, ival * res.nu + col) += l * d2F(0, 1 + res.nx + col) * (1. - tau);
+        res.d2F_dtfU.coeffRef(0, ival * res.nu + col) += l * d2F(0, 1 + res.nx + col) * tau;
+
+        for (auto row = 0u; row < res.nx; ++row) {
+          res.d2F_dXU.coeffRef(ival * res.nx + row, ival * res.nx + col) += l * d2F(1 + row, 1 + res.nx + col);
+        }
+
+        for (auto row = 0u; row < res.nu; ++row) {
+          res.d2F_dUU.coeffRef(ival * res.nx + row, ival * res.nx + col) += l * d2F(1 + res.nx + row, 1 + res.nx + col);
+        }
+      }
+      // clang-format on
     }
   }
 
@@ -193,21 +322,57 @@ void colloc_integrate(
 
   colloc_eval_reduce<Deriv>(res, w, g, m, t0, tf, xs, us);
 
-  // result is equal to (tf - t0) * F
-  //
-  //  d/dt0  : -F + (tf - t0) * dF/dt0
-  //  d/dtf  : F + (tf - t0) * dF/dt0
-  //  d/dx   : (tf - t0) dF/dx
-  //  d/du   : (tf - t0) dF/du
+  // result is equal to (tf - t0) * F, must update derivatives
+
+  // SECOND DERIVATIVES
+
+  // first row
+
+  res.d2F_dt0t0 *= (tf - t0);
+  res.d2F_dt0t0 -= 2 * res.dF_dt0;
+
+  res.d2F_dt0tf *= (tf - t0);
+  res.d2F_dt0tf += res.dF_dt0;
+  res.d2F_dt0tf -= res.dF_dtf;
+
+  res.d2F_dt0X *= (tf - t0);
+  res.d2F_dt0X -= res.dF_dX;
+
+  res.d2F_dt0U *= (tf - t0);
+  res.d2F_dt0U -= res.dF_dU;
+
+  // second row
+
+  res.d2F_dtftf *= (tf - t0);
+  res.d2F_dtftf += 2 * res.dF_dtf;
+
+  res.d2F_dtfX *= (tf - t0);
+  res.d2F_dtfX += res.dF_dX;
+
+  res.d2F_dtfU *= (tf - t0);
+  res.d2F_dtfU += res.dF_dU;
+
+  // third row
+
+  res.d2F_dXX *= (tf - t0);
+  res.d2F_dXU *= (tf - t0);
+
+  // fourth row
+
+  res.d2F_dUU *= (tf - t0);
+
+  // FIRST DERIVATIVES
 
   res.dF_dt0 *= (tf - t0);
   res.dF_dt0 -= res.F.sparseView();
   res.dF_dtf *= (tf - t0);
   res.dF_dtf += res.F.sparseView();
-  res.dF_dvecX *= (tf - t0);
-  res.dF_dvecU *= (tf - t0);
+  res.dF_dX *= (tf - t0);
+  res.dF_dU *= (tf - t0);
 
-  res.F *= (tf - t0);  // must be last
+  // VALUE
+
+  res.F *= (tf - t0);
 }
 
 }  // namespace smooth::feedback

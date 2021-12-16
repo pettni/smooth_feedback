@@ -201,8 +201,8 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
     qo_q.x() * sparse_block_matrix({{d2g_dx2, d2g_dxdu}, {{}, d2g_du2}});  // upper-triangular
 
   Eigen::VectorXd q(Nvar);
-  q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dvecX.transpose();
-  q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dvecU.transpose();
+  q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dX.transpose();
+  q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dU.transpose();
 
   // add weights on x0 and xf
   q.segment(0, ocp.nx) += qo_x0;
@@ -219,7 +219,7 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   // TODO: this should be row-major...
   Eigen::SparseMatrix<double> A = sparse_block_matrix({
     {Adyn_X, Adyn_U},
-    {CRres.dvecF_dvecX, CRres.dvecF_dvecU},
+    {CRres.dF_dX, CRres.dF_dU},
     {dcelin_dx, {}},
   });
 

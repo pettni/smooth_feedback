@@ -353,10 +353,10 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     assert(std::size_t(x.size()) == n);
 
-    const double t0         = 0;
-    const double tf         = x(tfvar_B);
-    const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
-    const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+    const double t0 = 0;
+    const double tf = x(tfvar_B);
+    const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
+    const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
 
     return colloc_eval_endpt<false>(1, ocp.nx, ocp.theta, t0, tf, X.colwise(), Q);
   };
@@ -368,10 +368,10 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    const double t0         = 0;
-    const double tf         = x(tfvar_B);
-    const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
-    const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+    const double t0 = 0;
+    const double tf = x(tfvar_B);
+    const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
+    const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
 
     const auto [fval, df_dt0, df_dtf, df_dvecX, df_dQ] =
       colloc_eval_endpt<true>(1, ocp.nx, ocp.theta, t0, tf, X.colwise(), Q);
@@ -397,11 +397,11 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     assert(std::size_t(x.size()) == n);
 
-    const double t0         = 0;
-    const double tf         = x(tfvar_B);
-    const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
-    const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-    const Eigen::MatrixXd U = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+    const double t0 = 0;
+    const double tf = x(tfvar_B);
+    const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
+    const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
+    const Eigen::Map<const Eigen::MatrixXd> U(x.data() + uvar_B, ocp.nu, uvar_L / ocp.nu);
 
     CollocEvalReduceResult Geval(ocp.nq, ocp.nx, ocp.nu, mesh.N_colloc());
     colloc_integrate<0>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
@@ -427,11 +427,11 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
       assert(std::size_t(x.size()) == n);
 
-      const double t0         = 0;
-      const double tf         = x(tfvar_B);
-      const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
-      const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-      const Eigen::MatrixXd U = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+      const double t0 = 0;
+      const double tf = x(tfvar_B);
+      const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
+      const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
+      const Eigen::Map<const Eigen::MatrixXd> U(x.data() + uvar_B, ocp.nu, uvar_L / ocp.nu);
 
       CollocEvalReduceResult Geval(ocp.nq, ocp.nx, ocp.nu, mesh.N_colloc());
       colloc_integrate<1>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
@@ -448,10 +448,10 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
       return sparse_block_matrix({
         // clang-format off
-        { dF_dtf,     {},  dF_dX,  dF_dU},
-        {Geval.dF_dtf,  dG_dQ,  Geval.dF_dvecX,  Geval.dF_dvecU},
-        {CReval.dvecF_dtf,     {}, CReval.dvecF_dvecX, CReval.dvecF_dvecU},
-        {dCE_dtf, dCE_dQ, dCE_dX,     {}},
+        {       dF_dtf,     {},        dF_dX,        dF_dU},
+        { Geval.dF_dtf,  dG_dQ,  Geval.dF_dX,  Geval.dF_dU},
+        {CReval.dF_dtf,     {}, CReval.dF_dX, CReval.dF_dU},
+        {      dCE_dtf, dCE_dQ,       dCE_dX,            {}},
         // clang-format on
       });
     };
