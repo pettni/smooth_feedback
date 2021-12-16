@@ -35,6 +35,7 @@
 #include <smooth/lie_group.hpp>
 
 #include "collocation/eval.hpp"
+#include "collocation/eval_reduce.hpp"
 #include "collocation/mesh.hpp"
 #include "nlp.hpp"
 #include "traits.hpp"
@@ -401,13 +402,16 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
     const Eigen::MatrixXd U = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
+    CollocEvalReduceResult Geval(ocp.nq, ocp.nx, ocp.nu, mesh.N_colloc());
+    colloc_integrate<0>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
+
     CollocEvalResult CReval(ocp.ncr, ocp.nx, ocp.nu, mesh.N_colloc());
     colloc_eval<0>(CReval, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise());
 
     Eigen::VectorXd ret(m);
     // clang-format off
     ret.segment(dcon_B, dcon_L)   = colloc_dyn<false>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
-    ret.segment(qcon_B, qcon_L)   = colloc_int<false>(ocp.nq, ocp.g, mesh, t0, tf, Q, X.colwise(), U.colwise()).reshaped();
+    ret.segment(qcon_B, qcon_L)   = Geval.F - Q;
     ret.segment(crcon_B, crcon_L) = CReval.F.reshaped();
     ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X.colwise(), Q).reshaped();
     // clang-format on
@@ -422,25 +426,29 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
       assert(std::size_t(x.size()) == n);
 
-      const double t0          = 0;
-      const double tf          = x(tfvar_B);
-      const Eigen::VectorXd Qm = x.segment(qvar_B, qvar_L);
-      const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
-      const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+      const double t0         = 0;
+      const double tf         = x(tfvar_B);
+      const Eigen::VectorXd Q = x.segment(qvar_B, qvar_L);
+      const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+      const Eigen::MatrixXd U = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+
+      CollocEvalReduceResult Geval(ocp.nq, ocp.nx, ocp.nu, mesh.N_colloc());
+      colloc_integrate<1>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
 
       CollocEvalResult CReval(ocp.ncr, ocp.nx, ocp.nu, mesh.N_colloc());
-      colloc_eval<1>(CReval, ocp.cr, mesh, t0, tf, Xm.colwise(), Um.colwise());
+      colloc_eval<1>(CReval, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise());
 
       // clang-format off
-      const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
-      const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] = colloc_int<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm.colwise(), Um.colwise());
-      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm.colwise(), Qm);
+      const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
+      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X.colwise(), Q);
       // clang-format on
+
+      const Eigen::SparseMatrix<double> dG_dQ = -sparse_identity(ocp.nq);
 
       return sparse_block_matrix({
         // clang-format off
         { dF_dtf,     {},  dF_dX,  dF_dU},
-        { dG_dtf,  dG_dQ,  dG_dX,  dG_dU},
+        {Geval.dF_dtf,  dG_dQ,  Geval.dF_dvecX,  Geval.dF_dvecU},
         {CReval.dvecF_dtf,     {}, CReval.dvecF_dvecX, CReval.dvecF_dvecU},
         {dCE_dtf, dCE_dQ, dCE_dX,     {}},
         // clang-format on

@@ -161,8 +161,9 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   std::cout << "Running cost\n";
 
-  const auto [gval, dg_dt0, dg_dtf, dg_dI, dg_dx, dg_du] =
-    colloc_int<true>(1, ocp.g, mesh, 0., tf, q_dummy, xslin, uslin);
+  CollocEvalReduceResult g_res(1, ocp.nx, ocp.nu, N);
+
+  colloc_integrate<1>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
 
   // TODO need second derivative (set to id for now)
   Eigen::SparseMatrix<double> d2g_dx2 = sparse_identity(xvar_L);
@@ -200,8 +201,8 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
     qo_q.x() * sparse_block_matrix({{d2g_dx2, d2g_dxdu}, {{}, d2g_du2}});  // upper-triangular
 
   Eigen::VectorXd q(Nvar);
-  q.segment(xvar_B, xvar_L) = qo_q.x() * Eigen::RowVectorXd(dg_dx).transpose();
-  q.segment(uvar_B, uvar_L) = qo_q.x() * Eigen::RowVectorXd(dg_du).transpose();
+  q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dvecX.transpose();
+  q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dvecU.transpose();
 
   // add weights on x0 and xf
   q.segment(0, ocp.nx) += qo_x0;

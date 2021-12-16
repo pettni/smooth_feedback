@@ -34,7 +34,7 @@ using Vec = Eigen::VectorX<T>;
 
 using Vecd = Vec<double>;
 
-TEST(Collocation, FunctionEval)
+TEST(CollocationEvalReduce, FunctionEval)
 {
   smooth::feedback::Mesh<5, 5> m;
 
@@ -62,7 +62,6 @@ TEST(Collocation, FunctionEval)
     return ret;
   };
 
-
   smooth::feedback::CollocEvalReduceResult res(nf, nx, nu, N);
   smooth::feedback::colloc_eval_reduce<1>(res, ls, f, m, 0, 1, xs.colwise(), us.colwise());
 
@@ -71,4 +70,86 @@ TEST(Collocation, FunctionEval)
 
   ASSERT_TRUE(res.dF_dt0.isApprox(Eigen::MatrixXd::Zero(3, 1)));
   ASSERT_TRUE(res.dF_dtf.isApprox(Eigen::MatrixXd::Zero(3, 1)));
+}
+
+TEST(CollocationEvalReduce, TimeIntegral)
+{
+  const std::size_t nx = 1;
+  const std::size_t nu = 0;
+  const std::size_t nq = 1;
+
+  const double t0 = 3;
+  const double tf = 5;
+
+  const auto x = [](double t) -> Vec<double> { return Vec<double>{{0.1 * t * t - 0.4 * t + 0.2}}; };
+  const auto g = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{0.1 + x.squaredNorm()}};
+  };
+
+  smooth::feedback::Mesh<5, 5> m;
+  m.refine_ph(0, 40);
+  ASSERT_EQ(m.N_ivals(), 8);
+
+  const auto N = m.N_colloc();
+
+  Eigen::MatrixXd X(nx, m.N_colloc() + 1);
+  Eigen::MatrixXd U(nu, m.N_colloc());
+
+  // fill X with curve values at the two intervals
+  std::size_t M = 0;
+  for (auto p = 0u; p < m.N_ivals(); ++p) {
+    const auto [tau_s, w_s] = m.interval_nodes_and_weights(p);
+    for (auto i = 0u; i + 1 < tau_s.size(); ++i) { X.col(M + i) = x(t0 + (tf - t0) * tau_s[i]); }
+    M += m.N_colloc_ival(p);
+  }
+  X.col(m.N_colloc()) = x(tf);
+
+  Eigen::VectorXd Q{{0}};
+
+  smooth::feedback::CollocEvalReduceResult res(nq, nx, nu, N);
+  smooth::feedback::colloc_integrate<true>(res, g, m, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_NEAR(res.F.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
+}
+
+TEST(CollocationEvalReduce, StateIntegral)
+{
+  // given trajectory
+  const std::size_t nx = 1;
+  const std::size_t nu = 0;
+  const std::size_t nq = 1;
+
+  const double t0 = 3;
+  const double tf = 5;
+
+  const auto x = [](double t) { return Vec<double>{{1.5 * exp(-t)}}; };
+  const auto g = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
+    return Vec<T>{{x.squaredNorm()}};
+  };
+
+  smooth::feedback::Mesh<5, 5> m;
+
+  // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
+  m.refine_ph(0, 16 * 5);
+  ASSERT_EQ(m.N_ivals(), 16);
+
+  const auto N = m.N_colloc();
+
+  Eigen::MatrixXd X(1, m.N_colloc() + 1);
+
+  // fill X with curve values at the two intervals
+  std::size_t M = 0;
+  for (auto p = 0u; p < m.N_ivals(); ++p) {
+    const auto [tau_s, w_s] = m.interval_nodes_and_weights(p);
+    for (auto i = 0u; i + 1 < tau_s.size(); ++i) { X.col(M + i) = x(t0 + (tf - t0) * tau_s[i]); }
+    M += m.N_colloc_ival(p);
+  }
+  X.col(m.N_colloc()) = x(tf);
+
+  Eigen::MatrixXd U(nu, m.N_colloc());
+  Eigen::VectorXd Q{{0}};
+
+  smooth::feedback::CollocEvalReduceResult res(nq, nx, nu, N);
+  smooth::feedback::colloc_integrate<true>(res, g, m, t0, tf, X.colwise(), U.colwise());
+  ASSERT_NEAR(res.F.x(), 0.00273752, 1e-4);
 }

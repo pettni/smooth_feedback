@@ -124,12 +124,6 @@ TEST(Collocation, TimeTrajectory)
     return Vec<T>{{0.2 * t - 0.4}};
   };
 
-  // integrand
-  std::size_t nq = 1;
-  const auto g   = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
-    return Vec<T>{{0.1 + x.squaredNorm()}};
-  };
-
   double t0 = 3;
   double tf = 5;
 
@@ -166,10 +160,6 @@ TEST(Collocation, TimeTrajectory)
   ASSERT_EQ(CReval.F.rows(), 2);
   ASSERT_EQ(CReval.F.cols(), m.N_colloc());
   ASSERT_TRUE(C.reshaped().isApprox(CReval.F.reshaped()));
-
-  const Eigen::VectorXd q_vals =
-    smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X.colwise(), U.colwise());
-  ASSERT_NEAR(q_vals.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
 }
 
 TEST(Collocation, DynError)
@@ -228,12 +218,6 @@ TEST(Collocation, StateTrajectory)
     return Vec<T>{{-x.x()}};
   };
 
-  // integrals
-  std::size_t nq = 1;
-  const auto g   = []<typename T>(const T &, const Vec<T> & x, const Vec<T> &) -> Vec<T> {
-    return Vec<T>{{x.squaredNorm()}};
-  };
-
   double t0 = 3;
   double tf = 5;
 
@@ -259,10 +243,6 @@ TEST(Collocation, StateTrajectory)
 
   const auto dyn_vals = smooth::feedback::colloc_dyn<false>(nx, f, m, t0, tf, X, U);
   ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
-
-  const auto q_vals =
-    smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X.colwise(), U.colwise());
-  ASSERT_NEAR(q_vals.x(), 0.00273752, 1e-4);
 }
 
 TEST(Collocation, FunctionEval)

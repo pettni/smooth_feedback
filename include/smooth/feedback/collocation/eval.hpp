@@ -72,10 +72,10 @@ struct CollocEvalResult
   inline void setZero()
   {
     F.setZero();
-    dvecF_dt0.coeffs().setZero();
-    dvecF_dtf.coeffs().setZero();
-    dvecF_dvecX.coeffs().setZero();
-    dvecF_dvecU.coeffs().setZero();
+    if (dvecF_dt0.isCompressed()) { dvecF_dt0.coeffs().setZero(); }
+    if (dvecF_dtf.isCompressed()) { dvecF_dtf.coeffs().setZero(); }
+    if (dvecF_dvecX.isCompressed()) { dvecF_dvecX.coeffs().setZero(); }
+    if (dvecF_dvecU.isCompressed()) { dvecF_dvecU.coeffs().setZero(); }
   }
 
   inline void makeCompressed()
@@ -379,82 +379,6 @@ auto colloc_dyn(
       std::move(dF_dtf),
       std::move(dF_dvecX),
       std::move(dF_dvecU));
-  }
-}
-/**
- * @brief Evaluate integral constraint on Mesh.
- *
- * @tparam Der return derivatives w.r.t variables
- *
- * @param nq number of integrals
- * @param g integrand with signature (t, x, u) -> R^{nq} where x is size nx x 1 and u is size nu x
- * 1
- * @param m mesh
- * @param t0 initial time (variable of size 1)
- * @param tf final time (variable of size 1)
- * @param I values (variable of size nq)
- * @param xs state values (variable of size N+1)
- * @param us input values (variable of size N)
- *
- * @return {G, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU},
- * where vec(xs) stacks the columns of xs into a single column vector.
- */
-template<uint8_t Deriv>
-auto colloc_int(
-  const std::size_t nq,
-  auto && g,
-  const MeshType auto & m,
-  const double t0,
-  const double tf,
-  const Eigen::VectorXd & I,
-  std::ranges::sized_range auto && xs,
-  std::ranges::sized_range auto && us)
-{
-  assert(static_cast<std::size_t>(I.size()) == nq);
-
-  const auto N  = m.N_colloc();
-  const auto nx = dof(*std::ranges::begin(xs));
-  const auto nu = dof(*std::ranges::begin(us));
-
-  const auto [n, w] = m.all_nodes_and_weights();
-
-  CollocEvalResult geval_res(nq, nx, nu, N);
-  colloc_eval<Deriv>(geval_res, g, m, t0, tf, xs, us);
-
-  const Eigen::VectorXd Iest = geval_res.F * w.head(N);
-  Eigen::VectorXd Rv         = (tf - t0) * Iest - I;
-
-  if constexpr (Deriv == 0u) {
-    return Rv;
-  } else if (Deriv == 1u) {
-    const Eigen::SparseMatrix<double> w_kron_I =
-      (tf - t0) * kron_identity(w.head(N).transpose(), nq);
-
-    Eigen::SparseMatrix<double> dR_dt0 = w_kron_I * geval_res.dvecF_dt0;
-    for (auto i = 0u; i < Iest.size(); ++i) { dR_dt0.coeffRef(i, 0) -= Iest(i); }
-
-    Eigen::SparseMatrix<double> dR_dtf = w_kron_I * geval_res.dvecF_dtf;
-    for (auto i = 0u; i < Iest.size(); ++i) { dR_dtf.coeffRef(i, 0) += Iest(i); }
-
-    Eigen::SparseMatrix<double> dR_dvecI = -sparse_identity(nq);
-
-    Eigen::SparseMatrix<double> dR_dvecX = w_kron_I * geval_res.dvecF_dvecX;
-
-    Eigen::SparseMatrix<double> dR_dvecU = w_kron_I * geval_res.dvecF_dvecU;
-
-    dR_dt0.makeCompressed();
-    dR_dtf.makeCompressed();
-    dR_dvecI.makeCompressed();
-    dR_dvecX.makeCompressed();
-    dR_dvecU.makeCompressed();
-
-    return std::make_tuple(
-      std::move(Rv),
-      std::move(dR_dt0),
-      std::move(dR_dtf),
-      std::move(dR_dvecI),
-      std::move(dR_dvecX),
-      std::move(dR_dvecU));
   }
 }
 

@@ -51,38 +51,48 @@ struct CollocEvalReduceResult
     F.resize(nf, 1);
 
     dF_dt0.resize(nf, 1);
+    dF_dt0.reserve(Eigen::VectorXi::Constant(1, nf));
     dF_dtf.resize(nf, 1);
+    dF_dtf.reserve(Eigen::VectorXi::Constant(1, nf));
     dF_dvecX.resize(nf, nx * (N + 1));
+    dF_dvecX.reserve(Eigen::VectorXi::Constant(nx * (N + 1), nf));
     dF_dvecU.resize(nf, nu * N);
+    dF_dvecU.reserve(Eigen::VectorXi::Constant(nu * N, nf));
   }
 
   inline void setZero()
   {
     F.setZero();
-    dF_dt0.setZero();
-    dF_dtf.setZero();
-    dF_dvecX.setZero();
-    dF_dvecU.setZero();
+    if (dF_dt0.isCompressed()) { dF_dt0.setZero(); }
+    if (dF_dtf.isCompressed()) { dF_dtf.setZero(); }
+    if (dF_dvecX.isCompressed()) { dF_dvecX.setZero(); }
+    if (dF_dvecU.isCompressed()) { dF_dvecU.setZero(); }
 
-    Eigen::Map<Eigen::VectorXd>(d2F.valuePtr(), d2F.nonZeros()).setZero();
+    // Eigen::Map<Eigen::VectorXd>(d2F.valuePtr(), d2F.nonZeros()).setZero();
   }
 
-  inline void makeCompressed() { d2F.makeCompressed(); }
+  inline void makeCompressed()
+  {
+    dF_dt0.makeCompressed();
+    dF_dtf.makeCompressed();
+    dF_dvecX.makeCompressed();
+    dF_dvecU.makeCompressed();
+  }
 
   std::size_t nf, nx, nu, N;
 
   /// @brief Function value (size N)
   Eigen::VectorXd F;
   /// @brief Function derivatives w.r.t. t0 (size nf x 1)
-  Eigen::MatrixXd dF_dt0;
+  Eigen::SparseMatrix<double> dF_dt0;
   /// @brief Function derivatives w.r.t. tf (size nf x 1)
-  Eigen::MatrixXd dF_dtf;
+  Eigen::SparseMatrix<double> dF_dtf;
   /// @brief Function derivatives w.r.t. X (size nf x nx*(N+1))
-  Eigen::MatrixXd dF_dvecX;
+  Eigen::SparseMatrix<double> dF_dvecX;
   /// @brief Function derivatives w.r.t. X (size nf x nu*N)
-  Eigen::MatrixXd dF_dvecU;
+  Eigen::SparseMatrix<double> dF_dvecU;
   /// @brief Second order derivative (side 2 + nx*(N+1) + nu*N)
-  Eigen::SparseMatrix<double> d2F;
+  // Eigen::SparseMatrix<double> d2F;
 };
 
 /**
@@ -154,6 +164,50 @@ void colloc_eval_reduce(
   }
 
   res.makeCompressed();
+}
+
+/**
+ * @brief Evaluate integral on Mesh.
+ *
+ * @tparam Deriv differentiation order.
+ *
+ * @param[out] result structure
+ * @param[in] g integrand with signature (t, x, u) -> R^{nq}
+ * @param[in] m mesh
+ * @param[in] t0 initial time (variable of size 1)
+ * @param[in] tf final time (variable of size 1)
+ * @param[in] xs state values (variable of size N+1)
+ * @param[in] us input values (variable of size N)
+ */
+template<uint8_t Deriv>
+void colloc_integrate(
+  CollocEvalReduceResult & res,
+  auto && g,
+  const MeshType auto & m,
+  const double t0,
+  const double tf,
+  std::ranges::sized_range auto && xs,
+  std::ranges::sized_range auto && us)
+{
+  const auto [n, w] = m.all_nodes_and_weights();
+
+  colloc_eval_reduce<Deriv>(res, w, g, m, t0, tf, xs, us);
+
+  // result is equal to (tf - t0) * F
+  //
+  //  d/dt0  : -F + (tf - t0) * dF/dt0
+  //  d/dtf  : F + (tf - t0) * dF/dt0
+  //  d/dx   : (tf - t0) dF/dx
+  //  d/du   : (tf - t0) dF/du
+
+  res.dF_dt0 *= (tf - t0);
+  res.dF_dt0 -= res.F.sparseView();
+  res.dF_dtf *= (tf - t0);
+  res.dF_dtf += res.F.sparseView();
+  res.dF_dvecX *= (tf - t0);
+  res.dF_dvecU *= (tf - t0);
+
+  res.F *= (tf - t0);  // must be last
 }
 
 }  // namespace smooth::feedback
