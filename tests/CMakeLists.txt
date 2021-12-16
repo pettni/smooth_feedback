@@ -46,6 +46,10 @@ add_executable(test_collocation test_collocation.cpp)
 target_link_libraries(test_collocation PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_collocation)
 
+add_executable(test_collocation_eval_reduce test_collocation_eval_reduce.cpp)
+target_link_libraries(test_collocation_eval_reduce PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_collocation_eval_reduce)
+
 add_executable(test_utils_sparse test_utils_sparse.cpp)
 target_link_libraries(test_utils_sparse PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_utils_sparse)

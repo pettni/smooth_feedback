@@ -37,8 +37,6 @@
 
 #include <limits>
 
-#include "collocation.hpp"
-
 namespace smooth::feedback {
 
 /**

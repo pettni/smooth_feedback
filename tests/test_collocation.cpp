@@ -27,7 +27,7 @@
 
 #include <Eigen/Core>
 
-#include "smooth/feedback/collocation.hpp"
+#include "smooth/feedback/collocation/eval.hpp"
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;

@@ -34,7 +34,8 @@
 #include <Eigen/Core>
 #include <smooth/lie_group.hpp>
 
-#include "collocation.hpp"
+#include "collocation/eval.hpp"
+#include "collocation/mesh.hpp"
 #include "nlp.hpp"
 #include "traits.hpp"
 
