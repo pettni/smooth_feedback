@@ -34,6 +34,7 @@
 #include <Eigen/Core>
 #include <smooth/lie_group.hpp>
 
+#include "collocation/dyn.hpp"
 #include "collocation/eval.hpp"
 #include "collocation/eval_reduce.hpp"
 #include "collocation/mesh.hpp"

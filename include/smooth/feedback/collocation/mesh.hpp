@@ -367,6 +367,29 @@ private:
 template<typename T>
 concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
 
+/**
+ * @brief Refine intervals in mesh to satisfy a target error criterion.
+ * @param[in, out] m mesh to refine
+ * @param[in] errs relative errors for all intervals (@see mesh_dyn_error())
+ * @param[in] target_err target relative error
+ */
+void mesh_refine(MeshType auto & m, const Eigen::VectorXd & errs, const double target_err)
+{
+  const auto N = m.N_ivals();
+
+  assert(N == std::size_t(errs.size()));
+
+  for (auto i = 0u; i < N; ++i) {
+    const auto Nmi = N - 1 - i;
+    const auto Ki  = m.N_colloc_ival(Nmi);
+
+    if (errs(Nmi) > target_err) {
+      const auto Ktarget = Ki + std::lround(std::log(errs(Nmi) / target_err) / std::log(Ki) + 1);
+      m.refine_ph(Nmi, Ktarget);
+    }
+  }
+}
+
 }  // namespace smooth::feedback
 
 #endif  // SMOOTH__FEEDBACK__COLLOCATION__MESH_HPP_
