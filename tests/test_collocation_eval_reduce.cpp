@@ -159,7 +159,7 @@ TEST(CollocationEvalReduce, Hessian)
   std::srand(5);
 
   // given trajectory
-  const std::size_t nx = 1;
+  const std::size_t nx = 2;
   const std::size_t nu = 1;
   const std::size_t nq = 1;
 
@@ -167,7 +167,7 @@ TEST(CollocationEvalReduce, Hessian)
   const double tf = 5;
 
   const auto g = []<typename T>(const T & t, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
-    return Vec<T>{{t * x.squaredNorm() * u.squaredNorm()}};
+    return Vec<T>{{t * x.norm() * u.norm()}};
   };
 
   smooth::feedback::Mesh<5, 5> m;
@@ -175,10 +175,8 @@ TEST(CollocationEvalReduce, Hessian)
 
   const auto N = m.N_colloc();
 
-  Eigen::MatrixXd X(nx, N + 1);
-  X.setRandom();
-  Eigen::MatrixXd U(nu, N);
-  U.setRandom();
+  const Eigen::MatrixXd X = Eigen::MatrixXd::Random(nx, N + 1);
+  const Eigen::MatrixXd U = Eigen::MatrixXd::Random(nu, N);
 
   smooth::feedback::CollocEvalReduceResult res(nq, nx, nu, N);
   smooth::feedback::colloc_integrate<2>(res, g, m, t0, tf, X.colwise(), U.colwise());
@@ -198,12 +196,12 @@ TEST(CollocationEvalReduce, Hessian)
 
   const auto [tmp1, dF, d2F] = smooth::diff::dr<2>(f_int, smooth::wrt(t0, tf, x_flat, u_flat));
 
-  auto d2F_analytic = smooth::feedback::sparse_block_matrix({
+  const auto d2F_analytic = smooth::feedback::sparse_block_matrix({
     {res.d2F_dt0t0, res.d2F_dt0tf, res.d2F_dt0X, res.d2F_dt0U},
     {res.d2F_dt0tf, res.d2F_dtftf, res.d2F_dtfX, res.d2F_dtfU},
     {res.d2F_dt0X.transpose(), res.d2F_dtfX.transpose(), res.d2F_dXX, res.d2F_dXU},
     {res.d2F_dt0U.transpose(), res.d2F_dtfU.transpose(), res.d2F_dXU.transpose(), res.d2F_dUU},
   });
 
-  ASSERT_LE((Eigen::MatrixXd(d2F_analytic) - d2F).cwiseAbs().maxCoeff(), 1e-3);
+  ASSERT_LE((Eigen::MatrixXd(d2F_analytic) - d2F).cwiseAbs().maxCoeff(), 1e-2);
 }

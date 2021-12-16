@@ -281,11 +281,11 @@ void colloc_eval_reduce(
         res.d2F_dtfU.coeffRef(0, ival * res.nu + col) += l * d2F(0, 1 + res.nx + col) * tau;
 
         for (auto row = 0u; row < res.nx; ++row) {
-          res.d2F_dXU.coeffRef(ival * res.nx + row, ival * res.nx + col) += l * d2F(1 + row, 1 + res.nx + col);
+          res.d2F_dXU.coeffRef(ival * res.nx + row, ival * res.nu + col) += l * d2F(1 + row, 1 + res.nx + col);
         }
 
         for (auto row = 0u; row < res.nu; ++row) {
-          res.d2F_dUU.coeffRef(ival * res.nx + row, ival * res.nx + col) += l * d2F(1 + res.nx + row, 1 + res.nx + col);
+          res.d2F_dUU.coeffRef(ival * res.nu + row, ival * res.nu + col) += l * d2F(1 + res.nx + row, 1 + res.nx + col);
         }
       }
       // clang-format on

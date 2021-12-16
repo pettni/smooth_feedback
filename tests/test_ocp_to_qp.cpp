@@ -88,7 +88,8 @@ TEST(OcpToQp, Basic)
         .ceu   = Eigen::Vector2d{5, 5},
       };
 
-  smooth::feedback::Mesh<5> mesh;
+  smooth::feedback::Mesh<5, 5> mesh;
+  mesh.refine_ph(0, 10);
 
   constexpr auto tf = 2.;
 
@@ -132,11 +133,4 @@ TEST(OcpToQp, Basic)
   // check constraint satisfaction
   ASSERT_GE((qp.A * var - qp.l).minCoeff(), -1e-8);
   ASSERT_GE((qp.u - qp.A * var).minCoeff(), -1e-8);
-
-  std::cout << "lower " << qp.l.transpose() << std::endl;
-  std::cout << "value " << (qp.A * var).transpose() << std::endl;
-  std::cout << "upper " << qp.u.transpose() << std::endl;
-
-  std::cout << "P\n" << Eigen::MatrixXd(qp.P) << '\n';
-  std::cout << "q" << qp.q.transpose() << '\n';
 }
