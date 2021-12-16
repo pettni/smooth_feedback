@@ -56,20 +56,15 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   const auto [th, dth, d2th] = diff::dr<2>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
   [[maybe_unused]] const Vec qo_tf = dth.segment(0, 1);
-  const Vec qo_x0xf                = dth.segment(1, 2 * ocp.nx);
+  const Vec qo_x0                  = dth.segment(1, ocp.nx);
+  const Vec qo_xf                  = dth.segment(1 + ocp.nx, ocp.nx);
   const Vec qo_q                   = dth.segment(1 + 2 * ocp.nx, ocp.nq);
 
   [[maybe_unused]] const Mat Qo_tf = d2th.block(0, 0, 1, 1) / 2;
-  const Mat Qo_x0xf                = d2th.block(1, 1, 2 * ocp.nx, 2 * ocp.nx) / 2;
+  const Mat Qo_x0                  = d2th.block(1, 1, ocp.nx, ocp.nx) / 2;
+  const Mat Qo_x0f                 = d2th.block(1, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
+  const Mat Qo_xf                  = d2th.block(1 + ocp.nx, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
   [[maybe_unused]] const Mat Qo_ql = d2th.block(1 + 2 * ocp.nx, 1 + 2 * ocp.nx, ocp.nq, ocp.nq) / 2;
-
-  std::cout << "qo_tf: " << qo_tf.transpose() << std::endl;
-  std::cout << "qo_x0xf: " << qo_x0xf.transpose() << std::endl;
-  std::cout << "qo_q: " << qo_q.transpose() << std::endl;
-
-  std::cout << "qo_tf: " << std::endl << Qo_tf << std::endl;
-  std::cout << "qo_x0xf: " << std::endl << Qo_x0xf << std::endl;
-  std::cout << "qo_q: " << std::endl << Qo_ql << std::endl;
 
   const auto N = mesh.N_colloc();
 
@@ -102,9 +97,11 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   std::cout << "Collocation constraints\n\n";
 
-  Eigen::SparseMatrix<double> Adyn_X(dcon_L, xvar_L);
-  Eigen::SparseMatrix<double> Adyn_U(dcon_L, uvar_L);
+  Eigen::SparseMatrix<double, Eigen::RowMajor> Adyn_X(dcon_L, xvar_L);
+  Eigen::SparseMatrix<double, Eigen::RowMajor> Adyn_U(dcon_L, uvar_L);
   Eigen::VectorXd bdyn(dcon_L);
+
+  // TODO reserve nonzeros...
 
   for (auto ival = 0u, M = 0u; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
     const auto Nival        = mesh.N_colloc_ival(ival);               // number of nodes in interval
@@ -125,9 +122,9 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
       // LINEARIZE DYNAMICS
       const auto [f_i, df_i] = diff::dr<1>(ocp.f, wrt(t_i, xl_i, ul_i));
 
-      const Mat A = -0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.middleCols(1, ocp.nx);
-      const Mat B = df_i.middleCols(1 + ocp.nx, ocp.nu);
-      const Vec E = f_i - dxl_i;
+      const Mat A = tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.middleCols(1, ocp.nx));
+      const Mat B = tf * df_i.middleCols(1 + ocp.nx, ocp.nu);
+      const Vec E = tf * (f_i - dxl_i);
 
       // insert new constraint A xi + B ui + E = [x0 ... XNi] di
 
@@ -139,12 +136,13 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
       for (auto row = 0u; row < ocp.nx; ++row) {
         for (auto col = 0u; col < ocp.nx; ++col) {
-          Adyn_X.coeffRef((M + i) * ocp.nx + row, (M + i) * ocp.nx + col) = A(row, col);
+          Adyn_X.coeffRef((M + i) * ocp.nx + row, (M + i) * ocp.nx + col) += A(row, col);
         }
         for (auto col = 0u; col < ocp.nu; ++col) {
           Adyn_U.coeffRef((M + i) * ocp.nx + row, (M + i) * ocp.nu + col) = B(row, col);
         }
       }
+
       bdyn.segment((M + i) * ocp.nx, ocp.nx) = -E;
     }
   }
@@ -152,8 +150,8 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
   auto xslin = nodes | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
-  auto uslin =
-    nodes | std::views::take(N) | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
+  auto uslin = nodes | std::views::take(int64_t(N))
+             | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
 
   const Eigen::VectorXd q_dummy{{1.}};
 
@@ -195,15 +193,26 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   std::cout << "Assemble\n";
 
-  Eigen::SparseMatrix<double> P = sparse_block_matrix({
-    {d2g_dx2, d2g_dxdu},
-    {d2g_dxdu.transpose(), d2g_du2},
-  });
+  Eigen::SparseMatrix<double> P =
+    qo_q.x() * sparse_block_matrix({{d2g_dx2, d2g_dxdu}, {{}, d2g_du2}});  // upper-triangular
 
   Eigen::VectorXd q(Nvar);
-  q.segment(xvar_B, xvar_L) = Eigen::RowVectorXd(dg_dx).transpose();
-  q.segment(uvar_B, uvar_L) = Eigen::RowVectorXd(dg_du).transpose();
+  q.segment(xvar_B, xvar_L) = qo_q.x() * Eigen::RowVectorXd(dg_dx).transpose();
+  q.segment(uvar_B, uvar_L) = qo_q.x() * Eigen::RowVectorXd(dg_du).transpose();
 
+  // add weights on x0 and xf
+  q.segment(0, ocp.nx) += qo_x0;
+  q.segment(ocp.nx * N, ocp.nx) += qo_xf;
+
+  for (auto row = 0u; row < ocp.nx; ++row) {
+    for (auto col = 0u; col < ocp.nx; ++col) {
+      P.coeffRef(row, col) += Qo_x0(row, col);
+      P.coeffRef(row, ocp.nx * N + col) += Qo_x0f(row, col);  // upper-triangular
+      P.coeffRef(ocp.nx * N + row, ocp.nx * N + col) += Qo_xf(row, col);
+    }
+  }
+
+  // TODO: this should be row-major...
   Eigen::SparseMatrix<double> A = sparse_block_matrix({
     {Adyn_X, Adyn_U},
     {dcrlin_dx, dcrlin_du},

@@ -29,8 +29,8 @@
 
 #include <smooth/compat/autodiff.hpp>
 
-#include "smooth/feedback/ocp_to_qp.hpp"
 #include "smooth/feedback/ocp.hpp"
+#include "smooth/feedback/ocp_to_qp.hpp"
 
 template<typename T>
 using X = Eigen::VectorX<T>;
@@ -72,31 +72,31 @@ TEST(OcpToQp, Basic)
   smooth::feedback::
     OCP<X<double>, U<double>, decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
       ocp{
-        .nx  = 2,
-        .nu  = 1,
-        .nq  = 1,
-        .ncr = 1,
-        .nce = 2,
+        .nx    = 2,
+        .nu    = 1,
+        .nq    = 1,
+        .ncr   = 1,
+        .nce   = 2,
         .theta = theta,
-        .f   = f,
-        .g   = g,
-        .cr  = cr,
-        .crl = Eigen::VectorXd{{-1}},
-        .cru = Eigen::VectorXd{{1}},
-        .ce  = ce,
-        .cel = Eigen::Vector2d{1, 1},
-        .ceu = Eigen::Vector2d{1, 1},
+        .f     = f,
+        .g     = g,
+        .cr    = cr,
+        .crl   = Eigen::VectorXd{{-1}},
+        .cru   = Eigen::VectorXd{{1}},
+        .ce    = ce,
+        .cel   = Eigen::Vector2d{-5, -5},
+        .ceu   = Eigen::Vector2d{5, 5},
       };
 
   smooth::feedback::Mesh<5> mesh;
 
-  const auto xl_fun = []<typename T>(T t) -> X<T> { return X<T>{{t, -t}}; };
+  constexpr auto tf = 2.;
 
-  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>{{0}}; };
+  const auto xl_fun = []<typename T>(T t) -> X<T> { return X<T>{{0.05 * t * t, 0.1 * t}}; };
 
-  const auto qp = smooth::feedback::ocp_to_qp(ocp, mesh, 1., xl_fun, ul_fun);
+  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>{{0.1}}; };
 
-  const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
+  const auto qp = smooth::feedback::ocp_to_qp(ocp, mesh, tf, xl_fun, ul_fun);
 
   ASSERT_EQ(qp.P.cols(), qp.q.size());
   ASSERT_EQ(qp.P.rows(), qp.q.size());
@@ -105,22 +105,15 @@ TEST(OcpToQp, Basic)
   ASSERT_EQ(qp.A.rows(), qp.l.size());
   ASSERT_EQ(qp.A.rows(), qp.u.size());
 
-  std::cout << "NLP dg_dx\n" << Eigen::MatrixXd(nlp.dg_dx(Eigen::VectorXd::Zero(nlp.n))) << '\n';
-
-  std::cout << "P\n" << Eigen::MatrixXd(qp.P) << '\n';
-  std::cout << "q\n" << qp.q.transpose() << '\n';
-
-  std::cout << "A\n" << Eigen::MatrixXd(qp.A) << '\n';
-  std::cout << "l\n" << qp.l.transpose() << '\n';
-  std::cout << "u\n" << qp.u.transpose() << '\n';
-
   // check that simple trajectory satisfies constraints
 
   static constexpr double x0 = 3;
   static constexpr double v0 = -0.3;
   static constexpr double u0 = 0.1;
 
-  const auto xtraj = [](double t) { return X<double>{{x0 + v0 * t + u0 * t * t / 2, v0 + u0 * t}}; };
+  const auto xtraj = [](double t) {
+    return X<double>{{x0 + v0 * t + u0 * t * t / 2, v0 + u0 * t}};
+  };
 
   Eigen::MatrixXd Xvar(ocp.nx, mesh.N_colloc() + 1);
   Eigen::MatrixXd Uvar(ocp.nu, mesh.N_colloc());
@@ -128,15 +121,22 @@ TEST(OcpToQp, Basic)
   const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
   for (const auto [i, t] : smooth::utils::zip(std::views::iota(0u), nodes)) {
-    Xvar.col(i) = xtraj(t);
+    Xvar.col(i) = xtraj(tf * t);
     if (i < mesh.N_colloc()) { Uvar.col(i).setConstant(u0); }
   }
 
   Eigen::VectorXd var(Xvar.size() + Uvar.size());
-
   var.head(Xvar.size()) = Xvar.reshaped();
   var.tail(Uvar.size()) = Uvar.reshaped();
 
-  std::cout << "lower " << (qp.A * var - qp.l).transpose() << std::endl;
-  std::cout << "upper " << (qp.A * var - qp.u).transpose() << std::endl;
+  // check constraint satisfaction
+  ASSERT_GE((qp.A * var - qp.l).minCoeff(), -1e-8);
+  ASSERT_GE((qp.u - qp.A * var).minCoeff(), -1e-8);
+
+  std::cout << "lower " << qp.l.transpose() << std::endl;
+  std::cout << "value " << (qp.A * var).transpose() << std::endl;
+  std::cout << "upper " << qp.u.transpose() << std::endl;
+
+  std::cout << "P\n" << Eigen::MatrixXd(qp.P) << '\n';
+  std::cout << "q" << qp.q.transpose() << '\n';
 }

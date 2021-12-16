@@ -104,7 +104,7 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
 inline Eigen::SparseMatrix<double> sparse_identity(std::size_t n)
 {
   Eigen::SparseMatrix<double> ret(n, n);
-  ret.reserve(Eigen::Matrix<int, -1, 1>::Ones(n));
+  ret.reserve(Eigen::VectorXi::Ones(n));
   for (auto i = 0u; i < n; ++i) { ret.insert(i, i) = 1; }
   return ret;
 }
