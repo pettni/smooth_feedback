@@ -400,11 +400,14 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const Eigen::MatrixXd X = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
     const Eigen::MatrixXd U = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
+    CollocEvalResult CReval(ocp.ncr, ocp.nx, ocp.nu, mesh.N_colloc());
+    colloc_eval<0>(CReval, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise());
+
     Eigen::VectorXd ret(m);
     // clang-format off
     ret.segment(dcon_B, dcon_L)   = colloc_dyn<false>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
     ret.segment(qcon_B, qcon_L)   = colloc_int<false>(ocp.nq, ocp.g, mesh, t0, tf, Q, X.colwise(), U.colwise()).reshaped();
-    ret.segment(crcon_B, crcon_L) = colloc_eval<false>(ocp.ncr, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise()).reshaped();
+    ret.segment(crcon_B, crcon_L) = CReval.F.reshaped();
     ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X.colwise(), Q).reshaped();
     // clang-format on
     return ret;
@@ -424,10 +427,12 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
       const Eigen::MatrixXd Xm = x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
       const Eigen::MatrixXd Um = x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
 
+      CollocEvalResult CReval(ocp.ncr, ocp.nx, ocp.nu, mesh.N_colloc());
+      colloc_eval<1>(CReval, ocp.cr, mesh, t0, tf, Xm.colwise(), Um.colwise());
+
       // clang-format off
       const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, Xm, Um);
       const auto [Gval, dG_dt0, dG_dtf, dG_dQ, dG_dX, dG_dU] = colloc_int<true>(ocp.nq, ocp.g, mesh, t0, tf, Qm, Xm.colwise(), Um.colwise());
-      const auto [CRval, dCR_dt0, dCR_dtf, dCR_dX, dCR_dU]   = colloc_eval<true>(ocp.ncr, ocp.cr, mesh, t0, tf, Xm.colwise(), Um.colwise());
       const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, Xm.colwise(), Qm);
       // clang-format on
 
@@ -435,7 +440,7 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
         // clang-format off
         { dF_dtf,     {},  dF_dX,  dF_dU},
         { dG_dtf,  dG_dQ,  dG_dX,  dG_dU},
-        {dCR_dtf,     {}, dCR_dX, dCR_dU},
+        {CReval.dvecF_dtf,     {}, CReval.dvecF_dvecX, CReval.dvecF_dvecU},
         {dCE_dtf, dCE_dQ, dCE_dX,     {}},
         // clang-format on
       });

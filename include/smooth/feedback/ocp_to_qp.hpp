@@ -175,8 +175,8 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   std::cout << "Running constr\n";
 
-  const auto [crlin, dcrlin_dt0, dcrlin_dtf, dcrlin_dx, dcrlin_du] =
-    colloc_eval<true>(ocp.ncr, ocp.cr, mesh, 0., tf, xslin, uslin);
+  CollocEvalResult CRres(ocp.ncr, ocp.nx, ocp.nu, N);
+  colloc_eval<true>(CRres, ocp.cr, mesh, 0., tf, xslin, uslin);
 
   /////////////////////////
   //// END CONSTRAINTS ////
@@ -186,6 +186,9 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   const auto [celin, dcelin_dt0, dcelin_dtf, dcelin_dx, dcelin_dq] =
     colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, 0., tf, xslin, q_dummy);
+
+  // integral constraints not supported
+  assert(Eigen::VectorXd(dcelin_dq).cwiseAbs().maxCoeff() < 1e-9);
 
   /////////////////////
   //// ASSEMBLE QP ////
@@ -215,18 +218,18 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   // TODO: this should be row-major...
   Eigen::SparseMatrix<double> A = sparse_block_matrix({
     {Adyn_X, Adyn_U},
-    {dcrlin_dx, dcrlin_du},
+    {CRres.dvecF_dvecX, CRres.dvecF_dvecU},
     {dcelin_dx, {}},
   });
 
   Eigen::VectorXd l(Ncon), u(Ncon);
 
   l.segment(dcon_B, dcon_L)   = bdyn;
-  l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - crlin.reshaped();
+  l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - CRres.F.reshaped();
   l.segment(cecon_B, cecon_L) = ocp.cel - celin;
 
   u.segment(dcon_B, dcon_L)   = bdyn;
-  u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - crlin.reshaped();
+  u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - CRres.F.reshaped();
   u.segment(cecon_B, cecon_L) = ocp.ceu - celin;
 
   return QuadraticProgramSparse<double>{

@@ -370,6 +370,86 @@ template<typename T>
 concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
 
 /**
+ * @brief Output structure for colloc_eval
+ */
+struct CollocEvalResult
+{
+  /**
+   * @brief Construct object and allocate memory
+   * @param nf dimensionality of result
+   * @param nx state space dimension
+   * @param nu input space dimension
+   * @param N number of collocation points
+   */
+  inline CollocEvalResult(
+    const std::size_t nf, const std::size_t nx, const std::size_t nu, const std::size_t N)
+      : nf(nf), nx(nx), nu(nu), N(N)
+  {
+    allocate();
+  }
+
+  inline void allocate()
+  {
+    F.resize(nf, N);
+
+    // dense column vector
+    dvecF_dt0.resize(F.size(), 1);
+    dvecF_dt0.reserve(Eigen::VectorXi::Constant(1, F.size()));
+
+    // dense column vector
+    dvecF_dtf.resize(F.size(), 1);
+    dvecF_dt0.reserve(Eigen::VectorXi::Constant(1, F.size()));
+
+    // block diagonal matrix (blocks have size nf x nx)
+    dvecF_dvecX.resize(F.size(), nx * (N + 1));
+    Eigen::VectorXi FX_pattern = Eigen::VectorXi::Constant(nx * (N + 1), nf);
+    FX_pattern.tail(nx).setZero();
+    dvecF_dvecX.reserve(FX_pattern);
+
+    // block diagonal matrix (blocks have size nf x nu)
+    dvecF_dvecU.resize(F.size(), nu * N);
+    dvecF_dvecU.reserve(Eigen::VectorXi::Constant(nu * N, nf));
+
+    dvecF_dt0.makeCompressed();
+    dvecF_dtf.makeCompressed();
+    dvecF_dvecX.makeCompressed();
+    dvecF_dvecU.makeCompressed();
+  }
+
+  inline void setZero()
+  {
+    F.setZero();
+    dvecF_dt0.setZero();
+    dvecF_dtf.setZero();
+    dvecF_dvecX.setZero();
+    dvecF_dvecU.setZero();
+
+    allocate();  // seems like setZero forgets zero pattern, so this might be necessary to
+                 // re-establish it
+  }
+
+  std::size_t nf;
+  std::size_t nx;
+  std::size_t nu;
+  std::size_t N;
+
+  /// @brief Function values (size nf x N)
+  Eigen::MatrixXd F;
+  /// @brief Function derivatives w.r.t. t0 (size N*nf x 1)
+  Eigen::SparseMatrix<double> dvecF_dt0;
+  /// @brief Function derivatives w.r.t. tf (size N*nf x 1)
+  Eigen::SparseMatrix<double> dvecF_dtf;
+  /// @brief Function derivatives w.r.t. X (size N*nf x nx*(N+1))
+  Eigen::SparseMatrix<double> dvecF_dvecX;
+  /// @brief Function derivatives w.r.t. X (size N*nf x nu*N)
+  Eigen::SparseMatrix<double> dvecF_dvecU;
+
+  /// @brief Second derivatives (only valid if nf == 1) w.r.t. all variables (square matrix with
+  /// side 2+nx*(N+1)+nu*N)
+  Eigen::SparseMatrix<double> d2F_dt0tfXU;
+};
+
+/**
  * @brief Evaluate a function on all collocation points.
  *
  * Returns a nf x N matrix
@@ -378,22 +458,19 @@ concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
  *
  * with the function evaluated at all collocation points t_i in the Mesh m.
  *
- * @tparam Der return derivatives w.r.t variables
+ * @tparam Deriv differentiation order
  *
- * @param nf dimensionality of f image
- * @param f function (t, x, u) -> R^nf
- * @param m Mesh of time
- * @param t0 initial time variable
- * @param tf final time variable
- * @param xs state variables (size N+1)
- * @param us input variables (size N)
- *
- * @return If Deriv == false,
- * If Deriv == true, {F, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU}
+ * @param[out] result
+ * @param[in] f function (t, x, u) -> R^nf
+ * @param[in] m Mesh of time
+ * @param[in] t0 initial time variable
+ * @param[in] tf final time variable
+ * @param[in] xs state variables (size N+1)
+ * @param[in] us input variables (size N)
  */
-template<bool Deriv>
-auto colloc_eval(
-  const std::size_t nf,
+template<uint8_t Deriv = 0>
+void colloc_eval(
+  CollocEvalResult & result,
   auto && f,
   const MeshType auto & m,
   const double t0,
@@ -401,81 +478,46 @@ auto colloc_eval(
   std::ranges::sized_range auto && xs,
   std::ranges::sized_range auto && us)
 {
+  using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
+  using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
+
   const auto numX = std::ranges::size(xs);
   const auto numU = std::ranges::size(us);
 
   assert(m.N_colloc() + 1 == numX);  //  extra variable at the end
   assert(m.N_colloc() == numU);      // one input per collocation point
 
-  const std::size_t nx = dof(*std::ranges::begin(xs));
-  const std::size_t nu = dof(*std::ranges::begin(us));
+  result.setZero();
 
-  // all nodes in mesh
+  const std::size_t nf = result.nf;
+  const std::size_t nx = result.nx;
+  const std::size_t nu = result.nu;
+
   const auto [tau_s, w_s] = m.all_nodes_and_weights();
 
-  Eigen::MatrixXd Fval(nf, tau_s.size() - 1);
+  for (const auto & [ival, tau, x, u] : utils::zip(std::views::iota(0u), tau_s, xs, us)) {
+    const double ti = t0 + (tf - t0) * tau;
 
-  Eigen::SparseMatrix<double> dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU;
+    const X x_plain = x;
+    const U u_plain = u;
 
-  if constexpr (Deriv) {
-    dvecF_dt0.resize(Fval.size(), 1);
-    dvecF_dtf.resize(Fval.size(), 1);
-    dvecF_dvecX.resize(Fval.size(), nx * numX);
-    dvecF_dvecU.resize(Fval.size(), nu * numU);
+    if constexpr (Deriv == 0u) {
+      result.F.col(ival) = f(ti, x_plain, u_plain);
+    } else if constexpr (Deriv == 1u) {
+      const auto [fval, dfval] = diff::dr<1>(f, wrt(ti, x_plain, u_plain));
+      result.F.col(ival)       = fval;
 
-    dvecF_dt0.reserve(Fval.size());
-    dvecF_dtf.reserve(Fval.size());
-
-    Eigen::VectorXi FX_pattern = Eigen::VectorXi::Constant(nx * numX, nf);
-    FX_pattern.tail(nx).setZero();
-    dvecF_dvecX.reserve(FX_pattern);
-    dvecF_dvecU.reserve(Eigen::VectorXi::Constant(nu * numU, nf));
-  }
-
-  for (const auto & [i, tau, x, u] : utils::zip(std::views::iota(0u), tau_s, xs, us)) {
-    const double T = t0 + (tf - t0) * tau;
-
-    const PlainObject<std::decay_t<decltype(x)>> x_plain = x;
-    const PlainObject<std::decay_t<decltype(u)>> u_plain = u;
-
-    if constexpr (Deriv) {
-      const auto [fval, dfval] = diff::dr(f, wrt(T, x_plain, u_plain));
-
-      assert(fval.rows() == Eigen::Index(nf));
-      assert(dfval.rows() == Eigen::Index(nf));
-      assert(dfval.cols() == Eigen::Index(1 + nu + nx));
-
-      Fval.col(i) = fval;
-
-      for (auto row = 0u; row < nf; ++row) {
-        dvecF_dt0.insert(nf * i + row, 0) = dfval(row, 0) * (1. - tau);
-        dvecF_dtf.insert(nf * i + row, 0) = dfval(row, 0) * tau;
+      for (auto row = 0u; row < result.nf; ++row) {
+        result.dvecF_dt0.insert(nf * ival + row, 0) = dfval(row, 0) * (1. - tau);
+        result.dvecF_dtf.insert(nf * ival + row, 0) = dfval(row, 0) * tau;
         for (auto col = 0u; col < nx; ++col) {
-          dvecF_dvecX.insert(nf * i + row, i * nx + col) = dfval(row, 1 + col);
+          result.dvecF_dvecX.insert(nf * ival + row, ival * nx + col) = dfval(row, 1 + col);
         }
         for (auto col = 0u; col < nu; ++col) {
-          dvecF_dvecU.insert(nf * i + row, i * nu + col) = dfval(row, 1 + nx + col);
+          result.dvecF_dvecU.insert(nf * ival + row, ival * nu + col) = dfval(row, 1 + nx + col);
         }
       }
-    } else {
-      Fval.col(i) = f(T, x_plain, u_plain);
     }
-  }
-
-  if constexpr (Deriv) {
-    dvecF_dt0.makeCompressed();
-    dvecF_dtf.makeCompressed();
-    dvecF_dvecX.makeCompressed();
-    dvecF_dvecU.makeCompressed();
-
-    return std::make_tuple(
-      std::move(Fval),
-      std::move(dvecF_dt0),
-      std::move(dvecF_dtf),
-      std::move(dvecF_dvecX),
-      std::move(dvecF_dvecU));
-  } else {
-    return Fval;
   }
 }
 
@@ -601,15 +643,18 @@ auto colloc_dyn(
   assert(m.N_colloc() == static_cast<std::size_t>(us.cols()));      // one per collocation point
   assert(nx == static_cast<std::size_t>(xs.rows()));                // one per collocation point
 
-  Eigen::MatrixXd Fval;
+  const auto N  = m.N_colloc();
+  const auto nu = us.rows();
+
+  CollocEvalResult feval_res(nx, nx, nu, N);
+
   Eigen::MatrixXd XD(nx, m.N_colloc());
-  Eigen::SparseMatrix<double> dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU, dvecXD_dvecX;
+  Eigen::SparseMatrix<double> dvecXD_dvecX;
 
   if constexpr (!Deriv) {
-    Fval = colloc_eval<0>(nx, f, m, t0, tf, xs.colwise(), us.colwise());
+    colloc_eval<0>(feval_res, f, m, t0, tf, xs.colwise(), us.colwise());
   } else {
-    std::tie(Fval, dvecF_dt0, dvecF_dtf, dvecF_dvecX, dvecF_dvecU) =
-      colloc_eval<1>(nx, f, m, t0, tf, xs.colwise(), us.colwise());
+    colloc_eval<1>(feval_res, f, m, t0, tf, xs.colwise(), us.colwise());
 
     dvecXD_dvecX.resize(XD.size(), xs.size());
 
@@ -640,10 +685,9 @@ auto colloc_dyn(
     }
   }
 
-  Eigen::VectorXd Fv = (XD - (tf - t0) * Fval).reshaped();
+  Eigen::VectorXd Fv = (XD - (tf - t0) * feval_res.F).reshaped();
 
   // scale equalities by by quadrature weights
-  const auto N      = m.N_colloc();
   const auto [n, w] = m.all_nodes_and_weights();
 
   // vec(A * W) = kron(W', I) * vec(A), so we apply kron(W', I) on the left
@@ -661,19 +705,19 @@ auto colloc_dyn(
   } else {
     dvecXD_dvecX.makeCompressed();
 
-    Eigen::SparseMatrix<double> dF_dt0 = -(tf - t0) * dvecF_dt0;
-    dF_dt0 += Fval.reshaped().sparseView();  // OK since dvecF_dtf is dense
+    Eigen::SparseMatrix<double> dF_dt0 = -(tf - t0) * feval_res.dvecF_dt0;
+    dF_dt0 += feval_res.F.reshaped().sparseView();  // OK since dvecF_dtf is dense
     dF_dt0 = W_kron_I * dF_dt0;
 
-    Eigen::SparseMatrix<double> dF_dtf = -(tf - t0) * dvecF_dtf;
-    dF_dtf -= Fval.reshaped().sparseView();  // OK since dvecF_dtf is dense
+    Eigen::SparseMatrix<double> dF_dtf = -(tf - t0) * feval_res.dvecF_dtf;
+    dF_dtf -= feval_res.F.reshaped().sparseView();  // OK since dvecF_dtf is dense
     dF_dtf = W_kron_I * dF_dtf;
 
     Eigen::SparseMatrix<double> dF_dvecX = dvecXD_dvecX;
-    dF_dvecX -= (tf - t0) * dvecF_dvecX;
+    dF_dvecX -= (tf - t0) * feval_res.dvecF_dvecX;
     dF_dvecX = W_kron_I * dF_dvecX;
 
-    Eigen::SparseMatrix<double> dF_dvecU = -(tf - t0) * W_kron_I * dvecF_dvecU;
+    Eigen::SparseMatrix<double> dF_dvecU = -(tf - t0) * W_kron_I * feval_res.dvecF_dvecU;
 
     dF_dt0.makeCompressed();
     dF_dtf.makeCompressed();
@@ -706,7 +750,7 @@ auto colloc_dyn(
  * @return {G, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU},
  * where vec(xs) stacks the columns of xs into a single column vector.
  */
-template<bool Deriv>
+template<uint8_t Deriv>
 auto colloc_int(
   const std::size_t nq,
   auto && g,
@@ -719,36 +763,35 @@ auto colloc_int(
 {
   assert(static_cast<std::size_t>(I.size()) == nq);
 
-  const std::size_t N = m.N_colloc();
+  const auto N  = m.N_colloc();
+  const auto nx = dof(*std::ranges::begin(xs));
+  const auto nu = dof(*std::ranges::begin(us));
 
   const auto [n, w] = m.all_nodes_and_weights();
 
-  if constexpr (Deriv == false) {
-    const auto Gv              = colloc_eval<Deriv>(nq, g, m, t0, tf, xs, us);
-    const Eigen::VectorXd Iest = Gv * w.head(N);
-    Eigen::VectorXd Rv         = (tf - t0) * Iest - I;
+  CollocEvalResult geval_res(nq, nx, nu, N);
+  colloc_eval<Deriv>(geval_res, g, m, t0, tf, xs, us);
+
+  const Eigen::VectorXd Iest = geval_res.F * w.head(N);
+  Eigen::VectorXd Rv         = (tf - t0) * Iest - I;
+
+  if constexpr (Deriv == 0u) {
     return Rv;
-  } else {
-    const auto [Gv, dvecG_dt0, dvecG_dtf, dvecG_dvecX, dvecG_dvecU] =
-      colloc_eval<Deriv>(nq, g, m, t0, tf, xs, us);
-    const Eigen::VectorXd Iest = Gv * w.head(N);
-
-    Eigen::VectorXd Rv = (tf - t0) * Iest - I;
-
+  } else if (Deriv == 1u) {
     const Eigen::SparseMatrix<double> w_kron_I =
       (tf - t0) * kron_identity(w.head(N).transpose(), nq);
 
-    Eigen::SparseMatrix<double> dR_dt0 = w_kron_I * dvecG_dt0;
+    Eigen::SparseMatrix<double> dR_dt0 = w_kron_I * geval_res.dvecF_dt0;
     for (auto i = 0u; i < Iest.size(); ++i) { dR_dt0.coeffRef(i, 0) -= Iest(i); }
 
-    Eigen::SparseMatrix<double> dR_dtf = w_kron_I * dvecG_dtf;
+    Eigen::SparseMatrix<double> dR_dtf = w_kron_I * geval_res.dvecF_dtf;
     for (auto i = 0u; i < Iest.size(); ++i) { dR_dtf.coeffRef(i, 0) += Iest(i); }
 
     Eigen::SparseMatrix<double> dR_dvecI = -sparse_identity(nq);
 
-    Eigen::SparseMatrix<double> dR_dvecX = w_kron_I * dvecG_dvecX;
+    Eigen::SparseMatrix<double> dR_dvecX = w_kron_I * geval_res.dvecF_dvecX;
 
-    Eigen::SparseMatrix<double> dR_dvecU = w_kron_I * dvecG_dvecU;
+    Eigen::SparseMatrix<double> dR_dvecU = w_kron_I * geval_res.dvecF_dvecU;
 
     dR_dt0.makeCompressed();
     dR_dtf.makeCompressed();

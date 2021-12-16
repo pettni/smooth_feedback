@@ -160,11 +160,12 @@ TEST(Collocation, TimeTrajectory)
   ASSERT_EQ(dyn_vals.cols(), 1);
   ASSERT_LE(dyn_vals.cwiseAbs().maxCoeff(), 1e-8);
 
-  const Eigen::VectorXd cr_vals =
-    smooth::feedback::colloc_eval<false>(ncr, cr, m, t0, tf, X.colwise(), U.colwise()).reshaped();
-  ASSERT_EQ(cr_vals.rows(), 2 * m.N_colloc());
-  ASSERT_EQ(cr_vals.cols(), 1);
-  ASSERT_TRUE(C.reshaped().isApprox(cr_vals));
+  smooth::feedback::CollocEvalResult CReval(ncr, nx, nu, m.N_colloc());
+  smooth::feedback::colloc_eval<0>(CReval, cr, m, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_EQ(CReval.F.rows(), 2);
+  ASSERT_EQ(CReval.F.cols(), m.N_colloc());
+  ASSERT_TRUE(C.reshaped().isApprox(CReval.F.reshaped()));
 
   const Eigen::VectorXd q_vals =
     smooth::feedback::colloc_int<false>(nq, g, m, t0, tf, Q, X.colwise(), U.colwise());
