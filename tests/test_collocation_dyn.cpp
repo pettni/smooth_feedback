@@ -66,9 +66,9 @@ TEST(Collocation, TimeTrajectory)
   // fill X with curve values at the two intervals
   std::size_t M = 0;
   for (auto p = 0u; p < m.N_ivals(); ++p) {
-    const auto [tau_s, w_s] = m.interval_nodes_and_weights(p);
-    for (auto i = 0u; i + 1 < tau_s.size(); ++i) {
-      X.col(M + i) = x(t0 + (tf - t0) * tau_s[i]);
+    for (const auto & [i, tau] :
+         smooth::utils::zip(std::views::iota(0u, m.N_colloc_ival(p)), m.interval_nodes(p))) {
+      X.col(M + i) = x(t0 + (tf - t0) * tau);
       C.col(M + i) = cr.operator()<double>(0, X.col(M + i), U.col(M + i));
     }
     M += m.N_colloc_ival(p);
@@ -115,8 +115,10 @@ TEST(Collocation, DynError)
   std::size_t M = 0;
   Eigen::MatrixXd X(nx, m.N_colloc() + 1);
   for (auto p = 0u; p < m.N_ivals(); ++p) {
-    const auto [tau_s, w_s] = m.interval_nodes_and_weights(p);
-    for (auto i = 0u; i + 1 < tau_s.size(); ++i) { X.col(M + i) = x(t0 + (tf - t0) * tau_s[i]); }
+    for (const auto & [i, tau] :
+         smooth::utils::zip(std::views::iota(0u, m.N_colloc_ival(p)), m.interval_nodes(p))) {
+      X.col(M + i) = x(t0 + (tf - t0) * tau);
+    }
     M += m.N_colloc_ival(p);
   }
   X.col(m.N_colloc()) = x(tf);
@@ -160,8 +162,10 @@ TEST(Collocation, StateTrajectory)
   // fill X with curve values at the two intervals
   std::size_t M = 0;
   for (auto p = 0u; p < m.N_ivals(); ++p) {
-    const auto [tau_s, w_s] = m.interval_nodes_and_weights(p);
-    for (auto i = 0u; i + 1 < tau_s.size(); ++i) { X.col(M + i) = x(t0 + (tf - t0) * tau_s[i]); }
+    for (const auto & [i, tau] :
+         smooth::utils::zip(std::views::iota(0u, m.N_colloc_ival(p)), m.interval_nodes(p))) {
+      X.col(M + i) = x(t0 + (tf - t0) * tau);
+    }
     M += m.N_colloc_ival(p);
   }
   X.col(m.N_colloc()) = x(tf);

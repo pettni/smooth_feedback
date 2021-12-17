@@ -43,28 +43,28 @@ TEST(CollocMesh, Basic)
   ASSERT_EQ(m.N_ivals(), 10);
 
   for (auto i = 0u; i < 10; ++i) {
-    auto [n, w] = m.interval_nodes_and_weights(i);
-    ASSERT_DOUBLE_EQ(n(0), i * 0.1);
+    auto ns = m.interval_nodes(i);
+    ASSERT_DOUBLE_EQ(ns.front(), i * 0.1);
   }
 
   // will only increase degree
   m.refine_ph(1, 10);
   ASSERT_EQ(m.N_ivals(), 10);
   {
-    auto [n, w] = m.interval_nodes_and_weights(1);
-    ASSERT_DOUBLE_EQ(n(0), 0.1);
+    auto ns = m.interval_nodes(1);
+    ASSERT_DOUBLE_EQ(ns.front(), 0.1);
   }
 
   // actually split it
   m.refine_ph(1, 13);
   ASSERT_EQ(m.N_ivals(), 12);
   {
-    auto [n1, w1] = m.interval_nodes_and_weights(1);
-    auto [n2, w2] = m.interval_nodes_and_weights(2);
-    auto [n3, w3] = m.interval_nodes_and_weights(3);
-    ASSERT_DOUBLE_EQ(n1(0), 0.1);
-    ASSERT_DOUBLE_EQ(n2(0), 0.1 + 0.1 / 3);
-    ASSERT_DOUBLE_EQ(n3(0), 0.1 + 2 * 0.1 / 3);
+    auto n1 = m.interval_nodes(1);
+    auto n2 = m.interval_nodes(2);
+    auto n3 = m.interval_nodes(3);
+    ASSERT_DOUBLE_EQ(n1.front(), 0.1);
+    ASSERT_DOUBLE_EQ(n2.front(), 0.1 + 0.1 / 3);
+    ASSERT_DOUBLE_EQ(n3.front(), 0.1 + 2 * 0.1 / 3);
   }
 
   m.refine_ph(2, 27);
@@ -72,7 +72,7 @@ TEST(CollocMesh, Basic)
   m.refine_ph(7, 33);
   m.refine_ph(9, 22);
 
-  auto alln = m.all_nodes_range();
+  auto alln = m.all_nodes();
 
   for (auto [d1, d2] : smooth::utils::zip(alln, alln | std::views::drop(1))) { ASSERT_LE(d1, d2); }
 }
@@ -87,14 +87,18 @@ TEST(Mesh, DifferentiationIntegration)
   const auto dx = [](double t) -> double { return 2 + 3 * 2 * t + 4 * 3 * t * t; };
 
   for (auto ival = 0u; ival < m.N_ivals(); ++ival) {
-    const auto N               = m.N_colloc_ival(ival);
-    const auto [taus, weights] = m.interval_nodes_and_weights(ival);
+    const auto N = m.N_colloc_ival(ival);
+    auto taus    = m.interval_nodes(ival);
 
     // specify function values on mesh
     Eigen::RowVectorXd xvals(N + 1);
-    for (auto i = 0u; i < N + 1; ++i) { xvals(i) = x(taus(i)); }
+    for (const auto [i, tau] : smooth::utils::zip(std::views::iota(0u, N + 1), taus)) {
+      xvals(i) = x(tau);
+    }
     Eigen::RowVectorXd dxvals(N);
-    for (auto i = 0u; i < N; ++i) { dxvals(i) = dx(taus(i)); }
+    for (const auto [i, tau] : smooth::utils::zip(std::views::iota(0u, N), taus)) {
+      dxvals(i) = dx(tau);
+    }
 
     // derivative and integral matrices
     const auto D = m.interval_diffmat(ival);
@@ -159,19 +163,18 @@ TEST(Mesh, IntervalNodes)
   smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 10);
 
-  for (const auto [d1, d2] :
-       smooth::utils::zip(mesh.interval_nodes_range(0), mesh.interval_nodes_range(1))) {
+  for (const auto [d1, d2] : smooth::utils::zip(mesh.interval_nodes(0), mesh.interval_nodes(1))) {
     ASSERT_NEAR(d1 + 0.5, d2, 1e-9);
   }
 
   for (const auto [w1, w2] :
-       smooth::utils::zip(mesh.interval_weights_range(0), mesh.interval_weights_range(1))) {
+       smooth::utils::zip(mesh.interval_weights(0), mesh.interval_weights(1))) {
     ASSERT_NEAR(w1, w2, 1e-9);
   }
 
-  auto all_nodes = mesh.all_nodes_range();
+  auto all_nodes = mesh.all_nodes();
 
-  auto all_weights = mesh.all_weights_range();
+  auto all_weights = mesh.all_weights();
 
   for (const auto [d0, d1] : smooth::utils::zip(all_nodes, all_nodes | std::views::drop(1))) {
     ASSERT_LE(d0, d1);

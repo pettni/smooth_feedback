@@ -77,8 +77,10 @@ const auto ce = []<typename T>(T tf, const X<T> & x0, const X<T> & xf, const Vec
 };
 
 /// @brief Range to std::vector
-const auto r2v = []<std::ranges::range R>(const R & r) {
-  return std::vector(std::ranges::begin(r), std::ranges::end(r));
+const auto r2v = [](std::ranges::range auto && r) {
+  std::vector<std::ranges::range_value_t<decltype(r)>> ret;
+  for (auto x : r) { ret.push_back(x); }
+  return ret;
 };
 
 int main()
@@ -178,10 +180,9 @@ int main()
 #ifdef ENABLE_PLOTTING
   using namespace matplot;
 
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
-
-  const auto tt       = linspace(0., sols.back().tf, 500);
-  const auto tt_nodes = r2v(sols.back().tf * nodes);
+  const auto tt = linspace(0., sols.back().tf, 500);
+  const auto tt_nodes =
+    r2v(mesh.all_nodes() | std::views::transform([&](double d) { return d * sols.back().tf; }));
 
   figure();
   hold(on);

@@ -191,72 +191,11 @@ public:
   }
 
   /**
-   * @brief Interval nodes and quadrature weights.
-   *
-   * @note Includes extra point at 1, i.e. size of returned arrays is equal to N_colloc_ival(i)+1
-   *
-   * @note Allocates heap memory for the return values.
-   */
-  inline std::pair<Eigen::VectorXd, Eigen::VectorXd> interval_nodes_and_weights(std::size_t i) const
-  {
-    const std::size_t k = intervals_[i].K;
-
-    Eigen::VectorXd ns, ws;
-    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
-      static constexpr auto K = Kmin + i;
-      if (K == k) {
-        static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
-        ns = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.first.data(), k + 1);
-        ws = Eigen::Map<const Eigen::VectorXd>(nw_ext_s.second.data(), k + 1);
-      }
-    });
-
-    const double tau0  = intervals_[i].tau0;
-    const double tauf  = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
-    const double alpha = (tauf - tau0) / 2;
-
-    return {
-      Eigen::VectorXd::Constant(ns.size(), tau0) + alpha * (ns + Eigen::VectorXd::Ones(ns.size())),
-      alpha * ws,
-    };
-  }
-
-  /**
-   * @brief All Mesh nodes and quadrature weights.
-   *
-   * @note Includes extra point at 1, i.e. size of returned arrays is equal to N_colloc()+1
-   *
-   * @note Allocates heap memory for the return values.
-   */
-  inline std::pair<Eigen::VectorXd, Eigen::VectorXd> all_nodes_and_weights() const
-  {
-    Eigen::VectorXd n(N_colloc() + 1), w(N_colloc() + 1);
-
-    std::size_t cntr = 0;
-    for (auto i = 0u; i < intervals_.size(); ++i) {
-      auto [ni, wi] = interval_nodes_and_weights(i);
-
-      const std::size_t Ni = ni.size();
-
-      // exclude last point that belongs to next interval..
-      n.segment(cntr, Ni - 1) = ni.head(Ni - 1);
-      w.segment(cntr, Ni - 1) = wi.head(Ni - 1);
-
-      cntr += Ni - 1;
-    }
-
-    n.tail(1).setConstant(1);
-    w.tail(1).setConstant(0);
-
-    return {n, w};
-  }
-
-  /**
    * @brief Interval nodes (as range of doubles).
    *
    * @note Includes extra point at 1, i.e. size of returned range is equal to N_colloc_ival()+1
    */
-  inline auto interval_nodes_range(std::size_t i) const
+  inline auto interval_nodes(std::size_t i) const
   {
     const std::size_t k = intervals_[i].K;
 
@@ -283,14 +222,14 @@ public:
    *
    * @note Includes extra point at 1, i.e. size of returned range is equal to N_colloc()+1
    */
-  inline auto all_nodes_range() const
+  inline auto all_nodes() const
   {
     const auto n_ivals = N_ivals();
     auto all_views =
       std::views::iota(0u, n_ivals) | std::views::transform([this, n_ivals = n_ivals](auto i) {
         const auto n_ival = N_colloc_ival(i);
         const auto n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
-        return interval_nodes_range(i) | std::views::take(int64_t(n_take));
+        return interval_nodes(i) | std::views::take(int64_t(n_take));
       });
 
     return std::views::join(std::move(all_views));
@@ -301,7 +240,7 @@ public:
    *
    * @note Includes zero weight at 1, i.e. size of returned range is equal to N_colloc_ival()+1
    */
-  inline auto interval_weights_range(std::size_t i) const
+  inline auto interval_weights(std::size_t i) const
   {
     const std::size_t k = intervals_[i].K;
 
@@ -327,14 +266,14 @@ public:
    *
    * @note Includes zero weight at 1, i.e. size of returned range is equal to N_colloc()+1
    */
-  inline auto all_weights_range() const
+  inline auto all_weights() const
   {
     const auto n_ivals = N_ivals();
     auto all_views =
       std::views::iota(0u, n_ivals) | std::views::transform([this, n_ivals = n_ivals](auto i) {
         const auto n_ival = N_colloc_ival(i);
         const auto n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
-        return interval_weights_range(i) | std::views::take(int64_t(n_take));
+        return interval_weights(i) | std::views::take(int64_t(n_take));
       });
 
     return std::views::join(std::move(all_views));
@@ -427,8 +366,7 @@ public:
    * @param extend set to true if a value is provided for t=+1
    */
   template<smooth::traits::RnType RetT>
-  RetT
-  eval(double t, std::ranges::sized_range auto && r, std::size_t p = 0, bool extend = true) const
+  RetT eval(double t, std::ranges::sized_range auto && r, std::size_t p = 0, bool extend = true) const
   {
     using namespace std::views;
 

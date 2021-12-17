@@ -40,7 +40,6 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
 {
   using X = typename std::decay_t<decltype(ocp)>::X;
-  using U = typename std::decay_t<decltype(ocp)>::U;
 
   using Mat = Eigen::MatrixXd;
   using Vec = Eigen::VectorXd;
@@ -104,8 +103,7 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
   // TODO reserve nonzeros...
 
   for (auto ival = 0u, M = 0u; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
-    const auto Nival        = mesh.N_colloc_ival(ival);               // number of nodes in interval
-    const auto [tau_s, w_s] = mesh.interval_nodes_and_weights(ival);  // node values (plus 1)
+    const auto Nival = mesh.N_colloc_ival(ival);  // number of nodes in interval
 
     const Mat D = mesh.interval_diffmat(ival);
 
@@ -114,7 +112,7 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
     // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = X D
 
     for (const auto & [i, tau_i] :
-         smooth::utils::zip(std::views::iota(0u, Nival), mesh.interval_nodes_range(ival))) {
+         smooth::utils::zip(std::views::iota(0u, Nival), mesh.interval_nodes(ival))) {
       const auto t_i           = tf * tau_i;                     // unscaled time
       const auto [xl_i, dxl_i] = diff::dr<1>(xl_fun, wrt(t_i));  // linearization trajectory
       const auto ul_i          = ul_fun(t_i);                    // linearization input
@@ -147,9 +145,8 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
     }
   }
 
-  auto xslin =
-    mesh.all_nodes_range() | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
-  auto uslin = mesh.all_nodes_range() | std::views::take(int64_t(N))
+  auto xslin = mesh.all_nodes() | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
+  auto uslin = mesh.all_nodes() | std::views::take(int64_t(N))
              | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
 
   const Eigen::Vector<double, 1> q_dummy{1.};

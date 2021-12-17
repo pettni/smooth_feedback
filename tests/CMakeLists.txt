@@ -6,6 +6,8 @@ configure_file(
   ${PROJECT_BINARY_DIR}/DartConfiguration.tcl
 )
 
+add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+
 add_executable(test_ocp_to_qp test_ocp_to_qp.cpp)
 target_link_libraries(test_ocp_to_qp PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_ocp_to_qp)

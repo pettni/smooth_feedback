@@ -119,7 +119,7 @@ auto colloc_dyn(
   // vec(A * W) = kron(W', I) * vec(A), so we apply kron(W', I) on the left
   Eigen::SparseMatrix<double> W(N, N);
   W.reserve(Eigen::VectorXi::Ones(N));
-  for (const auto [i, w] : smooth::utils::zip(std::views::iota(0u, N), m.all_weights_range())) {
+  for (const auto [i, w] : smooth::utils::zip(std::views::iota(0u, N), m.all_weights())) {
     W.insert(i, i) = w;
   }
   const Eigen::SparseMatrix<double> W_kron_I = kron_identity(W, nx);
@@ -200,7 +200,7 @@ Eigen::VectorXd mesh_dyn_error(
     Eigen::MatrixXd Fval(nx, Kext + 1);
     Eigen::MatrixXd Xval(nx, Kext + 1);
     for (const auto & [j, tau] :
-         smooth::utils::zip(std::views::iota(0u, Kext + 1), mext.interval_nodes_range(i))) {
+         smooth::utils::zip(std::views::iota(0u, Kext + 1), mext.interval_nodes(i))) {
       const double tj = t0 + (tf - t0) * tau;
 
       // evaluate x and u values at tj using current degree polynomials

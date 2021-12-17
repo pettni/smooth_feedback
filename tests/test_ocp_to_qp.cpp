@@ -109,7 +109,7 @@ TEST(OcpToQp, Basic)
   Eigen::Matrix<double, 2, -1> Xvar(ocp.nx, mesh.N_colloc() + 1);
   Eigen::Matrix<double, 1, -1> Uvar(ocp.nu, mesh.N_colloc());
 
-  for (const auto [i, t] : smooth::utils::zip(std::views::iota(0u), mesh.all_nodes_range())) {
+  for (const auto [i, t] : smooth::utils::zip(std::views::iota(0u), mesh.all_nodes())) {
     Xvar.col(i) = xtraj(tf * t);
     if (i < mesh.N_colloc()) { Uvar.col(i).setConstant(u0); }
   }

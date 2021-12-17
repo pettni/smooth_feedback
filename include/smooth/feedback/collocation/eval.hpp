@@ -134,8 +134,7 @@ void colloc_eval(
 
   res.setZero();
 
-  for (const auto & [ival, tau, x, u] :
-       utils::zip(std::views::iota(0u), m.all_nodes_range(), xs, us)) {
+  for (const auto & [ival, tau, x, u] : utils::zip(std::views::iota(0u), m.all_nodes(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;

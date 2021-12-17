@@ -603,7 +603,7 @@ NLPSolution ocpsol_to_nlpsol(
   lambda.segment(qcon_B, qcon_L)   = ocpsol.lambda_q;
   lambda.segment(cecon_B, cecon_L) = ocpsol.lambda_ce;
 
-  for (const auto & [i, tau] : smooth::utils::zip(std::views::iota(0u), mesh.all_nodes_range())) {
+  for (const auto & [i, tau] : smooth::utils::zip(std::views::iota(0u), mesh.all_nodes())) {
     x.segment(xvar_B + i * ocp.nx, ocp.nx) = ocpsol.x(t0 + tau * (tf - t0));
     if (i < N) {
       x.segment(uvar_B + i * ocp.nu, ocp.nu)         = ocpsol.u(t0 + tau * (tf - t0));

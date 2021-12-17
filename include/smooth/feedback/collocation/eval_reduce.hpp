@@ -212,7 +212,7 @@ void colloc_eval_reduce(
   res.setZero();
 
   for (const auto & [i, tau, l, x, u] :
-       utils::zip(std::views::iota(0u), m.all_nodes_range(), ls, xs, us)) {
+       utils::zip(std::views::iota(0u), m.all_nodes(), ls, xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;
@@ -318,7 +318,7 @@ void colloc_integrate(
   std::ranges::range auto && xs,
   std::ranges::range auto && us)
 {
-  colloc_eval_reduce<Deriv>(res, m.all_weights_range(), g, m, t0, tf, xs, us);
+  colloc_eval_reduce<Deriv>(res, m.all_weights(), g, m, t0, tf, xs, us);
 
   // result is equal to (tf - t0) * F, must update derivatives
 
