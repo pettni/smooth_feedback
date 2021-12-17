@@ -92,6 +92,8 @@ public:
    *
    * @note It must hold that kKmin <= Kmin <= Kmax <= kKmax, where kKmin and kKmax are compile-time
    * constants that define which LGR nodes to pre-compute.
+   *
+   * @note Allocates heap memory.
    */
   inline Mesh() : intervals_(1, Interval{.K = Kmin, .tau0 = 0}) {}
 
@@ -129,6 +131,8 @@ public:
    *                                          n = max(2, ceil(D / Kmin)) intervals with deg Kmin
    * If D < current degree,                   then nothing is done.
    * If D <= Kmax,                            then the polynomial degree is increased to D.
+   *
+   * @note Allocates heap memory if the number of intervals is increased.
    */
   inline void refine_ph(std::size_t i, std::size_t D)
   {
@@ -167,6 +171,8 @@ public:
    * @brief Interval nodes and quadrature weights.
    *
    * @note Includes extra point at 1, i.e. size of returned arrays is equal to N_colloc_ival(i)+1
+   *
+   * @note Allocates heap memory for the return values.
    */
   inline std::pair<Eigen::VectorXd, Eigen::VectorXd> interval_nodes_and_weights(std::size_t i) const
   {
@@ -196,6 +202,8 @@ public:
    * @brief All Mesh nodes and quadrature weights.
    *
    * @note Includes extra point at 1, i.e. size of returned arrays is equal to N_colloc()+1
+   *
+   * @note Allocates heap memory for the return values.
    */
   inline std::pair<Eigen::VectorXd, Eigen::VectorXd> all_nodes_and_weights() const
   {
@@ -221,7 +229,9 @@ public:
   }
 
   /**
-   * @brief Interval nodes (as range of doubles)
+   * @brief Interval nodes (as range of doubles).
+   *
+   * @note Includes extra point at 1, i.e. size of returned range is equal to N_colloc_ival()+1
    */
   inline auto interval_nodes_range(std::size_t i) const
   {
@@ -246,7 +256,9 @@ public:
   }
 
   /**
-   * @brief Nodes (as range of doubles)
+   * @brief Nodes (as range of doubles).
+   *
+   * @note Includes extra point at 1, i.e. size of returned range is equal to N_colloc()+1
    */
   inline auto all_nodes_range() const
   {
@@ -263,6 +275,8 @@ public:
 
   /**
    * @brief Interval weights (as range of doubles)
+   *
+   * @note Includes zero weight at 1, i.e. size of returned range is equal to N_colloc_ival()+1
    */
   inline auto interval_weights_range(std::size_t i) const
   {
@@ -288,6 +302,7 @@ public:
   /**
    * @brief Weights (as range of doubles)
    *
+   * @note Includes zero weight at 1, i.e. size of returned range is equal to N_colloc()+1
    */
   inline auto all_weights_range() const
   {
@@ -312,6 +327,8 @@ public:
    *   \begin{bmatrix} y(\tau_{i, 0}) & y(\tau_{i, 1}) & \cdots & y(\tau_{i, K}) \end{bmatrix} D
    * \f],
    * where \f$ y(\cdot) \in \mathbb{R}^{d \times 1} \f$ is a Lagrange polynomial in interval i.
+   *
+   * @note Allocates heap memory for return value.
    */
   inline Eigen::MatrixXd interval_diffmat(std::size_t i) const
   {
@@ -352,6 +369,10 @@ public:
    * \f],
    * where \f$ y(\cdot) \in \mathbb{R}^{d \times 1} \f$ is a Lagrange
    * polynomial in interval i.
+   *
+   * @note Allocates heap memory for return value.
+   *
+   * @note Performs a matrix inverse.
    */
   inline Eigen::MatrixXd interval_intmat(std::size_t i) const
   {
@@ -379,11 +400,14 @@ public:
    *
    * @param t time value in [0, 1]
    * @param r values for the collocation points (size N [extend=false] or N+1 [extend=true])
-   * @param derivative to evaluate
+   * @param p derivative to evaluate
    * @param extend set to true if a value is provided for t=+1
+   *
+   * @note Allocates heap memory (due to bad implementation)
    */
-  template<typename RetT, std::ranges::sized_range R>
-  RetT eval(double t, const R & r, std::size_t p = 0, bool extend = true) const
+  template<typename RetT>
+  RetT
+  eval(double t, std::ranges::sized_range auto && r, std::size_t p = 0, bool extend = true) const
   {
     [[maybe_unused]] const std::size_t N = N_colloc();
 
@@ -424,12 +448,11 @@ public:
 
     using namespace std::views;
 
-    std::size_t N_before = 0;
+    int64_t N_before = 0;
     for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
-    const auto r_ival = r | drop(int64_t(N_before));
-    RetT ret          = W(0) * *std::ranges::begin(r_ival);
+    RetT ret = RetT::Zero(dof(*std::ranges::begin(r)));
 
-    for (auto i = 1u; const auto & v : r_ival | drop(1) | take(W.size() - 1)) { ret += W(i++) * v; }
+    for (const auto & [w, v] : smooth::utils::zip(W, r | drop(N_before))) { ret += w * v; }
     return ret;
   }
 
