@@ -44,13 +44,23 @@
 
 namespace smooth::feedback {
 
-inline QuadraticProgramSparse<double> ocp_to_qp(
+/**
+ * @brief Formulate an optimal control problem as a quadratic program via linearization.
+ *
+ * @param ocp input problem
+ * @param mesh time discretization
+ * @param tf time horizon
+ * @param xl_fun state linearization (must be differentiable w.r.t. time)
+ * @param ul_fun input linearization
+ *
+ * @return sparse quadratic program for a flattened formulation of ocp.
+ *
+ * @see qpsol_to_ocpsol()
+ */
+QuadraticProgramSparse<double> ocp_to_qp(
   const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
 {
   using X = typename std::decay_t<decltype(ocp)>::X;
-
-  using Mat = Eigen::MatrixXd;
-  using Vec = Eigen::VectorXd;
 
   const X xl0 = xl_fun(0.);
   const X xlf = xl_fun(tf);
@@ -58,28 +68,13 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   assert(ocp.nq == 1);
 
-  // objective function linearization
-
-  const auto [th, dth, d2th] = diff::dr<2>(ocp.theta, wrt(tf, xl0, xlf, ql));
-
-  [[maybe_unused]] const Vec qo_tf = dth.segment(0, 1);
-  const Vec qo_x0                  = dth.segment(1, ocp.nx);
-  const Vec qo_xf                  = dth.segment(1 + ocp.nx, ocp.nx);
-  const Vec qo_q                   = dth.segment(1 + 2 * ocp.nx, ocp.nq);
-
-  [[maybe_unused]] const Mat Qo_tf = d2th.block(0, 0, 1, 1) / 2;
-  const Mat Qo_x0                  = d2th.block(1, 1, ocp.nx, ocp.nx) / 2;
-  const Mat Qo_x0f                 = d2th.block(1, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
-  const Mat Qo_xf                  = d2th.block(1 + ocp.nx, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
-  [[maybe_unused]] const Mat Qo_ql = d2th.block(1 + 2 * ocp.nx, 1 + 2 * ocp.nx, ocp.nq, ocp.nq) / 2;
-
-  const auto N = mesh.N_colloc();
-
   /////////////////////////
   //// VARIABLE LAYOUT ////
   /////////////////////////
 
   // [x0 x1 ... xN u0 u1 ... uN-1]
+
+  const auto N = mesh.N_colloc();
 
   const auto xvar_L = ocp.nx * (N + 1);
   const auto uvar_L = ocp.nu * N;
@@ -97,6 +92,26 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   const auto Nvar = xvar_L + uvar_L;
   const auto Ncon = dcon_L + crcon_L + cecon_L;
+
+  /////////////////////////////////
+  //// OBJECTIVE LINEARIZATION ////
+  /////////////////////////////////
+
+  using Mat = Eigen::MatrixXd;
+  using Vec = Eigen::VectorXd;
+
+  const auto [th, dth, d2th] = diff::dr<2>(ocp.theta, wrt(tf, xl0, xlf, ql));
+
+  [[maybe_unused]] const Vec qo_tf = dth.segment(0, 1);
+  const Vec qo_x0                  = dth.segment(1, ocp.nx);
+  const Vec qo_xf                  = dth.segment(1 + ocp.nx, ocp.nx);
+  const Vec qo_q                   = dth.segment(1 + 2 * ocp.nx, ocp.nq);
+
+  [[maybe_unused]] const Mat Qo_tf = d2th.block(0, 0, 1, 1) / 2;
+  const Mat Qo_x0                  = d2th.block(1, 1, ocp.nx, ocp.nx) / 2;
+  const Mat Qo_x0f                 = d2th.block(1, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
+  const Mat Qo_xf                  = d2th.block(1 + ocp.nx, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
+  [[maybe_unused]] const Mat Qo_ql = d2th.block(1 + 2 * ocp.nx, 1 + 2 * ocp.nx, ocp.nq, ocp.nq) / 2;
 
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////
@@ -241,6 +256,18 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
     .A = std::move(A),
     .l = std::move(l),
     .u = std::move(u),
+  };
+}
+
+template<LieGroup X, Manifold U>
+OCPSolution<X, U> qpsol_to_ocpsol(
+  const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
+{
+  return OCPSolution<X, U>{
+    .t0 = 0.,
+    .tf = tf,
+    .u  = [](double) -> U { return U{}; },
+    .x  = [](double) -> X { return X{}; },
   };
 }
 

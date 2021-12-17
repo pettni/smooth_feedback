@@ -168,16 +168,16 @@ struct OCPSolution
   std::function<X(double)> x;
 
   /// @brief Multipliers for integral constraints
-  Eigen::VectorXd lambda_q;
+  Eigen::VectorXd lambda_q{};
 
   /// @brief Multipliers for endpoint constraints
-  Eigen::VectorXd lambda_ce;
+  Eigen::VectorXd lambda_ce{};
 
   /// @brief Multipliers for dynamics equality constraint
-  std::function<Eigen::VectorXd(double)> lambda_dyn;
+  std::function<Eigen::VectorXd(double)> lambda_dyn{};
 
   /// @brief Multipliers for active running constraints
-  std::function<Eigen::VectorXd(double)> lambda_cr;
+  std::function<Eigen::VectorXd(double)> lambda_cr{};
 };
 
 /// @brief Solution to OCP problem defined on flat spaces
