@@ -26,6 +26,11 @@
 #ifndef SMOOTH__FEEDBACK__COLLOCATION__DYN_HPP_
 #define SMOOTH__FEEDBACK__COLLOCATION__DYN_HPP_
 
+/**
+ * @file
+ * @brief Collocation dynamics constraints.
+ */
+
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <smooth/diff.hpp>

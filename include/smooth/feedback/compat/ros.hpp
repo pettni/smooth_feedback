@@ -26,6 +26,11 @@
 #ifndef SMOOTH__FEEDBACK__COMPAT__ROS_HPP_
 #define SMOOTH__FEEDBACK__COMPAT__ROS_HPP_
 
+/**
+ * @file
+ * @brief Specialization of traits for ROS types.
+ */
+
 #include <rclcpp/time.hpp>
 
 #include "smooth/feedback/time.hpp"

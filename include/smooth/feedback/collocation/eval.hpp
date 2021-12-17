@@ -26,6 +26,11 @@
 #ifndef SMOOTH__FEEDBACK__COLLOCATION__EVAL_HPP_
 #define SMOOTH__FEEDBACK__COLLOCATION__EVAL_HPP_
 
+/**
+ * @file
+ * @brief Evaluate transform-like functions and derivatives on collocation points.
+ */
+
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <smooth/diff.hpp>

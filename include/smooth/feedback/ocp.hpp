@@ -3,7 +3,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2021 Petter Nilsson, John B. Mains
+// Copyright (c) 2021 Petter Nilsson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal

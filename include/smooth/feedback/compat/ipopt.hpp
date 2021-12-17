@@ -3,7 +3,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2021 Petter Nilsson, John B. Mains
+// Copyright (c) 2021 Petter Nilsson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,11 @@
 
 #ifndef SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
 #define SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
+
+/**
+ * @file
+ * @brief Solve nonlinear programs with Ipopt.
+ */
 
 #define HAVE_CSTDDEF
 #include <IpIpoptApplication.hpp>

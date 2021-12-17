@@ -26,6 +26,11 @@
 #ifndef SMOOTH__FEEDBACK__COLLOCATION__MESH_HPP_
 #define SMOOTH__FEEDBACK__COLLOCATION__MESH_HPP_
 
+/**
+ * @file
+ * @brief Refinable Legendre-Gauss-Radau mesh of time interval [0, 1]
+ */
+
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <smooth/internal/utils.hpp>

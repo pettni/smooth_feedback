@@ -23,8 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SMOOTH__FEEDBACK__LINEAR_OCP_HPP_
-#define SMOOTH__FEEDBACK__LINEAR_OCP_HPP_
+#ifndef SMOOTH__FEEDBACK__OCP_TO_QP_HPP_
+#define SMOOTH__FEEDBACK__OCP_TO_QP_HPP_
 
 /**
  * @file
@@ -246,4 +246,4 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
 }  // namespace smooth::feedback
 
-#endif  // SMOOTH__FEEDBACK__LINEAR_OCP_HPP_
+#endif  // SMOOTH__FEEDBACK__OCP_TO_QP_HPP_
