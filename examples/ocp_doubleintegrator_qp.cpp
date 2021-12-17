@@ -53,9 +53,9 @@ int main()
   smooth::feedback::Mesh<4, 4> mesh;
   mesh.refine_ph(0, 40);
 
-  const auto tf     = 5.;
-  const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Zero(2); };
-  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>::Zero(1); };
+  const auto tf     = ocp_di.cel.x();  // grab constraint on tf..
+  const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Ones(2); };
+  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>::Ones(1); };
 
   const auto qp = ocp_to_qp(ocp_di, mesh, tf, xl_fun, ul_fun);
 

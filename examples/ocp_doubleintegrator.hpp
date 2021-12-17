@@ -51,8 +51,8 @@ const auto g = []<typename T>(T, const X<T> & x, const U<T> & u) -> Vec<T, 1> {
 };
 
 /// @brief Running constraints
-const auto cr = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T, 1> {
-  return Vec<T, 1>{{u.x()}};
+const auto cr = []<typename T>(T, const X<T> & x, const U<T> & u) -> Vec<T, 2> {
+  return Vec<T, 2>{{x.y(), u.x()}};
 };
 
 /// @brief End constraints
@@ -70,14 +70,14 @@ inline const OcpDI ocp_di{
   .nx    = 2,
   .nu    = 1,
   .nq    = 1,
-  .ncr   = 1,
+  .ncr   = 2,
   .nce   = 5,
   .theta = theta,
   .f     = f,
   .g     = g,
   .cr    = cr,
-  .crl   = Vec<double, 1>{{-1}},
-  .cru   = Vec<double, 1>{{1}},
+  .crl   = Vec<double, 2>{{-0.5, -1}},
+  .cru   = Vec<double, 2>{{1.5, 1}},
   .ce    = ce,
   .cel   = Vec<double, 5>{{5, 1, 1, 0.1, 0}},
   .ceu   = Vec<double, 5>{{5, 1, 1, 0.1, 0}},
