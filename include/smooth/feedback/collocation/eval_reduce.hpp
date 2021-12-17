@@ -199,6 +199,8 @@ void colloc_eval_reduce(
   std::ranges::range auto && xs,
   std::ranges::range auto && us)
 {
+  using namespace std::views;
+
   using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
   using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
 
@@ -211,8 +213,7 @@ void colloc_eval_reduce(
 
   res.setZero();
 
-  for (const auto & [i, tau, l, x, u] :
-       utils::zip(std::views::iota(0u), m.all_nodes(), ls, xs, us)) {
+  for (const auto & [i, tau, l, x, u] : utils::zip(iota(0u), m.all_nodes(), ls, xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;

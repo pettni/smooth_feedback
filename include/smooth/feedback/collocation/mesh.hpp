@@ -42,6 +42,11 @@
 
 namespace smooth::feedback {
 
+using smooth::utils::zip;
+
+using std::views::iota, std::views::drop, std::views::reverse, std::views::take,
+  std::views::transform, std::views::join;
+
 namespace detail {
 
 /**
@@ -166,8 +171,7 @@ public:
 
     assert(N == std::size_t(std::ranges::size(errs)));
 
-    for (const auto & [i, e] : smooth::utils::zip(
-           std::views::iota(0u, N) | std::views::reverse, errs | std::views::reverse)) {
+    for (const auto & [i, e] : zip(iota(0u, N) | reverse, errs | reverse)) {
 
       const auto Ki = N_colloc_ival(i);
 
@@ -199,40 +203,43 @@ public:
   {
     const std::size_t k = intervals_[i].K;
 
+    assert(Kmin <= k && k <= Kmax + 1);
+
     std::span<const double> sp;
 
     utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
       static constexpr auto K = Kmin + i;
       if (K == k) {
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
-        sp                             = std::span<const double>(nw_ext_s.first.data(), k + 1);
+
+        sp = std::span<const double>(nw_ext_s.first.data(), k + 1);
       }
     });
 
-    const double tau0  = intervals_[i].tau0;
-    const double tauf  = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
-    const double alpha = (tauf - tau0) / 2;
+    const double tau0 = intervals_[i].tau0;
+    const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+    const double al   = (tauf - tau0) / 2;
 
-    return std::views::transform(
-      std::move(sp), [tau0, alpha](double d) -> double { return tau0 + alpha * (d + 1); });
+    return transform(std::move(sp), [tau0, al](double d) -> double { return tau0 + al * (d + 1); });
   }
 
   /**
    * @brief Nodes (as range of doubles).
    *
    * @note Includes extra point at 1, i.e. size of returned range is equal to N_colloc()+1
+   *
+   * @note The result is an input range
    */
   inline auto all_nodes() const
   {
     const auto n_ivals = N_ivals();
-    auto all_views =
-      std::views::iota(0u, n_ivals) | std::views::transform([this, n_ivals = n_ivals](auto i) {
-        const auto n_ival = N_colloc_ival(i);
-        const auto n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
-        return interval_nodes(i) | std::views::take(int64_t(n_take));
-      });
+    auto all_views     = iota(0u, n_ivals) | transform([this, n_ivals = n_ivals](auto i) {
+                       const auto n_ival    = N_colloc_ival(i);
+                       const int64_t n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
+                       return interval_nodes(i) | take(n_take);
+                     });
 
-    return std::views::join(std::move(all_views));
+    return join(std::move(all_views));
   }
 
   /**
@@ -244,39 +251,43 @@ public:
   {
     const std::size_t k = intervals_[i].K;
 
+    assert(Kmin <= k && k <= Kmax + 1);
+
     std::span<const double> sp;
 
     utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
       static constexpr auto K = Kmin + i;
       if (K == k) {
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
-        sp                             = std::span<const double>(nw_ext_s.second.data(), k + 1);
+
+        sp = std::span<const double>(nw_ext_s.second.data(), k + 1);
       }
     });
 
-    const double tau0  = intervals_[i].tau0;
-    const double tauf  = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
-    const double alpha = (tauf - tau0) / 2;
+    const double tau0 = intervals_[i].tau0;
+    const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+    const double al   = (tauf - tau0) / 2;
 
-    return std::views::transform(std::move(sp), [alpha](double d) -> double { return alpha * d; });
+    return transform(std::move(sp), [al](double d) -> double { return al * d; });
   }
 
   /**
    * @brief Weights (as range of doubles)
    *
    * @note Includes zero weight at 1, i.e. size of returned range is equal to N_colloc()+1
+   *
+   * @note The result is an input range
    */
   inline auto all_weights() const
   {
     const auto n_ivals = N_ivals();
-    auto all_views =
-      std::views::iota(0u, n_ivals) | std::views::transform([this, n_ivals = n_ivals](auto i) {
-        const auto n_ival = N_colloc_ival(i);
-        const auto n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
-        return interval_weights(i) | std::views::take(int64_t(n_take));
-      });
+    auto all_views     = iota(0u, n_ivals) | transform([this, n_ivals = n_ivals](auto i) {
+                       const auto n_ival    = N_colloc_ival(i);
+                       const int64_t n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
+                       return interval_weights(i) | take(n_take);
+                     });
 
-    return std::views::join(std::move(all_views));
+    return join(std::move(all_views));
   }
 
   /**
@@ -300,6 +311,7 @@ public:
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
 
     Eigen::MatrixXd ret;
+
     utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
       static constexpr auto K = Kmin + i;
       if (K == k) {
@@ -309,7 +321,6 @@ public:
           polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first)
             .template block<K + 1, K>(0, 0);
         ret = MatMap(D_ext_s[0].data(), k + 1, k);
-        ;
       }
     });
 
@@ -366,18 +377,8 @@ public:
    * @param extend set to true if a value is provided for t=+1
    */
   template<smooth::traits::RnType RetT>
-  RetT eval(double t, std::ranges::sized_range auto && r, std::size_t p = 0, bool extend = true) const
+  RetT eval(double t, std::ranges::range auto && r, std::size_t p = 0, bool extend = true) const
   {
-    using namespace std::views;
-
-    [[maybe_unused]] const std::size_t N = N_colloc();
-
-    if (extend) {
-      assert(std::ranges::size(r) == N + 1);
-    } else {
-      assert(std::ranges::size(r) == N);
-    }
-
     const std::size_t ival = interval_find(t);
     const std::size_t k    = intervals_[ival].K;
 
@@ -401,18 +402,18 @@ public:
           const auto U                   = monomial_derivative<K>(u, p);       // 1 x K+1
           const auto W                   = U * B_ext_s;                        // 1 x K+1
 
-          std::span<const double> sp(W[0].data(), k + 1);
-
-          for (const auto & [w, v] : smooth::utils::zip(sp, r | drop(N_before))) { ret += w * v; }
+          for (const auto & [w, v] : zip(std::span(W[0].data(), k + 1), r | drop(N_before))) {
+            ret += w * v;
+          }
         } else {
           static constexpr auto nw_s = lgr_nodes<K>();
           static constexpr auto B_s  = lagrange_basis<K - 1>(nw_s.first);  // K x K
           const auto U               = monomial_derivative<K - 1>(u, p);   // 1 x K
           const auto W               = U * B_s;                            // 1 x K
 
-          std::span<const double> sp(W[0].data(), k);
-
-          for (const auto & [w, v] : smooth::utils::zip(sp, r | drop(N_before))) { ret += w * v; }
+          for (const auto & [w, v] : zip(std::span(W[0].data(), k), r | drop(N_before))) {
+            ret += w * v;
+          }
         }
       }
     });
