@@ -28,7 +28,7 @@
 #include <Eigen/Core>
 
 #include "smooth/feedback/compat/ipopt.hpp"
-#include "smooth/feedback/ocp.hpp"
+#include "smooth/feedback/ocp_to_nlp.hpp"
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;

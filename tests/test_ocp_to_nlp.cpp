@@ -29,7 +29,7 @@
 #include <smooth/so3.hpp>
 
 // #include "smooth/compat/autodiff.hpp"
-#include "smooth/feedback/ocp.hpp"
+#include "smooth/feedback/ocp_to_nlp.hpp"
 
 template<typename T>
 using Vec = Eigen::VectorX<T>;

@@ -60,9 +60,9 @@ add_executable(test_utils_sparse test_utils_sparse.cpp)
 target_link_libraries(test_utils_sparse PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_utils_sparse)
 
-add_executable(test_ocp test_ocp.cpp)
-target_link_libraries(test_ocp PRIVATE feedback GTest::Main)
-gtest_discover_tests(test_ocp)
+add_executable(test_ocp_to_nlp test_ocp_to_nlp.cpp)
+target_link_libraries(test_ocp_to_nlp PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_ocp_to_nlp)
 
 pkg_check_modules(IPOPT ipopt QUIET)
 if (${IPOPT_FOUND})

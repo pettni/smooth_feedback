@@ -26,11 +26,19 @@
 #ifndef SMOOTH__FEEDBACK__LINEAR_OCP_HPP_
 #define SMOOTH__FEEDBACK__LINEAR_OCP_HPP_
 
+/**
+ * @file
+ * @brief Formulate optimal control problem as a quadratic program
+ */
+
 #include <Eigen/Core>
 
 #include <smooth/diff.hpp>
 #include <smooth/lie_group.hpp>
 
+#include "collocation/eval.hpp"
+#include "collocation/eval_reduce.hpp"
+#include "collocation/mesh.hpp"
 #include "ocp.hpp"
 #include "qp.hpp"
 

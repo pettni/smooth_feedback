@@ -26,7 +26,7 @@
 #include <Eigen/Core>
 #include <smooth/bundle.hpp>
 #include <smooth/feedback/compat/ipopt.hpp>
-#include <smooth/feedback/ocp.hpp>
+#include <smooth/feedback/ocp_to_nlp.hpp>
 #include <smooth/se2.hpp>
 
 #include <chrono>
