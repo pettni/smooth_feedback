@@ -120,8 +120,9 @@ int main()
         {"print_level", 5},
       },
       {
-        {"linear_solver", "mumps"}, {"hessian_approximation", "limited-memory"},
-        // {"derivative_test", "first-order"},
+        {"linear_solver", "mumps"},
+        {"hessian_approximation", "limited-memory"},
+        {"derivative_test", "first-order"},
         // {"print_timing_statistics", "yes"},
       },
       {
@@ -138,7 +139,7 @@ int main()
     std::cout << "interval errors " << errs.transpose() << std::endl;
 
     if (errs.maxCoeff() > target_err) {
-      smooth::feedback::mesh_refine(mesh, errs, 0.1 * target_err);
+      mesh.refine_errors(errs, 0.1 * target_err);
       nlpsol = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, sol);
     } else {
       break;

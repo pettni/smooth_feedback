@@ -156,6 +156,29 @@ public:
   }
 
   /**
+   * @brief Refine intervals in mesh to satisfy a target error criterion.
+   * @param errs relative errors for all intervals (@see mesh_dyn_error())
+   * @param target_err target relative error
+   */
+  inline void refine_errors(std::ranges::sized_range auto && errs, double target_err)
+  {
+    const auto N = N_ivals();
+
+    assert(N == std::size_t(std::ranges::size(errs)));
+
+    for (const auto & [i, e] : smooth::utils::zip(
+           std::views::iota(0u, N) | std::views::reverse, errs | std::views::reverse)) {
+
+      const auto Ki = N_colloc_ival(i);
+
+      if (e > target_err) {
+        const auto Ktarget = Ki + std::lround(std::log(e / target_err) / std::log(Ki) + 1);
+        refine_ph(i, Ktarget);
+      }
+    }
+  }
+
+  /**
    * @brief Set the number of collocation points in interval i to K
    * @param i interval index
    * @param K number of collocation points s.t. (Kmin <= K <= Kmax + 1)
@@ -402,13 +425,13 @@ public:
    * @param r values for the collocation points (size N [extend=false] or N+1 [extend=true])
    * @param p derivative to evaluate
    * @param extend set to true if a value is provided for t=+1
-   *
-   * @note Allocates heap memory (due to bad implementation)
    */
-  template<typename RetT>
+  template<smooth::traits::RnType RetT>
   RetT
   eval(double t, std::ranges::sized_range auto && r, std::size_t p = 0, bool extend = true) const
   {
+    using namespace std::views;
+
     [[maybe_unused]] const std::size_t N = N_colloc();
 
     if (extend) {
@@ -425,34 +448,37 @@ public:
 
     const double u = 2 * (t - tau0) / (tauf - tau0) - 1;
 
-    Eigen::RowVectorXd W;
+    int64_t N_before = 0;
+    for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
+
+    // initialize output variable
+    RetT ret = RetT::Zero(dof(*std::ranges::begin(r)));
 
     utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
       static constexpr auto K = Kmin + i;
       if (K == k) {
         if (extend || ival + 1 < intervals_.size()) {
           static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
-          static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
-          const auto U                   = monomial_derivative<K>(u, p);
-          W = MatMap(U[0].data(), 1, k + 1) * MatMap(B_ext_s[0].data(), k + 1, k + 1);
-          assert(std::size_t(W.size()) == k + 1);
+          static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);  // K+1 x K+1
+          const auto U                   = monomial_derivative<K>(u, p);       // 1 x K+1
+          const auto W                   = U * B_ext_s;                        // 1 x K+1
+
+          std::span<const double> sp(W[0].data(), k + 1);
+
+          for (const auto & [w, v] : smooth::utils::zip(sp, r | drop(N_before))) { ret += w * v; }
         } else {
           static constexpr auto nw_s = lgr_nodes<K>();
-          static constexpr auto B_s  = lagrange_basis<K - 1>(nw_s.first);
-          const auto U               = monomial_derivative<K - 1>(u, p);
-          W                          = MatMap(U[0].data(), 1, k) * MatMap(B_s[0].data(), k, k);
-          assert(std::size_t(W.size()) == k);
+          static constexpr auto B_s  = lagrange_basis<K - 1>(nw_s.first);  // K x K
+          const auto U               = monomial_derivative<K - 1>(u, p);   // 1 x K
+          const auto W               = U * B_s;                            // 1 x K
+
+          std::span<const double> sp(W[0].data(), k);
+
+          for (const auto & [w, v] : smooth::utils::zip(sp, r | drop(N_before))) { ret += w * v; }
         }
       }
     });
 
-    using namespace std::views;
-
-    int64_t N_before = 0;
-    for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
-    RetT ret = RetT::Zero(dof(*std::ranges::begin(r)));
-
-    for (const auto & [w, v] : smooth::utils::zip(W, r | drop(N_before))) { ret += w * v; }
     return ret;
   }
 
@@ -472,29 +498,6 @@ private:
 /// @brief MeshType is a specialization of Mesh
 template<typename T>
 concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
-
-/**
- * @brief Refine intervals in mesh to satisfy a target error criterion.
- * @param[in, out] m mesh to refine
- * @param[in] errs relative errors for all intervals (@see mesh_dyn_error())
- * @param[in] target_err target relative error
- */
-void mesh_refine(MeshType auto & m, const Eigen::VectorXd & errs, const double target_err)
-{
-  const auto N = m.N_ivals();
-
-  assert(N == std::size_t(errs.size()));
-
-  for (auto i = 0u; i < N; ++i) {
-    const auto Nmi = N - 1 - i;
-    const auto Ki  = m.N_colloc_ival(Nmi);
-
-    if (errs(Nmi) > target_err) {
-      const auto Ktarget = Ki + std::lround(std::log(errs(Nmi) / target_err) / std::log(Ki) + 1);
-      m.refine_ph(Nmi, Ktarget);
-    }
-  }
-}
 
 }  // namespace smooth::feedback
 

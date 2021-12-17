@@ -131,7 +131,7 @@ TEST(Collocation, DynError)
   ASSERT_LE(rel_errs.cwiseAbs().maxCoeff(), 1e-8);
 
   const auto Npre = m.N_ivals();
-  smooth::feedback::mesh_refine(m, rel_errs, 1e-8);
+  m.refine_errors(rel_errs, 1e-8);
 
   ASSERT_EQ(m.N_ivals(), Npre);
 }
