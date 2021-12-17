@@ -587,8 +587,6 @@ NLPSolution ocpsol_to_nlpsol(
   const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
   const auto [dcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
 
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
-
   const double t0 = 0;
   const double tf = ocpsol.tf;
 
@@ -605,14 +603,13 @@ NLPSolution ocpsol_to_nlpsol(
   lambda.segment(qcon_B, qcon_L)   = ocpsol.lambda_q;
   lambda.segment(cecon_B, cecon_L) = ocpsol.lambda_ce;
 
-  for (auto i = 0u; const auto tau : nodes) {
+  for (const auto & [i, tau] : smooth::utils::zip(std::views::iota(0u), mesh.all_nodes_range())) {
     x.segment(xvar_B + i * ocp.nx, ocp.nx) = ocpsol.x(t0 + tau * (tf - t0));
     if (i < N) {
       x.segment(uvar_B + i * ocp.nu, ocp.nu)         = ocpsol.u(t0 + tau * (tf - t0));
       lambda.segment(dcon_B + i * ocp.nx, ocp.nx)    = ocpsol.lambda_dyn(t0 + tau * (tf - t0));
       lambda.segment(crcon_B + i * ocp.ncr, ocp.ncr) = ocpsol.lambda_cr(t0 + tau * (tf - t0));
     }
-    ++i;
   }
 
   return {

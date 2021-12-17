@@ -90,7 +90,6 @@ TEST(OcpIpopt, Solve)
   // define mesh
   smooth::feedback::Mesh mesh;
   mesh.refine_ph(0, 4 * 5);
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
 
   // transcribe optimal control problem to nonlinear programming problem
   const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);

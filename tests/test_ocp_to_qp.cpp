@@ -33,41 +33,31 @@
 #include "smooth/feedback/ocp_to_qp.hpp"
 
 template<typename T>
-using X = Eigen::VectorX<T>;
+using X = Eigen::Vector<T, 2>;
 
 template<typename T>
-using U = Eigen::VectorX<T>;
+using U = Eigen::Vector<T, 1>;
 
-template<typename T>
-using Vec = Eigen::VectorX<T>;
+template<typename T, std::size_t N>
+using Vec = Eigen::Vector<T, N>;
 
 TEST(OcpToQp, Basic)
 {
-  const auto theta = []<typename T>(T, X<T>, X<T> xf, Vec<T> q) -> T {
+  const auto theta = []<typename T>(T, X<T>, X<T> xf, Vec<T, 1> q) -> T {
     return xf.squaredNorm() + 2 * q.sum();
   };
 
-  const auto f = []<typename T>(T, X<T> x, U<T> u) -> Vec<T> {
+  const auto f = []<typename T>(T, X<T> x, U<T> u) -> smooth::Tangent<X<T>> {
     return smooth::Tangent<X<T>>{{x.y(), u.x()}};
   };
 
-  const auto g = []<typename T>(T, X<T>, U<T> u) -> Vec<T> {
-    Vec<T> ret(1);
-    ret << u.x() * u.x();
-    return ret;
+  const auto g = []<typename T>(T, X<T>, U<T> u) -> Vec<T, 1> {
+    return Vec<T, 1>{{u.x() * u.x()}};
   };
 
-  const auto cr = []<typename T>(T, X<T>, U<T> u) -> Vec<T> {
-    Vec<T> ret(1);
-    ret << u.x();
-    return ret;
-  };
+  const auto cr = []<typename T>(T, X<T>, U<T> u) -> Vec<T, 1> { return Vec<T, 1>{{u.x()}}; };
 
-  const auto ce = []<typename T>(T, X<T>, X<T> xf, Vec<T>) -> Vec<T> {
-    Vec<T> ret(2);
-    ret << xf;
-    return ret;
-  };
+  const auto ce = []<typename T>(T, X<T>, X<T> xf, Vec<T, 1>) -> Vec<T, 2> { return xf; };
 
   smooth::feedback::
     OCP<X<double>, U<double>, decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
@@ -116,12 +106,10 @@ TEST(OcpToQp, Basic)
     return X<double>{{x0 + v0 * t + u0 * t * t / 2, v0 + u0 * t}};
   };
 
-  Eigen::MatrixXd Xvar(ocp.nx, mesh.N_colloc() + 1);
-  Eigen::MatrixXd Uvar(ocp.nu, mesh.N_colloc());
+  Eigen::Matrix<double, 2, -1> Xvar(ocp.nx, mesh.N_colloc() + 1);
+  Eigen::Matrix<double, 1, -1> Uvar(ocp.nu, mesh.N_colloc());
 
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
-
-  for (const auto [i, t] : smooth::utils::zip(std::views::iota(0u), nodes)) {
+  for (const auto [i, t] : smooth::utils::zip(std::views::iota(0u), mesh.all_nodes_range())) {
     Xvar.col(i) = xtraj(tf * t);
     if (i < mesh.N_colloc()) { Uvar.col(i).setConstant(u0); }
   }

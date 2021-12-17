@@ -47,7 +47,7 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
 
   const X xl0 = xl_fun(0.);
   const X xlf = xl_fun(tf);
-  const Vec ql(ocp.nq);
+  const Eigen::Matrix<double, 1, 1> ql(0);
 
   assert(ocp.nq == 1);
 
@@ -113,8 +113,8 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
     //
     // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = X D
 
-    for (auto i = 0u; i < Nival; ++i) {
-      const auto tau_i         = tau_s[i];                       // scaled time
+    for (const auto & [i, tau_i] :
+         smooth::utils::zip(std::views::iota(0u, Nival), mesh.interval_nodes_range(ival))) {
       const auto t_i           = tf * tau_i;                     // unscaled time
       const auto [xl_i, dxl_i] = diff::dr<1>(xl_fun, wrt(t_i));  // linearization trajectory
       const auto ul_i          = ul_fun(t_i);                    // linearization input
@@ -147,13 +147,12 @@ inline QuadraticProgramSparse<double> ocp_to_qp(
     }
   }
 
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
-
-  auto xslin = nodes | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
-  auto uslin = nodes | std::views::take(int64_t(N))
+  auto xslin =
+    mesh.all_nodes_range() | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
+  auto uslin = mesh.all_nodes_range() | std::views::take(int64_t(N))
              | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
 
-  const Eigen::VectorXd q_dummy{{1.}};
+  const Eigen::Vector<double, 1> q_dummy{1.};
 
   //////////////////
   //// INTEGRAL ////

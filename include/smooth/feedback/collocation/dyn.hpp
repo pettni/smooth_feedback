@@ -115,14 +115,13 @@ auto colloc_dyn(
   Eigen::VectorXd Fv = (XD - (tf - t0) * feval_res.F).reshaped();
 
   // scale equalities by by quadrature weights
-  const auto [n, w] = m.all_nodes_and_weights();
 
   // vec(A * W) = kron(W', I) * vec(A), so we apply kron(W', I) on the left
-
   Eigen::SparseMatrix<double> W(N, N);
   W.reserve(Eigen::VectorXi::Ones(N));
-  for (auto i = 0u; i < N; ++i) { W.insert(i, i) = w(i); }
-
+  for (const auto [i, w] : smooth::utils::zip(std::views::iota(0u, N), m.all_weights_range())) {
+    W.insert(i, i) = w;
+  }
   const Eigen::SparseMatrix<double> W_kron_I = kron_identity(W, nx);
 
   Fv.applyOnTheLeft(W_kron_I);
@@ -197,15 +196,12 @@ Eigen::VectorXd mesh_dyn_error(
   for (auto i = 0u, M = 0u; i < N; M += m.N_colloc_ival(i), ++i) {
     const std::size_t Kext = mext.N_colloc_ival(i);
 
-    const auto [tau_s, weights] = mext.interval_nodes_and_weights(i);
-
-    assert(std::size_t(tau_s.size()) == Kext + 1);
-
     // evaluate xs and F at those points
     Eigen::MatrixXd Fval(nx, Kext + 1);
     Eigen::MatrixXd Xval(nx, Kext + 1);
-    for (auto j = 0u; j < Kext + 1; ++j) {
-      const double tj = t0 + (tf - t0) * tau_s(j);
+    for (const auto & [j, tau] :
+         smooth::utils::zip(std::views::iota(0u, Kext + 1), mext.interval_nodes_range(i))) {
+      const double tj = t0 + (tf - t0) * tau;
 
       // evaluate x and u values at tj using current degree polynomials
       const auto Xj = xfun(tj);

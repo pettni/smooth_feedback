@@ -126,20 +126,16 @@ void colloc_eval(
   const MeshType auto & m,
   const double t0,
   const double tf,
-  std::ranges::sized_range auto && xs,
-  std::ranges::sized_range auto && us)
+  std::ranges::range auto && xs,
+  std::ranges::range auto && us)
 {
   using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
   using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
 
-  assert(m.N_colloc() + 1 == std::ranges::size(xs));  //  extra variable at the end
-  assert(m.N_colloc() == std::ranges::size(us));      // one input per collocation point
-
   res.setZero();
 
-  const auto [tau_s, w_s] = m.all_nodes_and_weights();
-
-  for (const auto & [ival, tau, x, u] : utils::zip(std::views::iota(0u), tau_s, xs, us)) {
+  for (const auto & [ival, tau, x, u] :
+       utils::zip(std::views::iota(0u), m.all_nodes_range(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;
@@ -149,7 +145,8 @@ void colloc_eval(
       res.F.col(ival) = f(ti, x_plain, u_plain);
     } else if constexpr (Deriv == 1u) {
       const auto [fval, dfval] = diff::dr<1>(f, wrt(ti, x_plain, u_plain));
-      res.F.col(ival)          = fval;
+
+      res.F.col(ival) = fval;
       for (auto row = 0u; row < res.nf; ++row) {
         res.dF_dt0.coeffRef(res.nf * ival + row, 0) = dfval(row, 0) * (1. - tau);
         res.dF_dtf.coeffRef(res.nf * ival + row, 0) = dfval(row, 0) * tau;
@@ -194,27 +191,35 @@ auto colloc_eval_endpt(
   auto && f,
   [[maybe_unused]] const double t0,
   const double tf,
-  std::ranges::sized_range auto && xs,
-  const Eigen::VectorXd & Q)
+  std::ranges::range auto && xs,
+  const smooth::traits::RnType auto & q)
 {
   using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
-
-  const auto numX = std::ranges::size(xs);
-  assert(numX >= 2);
+  using Q = PlainObject<std::decay_t<decltype(q)>>;
 
   // NOTE: for now t0 = 0 and we don't want t0 in signatures
   assert(t0 == 0);
 
   const X x0 = *std::ranges::begin(xs);
-  const X xf = *std::ranges::next(std::ranges::begin(xs), numX - 1);
+
+  // hack to find size and last element in case if input range..
+  // TODO write more efficient code for sized ranges
+  auto numX = 0u;
+  X xf;
+  for (const auto & x : xs) {
+    ++numX;
+    xf = x;
+  }
+
+  const Q q_plain = q;
 
   if constexpr (!Deriv) {
-    return f.template operator()<double>(tf, x0, xf, Q);
+    return f.template operator()<double>(tf, x0, xf, q_plain);
   } else {
-    const auto [Fval, J] = diff::dr(f, wrt(tf, x0, xf, Q));
+    const auto [Fval, J] = diff::dr(f, wrt(tf, x0, xf, q_plain));
 
     assert(static_cast<std::size_t>(J.rows()) == nf);
-    assert(static_cast<std::size_t>(J.cols()) == 1 + 2 * nx + Q.size());
+    assert(static_cast<std::size_t>(J.cols()) == 1 + 2 * nx + q_plain.size());
 
     Eigen::SparseMatrix<double> dF_dt0, dF_dtf, dF_dX, dF_dQ;
 
@@ -239,11 +244,11 @@ auto colloc_eval_endpt(
       }
     }
 
-    dF_dQ.resize(nf, Q.size());
-    dF_dQ.reserve(Eigen::VectorXi::Constant(Q.size(), nf));
+    dF_dQ.resize(nf, q_plain.size());
+    dF_dQ.reserve(Eigen::VectorXi::Constant(q_plain.size(), nf));
 
     for (auto row = 0u; row < nf; ++row) {
-      for (auto col = 0u; col < Q.size(); ++col) {
+      for (auto col = 0u; col < q_plain.size(); ++col) {
         dF_dQ.insert(row, col) = J(row, 1 + 2 * nx + col);
       }
     }

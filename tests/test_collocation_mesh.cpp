@@ -27,6 +27,8 @@
 
 #include <Eigen/Core>
 
+#include <iostream>
+
 #include "smooth/feedback/collocation/mesh.hpp"
 
 template<typename T>
@@ -70,12 +72,12 @@ TEST(CollocMesh, Basic)
   m.refine_ph(7, 33);
   m.refine_ph(9, 22);
 
-  const auto [alln, allw] = m.all_nodes_and_weights();
+  auto alln = m.all_nodes_range();
 
-  for (auto i = 0u; i + 1 < alln.size(); ++i) { ASSERT_LE(alln[i], alln[i + 1]); }
+  for (auto [d1, d2] : smooth::utils::zip(alln, alln | std::views::drop(1))) { ASSERT_LE(d1, d2); }
 }
 
-TEST(Collocation, DifferentiationIntegration)
+TEST(Mesh, DifferentiationIntegration)
 {
   smooth::feedback::Mesh<8, 8> m;
   m.refine_ph(0, 40);
@@ -106,7 +108,7 @@ TEST(Collocation, DifferentiationIntegration)
   }
 }
 
-TEST(Collocation, FunctionEval)
+TEST(Mesh, FunctionEval)
 {
   smooth::feedback::Mesh<5, 5> m;
 
@@ -150,4 +152,32 @@ TEST(Collocation, FunctionEval)
     const auto x3 = m.eval<Eigen::VectorXd>(1, vals_refined.colwise());
     ASSERT_TRUE(x3.isApprox(Eigen::VectorXd::Ones(3)));
   }
+}
+
+TEST(Mesh, IntervalNodes)
+{
+  smooth::feedback::Mesh<5, 5> mesh;
+  mesh.refine_ph(0, 10);
+
+  for (const auto [d1, d2] :
+       smooth::utils::zip(mesh.interval_nodes_range(0), mesh.interval_nodes_range(1))) {
+    ASSERT_NEAR(d1 + 0.5, d2, 1e-9);
+  }
+
+  for (const auto [w1, w2] :
+       smooth::utils::zip(mesh.interval_weights_range(0), mesh.interval_weights_range(1))) {
+    ASSERT_NEAR(w1, w2, 1e-9);
+  }
+
+  auto all_nodes = mesh.all_nodes_range();
+
+  auto all_weights = mesh.all_weights_range();
+
+  for (const auto [d0, d1] : smooth::utils::zip(all_nodes, all_nodes | std::views::drop(1))) {
+    ASSERT_LE(d0, d1);
+  }
+
+  double sum = 0u;
+  for (auto w : all_weights) { sum += w; }
+  ASSERT_NEAR(sum, 1., 1e-9);
 }

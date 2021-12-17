@@ -196,23 +196,23 @@ void colloc_eval_reduce(
   const MeshType auto & m,
   const double t0,
   const double tf,
-  std::ranges::sized_range auto && xs,
-  std::ranges::sized_range auto && us)
+  std::ranges::range auto && xs,
+  std::ranges::range auto && us)
 {
   using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
   using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
 
-  const auto numX = std::ranges::size(xs);
-  const auto numU = std::ranges::size(us);
-
-  assert(m.N_colloc() + 1 == numX);  //  extra variable at the end
-  assert(m.N_colloc() == numU);      // one input per collocation point
+  if constexpr (std::ranges::sized_range<decltype(xs)>) {
+    assert(m.N_colloc() + 1 == std::ranges::size(xs));
+  }
+  if constexpr (std::ranges::sized_range<decltype(us)>) {
+    assert(m.N_colloc() == std::ranges::size(us));
+  }
 
   res.setZero();
 
-  const auto [tau_s, w_s] = m.all_nodes_and_weights();
-
-  for (const auto & [ival, tau, l, x, u] : utils::zip(std::views::iota(0u), tau_s, ls, xs, us)) {
+  for (const auto & [i, tau, l, x, u] :
+       utils::zip(std::views::iota(0u), m.all_nodes_range(), ls, xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;
@@ -227,10 +227,10 @@ void colloc_eval_reduce(
         res.dF_dt0.coeffRef(row, 0) += l * dF(row, 0) * (1. - tau);
         res.dF_dtf.coeffRef(row, 0) += l * dF(row, 0) * tau;
         for (auto col = 0u; col < res.nx; ++col) {
-          res.dF_dX.coeffRef(row, ival * res.nx + col) += l * dF(row, 1 + col);
+          res.dF_dX.coeffRef(row, i * res.nx + col) += l * dF(row, 1 + col);
         }
         for (auto col = 0u; col < res.nu; ++col) {
-          res.dF_dU.coeffRef(row, ival * res.nu + col) += l * dF(row, 1 + res.nx + col);
+          res.dF_dU.coeffRef(row, i * res.nu + col) += l * dF(row, 1 + res.nx + col);
         }
       }
     } else if constexpr (Deriv == 2u) {
@@ -248,10 +248,10 @@ void colloc_eval_reduce(
         res.dF_dt0.coeffRef(row, 0) += l * dF(row, 0) * (1. - tau);
         res.dF_dtf.coeffRef(row, 0) += l * dF(row, 0) * tau;
         for (auto col = 0u; col < res.nx; ++col) {
-          res.dF_dX.coeffRef(row, ival * res.nx + col) += l * dF(row, 1 + col);
+          res.dF_dX.coeffRef(row, i * res.nx + col) += l * dF(row, 1 + col);
         }
         for (auto col = 0u; col < res.nu; ++col) {
-          res.dF_dU.coeffRef(row, ival * res.nu + col) += l * dF(row, 1 + res.nx + col);
+          res.dF_dU.coeffRef(row, i * res.nu + col) += l * dF(row, 1 + res.nx + col);
         }
       }
 
@@ -265,30 +265,30 @@ void colloc_eval_reduce(
       res.d2F_dtftf.coeffRef(0, 0) += l * d2F(0, 0) * tau * tau;
 
       // third column
-      // clang-format off
       for (auto col = 0u; col < res.nx; ++col) {
-        res.d2F_dt0X.coeffRef(0, ival * res.nx + col) += l * d2F(0, 1 + col) * (1. - tau);
-        res.d2F_dtfX.coeffRef(0, ival * res.nx + col) += l * d2F(0, 1 + col) * tau;
+        res.d2F_dt0X.coeffRef(0, i * res.nx + col) += l * d2F(0, 1 + col) * (1. - tau);
+        res.d2F_dtfX.coeffRef(0, i * res.nx + col) += l * d2F(0, 1 + col) * tau;
 
         for (auto row = 0u; row < res.nx; ++row) {
-          res.d2F_dXX.coeffRef(ival * res.nx + row, ival * res.nx + col) += l * d2F(1 + row, 1 + col);
+          res.d2F_dXX.coeffRef(i * res.nx + row, i * res.nx + col) += l * d2F(1 + row, 1 + col);
         }
       }
 
       // fourth column
       for (auto col = 0u; col < res.nu; ++col) {
-        res.d2F_dt0U.coeffRef(0, ival * res.nu + col) += l * d2F(0, 1 + res.nx + col) * (1. - tau);
-        res.d2F_dtfU.coeffRef(0, ival * res.nu + col) += l * d2F(0, 1 + res.nx + col) * tau;
+        res.d2F_dt0U.coeffRef(0, i * res.nu + col) += l * d2F(0, 1 + res.nx + col) * (1. - tau);
+        res.d2F_dtfU.coeffRef(0, i * res.nu + col) += l * d2F(0, 1 + res.nx + col) * tau;
 
         for (auto row = 0u; row < res.nx; ++row) {
-          res.d2F_dXU.coeffRef(ival * res.nx + row, ival * res.nu + col) += l * d2F(1 + row, 1 + res.nx + col);
+          res.d2F_dXU.coeffRef(i * res.nx + row, i * res.nu + col) +=
+            l * d2F(1 + row, 1 + res.nx + col);
         }
 
         for (auto row = 0u; row < res.nu; ++row) {
-          res.d2F_dUU.coeffRef(ival * res.nu + row, ival * res.nu + col) += l * d2F(1 + res.nx + row, 1 + res.nx + col);
+          res.d2F_dUU.coeffRef(i * res.nu + row, i * res.nu + col) +=
+            l * d2F(1 + res.nx + row, 1 + res.nx + col);
         }
       }
-      // clang-format on
     }
   }
 
@@ -315,12 +315,10 @@ void colloc_integrate(
   const MeshType auto & m,
   const double t0,
   const double tf,
-  std::ranges::sized_range auto && xs,
-  std::ranges::sized_range auto && us)
+  std::ranges::range auto && xs,
+  std::ranges::range auto && us)
 {
-  const auto [n, w] = m.all_nodes_and_weights();
-
-  colloc_eval_reduce<Deriv>(res, w, g, m, t0, tf, xs, us);
+  colloc_eval_reduce<Deriv>(res, m.all_weights_range(), g, m, t0, tf, xs, us);
 
   // result is equal to (tf - t0) * F, must update derivatives
 

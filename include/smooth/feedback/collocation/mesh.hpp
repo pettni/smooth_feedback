@@ -34,6 +34,7 @@
 #include <cstddef>
 #include <numeric>
 #include <ranges>
+#include <span>
 #include <vector>
 
 #include "smooth/feedback/traits.hpp"
@@ -217,6 +218,88 @@ public:
     w.tail(1).setConstant(0);
 
     return {n, w};
+  }
+
+  /**
+   * @brief Interval nodes (as range of doubles)
+   */
+  inline auto interval_nodes_range(std::size_t i) const
+  {
+    const std::size_t k = intervals_[i].K;
+
+    std::span<const double> sp;
+
+    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
+      static constexpr auto K = Kmin + i;
+      if (K == k) {
+        static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
+        sp                             = std::span<const double>(nw_ext_s.first.data(), k + 1);
+      }
+    });
+
+    const double tau0  = intervals_[i].tau0;
+    const double tauf  = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+    const double alpha = (tauf - tau0) / 2;
+
+    return std::views::transform(
+      std::move(sp), [tau0, alpha](double d) -> double { return tau0 + alpha * (d + 1); });
+  }
+
+  /**
+   * @brief Nodes (as range of doubles)
+   */
+  inline auto all_nodes_range() const
+  {
+    const auto n_ivals = N_ivals();
+    auto all_views =
+      std::views::iota(0u, n_ivals) | std::views::transform([this, n_ivals = n_ivals](auto i) {
+        const auto n_ival = N_colloc_ival(i);
+        const auto n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
+        return interval_nodes_range(i) | std::views::take(int64_t(n_take));
+      });
+
+    return std::views::join(std::move(all_views));
+  }
+
+  /**
+   * @brief Interval weights (as range of doubles)
+   */
+  inline auto interval_weights_range(std::size_t i) const
+  {
+    const std::size_t k = intervals_[i].K;
+
+    std::span<const double> sp;
+
+    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
+      static constexpr auto K = Kmin + i;
+      if (K == k) {
+        static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
+        sp                             = std::span<const double>(nw_ext_s.second.data(), k + 1);
+      }
+    });
+
+    const double tau0  = intervals_[i].tau0;
+    const double tauf  = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+    const double alpha = (tauf - tau0) / 2;
+
+    return std::views::transform(std::move(sp), [alpha](double d) -> double { return alpha * d; });
+  }
+
+  /**
+   * @brief Weights (as range of doubles)
+   *
+   */
+  inline auto all_weights_range() const
+  {
+    const auto n_ivals = N_ivals();
+    auto all_views =
+      std::views::iota(0u, n_ivals) | std::views::transform([this, n_ivals = n_ivals](auto i) {
+        const auto n_ival = N_colloc_ival(i);
+        const auto n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
+        return interval_weights_range(i) | std::views::take(int64_t(n_take));
+      });
+
+    return std::views::join(std::move(all_views));
   }
 
   /**
