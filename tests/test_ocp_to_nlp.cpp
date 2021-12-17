@@ -34,7 +34,7 @@
 template<typename T>
 using Vec = Eigen::VectorX<T>;
 
-TEST(Ocp, Jacobians)
+TEST(OcpToNlp, Jacobians)
 {
   // objective
   auto theta = []<typename T>(T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> T {
@@ -103,7 +103,7 @@ TEST(Ocp, Jacobians)
   ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-8));
 }
 
-TEST(OCP, Flatten)
+TEST(OcpToNlp, Flatten)
 {
   // objective
   auto theta = []<typename T>(T tf, smooth::SO3<T>, smooth::SO3<T>, Vec<T> q) -> T {

@@ -34,7 +34,7 @@ using Vec = Eigen::VectorX<T>;
 
 using Vecd = Vec<double>;
 
-TEST(Collocation, TimeTrajectory)
+TEST(CollocationDyn, TimeTrajectory)
 {
   // given trajectory
   std::size_t nx = 1;
@@ -90,7 +90,7 @@ TEST(Collocation, TimeTrajectory)
   ASSERT_TRUE(C.reshaped().isApprox(CReval.F.reshaped()));
 }
 
-TEST(Collocation, DynError)
+TEST(CollocationDyn, DynError)
 {
   // given trajectory
   std::size_t nx = 1;
@@ -138,7 +138,7 @@ TEST(Collocation, DynError)
   ASSERT_EQ(m.N_ivals(), Npre);
 }
 
-TEST(Collocation, StateTrajectory)
+TEST(CollocationDyn, StateTrajectory)
 {
   // given trajectory and system dynamics
   std::size_t nx = 1;

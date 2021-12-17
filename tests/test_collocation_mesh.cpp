@@ -36,7 +36,7 @@ using Vec = Eigen::VectorX<T>;
 
 using Vecd = Vec<double>;
 
-TEST(CollocMesh, Basic)
+TEST(CollocationMesh, Basic)
 {
   smooth::feedback::Mesh<5, 10> m;
   m.refine_ph(0, 5 * 10);
@@ -77,7 +77,7 @@ TEST(CollocMesh, Basic)
   for (auto [d1, d2] : smooth::utils::zip(alln, alln | std::views::drop(1))) { ASSERT_LE(d1, d2); }
 }
 
-TEST(Mesh, DifferentiationIntegration)
+TEST(CollocationMesh, DifferentiationIntegration)
 {
   smooth::feedback::Mesh<8, 8> m;
   m.refine_ph(0, 40);
@@ -112,7 +112,7 @@ TEST(Mesh, DifferentiationIntegration)
   }
 }
 
-TEST(Mesh, FunctionEval)
+TEST(CollocationMesh, FunctionEval)
 {
   smooth::feedback::Mesh<5, 5> m;
 
@@ -158,7 +158,7 @@ TEST(Mesh, FunctionEval)
   }
 }
 
-TEST(Mesh, IntervalNodes)
+TEST(CollocationMesh, IntervalNodes)
 {
   smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 10);
