@@ -117,8 +117,6 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// COLLOCATION CONSTRAINTS ////
   /////////////////////////////////
 
-  std::cout << "Collocation constraints\n\n";
-
   Eigen::SparseMatrix<double, Eigen::RowMajor> Adyn_X(dcon_L, xvar_L);
   Eigen::SparseMatrix<double, Eigen::RowMajor> Adyn_U(dcon_L, uvar_L);
   Eigen::VectorXd bdyn(dcon_L);
@@ -178,8 +176,6 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// INTEGRAL ////
   //////////////////
 
-  std::cout << "Running cost\n";
-
   CollocEvalReduceResult g_res(1, ocp.nx, ocp.nu, N);
   colloc_integrate<2>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
 
@@ -187,16 +183,12 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// RUNNING CONSTRAINTS ////
   /////////////////////////////
 
-  std::cout << "Running constr\n";
-
   CollocEvalResult CRres(ocp.ncr, ocp.nx, ocp.nu, N);
   colloc_eval<true>(CRres, ocp.cr, mesh, 0., tf, xslin, uslin);
 
   /////////////////////////
   //// END CONSTRAINTS ////
   /////////////////////////
-
-  std::cout << "End constr\n";
 
   const auto [celin, dcelin_dt0, dcelin_dtf, dcelin_dx, dcelin_dq] =
     colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, 0., tf, xslin, q_dummy);
@@ -207,8 +199,6 @@ QuadraticProgramSparse<double> ocp_to_qp(
   /////////////////////
   //// ASSEMBLE QP ////
   /////////////////////
-
-  std::cout << "Assemble\n";
 
   // part from integrals
   Eigen::SparseMatrix<double> P = sparse_block_matrix({
@@ -259,15 +249,52 @@ QuadraticProgramSparse<double> ocp_to_qp(
   };
 }
 
-template<LieGroup X, Manifold U>
-OCPSolution<X, U> qpsol_to_ocpsol(
-  const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
+auto qpsol_to_ocpsol(
+  const OCPType auto & ocp,
+  const MeshType auto & mesh,
+  const QPSolution<-1, -1, double> & qpsol,
+  double tf,
+  auto && xl_fun,
+  auto && ul_fun)
 {
+  using X = typename std::decay_t<decltype(ocp)>::X;
+  using U = typename std::decay_t<decltype(ocp)>::U;
+
+  const auto N = mesh.N_colloc();
+
+  const auto xvar_L = ocp.nx * (N + 1);
+  const auto uvar_L = ocp.nu * N;
+
+  const auto xvar_B    = 0u;
+  const auto uvar_B    = xvar_L;
+  Eigen::MatrixXd Xmat = qpsol.primal.segment(xvar_B, xvar_L).reshaped(ocp.nx, N + 1);
+  Eigen::MatrixXd Umat = qpsol.primal.segment(uvar_B, uvar_L).reshaped(ocp.nu, N);
+
+  const auto xfun = [t0     = 0.,
+                     tf     = tf,
+                     mesh   = mesh,
+                     Xmat   = std::move(Xmat),
+                     xl_fun = std::forward<decltype(xl_fun)>(xl_fun)](double t) -> X {
+    const auto tngnt =
+      mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Xmat.colwise(), 0, true);
+    return rplus(xl_fun(t), tngnt);
+  };
+
+  const auto ufun = [t0     = 0.,
+                     tf     = tf,
+                     mesh   = mesh,
+                     Umat   = std::move(Umat),
+                     ul_fun = std::forward<decltype(ul_fun)>(ul_fun)](double t) -> U {
+    const auto tngnt =
+      mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Umat.colwise(), 0, false);
+    return rplus(ul_fun(t), tngnt);
+  };
+
   return OCPSolution<X, U>{
     .t0 = 0.,
     .tf = tf,
-    .u  = [](double) -> U { return U{}; },
-    .x  = [](double) -> X { return X{}; },
+    .u  = std::move(ufun),
+    .x  = std::move(xfun),
   };
 }
 

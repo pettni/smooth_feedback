@@ -125,6 +125,7 @@ struct CollocEvalResult
  * @param[in] us input variables (size N)
  */
 template<uint8_t Deriv = 0>
+  requires(Deriv == 0 || Deriv == 1)
 void colloc_eval(
   CollocEvalResult & res,
   auto && f,
@@ -189,6 +190,7 @@ void colloc_eval(
  * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dX, dF_dQ},
  */
 template<bool Deriv>
+  requires(Deriv == 0 || Deriv == 1)
 auto colloc_eval_endpt(
   const std::size_t nf,
   const std::size_t nx,
@@ -208,12 +210,15 @@ auto colloc_eval_endpt(
 
   // hack to find size and last element in case if input range..
   // TODO write more efficient code for sized ranges
-  auto numX = 0u;
-  X xf;
-  for (const auto & x : xs) {
-    ++numX;
-    xf = x;
-  }
+  auto numX  = 0u;
+  const X xf = [&]() {
+    X ret;
+    for (const auto & x : xs) {
+      ++numX;
+      ret = x;
+    }
+    return ret;
+  }();
 
   const Q q_plain = q;
 

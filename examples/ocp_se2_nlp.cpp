@@ -23,6 +23,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/**
+ * @file Solve a optimal control problem on SE(2) as a nonlinear program.
+ */
+
 #include <Eigen/Core>
 #include <smooth/bundle.hpp>
 #include <smooth/feedback/compat/ipopt.hpp>

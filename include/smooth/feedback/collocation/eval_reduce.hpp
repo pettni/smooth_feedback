@@ -194,6 +194,7 @@ struct CollocEvalReduceResult
  * @param[in] us input variables u_i (size N)
  */
 template<uint8_t Deriv = 0>
+  requires(Deriv == 0 || Deriv == 1 || Deriv == 2)
 void colloc_eval_reduce(
   CollocEvalReduceResult & res,
   std::ranges::range auto && ls,
@@ -246,6 +247,7 @@ void colloc_eval_reduce(
       const auto [F, dF, d2F] = diff::dr<2>(
         [&](auto &&... args) { return f(std::forward<decltype(args)>(args)...).x(); },
         wrt(ti, x_plain, u_plain));
+
       // value
       res.F.x() += l * F;
 
@@ -315,6 +317,7 @@ void colloc_eval_reduce(
  * @param[in] us input values (variable of size N)
  */
 template<uint8_t Deriv>
+  requires(Deriv == 0 || Deriv == 1 || Deriv == 2)
 void colloc_integrate(
   CollocEvalReduceResult & res,
   auto && g,

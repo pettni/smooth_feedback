@@ -45,6 +45,8 @@
 
 namespace smooth::feedback {
 
+using smooth::utils::zip;
+
 /**
  * @brief Evaluate dynamics constraint in all collocation points of a Mesh.
  *
@@ -64,6 +66,7 @@ namespace smooth::feedback {
  * @note This only works on flat spaces, which is why xs and us are matrices rather than ranges.
  */
 template<bool Deriv>
+  requires(Deriv == 0 || Deriv == 1)
 auto colloc_dyn(
   const std::size_t nx,
   auto && f,
@@ -124,9 +127,7 @@ auto colloc_dyn(
   // vec(A * W) = kron(W', I) * vec(A), so we apply kron(W', I) on the left
   Eigen::SparseMatrix<double> W(N, N);
   W.reserve(Eigen::VectorXi::Ones(N));
-  for (const auto [i, w] : smooth::utils::zip(std::views::iota(0u, N), m.all_weights())) {
-    W.insert(i, i) = w;
-  }
+  for (const auto [i, w] : zip(std::views::iota(0u, N), m.all_weights())) { W.insert(i, i) = w; }
   const Eigen::SparseMatrix<double> W_kron_I = kron_identity(W, nx);
 
   Fv.applyOnTheLeft(W_kron_I);
@@ -204,8 +205,7 @@ Eigen::VectorXd mesh_dyn_error(
     // evaluate xs and F at those points
     Eigen::MatrixXd Fval(nx, Kext + 1);
     Eigen::MatrixXd Xval(nx, Kext + 1);
-    for (const auto & [j, tau] :
-         smooth::utils::zip(std::views::iota(0u, Kext + 1), mext.interval_nodes(i))) {
+    for (const auto & [j, tau] : zip(std::views::iota(0u, Kext + 1), mext.interval_nodes(i))) {
       const double tj = t0 + (tf - t0) * tau;
 
       // evaluate x and u values at tj using current degree polynomials

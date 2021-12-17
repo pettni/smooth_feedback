@@ -161,7 +161,7 @@ struct OCPSolution
   double tf;
 
   /// @brief Integral values
-  Eigen::VectorXd Q;
+  Eigen::VectorXd Q{};
 
   /// @brief Callable functions for state and input
   std::function<U(double)> u;

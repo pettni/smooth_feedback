@@ -23,6 +23,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/**
+ * @file Solve a double integrator optimal control problem as a nonlinear program.
+ */
+
 #include <Eigen/Core>
 #include <smooth/feedback/compat/ipopt.hpp>
 #include <smooth/feedback/ocp_to_nlp.hpp>
@@ -89,8 +93,8 @@ int main()
       .crl   = Vec<double>{{-1}},
       .cru   = Vec<double>{{1}},
       .ce    = ce,
-      .cel   = Vec<double>{{3, 1, 1, 0.1, 0}},
-      .ceu   = Vec<double>{{15, 1, 1, 0.1, 0}},
+      .cel   = Vec<double>{{5, 1, 1, 0.1, 0}},
+      .ceu   = Vec<double>{{5, 1, 1, 0.1, 0}},
     };
 
   // target optimality
