@@ -40,6 +40,8 @@
 #include <matplot/matplot.h>
 #endif
 
+using namespace std::chrono;
+
 /// @brief Range to std::vector
 const auto r2v = [](std::ranges::range auto && r) {
   std::vector<std::ranges::range_value_t<decltype(r)>> ret;
@@ -53,16 +55,25 @@ int main()
   smooth::feedback::Mesh<4, 4> mesh;
   mesh.refine_ph(0, 40);
 
-  const auto tf     = ocp_di.cel.x();  // grab constraint on tf..
-  const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Ones(2); };
-  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>::Ones(1); };
+  const auto tf     = ocp_di.cel.x();  // grabbing constraint on tf..
+  const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Zero(); };
+  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>::Zero(); };
+
+  const auto t0 = high_resolution_clock::now();
 
   const auto qp = ocp_to_qp(ocp_di, mesh, tf, xl_fun, ul_fun);
+
+  const auto t1 = high_resolution_clock::now();
 
   const auto qpsol =
     smooth::feedback::solve_qp(qp, smooth::feedback::QPSolverParams{.verbose = true});
 
+  const auto t2 = high_resolution_clock::now();
+
   const auto ocpsol = smooth::feedback::qpsol_to_ocpsol(ocp_di, mesh, qpsol, tf, xl_fun, ul_fun);
+
+  std::cout << "ocp_to_qp      : " << duration_cast<microseconds>(t1 - t0).count() << '\n';
+  std::cout << "solve_qp       : " << duration_cast<microseconds>(t2 - t1).count() << '\n';
 
 #ifdef ENABLE_PLOTTING
   using namespace matplot;
