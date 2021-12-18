@@ -35,11 +35,6 @@
 #include <Eigen/Sparse>
 #include <smooth/diff.hpp>
 
-#include <cstddef>
-#include <numeric>
-#include <ranges>
-#include <vector>
-
 #include "eval.hpp"
 #include "mesh.hpp"
 

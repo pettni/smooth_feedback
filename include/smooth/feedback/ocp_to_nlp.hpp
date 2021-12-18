@@ -38,8 +38,8 @@
 #include "collocation/eval.hpp"
 #include "collocation/eval_reduce.hpp"
 #include "collocation/mesh.hpp"
-#include "ocp.hpp"
 #include "nlp.hpp"
+#include "ocp.hpp"
 
 namespace smooth::feedback {
 

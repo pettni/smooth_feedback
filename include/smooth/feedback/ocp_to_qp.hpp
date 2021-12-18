@@ -32,10 +32,7 @@
  */
 
 #include <Eigen/Core>
-
-#include <smooth/compat/autodiff.hpp>
 #include <smooth/diff.hpp>
-#include <smooth/lie_group.hpp>
 
 #include "collocation/eval.hpp"
 #include "collocation/eval_reduce.hpp"
@@ -62,7 +59,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
 {
   using smooth::utils::zip;
-  using std::views::iota;
+  using namespace std::views;
 
   using X = typename std::decay_t<decltype(ocp)>::X;
 
@@ -97,6 +94,31 @@ QuadraticProgramSparse<double> ocp_to_qp(
   const auto Nvar = xvar_L + uvar_L;
   const auto Ncon = dcon_L + crcon_L + cecon_L;
 
+  // TODO move all allocation to a separate function...
+
+  // output of called functions
+  CollocEvalReduceResult g_res(1, ocp.nx, ocp.nu, N);
+  CollocEvalResult CRres(ocp.ncr, ocp.nx, ocp.nu, N);
+
+  // output of this function
+  QuadraticProgramSparse<double> ret;
+  ret.P.resize(Nvar, Nvar);
+  ret.q.resize(Nvar);
+  ret.A.resize(Ncon, Nvar);
+  ret.l.resize(Ncon);
+  ret.u.resize(Ncon);
+
+  // sparsity pattern of A
+  Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
+  for (auto ival = 0u, I0 = 0u; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
+    const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
+    A_pattern.segment(dcon_B + I0 * ocp.nx, Ki * ocp.nx) +=
+      Eigen::VectorXi::Constant(Ki * ocp.nx, ocp.nx + Ki + ocp.nu);
+  }
+  A_pattern.segment(crcon_B, crcon_L).setConstant(ocp.nx + ocp.nu);
+  A_pattern.segment(cecon_B, cecon_L).setConstant(2 * ocp.nx);
+  ret.A.reserve(A_pattern);
+
   /////////////////////////////////
   //// OBJECTIVE LINEARIZATION ////
   /////////////////////////////////
@@ -117,20 +139,6 @@ QuadraticProgramSparse<double> ocp_to_qp(
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////
   /////////////////////////////////
-
-  Eigen::SparseMatrix<double, Eigen::RowMajor> Adyn_X(dcon_L, xvar_L);
-  Eigen::SparseMatrix<double, Eigen::RowMajor> Adyn_U(dcon_L, uvar_L);
-
-  Eigen::VectorXi Adyn_X_pattern = Eigen::VectorXi::Zero(dcon_L);
-  for (auto ival = 0u, I0 = 0u; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
-    const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
-    Adyn_X_pattern.segment(I0 * ocp.nx, Ki * ocp.nx) +=
-      Eigen::VectorXi::Constant(Ki * ocp.nx, ocp.nx + Ki);
-  }
-  Adyn_X.reserve(Adyn_X_pattern);
-  Adyn_U.reserve(Eigen::VectorXi::Constant(dcon_L, ocp.nu));
-
-  Eigen::VectorXd bdyn(dcon_L);
 
   for (auto ival = 0u, M = 0u; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
@@ -157,29 +165,28 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
       for (auto j = 0u; j < Ki + 1; ++j) {
         for (auto diag = 0u; diag < ocp.nx; ++diag) {
-          Adyn_X.coeffRef((M + i) * ocp.nx + diag, (M + j) * ocp.nx + diag) -= D(j, i);
+          ret.A.coeffRef(dcon_B + (M + i) * ocp.nx + diag, (M + j) * ocp.nx + diag) -= D(j, i);
         }
       }
 
       for (auto row = 0u; row < ocp.nx; ++row) {
         for (auto col = 0u; col < ocp.nx; ++col) {
-          Adyn_X.coeffRef((M + i) * ocp.nx + row, (M + i) * ocp.nx + col) += A(row, col);
+          ret.A.coeffRef(dcon_B + (M + i) * ocp.nx + row, (M + i) * ocp.nx + col) += A(row, col);
         }
         for (auto col = 0u; col < ocp.nu; ++col) {
-          Adyn_U.coeffRef((M + i) * ocp.nx + row, (M + i) * ocp.nu + col) = B(row, col);
+          ret.A.coeffRef(dcon_B + (M + i) * ocp.nx + row, uvar_B + (M + i) * ocp.nu + col) =
+            B(row, col);
         }
       }
 
-      bdyn.segment((M + i) * ocp.nx, ocp.nx) = -E;
+      ret.l.segment(dcon_B + (M + i) * ocp.nx, ocp.nx) = -E;
+      ret.u.segment(dcon_B + (M + i) * ocp.nx, ocp.nx) = -E;
     }
   }
 
-  Adyn_X.makeCompressed();
-  Adyn_U.makeCompressed();
-
-  auto xslin = mesh.all_nodes() | std::views::transform([&xl_fun](double t) { return xl_fun(t); });
-  auto uslin = mesh.all_nodes() | std::views::take(int64_t(N))
-             | std::views::transform([&ul_fun](double t) { return ul_fun(t); });
+  auto xslin = mesh.all_nodes() | transform([&xl_fun](double t) { return xl_fun(t); });
+  auto uslin =
+    mesh.all_nodes() | take(int64_t(N)) | transform([&ul_fun](double t) { return ul_fun(t); });
 
   const Eigen::Vector<double, 1> q_dummy{1.};
 
@@ -187,15 +194,27 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// INTEGRAL ////
   //////////////////
 
-  CollocEvalReduceResult g_res(1, ocp.nx, ocp.nu, N);
   colloc_integrate<2>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
+
+  ret.P = qo_q.x() * 0.5
+        * sparse_block_matrix({
+          {g_res.d2F_dXX, g_res.d2F_dXU},
+          {{}, g_res.d2F_dUU},
+        });
+
+  ret.q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dX.transpose();
+  ret.q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dU.transpose();
 
   /////////////////////////////
   //// RUNNING CONSTRAINTS ////
   /////////////////////////////
 
-  CollocEvalResult CRres(ocp.ncr, ocp.nx, ocp.nu, N);
   colloc_eval<true>(CRres, ocp.cr, mesh, 0., tf, xslin, uslin);
+
+  // TODO do this in-place (implement sparse_block_copy)
+  ret.A.middleRows(crcon_B, crcon_L) = sparse_block_matrix({{CRres.dF_dX, CRres.dF_dU}});
+  ret.l.segment(crcon_B, crcon_L)    = ocp.crl.replicate(N, 1) - CRres.F.reshaped();
+  ret.u.segment(crcon_B, crcon_L)    = ocp.cru.replicate(N, 1) - CRres.F.reshaped();
 
   /////////////////////////
   //// END CONSTRAINTS ////
@@ -207,57 +226,36 @@ QuadraticProgramSparse<double> ocp_to_qp(
   // integral constraints not supported
   assert(Eigen::VectorXd(dcelin_dq).cwiseAbs().maxCoeff() < 1e-9);
 
-  /////////////////////
-  //// ASSEMBLE QP ////
-  /////////////////////
-
-  // part from integrals
-  Eigen::SparseMatrix<double> P = sparse_block_matrix({
-    {g_res.d2F_dXX, g_res.d2F_dXU},
-    {{}, g_res.d2F_dUU},
+  // TODO do this in-place
+  ret.A.middleRows(cecon_B, cecon_L) = sparse_block_matrix({
+    {dcelin_dx, Eigen::SparseMatrix<double>(cecon_L, uvar_L)},
   });
-  P *= qo_q.x() / 2;
+  ret.l.segment(cecon_B, cecon_L)    = ocp.cel - celin;
+  ret.u.segment(cecon_B, cecon_L)    = ocp.ceu - celin;
 
-  Eigen::VectorXd q(Nvar);
-  q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dX.transpose();
-  q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dU.transpose();
+  ////////////////////////////////
+  //// FINALIZE COST FUNCTION ////
+  ////////////////////////////////
 
   // weights from x0 and xf (TODO double-check)
-  q.segment(0, ocp.nx) += qo_x0;
-  q.segment(ocp.nx * N, ocp.nx) += qo_xf;
-
   for (auto row = 0u; row < ocp.nx; ++row) {
     for (auto col = 0u; col < ocp.nx; ++col) {
-      P.coeffRef(row, col) += Qo_x0(row, col);
-      P.coeffRef(row, ocp.nx * N + col) += Qo_x0f(row, col);  // upper-triangular
-      P.coeffRef(ocp.nx * N + row, ocp.nx * N + col) += Qo_xf(row, col);
+      ret.P.coeffRef(row, col) += Qo_x0(row, col);
+      ret.P.coeffRef(row, ocp.nx * N + col) += Qo_x0f(row, col);  // upper-triangular
+      ret.P.coeffRef(ocp.nx * N + row, ocp.nx * N + col) += Qo_xf(row, col);
     }
   }
 
-  // TODO: this should be row-major...
-  Eigen::SparseMatrix<double> A = sparse_block_matrix({
-    {Adyn_X, Adyn_U},
-    {CRres.dF_dX, CRres.dF_dU},
-    {dcelin_dx, {}},
-  });
+  ret.q.segment(0, ocp.nx) += qo_x0;
+  ret.q.segment(ocp.nx * N, ocp.nx) += qo_xf;
 
-  Eigen::VectorXd l(Ncon), u(Ncon);
+  ////////////////////////////////
+  ////////////////////////////////
 
-  l.segment(dcon_B, dcon_L)   = bdyn;
-  l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - CRres.F.reshaped();
-  l.segment(cecon_B, cecon_L) = ocp.cel - celin;
+  ret.A.makeCompressed();
+  ret.P.makeCompressed();
 
-  u.segment(dcon_B, dcon_L)   = bdyn;
-  u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - CRres.F.reshaped();
-  u.segment(cecon_B, cecon_L) = ocp.ceu - celin;
-
-  return QuadraticProgramSparse<double>{
-    .P = std::move(P),
-    .q = std::move(q),
-    .A = std::move(A),
-    .l = std::move(l),
-    .u = std::move(u),
-  };
+  return ret;
 }
 
 auto qpsol_to_ocpsol(

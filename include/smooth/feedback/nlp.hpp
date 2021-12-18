@@ -33,9 +33,9 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include <smooth/diff.hpp>
 
 #include <limits>
+#include <optional>
 
 namespace smooth::feedback {
 

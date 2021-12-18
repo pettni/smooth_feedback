@@ -36,8 +36,6 @@
 #include <smooth/internal/utils.hpp>
 #include <smooth/polynomial/quadrature.hpp>
 
-#include <cstddef>
-#include <numeric>
 #include <ranges>
 #include <span>
 #include <vector>
