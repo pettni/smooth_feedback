@@ -132,8 +132,8 @@ void colloc_eval(
   std::ranges::range auto && xs,
   std::ranges::range auto && us)
 {
-  using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
-  using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
+  using X = PlainObject<std::decay_t<std::ranges::range_value_t<decltype(xs)>>>;
+  using U = PlainObject<std::decay_t<std::ranges::range_value_t<decltype(us)>>>;
 
   const auto N = m.N_colloc();
 

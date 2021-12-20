@@ -129,9 +129,6 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// OBJECTIVE LINEARIZATION ////
   /////////////////////////////////
 
-  using Mat = Eigen::MatrixXd;
-  using Vec = Eigen::VectorXd;
-
   const auto [th, dth, d2th] = diff::dr<2>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
   const Eigen::Vector<double, Nx> qo_x0 = dth.template segment<Nx>(1);
@@ -149,7 +146,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   for (auto ival = 0u, M = 0u; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
 
-    const Mat D = mesh.interval_diffmat(ival);
+    const auto D = mesh.interval_diffmat(ival);
 
     // in each interval the collocation constraint is
     //
@@ -163,9 +160,10 @@ QuadraticProgramSparse<double> ocp_to_qp(
       // LINEARIZE DYNAMICS
       const auto [f_i, df_i] = diff::dr<1>(ocp.f, wrt(t_i, xl_i, ul_i));
 
-      const Mat A = tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.middleCols(1, Nx));
-      const Mat B = tf * df_i.middleCols(1 + Nx, Nu);
-      const Vec E = tf * (f_i - dxl_i);
+      const Eigen::Matrix<double, Nx, Nx> A =
+        tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.middleCols(1, Nx));
+      const Eigen::Matrix<double, Nx, Nu> B = tf * df_i.middleCols(1 + Nx, Nu);
+      const Eigen::Vector<double, Nx> E     = tf * (f_i - dxl_i);
 
       // insert new constraint A xi + B ui + E = [x0 ... XNi] di
 

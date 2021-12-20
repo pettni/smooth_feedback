@@ -54,15 +54,20 @@ namespace smooth::feedback {
  */
 inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun)
 {
-  using Eigen::VectorX;
-  using X = typename std::decay_t<decltype(ocp)>::X;
-  using U = typename std::decay_t<decltype(ocp)>::U;
+  using ocp_t = std::decay_t<decltype(ocp)>;
 
-  assert(Dof<X> == -1 || ocp.nx == Dof<X>);
-  assert(Dof<U> == -1 || ocp.nu == Dof<U>);
+  using Eigen::Vector;
+  using X = typename ocp_t::X;
+  using U = typename ocp_t::U;
+
+  static constexpr auto Nx  = ocp_t::Nx;
+  static constexpr auto Nu  = ocp_t::Nu;
+  static constexpr auto Nq  = ocp_t::Nq;
+  static constexpr auto Ncr = ocp_t::Ncr;
+  static constexpr auto Nce = ocp_t::Nce;
 
   auto f_new = [f = ocp.f, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
-                 const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
+                 const T & t, const Vector<T, Nx> & xe, const Vector<T, Nx> & ue) -> Vector<T, Nx> {
     using X_T = smooth::CastT<T, X>;
     using U_T = smooth::CastT<T, U>;
 
@@ -79,40 +84,40 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
   };
 
   auto g_new = [g = ocp.g, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
-                 const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
+                 const T & t, const Vector<T, Nx> & xe, const Vector<T, Nu> & ue) -> Vector<T, Nx> {
     return g.template operator()<T>(t, rplus(xl_fun(t), xe), rplus(ul_fun(t), ue));
   };
 
-  auto cr_new = [cr = ocp.cr, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
-                  const T & t, const VectorX<T> & xe, const VectorX<T> & ue) -> VectorX<T> {
+  auto cr_new =
+    [cr = ocp.cr, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
+      const T & t, const Vector<T, Nx> & xe, const Vector<T, Nu> & ue) -> Vector<T, Ncr> {
     return cr.template operator()<T>(t, rplus(xl_fun(t), xe), rplus(ul_fun(t), ue));
   };
 
-  auto theta_new =
-    [theta = ocp.theta, xl_fun = xl_fun]<typename T>(
-      const T & tf, const VectorX<T> & xe0, const VectorX<T> & xef, const VectorX<T> & q) -> T {
+  auto theta_new = [theta = ocp.theta, xl_fun = xl_fun]<typename T>(
+                     const T & tf,
+                     const Vector<T, Nx> & xe0,
+                     const Vector<T, Nx> & xef,
+                     const Vector<T, Nq> & q) -> T {
     return theta.template operator()<T>(tf, rplus(xl_fun(T(0.)), xe0), rplus(xl_fun(tf), xef), q);
   };
 
   auto ce_new = [ce = ocp.ce, xl_fun = xl_fun]<typename T>(
                   const T & tf,
-                  const VectorX<T> & xe0,
-                  const VectorX<T> & xef,
-                  const VectorX<T> & q) -> VectorX<T> {
+                  const Vector<T, Nx> & xe0,
+                  const Vector<T, Nx> & xef,
+                  const Vector<T, Nq> & q) -> Vector<T, Nce> {
     return ce.template operator()<T>(tf, rplus(xl_fun(T(0.)), xe0), rplus(xl_fun(tf), xef), q);
   };
 
-  return FlatOCP<
+  return OCP<
+    Eigen::Vector<double, Dof<X>>,
+    Eigen::Vector<double, Dof<U>>,
     decltype(theta_new),
     decltype(f_new),
     decltype(g_new),
     decltype(cr_new),
     decltype(ce_new)>{
-    .nx    = ocp.nx,
-    .nu    = ocp.nu,
-    .nq    = ocp.nq,
-    .ncr   = ocp.ncr,
-    .nce   = ocp.nce,
     .theta = std::move(theta_new),
     .f     = std::move(f_new),
     .g     = std::move(g_new),
@@ -132,15 +137,17 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
  * then unflatten_ocpsol(flat_sol, xl_fun, ul_fun) is a solution to ocp.
  */
 template<LieGroup X, Manifold U>
-OCPSolution<X, U> unflatten_ocpsol(const FlatOCPSolution & flatsol, auto && xl_fun, auto && ul_fun)
+auto unflatten_ocpsol(const auto & flatsol, auto && xl_fun, auto && ul_fun)
 {
+  using ocpsol_t = std::decay_t<decltype(flatsol)>;
+
   auto u_unflat = [ul_fun = std::forward<decltype(ul_fun)>(ul_fun),
                    usol   = flatsol.u](double t) -> U { return rplus(ul_fun(t), usol(t)); };
 
   auto x_unflat = [xl_fun = std::forward<decltype(xl_fun)>(xl_fun),
                    xsol   = flatsol.x](double t) -> X { return rplus(xl_fun(t), xsol(t)); };
 
-  return {
+  return OCPSolution<X, U, ocpsol_t::Nq, ocpsol_t::Ncr, ocpsol_t::Nce>{
     .t0         = flatsol.t0,
     .tf         = flatsol.tf,
     .Q          = flatsol.Q,
@@ -163,17 +170,17 @@ auto ocp_nlp_structure(const FlatOCPType auto & ocp, const MeshType auto & mesh)
   // variable layout
   std::array<std::size_t, 4> var_len{
     1,                 // tf
-    ocp.nq,            // integrals
-    ocp.nx * (N + 1),  // states
-    ocp.nu * N,        // inputs
+    ocp.Nq,            // integrals
+    ocp.Nx * (N + 1),  // states
+    ocp.Nu * N,        // inputs
   };
 
   // constraint layout
   std::array<std::size_t, 4> con_len{
-    ocp.nx * N,   // derivatives
-    ocp.nq,       // other integrals
-    ocp.ncr * N,  // running constraints
-    ocp.nce,      // end constraints
+    ocp.Nx * N,   // derivatives
+    ocp.Nq,       // other integrals
+    ocp.Ncr * N,  // running constraints
+    ocp.Nce,      // end constraints
   };
 
   std::array<std::size_t, 5> var_beg{0};
@@ -198,6 +205,10 @@ auto ocp_nlp_structure(const FlatOCPType auto & ocp, const MeshType auto & mesh)
  */
 NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 {
+  static constexpr auto Nx = std::decay_t<decltype(ocp)>::Nx;
+  static constexpr auto Nu = std::decay_t<decltype(ocp)>::Nu;
+  static constexpr auto Nq = std::decay_t<decltype(ocp)>::Nq;
+
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
   // OBJECTIVE FUNCTION
@@ -210,10 +221,11 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
-    const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
+    const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
+    const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
+      x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
 
-    return colloc_eval_endpt<false>(1, ocp.nx, ocp.theta, t0, tf, X.colwise(), Q);
+    return colloc_eval_endpt<false>(1, ocp.Nx, ocp.theta, t0, tf, X.colwise(), Q);
   };
 
   // OBJECTIVE JACOBIAN
@@ -225,11 +237,12 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
-    const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
+    const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
+    const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
+      x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
 
     const auto [fval, df_dt0, df_dtf, df_dvecX, df_dQ] =
-      colloc_eval_endpt<true>(1, ocp.nx, ocp.theta, t0, tf, X.colwise(), Q);
+      colloc_eval_endpt<true>(1, ocp.Nx, ocp.theta, t0, tf, X.colwise(), Q);
 
     return sparse_block_matrix({
       {df_dtf, df_dQ, df_dvecX, Eigen::SparseMatrix<double>(1, uvar_L)},
@@ -254,22 +267,24 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
-    const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
-    const Eigen::Map<const Eigen::MatrixXd> U(x.data() + uvar_B, ocp.nu, uvar_L / ocp.nu);
+    const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
+    const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
+      x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Eigen::Map<const Eigen::Matrix<double, Nu, -1>> U(
+      x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
 
-    CollocEvalReduceResult Geval(ocp.nq, ocp.nx, ocp.nu, mesh.N_colloc());
+    CollocEvalReduceResult Geval(ocp.Nq, ocp.Nx, ocp.Nu, mesh.N_colloc());
     colloc_integrate<0>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
 
-    CollocEvalResult CReval(ocp.ncr, ocp.nx, ocp.nu, mesh.N_colloc());
+    CollocEvalResult CReval(ocp.Ncr, ocp.Nx, ocp.Nu, mesh.N_colloc());
     colloc_eval<0>(CReval, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise());
 
     Eigen::VectorXd ret(m);
     // clang-format off
-    ret.segment(dcon_B, dcon_L)   = colloc_dyn<false>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
+    ret.segment(dcon_B, dcon_L)   = colloc_dyn<false>(ocp.Nx, ocp.f, mesh, t0, tf, X, U);
     ret.segment(qcon_B, qcon_L)   = Geval.F - Q;
     ret.segment(crcon_B, crcon_L) = CReval.F.reshaped();
-    ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X.colwise(), Q).reshaped();
+    ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.Nce, ocp.Nx, ocp.ce, t0, tf, X.colwise(), Q).reshaped();
     // clang-format on
     return ret;
   };
@@ -284,22 +299,24 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
       const double t0 = 0;
       const double tf = x(tfvar_B);
-      const Eigen::Map<const Eigen::VectorXd> Q(x.data() + qvar_B, qvar_L);
-      const Eigen::Map<const Eigen::MatrixXd> X(x.data() + xvar_B, ocp.nx, xvar_L / ocp.nx);
-      const Eigen::Map<const Eigen::MatrixXd> U(x.data() + uvar_B, ocp.nu, uvar_L / ocp.nu);
+      const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
+      const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
+        x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+      const Eigen::Map<const Eigen::Matrix<double, Nu, -1>> U(
+        x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
 
-      CollocEvalReduceResult Geval(ocp.nq, ocp.nx, ocp.nu, mesh.N_colloc());
+      CollocEvalReduceResult Geval(ocp.Nq, ocp.Nx, ocp.Nu, mesh.N_colloc());
       colloc_integrate<1>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
 
-      CollocEvalResult CReval(ocp.ncr, ocp.nx, ocp.nu, mesh.N_colloc());
+      CollocEvalResult CReval(ocp.Ncr, ocp.Nx, ocp.Nu, mesh.N_colloc());
       colloc_eval<1>(CReval, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise());
 
       // clang-format off
-      const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.nx, ocp.f, mesh, t0, tf, X, U);
-      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, t0, tf, X.colwise(), Q);
+      const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.Nx, ocp.f, mesh, t0, tf, X, U);
+      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.Nce, ocp.Nx, ocp.ce, t0, tf, X.colwise(), Q);
       // clang-format on
 
-      const Eigen::SparseMatrix<double> dG_dQ = -sparse_identity(ocp.nq);
+      const Eigen::SparseMatrix<double> dG_dQ = -sparse_identity(ocp.Nq);
 
       return sparse_block_matrix({
         // clang-format off
@@ -364,9 +381,16 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 /**
  * @brief Convert nonlinear program solution to ocp solution
  */
-FlatOCPSolution nlpsol_to_ocpsol(
+auto nlpsol_to_ocpsol(
   const FlatOCPType auto & ocp, const MeshType auto & mesh, const NLPSolution & nlp_sol)
 {
+  using ocp_t = std::decay_t<decltype(ocp)>;
+
+  static constexpr auto Nx  = ocp_t::Nx;
+  static constexpr auto Nu  = ocp_t::Nu;
+  static constexpr auto Nq  = ocp_t::Nq;
+  static constexpr auto Ncr = ocp_t::Ncr;
+
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
@@ -379,42 +403,46 @@ FlatOCPSolution nlpsol_to_ocpsol(
   const double t0 = 0;
   const double tf = nlp_sol.x(tfvar_B);
 
-  const Eigen::VectorXd Q = nlp_sol.x.segment(qvar_B, qvar_L);
+  const Eigen::Vector<double, Nq> Q = nlp_sol.x.segment(qvar_B, qvar_L);
 
   // state vector has a value at the endpoint
 
-  Eigen::MatrixXd X(ocp.nx, N + 1);
-  X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.nx, xvar_L / ocp.nx);
+  Eigen::MatrixXd X(ocp.Nx, N + 1);
+  X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.Nx, xvar_L / ocp.Nx);
 
   auto xfun = [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::VectorXd {
-    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), X.colwise(), 0, true);
+    return mesh.template eval<Eigen::Vector<double, Nx>>(
+      (t - t0) / (tf - t0), X.colwise(), 0, true);
   };
 
   // for these we repeat last point since there are no values for endpoint
 
-  Eigen::MatrixXd U(ocp.nu, N);
-  U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.nu, uvar_L / ocp.nu);
+  Eigen::MatrixXd U(ocp.Nu, N);
+  U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.Nu, uvar_L / ocp.Nu);
 
   auto ufun = [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::VectorXd {
-    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), U.colwise(), 0, false);
+    return mesh.template eval<Eigen::Vector<double, Nu>>(
+      (t - t0) / (tf - t0), U.colwise(), 0, false);
   };
 
-  Eigen::MatrixXd Ldyn(ocp.nx, N);
-  Ldyn = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.nx, dcon_L / ocp.nx);
+  Eigen::MatrixXd Ldyn(ocp.Nx, N);
+  Ldyn = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.Nx, dcon_L / ocp.Nx);
 
   auto ldfun =
     [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](double t) -> Eigen::VectorXd {
-    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
+    return mesh.template eval<Eigen::Vector<double, Nx>>(
+      (t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
   };
 
-  Eigen::MatrixXd Lcr(ocp.ncr, N);
-  Lcr = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.ncr, crcon_L / ocp.ncr);
+  Eigen::MatrixXd Lcr(ocp.Ncr, N);
+  Lcr = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.Ncr, crcon_L / ocp.Ncr);
 
   auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::VectorXd {
-    return mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Lcr.colwise(), 0, false);
+    return mesh.template eval<Eigen::Vector<double, Ncr>>(
+      (t - t0) / (tf - t0), Lcr.colwise(), 0, false);
   };
 
-  return {
+  return OCPSolution<typename ocp_t::X, typename ocp_t::U, ocp_t::Nq, ocp_t::Ncr, ocp_t::Nce>{
     .t0         = t0,
     .tf         = tf,
     .Q          = std::move(Q),
@@ -430,8 +458,8 @@ FlatOCPSolution nlpsol_to_ocpsol(
 /**
  * @brief Convert ocp  solution to nonlinear program
  */
-NLPSolution ocpsol_to_nlpsol(
-  const FlatOCPType auto & ocp, const MeshType auto & mesh, const FlatOCPSolution & ocpsol)
+NLPSolution
+ocpsol_to_nlpsol(const FlatOCPType auto & ocp, const MeshType auto & mesh, const auto & ocpsol)
 {
   const std::size_t N                             = mesh.N_colloc();
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
@@ -459,11 +487,11 @@ NLPSolution ocpsol_to_nlpsol(
   lambda.segment(cecon_B, cecon_L) = ocpsol.lambda_ce;
 
   for (const auto & [i, tau] : smooth::utils::zip(std::views::iota(0u), mesh.all_nodes())) {
-    x.segment(xvar_B + i * ocp.nx, ocp.nx) = ocpsol.x(t0 + tau * (tf - t0));
+    x.segment(xvar_B + i * ocp.Nx, ocp.Nx) = ocpsol.x(t0 + tau * (tf - t0));
     if (i < N) {
-      x.segment(uvar_B + i * ocp.nu, ocp.nu)         = ocpsol.u(t0 + tau * (tf - t0));
-      lambda.segment(dcon_B + i * ocp.nx, ocp.nx)    = ocpsol.lambda_dyn(t0 + tau * (tf - t0));
-      lambda.segment(crcon_B + i * ocp.ncr, ocp.ncr) = ocpsol.lambda_cr(t0 + tau * (tf - t0));
+      x.segment(uvar_B + i * ocp.Nu, ocp.Nu)         = ocpsol.u(t0 + tau * (tf - t0));
+      lambda.segment(dcon_B + i * ocp.Nx, ocp.Nx)    = ocpsol.lambda_dyn(t0 + tau * (tf - t0));
+      lambda.segment(crcon_B + i * ocp.Ncr, ocp.Ncr) = ocpsol.lambda_cr(t0 + tau * (tf - t0));
     }
   }
 

@@ -60,7 +60,7 @@ using smooth::utils::zip;
  *
  * @note This only works on flat spaces, which is why xs and us are matrices rather than ranges.
  */
-template<bool Deriv>
+template<bool Deriv, typename D1, typename D2>
   requires(Deriv == 0 || Deriv == 1)
 auto colloc_dyn(
   const std::size_t nx,
@@ -68,8 +68,8 @@ auto colloc_dyn(
   const MeshType auto & m,
   const double t0,
   const double tf,
-  const Eigen::MatrixXd & xs,
-  const Eigen::MatrixXd & us)
+  const Eigen::MatrixBase<D1> & xs,
+  const Eigen::MatrixBase<D2> & us)
 {
   assert(m.N_colloc() + 1 == static_cast<std::size_t>(xs.cols()));  // extra at the end
   assert(m.N_colloc() == static_cast<std::size_t>(us.cols()));      // one per collocation point
@@ -179,8 +179,8 @@ Eigen::VectorXd mesh_dyn_error(
   const MeshType auto & m,
   const double t0,
   const double tf,
-  const std::function<Eigen::VectorXd(double)> xfun,
-  const std::function<Eigen::VectorXd(double)> ufun)
+  auto && xfun,
+  auto && ufun)
 {
   const auto N = m.N_ivals();
 
