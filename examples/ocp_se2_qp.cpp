@@ -24,7 +24,7 @@
 // SOFTWARE.
 
 /**
- * @file Solve a double integrator optimal control problem as a quadratic program.
+ * @file Solve optimal control problem on SE(2) as a quadratic program.
  */
 
 #include <smooth/feedback/ocp_to_qp.hpp>
@@ -33,7 +33,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "ocp_doubleintegrator.hpp"
+#include "ocp_se2.hpp"
 
 #ifdef ENABLE_PLOTTING
 #include "common.hpp"
@@ -45,16 +45,16 @@ using namespace std::chrono;
 int main()
 {
   // define mesh
-  smooth::feedback::Mesh<4, 4> mesh;
-  mesh.refine_ph(0, 40);
+  smooth::feedback::Mesh<10, 10> mesh;
+  mesh.refine_ph(0, 160);
 
-  const auto tf     = ocp_di.cel.x();  // grabbing constraint on tf..
-  const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Zero(); };
-  const auto ul_fun = []<typename T>(T) -> U<T> { return U<T>::Zero(); };
+  const auto tf     = ocp_se2.cel.x();  // grabbing constraint on tf..
+  const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
+  const auto ul_fun = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Constant(0.01); };
 
   const auto t0 = high_resolution_clock::now();
 
-  const auto qp = ocp_to_qp(ocp_di, mesh, tf, xl_fun, ul_fun);
+  const auto qp = ocp_to_qp(ocp_se2, mesh, tf, xl_fun, ul_fun);
 
   const auto t1 = high_resolution_clock::now();
 
@@ -63,7 +63,7 @@ int main()
 
   const auto t2 = high_resolution_clock::now();
 
-  const auto ocpsol = smooth::feedback::qpsol_to_ocpsol(ocp_di, mesh, qpsol, tf, xl_fun, ul_fun);
+  const auto ocpsol = smooth::feedback::qpsol_to_ocpsol(ocp_se2, mesh, qpsol, tf, xl_fun, ul_fun);
 
   std::cout << "ocp_to_qp      : " << duration_cast<microseconds>(t1 - t0).count() << '\n';
   std::cout << "solve_qp       : " << duration_cast<microseconds>(t2 - t1).count() << '\n';
@@ -78,16 +78,26 @@ int main()
 
   figure();
   hold(on);
-  plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
-  plot(tt_nodes, tt_weights, "or")->marker_size(5);
-  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).x(); }), "-r")->line_width(2.);
-  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).y(); }), "-b")->line_width(2.);
-  legend({"nodes", "weights", "pos", "vel"});
+  plot(
+    transform(tt, [&](double t) { return ocpsol.x(t).part<0>().r2().x(); }),
+    transform(tt, [&](double t) { return ocpsol.x(t).part<0>().r2().y(); }),
+    "-r")
+    ->line_width(2);
+  matplot::legend(std::vector<std::string>{"path"});
 
   figure();
   hold(on);
-  plot(tt, transform(tt, [&ocpsol](double t) { return ocpsol.u(t).x(); }), "-r")->line_width(2.);
-  legend(std::vector<std::string>{"input"});
+  plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
+  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).part<1>().x(); }), "-r")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).part<1>().y(); }), "-g")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).part<1>().z(); }), "-b")->line_width(2);
+  matplot::legend({"vx", "vy", "wz"});
+
+  figure();
+  hold(on);
+  plot(tt, transform(tt, [&](double t) { return ocpsol.u(t).x(); }), "-r")->line_width(2);
+  plot(tt, transform(tt, [&](double t) { return ocpsol.u(t).y(); }), "-b")->line_width(2);
+  matplot::legend({"throttle", "steering"});
 
   show();
 #endif

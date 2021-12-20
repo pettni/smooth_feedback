@@ -48,7 +48,7 @@ TEST(OcpToQp, Basic)
   };
 
   const auto f = []<typename T>(T, X<T> x, U<T> u) -> smooth::Tangent<X<T>> {
-    return smooth::Tangent<X<T>>{{x.y(), u.x()}};
+    return {x.y(), u.x()};
   };
 
   const auto g = []<typename T>(T, X<T>, U<T> u) -> Vec<T, 1> {

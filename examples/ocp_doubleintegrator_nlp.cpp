@@ -37,15 +37,9 @@
 #include "ocp_doubleintegrator.hpp"
 
 #ifdef ENABLE_PLOTTING
+#include "common.hpp"
 #include <matplot/matplot.h>
 #endif
-
-/// @brief Range to std::vector
-const auto r2v = [](std::ranges::range auto && r) {
-  std::vector<std::ranges::range_value_t<decltype(r)>> ret;
-  for (auto x : r) { ret.push_back(x); }
-  return ret;
-};
 
 int main()
 {
@@ -56,8 +50,7 @@ int main()
   smooth::feedback::Mesh<5, 10> mesh;
 
   // declare solution variable
-  std::vector<smooth::feedback::OCPSolution<Eigen::Vector2d, Eigen::Vector<double, 1>, 1, 2, 5>>
-    sols;
+  std::vector<decltype(ocp_di)::Solution> sols;
   std::optional<smooth::feedback::NLPSolution> nlpsol;
 
   const auto t0 = std::chrono::high_resolution_clock::now();

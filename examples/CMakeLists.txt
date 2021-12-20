@@ -21,6 +21,10 @@ add_executable(ocp_doubleintegrator_qp ocp_doubleintegrator_qp.cpp)
 target_link_libraries(ocp_doubleintegrator_qp feedback)
 target_compile_options(ocp_doubleintegrator_qp PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
+add_executable(ocp_se2_qp ocp_se2_qp.cpp)
+target_link_libraries(ocp_se2_qp feedback)
+target_compile_options(ocp_se2_qp PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
 add_executable(snippets snippets.cpp)
 target_link_libraries(snippets feedback)
 
@@ -53,6 +57,9 @@ if(${Matplot++_FOUND})
 
   target_compile_definitions(ocp_doubleintegrator_qp PRIVATE ENABLE_PLOTTING)
   target_link_libraries(ocp_doubleintegrator_qp Matplot++::matplot)
+
+  target_compile_definitions(ocp_se2_qp PRIVATE ENABLE_PLOTTING)
+  target_link_libraries(ocp_se2_qp Matplot++::matplot)
 
   if (${IPOPT_FOUND})
     target_compile_definitions(ocp_doubleintegrator_nlp PRIVATE ENABLE_PLOTTING)
