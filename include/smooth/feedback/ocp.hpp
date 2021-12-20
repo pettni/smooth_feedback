@@ -68,16 +68,23 @@ struct OCP
   using X = _X;
   using U = _U;
 
-  /// @brief State dimension \f$ n_{x} \f$
-  std::size_t nx;
-  /// @brief Input dimension \f$ n_{u} \f$
-  std::size_t nu;
-  /// @brief Number of integrals \f$ n_{q} \f$
-  std::size_t nq;
-  /// @brief Number of running constraints \f$ n_{cr} \f$
-  std::size_t ncr;
-  /// @brief Number of end constraints \f$ n_{ce} \f$
-  std::size_t nce;
+  /// @brief State space dimension
+  static constexpr int Nx = Dof<X>;
+  /// @brief Input space dimension
+  static constexpr int Nu = Dof<U>;
+  /// @brief Number of integrals
+  static constexpr int Nq = std::invoke_result_t<G, double, X, U>::SizeAtCompileTime;
+  /// @brief Number of running constraints
+  static constexpr int Ncr = std::invoke_result_t<CR, double, X, U>::SizeAtCompileTime;
+  /// @brief Number of end constraints
+  static constexpr int Nce =
+    std::invoke_result_t<CE, double, X, X, Eigen::Matrix<double, Nq, 1>>::SizeAtCompileTime;
+
+  static_assert(Nx > 0, "Static size required");
+  static_assert(Nu > 0, "Static size required");
+  static_assert(Nq > 0, "Static size required");
+  static_assert(Ncr > 0, "Static size required");
+  static_assert(Nce > 0, "Static size required");
 
   /// @brief Objective function \f$ \theta : R \times X \times X \times R^{n_q} \rightarrow R \f$
   Theta theta;
@@ -90,25 +97,21 @@ struct OCP
   /// @brief Running constraint \f$ c_r : R \times X \times U \rightarrow R^{n_{cr}} \f$
   CR cr;
   /// @brief Running constraint lower bound \f$ c_{rl} \in R^{n_{cr}} \f$
-  Eigen::VectorXd crl;
+  Eigen::Vector<double, Ncr> crl;
   /// @brief Running constraint upper bound \f$ c_{ru} \in R^{n_{cr}} \f$
-  Eigen::VectorXd cru;
+  Eigen::Vector<double, Ncr> cru;
 
   /// @brief End constraint \f$ c_e : R \times X \times X \times R^{n_q} \rightarrow R^{n_{ce}} \f$
   CE ce;
   /// @brief End constraint lower bound \f$ c_{el} \in R^{n_{ce}} \f$
-  Eigen::VectorXd cel;
+  Eigen::Vector<double, Nce> cel;
   /// @brief End constraint upper bound \f$ c_{eu} \in R^{n_{ce}} \f$
-  Eigen::VectorXd ceu;
+  Eigen::Vector<double, Nce> ceu;
 };
 
 /// @brief Concept that is true for OCP specializations
 template<typename T>
 concept OCPType = traits::is_specialization_of_v<T, OCP>;
-
-/// @brief OCP defined on flat spaces
-template<typename Theta, typename F, typename G, typename CR, typename CE>
-using FlatOCP = OCP<Eigen::VectorXd, Eigen::VectorXd, Theta, F, G, CR, CE>;
 
 /// @brief Concept that is true for FlatOCP specializations
 template<typename T>
@@ -116,72 +119,33 @@ concept FlatOCPType =
   OCPType<T> &&(smooth::traits::RnType<typename T::X> && smooth::traits::RnType<typename T::U>);
 
 /**
- * @brief Check if an OCP is properly defined.
- */
-inline bool check_ocp(const OCPType auto & ocp)
-{
-  using X = typename std::decay_t<decltype(ocp)>::X;
-  using U = typename std::decay_t<decltype(ocp)>::U;
-
-  const double t = 0;
-  const X x      = Default<X>(ocp.nx);
-  const U u      = Default<U>(ocp.nu);
-
-  if (!(static_cast<std::size_t>(dof(x)) == ocp.nx)) { return false; }
-  if (!(static_cast<std::size_t>(dof(u)) == ocp.nu)) { return false; }
-
-  const auto dx = ocp.f.template operator()<double>(t, x, u);
-  if (!(static_cast<std::size_t>(dx.size()) == ocp.nx)) { return false; }
-
-  const auto g = ocp.g.template operator()<double>(t, x, u);
-  if (!(static_cast<std::size_t>(g.size()) == ocp.nq)) { return false; }
-
-  [[maybe_unused]] const double obj = ocp.theta.template operator()<double>(t, x, x, g);
-
-  const auto cr = ocp.cr.template operator()<double>(t, x, u);
-  if (!(static_cast<std::size_t>(cr.size()) == ocp.ncr)) { return false; }
-  if (!(static_cast<std::size_t>(ocp.crl.size()) == ocp.ncr)) { return false; }
-  if (!(static_cast<std::size_t>(ocp.cru.size()) == ocp.ncr)) { return false; }
-
-  const auto ce = ocp.ce.template operator()<double>(t, x, x, g);
-  if (!(static_cast<std::size_t>(ce.size()) == ocp.nce)) { return false; }
-  if (!(static_cast<std::size_t>(ocp.cel.size()) == ocp.nce)) { return false; }
-  if (!(static_cast<std::size_t>(ocp.ceu.size()) == ocp.nce)) { return false; }
-
-  return true;
-}
-
-/**
  * @brief Solution to OCP problem.
  */
-template<LieGroup X, Manifold U>
+template<LieGroup X, Manifold U, int Nq, int Nce, int Ncr>
 struct OCPSolution
 {
   double t0;
   double tf;
 
   /// @brief Integral values
-  Eigen::VectorXd Q{};
+  Eigen::Vector<double, Nq> Q{};
 
   /// @brief Callable functions for state and input
   std::function<U(double)> u;
   std::function<X(double)> x;
 
   /// @brief Multipliers for integral constraints
-  Eigen::VectorXd lambda_q{};
+  Eigen::Vector<double, Nq> lambda_q{};
 
   /// @brief Multipliers for endpoint constraints
-  Eigen::VectorXd lambda_ce{};
+  Eigen::Vector<double, Nce> lambda_ce{};
 
   /// @brief Multipliers for dynamics equality constraint
-  std::function<Eigen::VectorXd(double)> lambda_dyn{};
+  std::function<Eigen::Vector<double, Dof<X>>(double)> lambda_dyn{};
 
   /// @brief Multipliers for active running constraints
-  std::function<Eigen::VectorXd(double)> lambda_cr{};
+  std::function<Eigen::Vector<double, Ncr>(double)> lambda_cr{};
 };
-
-/// @brief Solution to OCP problem defined on flat spaces
-using FlatOCPSolution = OCPSolution<Eigen::VectorXd, Eigen::VectorXd>;
 
 }  // namespace smooth::feedback
 

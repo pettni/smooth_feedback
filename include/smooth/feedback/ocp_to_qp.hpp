@@ -61,13 +61,19 @@ QuadraticProgramSparse<double> ocp_to_qp(
   using smooth::utils::zip;
   using namespace std::views;
 
-  using X = typename std::decay_t<decltype(ocp)>::X;
+  using ocp_t = typename std::decay_t<decltype(ocp)>;
+
+  using X = typename ocp_t::X;
+
+  static constexpr auto Nx = ocp_t::Nx;
+  static constexpr auto Nu = ocp_t::Nu;
+  static constexpr auto Nq = ocp_t::Nq;
 
   const X xl0 = xl_fun(0.);
   const X xlf = xl_fun(tf);
   const Eigen::Matrix<double, 1, 1> ql(0);
 
-  assert(ocp.nq == 1);
+  static_assert(ocp_t::Nq == 1, "exactly one integral supported in ocp_to_qp");
 
   /////////////////////////
   //// VARIABLE LAYOUT ////
@@ -77,15 +83,15 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   const auto N = mesh.N_colloc();
 
-  const auto xvar_L = ocp.nx * (N + 1);
-  const auto uvar_L = ocp.nu * N;
+  const auto xvar_L = Nx * (N + 1);
+  const auto uvar_L = Nu * N;
 
   const auto xvar_B = 0u;
   const auto uvar_B = xvar_L;
 
-  const auto dcon_L  = ocp.nx * N;
-  const auto crcon_L = ocp.ncr * N;
-  const auto cecon_L = ocp.nce;
+  const auto dcon_L  = Nx * N;
+  const auto crcon_L = ocp_t::Ncr * N;
+  const auto cecon_L = ocp_t::Nce;
 
   const auto dcon_B  = 0u;
   const auto crcon_B = dcon_L;
@@ -97,8 +103,8 @@ QuadraticProgramSparse<double> ocp_to_qp(
   // TODO move all allocation to a separate function...
 
   // output of called functions
-  CollocEvalReduceResult g_res(1, ocp.nx, ocp.nu, N);
-  CollocEvalResult CRres(ocp.ncr, ocp.nx, ocp.nu, N);
+  CollocEvalReduceResult g_res(1, ocp_t::Nx, Nu, N);
+  CollocEvalResult CRres(ocp_t::Ncr, Nx, Nu, N);
 
   // output of this function
   QuadraticProgramSparse<double> ret;
@@ -112,11 +118,11 @@ QuadraticProgramSparse<double> ocp_to_qp(
   Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
   for (auto ival = 0u, I0 = 0u; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
-    A_pattern.segment(dcon_B + I0 * ocp.nx, Ki * ocp.nx) +=
-      Eigen::VectorXi::Constant(Ki * ocp.nx, ocp.nx + Ki + ocp.nu);
+    A_pattern.segment(dcon_B + I0 * Nx, Ki * Nx) +=
+      Eigen::VectorXi::Constant(Ki * Nx, Nx + Ki + Nu);
   }
-  A_pattern.segment(crcon_B, crcon_L).setConstant(ocp.nx + ocp.nu);
-  A_pattern.segment(cecon_B, cecon_L).setConstant(2 * ocp.nx);
+  A_pattern.segment(crcon_B, crcon_L).setConstant(Nx + Nu);
+  A_pattern.segment(cecon_B, cecon_L).setConstant(2 * Nx);
   ret.A.reserve(A_pattern);
 
   /////////////////////////////////
@@ -128,13 +134,13 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   const auto [th, dth, d2th] = diff::dr<2>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
-  const Vec qo_x0 = dth.segment(1, ocp.nx);
-  const Vec qo_xf = dth.segment(1 + ocp.nx, ocp.nx);
-  const Vec qo_q  = dth.segment(1 + 2 * ocp.nx, ocp.nq);
+  const Eigen::Vector<double, Nx> qo_x0 = dth.template segment<Nx>(1);
+  const Eigen::Vector<double, Nx> qo_xf = dth.template segment<Nx>(1 + Nx);
+  const Eigen::Vector<double, Nq> qo_q  = dth.template segment<Nq>(1 + 2 * Nx);
 
-  const Mat Qo_x0  = d2th.block(1, 1, ocp.nx, ocp.nx) / 2;
-  const Mat Qo_x0f = d2th.block(1, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
-  const Mat Qo_xf  = d2th.block(1 + ocp.nx, 1 + ocp.nx, ocp.nx, ocp.nx) / 2;
+  const Eigen::Matrix<double, Nx, Nx> Qo_x0  = d2th.template block<Nx, Nx>(1, 1) / 2;
+  const Eigen::Matrix<double, Nx, Nx> Qo_x0f = d2th.template block<Nx, Nx>(1, 1 + Nx) / 2;
+  const Eigen::Matrix<double, Nx, Nx> Qo_xf  = d2th.template block<Nx, Nx>(1 + Nx, 1 + Nx) / 2;
 
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////
@@ -157,38 +163,36 @@ QuadraticProgramSparse<double> ocp_to_qp(
       // LINEARIZE DYNAMICS
       const auto [f_i, df_i] = diff::dr<1>(ocp.f, wrt(t_i, xl_i, ul_i));
 
-      const Mat A = tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.middleCols(1, ocp.nx));
-      const Mat B = tf * df_i.middleCols(1 + ocp.nx, ocp.nu);
+      const Mat A = tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.middleCols(1, Nx));
+      const Mat B = tf * df_i.middleCols(1 + Nx, Nu);
       const Vec E = tf * (f_i - dxl_i);
 
       // insert new constraint A xi + B ui + E = [x0 ... XNi] di
 
       for (auto j = 0u; j < Ki + 1; ++j) {
-        for (auto diag = 0u; diag < ocp.nx; ++diag) {
-          ret.A.coeffRef(dcon_B + (M + i) * ocp.nx + diag, (M + j) * ocp.nx + diag) -= D(j, i);
+        for (auto diag = 0u; diag < Nx; ++diag) {
+          ret.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= D(j, i);
         }
       }
 
-      for (auto row = 0u; row < ocp.nx; ++row) {
-        for (auto col = 0u; col < ocp.nx; ++col) {
-          ret.A.coeffRef(dcon_B + (M + i) * ocp.nx + row, (M + i) * ocp.nx + col) += A(row, col);
+      for (auto row = 0u; row < Nx; ++row) {
+        for (auto col = 0u; col < Nx; ++col) {
+          ret.A.coeffRef(dcon_B + (M + i) * Nx + row, (M + i) * Nx + col) += A(row, col);
         }
-        for (auto col = 0u; col < ocp.nu; ++col) {
-          ret.A.coeffRef(dcon_B + (M + i) * ocp.nx + row, uvar_B + (M + i) * ocp.nu + col) =
-            B(row, col);
+        for (auto col = 0u; col < Nu; ++col) {
+          ret.A.coeffRef(dcon_B + (M + i) * Nx + row, uvar_B + (M + i) * Nu + col) = B(row, col);
         }
       }
 
-      ret.l.segment(dcon_B + (M + i) * ocp.nx, ocp.nx) = -E;
-      ret.u.segment(dcon_B + (M + i) * ocp.nx, ocp.nx) = -E;
+      ret.l.segment(dcon_B + (M + i) * Nx, Nx) = -E;
+      ret.u.segment(dcon_B + (M + i) * Nx, Nx) = -E;
     }
   }
 
   auto xslin = mesh.all_nodes() | transform([&xl_fun](double t) { return xl_fun(t); });
-  auto uslin =
-    mesh.all_nodes() | take(int64_t(N)) | transform([&ul_fun](double t) { return ul_fun(t); });
+  auto uslin = mesh.all_nodes() | transform([&ul_fun](double t) { return ul_fun(t); });
 
-  const Eigen::Vector<double, 1> q_dummy{1.};
+  const Eigen::Vector<double, 1> qlin{1.};
 
   //////////////////
   //// INTEGRAL ////
@@ -221,10 +225,10 @@ QuadraticProgramSparse<double> ocp_to_qp(
   /////////////////////////
 
   const auto [celin, dcelin_dt0, dcelin_dtf, dcelin_dx, dcelin_dq] =
-    colloc_eval_endpt<true>(ocp.nce, ocp.nx, ocp.ce, 0., tf, xslin, q_dummy);
+    colloc_eval_endpt<true>(ocp_t::Nce, Nx, ocp.ce, 0., tf, xslin, qlin);
 
   // integral constraints not supported
-  assert(Eigen::VectorXd(dcelin_dq).cwiseAbs().maxCoeff() < 1e-9);
+  // assert(dcelin_dq.cwiseAbs().maxCoeff() < 1e-9);
 
   // TODO do this in-place
   ret.A.middleRows(cecon_B, cecon_L) = sparse_block_matrix({
@@ -238,16 +242,16 @@ QuadraticProgramSparse<double> ocp_to_qp(
   ////////////////////////////////
 
   // weights from x0 and xf (TODO double-check)
-  for (auto row = 0u; row < ocp.nx; ++row) {
-    for (auto col = 0u; col < ocp.nx; ++col) {
+  for (auto row = 0u; row < Nx; ++row) {
+    for (auto col = 0u; col < Nx; ++col) {
       ret.P.coeffRef(row, col) += Qo_x0(row, col);
-      ret.P.coeffRef(row, ocp.nx * N + col) += Qo_x0f(row, col);  // upper-triangular
-      ret.P.coeffRef(ocp.nx * N + row, ocp.nx * N + col) += Qo_xf(row, col);
+      ret.P.coeffRef(row, Nx * N + col) += Qo_x0f(row, col);  // upper-triangular
+      ret.P.coeffRef(Nx * N + row, Nx * N + col) += Qo_xf(row, col);
     }
   }
 
-  ret.q.segment(0, ocp.nx) += qo_x0;
-  ret.q.segment(ocp.nx * N, ocp.nx) += qo_xf;
+  ret.q.segment(0, Nx) += qo_x0;
+  ret.q.segment(Nx * N, Nx) += qo_xf;
 
   ////////////////////////////////
   ////////////////////////////////
@@ -266,18 +270,26 @@ auto qpsol_to_ocpsol(
   auto && xl_fun,
   auto && ul_fun)
 {
-  using X = typename std::decay_t<decltype(ocp)>::X;
-  using U = typename std::decay_t<decltype(ocp)>::U;
+  using ocp_t = std::decay_t<decltype(ocp)>;
+
+  using X = typename ocp_t::X;
+  using U = typename ocp_t::U;
+
+  static constexpr int Nx  = ocp_t::Nx;
+  static constexpr int Nu  = ocp_t::Nu;
+  static constexpr int Nq  = ocp_t::Nq;
+  static constexpr int Ncr = ocp_t::Ncr;
+  static constexpr int Nce = ocp_t::Nce;
 
   const auto N = mesh.N_colloc();
 
-  const auto xvar_L = ocp.nx * (N + 1);
-  const auto uvar_L = ocp.nu * N;
+  const auto xvar_L = Nx * (N + 1);
+  const auto uvar_L = Nu * N;
 
   const auto xvar_B    = 0u;
   const auto uvar_B    = xvar_L;
-  Eigen::MatrixXd Xmat = qpsol.primal.segment(xvar_B, xvar_L).reshaped(ocp.nx, N + 1);
-  Eigen::MatrixXd Umat = qpsol.primal.segment(uvar_B, uvar_L).reshaped(ocp.nu, N);
+  Eigen::MatrixXd Xmat = qpsol.primal.segment(xvar_B, xvar_L).reshaped(Nx, N + 1);
+  Eigen::MatrixXd Umat = qpsol.primal.segment(uvar_B, uvar_L).reshaped(Nu, N);
 
   auto xfun = [t0     = 0.,
                tf     = tf,
@@ -285,7 +297,7 @@ auto qpsol_to_ocpsol(
                Xmat   = std::move(Xmat),
                xl_fun = std::forward<decltype(xl_fun)>(xl_fun)](double t) -> X {
     const auto tngnt =
-      mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Xmat.colwise(), 0, true);
+      mesh.template eval<Eigen::Vector<double, Nx>>((t - t0) / (tf - t0), Xmat.colwise(), 0, true);
     return rplus(xl_fun(t), tngnt);
   };
 
@@ -295,11 +307,11 @@ auto qpsol_to_ocpsol(
                Umat   = std::move(Umat),
                ul_fun = std::forward<decltype(ul_fun)>(ul_fun)](double t) -> U {
     const auto tngnt =
-      mesh.template eval<Eigen::VectorXd>((t - t0) / (tf - t0), Umat.colwise(), 0, false);
+      mesh.template eval<Eigen::Vector<double, Nu>>((t - t0) / (tf - t0), Umat.colwise(), 0, false);
     return rplus(ul_fun(t), tngnt);
   };
 
-  return OCPSolution<X, U>{
+  return OCPSolution<X, U, Nq, Nce, Ncr>{
     .t0 = 0.,
     .tf = tf,
     .u  = std::move(ufun),

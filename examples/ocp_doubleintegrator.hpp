@@ -67,11 +67,6 @@ using OcpDI = smooth::feedback::
   OCP<X<double>, U<double>, decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>;
 
 inline const OcpDI ocp_di{
-  .nx    = 2,
-  .nu    = 1,
-  .nq    = 1,
-  .ncr   = 2,
-  .nce   = 5,
   .theta = theta,
   .f     = f,
   .g     = g,

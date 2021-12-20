@@ -135,9 +135,11 @@ void colloc_eval(
   using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
   using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
 
+  const auto N = m.N_colloc();
+
   res.setZero();
 
-  for (const auto & [ival, tau, x, u] : utils::zip(std::views::iota(0u), m.all_nodes(), xs, us)) {
+  for (const auto & [ival, tau, x, u] : utils::zip(std::views::iota(0u, N), m.all_nodes(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;

@@ -207,16 +207,11 @@ void colloc_eval_reduce(
   using X = PlainObject<std::ranges::range_value_t<decltype(xs)>>;
   using U = PlainObject<std::ranges::range_value_t<decltype(us)>>;
 
-  if constexpr (std::ranges::sized_range<decltype(xs)>) {
-    assert(m.N_colloc() + 1 == std::ranges::size(xs));
-  }
-  if constexpr (std::ranges::sized_range<decltype(us)>) {
-    assert(m.N_colloc() == std::ranges::size(us));
-  }
+  const auto N = m.N_colloc();
 
   res.setZero();
 
-  for (const auto & [i, tau, l, x, u] : utils::zip(iota(0u), m.all_nodes(), ls, xs, us)) {
+  for (const auto & [i, tau, l, x, u] : utils::zip(iota(0u, N), m.all_nodes(), ls, xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;
