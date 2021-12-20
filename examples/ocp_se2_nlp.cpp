@@ -135,10 +135,9 @@ int main()
   for (auto it = 0u; const auto & sol : sols) {
     int lw = it++ + 1 < sols.size() ? 1 : 2;
     plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().x(); }), "-r")->line_width(lw);
-    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().y(); }), "-g")->line_width(lw);
-    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().z(); }), "-b")->line_width(lw);
+    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().y(); }), "-b")->line_width(lw);
   }
-  matplot::legend({"vx", "vy", "wz"});
+  matplot::legend({"nodes", "vx", "wz"});
 
   figure();
   hold(on);
@@ -147,7 +146,7 @@ int main()
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(lw);
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(lw);
   }
-  matplot::legend({"nodes", "lambda_x", "lambda_y"});
+  matplot::legend({"lambda_x", "lambda_y"});
 
   figure();
   hold(on);

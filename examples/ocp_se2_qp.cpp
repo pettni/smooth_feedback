@@ -44,17 +44,27 @@ using namespace std::chrono;
 
 int main()
 {
-  // define mesh
   smooth::feedback::Mesh<10, 10> mesh;
-  mesh.refine_ph(0, 160);
 
   const auto tf     = ocp_se2.cel.x();  // grabbing constraint on tf..
   const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
-  const auto ul_fun = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Constant(0.01); };
+  const auto ul_fun = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>{0.1, 0}; };
 
   const auto t0 = high_resolution_clock::now();
 
   const auto qp = ocp_to_qp(ocp_se2, mesh, tf, xl_fun, ul_fun);
+
+  std::cout << "qp.A\n" << qp.A << '\n';
+
+  Eigen::MatrixXd lu(qp.u.rows(), 2);
+  lu.col(0) = qp.l;
+  lu.col(1) = qp.u;
+
+  std::cout << "qp.lu\n" << lu.transpose() << '\n';
+
+  std::cout << "qp.P\n" << qp.P << '\n';
+
+  std::cout << "qp.q\n" << qp.q.transpose() << '\n';
 
   const auto t1 = high_resolution_clock::now();
 
@@ -89,9 +99,8 @@ int main()
   hold(on);
   plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
   plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).part<1>().x(); }), "-r")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).part<1>().y(); }), "-g")->line_width(2);
-  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).part<1>().z(); }), "-b")->line_width(2);
-  matplot::legend({"vx", "vy", "wz"});
+  plot(tt, transform(tt, [&](double t) { return ocpsol.x(t).part<1>().y(); }), "-b")->line_width(2);
+  matplot::legend({"nodes", "vx", "wz"});
 
   figure();
   hold(on);

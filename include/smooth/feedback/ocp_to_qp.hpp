@@ -161,8 +161,8 @@ QuadraticProgramSparse<double> ocp_to_qp(
       const auto [f_i, df_i] = diff::dr<1>(ocp.f, wrt(t_i, xl_i, ul_i));
 
       const Eigen::Matrix<double, Nx, Nx> A =
-        tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.middleCols(1, Nx));
-      const Eigen::Matrix<double, Nx, Nu> B = tf * df_i.middleCols(1 + Nx, Nu);
+        tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.template middleCols<Nx>(1));
+      const Eigen::Matrix<double, Nx, Nu> B = tf * df_i.template middleCols<Nu>(1 + Nx);
       const Eigen::Vector<double, Nx> E     = tf * (f_i - dxl_i);
 
       // insert new constraint A xi + B ui + E = [x0 ... XNi] di

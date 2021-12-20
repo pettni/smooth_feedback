@@ -36,7 +36,7 @@
 #include <smooth/se2.hpp>
 
 template<typename T>
-using X = smooth::Bundle<smooth::SE2<T>, Eigen::Vector3<T>>;
+using X = smooth::Bundle<smooth::SE2<T>, Eigen::Vector2<T>>;
 
 template<typename T>
 using U = Eigen::Vector2<T>;
@@ -52,16 +52,17 @@ const auto theta = []<typename T>(T tf, const X<T> &, const X<T> &, const Vec<T,
 /// @brief Dynamics
 const auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
   smooth::Tangent<X<T>> ret;
-  ret.segment(0, 3) = x.template part<1>();
-  ret(3)            = u.x();
-  ret(4)            = T(0);
-  ret(5)            = u.y();
+  ret(0) = x.template part<1>().x();
+  ret(1) = T(0);
+  ret(2) = x.template part<1>().y();
+  ret(3) = u.x();
+  ret(4) = u.y();
   return ret;
 };
 
 /// @brief Integrals
-const auto g = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T, 1> {
-  return Vec<T, 1>{{u.squaredNorm()}};
+const auto g = []<typename T>(T, const X<T> & x, const U<T> & u) -> Vec<T, 1> {
+  return Vec<T, 1>{{std::pow(x.template part<0>().r2().y(), 2) + u.squaredNorm()}};
 };
 
 /// @brief Running constraints
@@ -69,10 +70,9 @@ const auto cr = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T, 2> { r
 
 /// @brief End constraints
 const auto ce =
-  []<typename T>(T tf, const X<T> & x0, const X<T> & xf, const Vec<T, 1> &) -> Vec<T, 10> {
-  const smooth::SE2<T> target(smooth::SO2<T>(-0.5), Eigen::Vector2<T>{2, 0.5});
-  Vec<T, 10> ret;
-  ret << tf, x0.template part<0>().log(), x0.template part<1>(), xf.template part<0>() - target;
+  []<typename T>(T tf, const X<T> & x0, const X<T> &, const Vec<T, 1> &) -> Vec<T, 6> {
+  Vec<T, 6> ret;
+  ret << tf, x0.template part<0>().log(), x0.template part<1>();
   return ret;
 };
 
@@ -87,8 +87,8 @@ inline const OcpSE2 ocp_se2{
   .crl   = Vec<double, 2>{{-1, -1}},
   .cru   = Vec<double, 2>{{1, 1}},
   .ce    = ce,
-  .cel   = Vec<double, 10>{{3, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-  .ceu   = Vec<double, 10>{{15, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+  .cel   = Vec<double, 6>{{4, 0, 0, 0, 1, 0.5}},
+  .ceu   = Vec<double, 6>{{4, 0, 0, 0, 1, 0.5}},
 };
 
 #endif  // OCP_SE2_HPP_
