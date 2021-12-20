@@ -31,58 +31,59 @@
 // #include "smooth/compat/autodiff.hpp"
 #include "smooth/feedback/ocp_to_nlp.hpp"
 
-template<typename T>
-using Vec = Eigen::VectorX<T>;
+template<typename T, std::size_t N>
+using Vec = Eigen::Vector<T, N>;
 
 TEST(OcpToNlp, Jacobians)
 {
   // objective
-  auto theta = []<typename T>(T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> T {
+  auto theta = []<typename T>(T tf, Vec<T, 2> x0, Vec<T, 2> xf, Vec<T, 1> q) -> T {
     return (tf - 2) * (tf - 2) + x0.squaredNorm() + xf.squaredNorm() + q.sum();
   };
 
   // dynamics
-  auto f = []<typename T>(T t, Vec<T> x, Vec<T> u) -> Vec<T> { return Vec<T>{{x.y() + t, u.x()}}; };
+  auto f = []<typename T>(T t, Vec<T, 2> x, Vec<T, 1> u) -> Vec<T, 2> {
+    return Vec<T, 2>{{x.y() + t, u.x()}};
+  };
 
   // integrals
-  auto g = []<typename T>(T t, Vec<T> x, Vec<T> u) -> Vec<T> {
-    return Vec<T>{{t + x.squaredNorm() + u.squaredNorm()}};
+  auto g = []<typename T>(T t, Vec<T, 2> x, Vec<T, 1> u) -> Vec<T, 1> {
+    return Vec<T, 1>{{t + x.squaredNorm() + u.squaredNorm()}};
   };
 
   // running constraint
-  auto cr = []<typename T>(T t, Vec<T> x, Vec<T> u) -> Vec<T> {
-    Vec<T> ret(4);
+  auto cr = []<typename T>(T t, Vec<T, 2> x, Vec<T, 1> u) -> Vec<T, 4> {
+    Vec<T, 4> ret(4);
     ret << t, x, u;
     return ret;
   };
 
   // end constraint
-  auto ce = []<typename T>(T tf, Vec<T> x0, Vec<T> xf, Vec<T> q) -> Vec<T> {
-    Vec<T> ret(6);
+  auto ce = []<typename T>(T tf, Vec<T, 2> x0, Vec<T, 2> xf, Vec<T, 1> q) -> Vec<T, 6> {
+    Vec<T, 6> ret(6);
     ret << tf, x0, xf, q;
     return ret;
   };
 
-  const smooth::feedback::
-    FlatOCP<decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
-      ocp{
-        .nx    = 2,
-        .nu    = 1,
-        .nq    = 1,
-        .ncr   = 4,
-        .nce   = 6,
-        .theta = theta,
-        .f     = f,
-        .g     = g,
-        .cr    = cr,
-        .crl   = Vec<double>::Constant(4, -1),
-        .cru   = Vec<double>::Constant(4, 1),
-        .ce    = ce,
-        .cel   = Vec<double>::Constant(6, -1),
-        .ceu   = Vec<double>::Constant(6, 1),
-      };
-
-  ASSERT_TRUE(smooth::feedback::check_ocp(ocp));
+  const smooth::feedback::OCP<
+    Vec<double, 2>,
+    Vec<double, 1>,
+    decltype(theta),
+    decltype(f),
+    decltype(g),
+    decltype(cr),
+    decltype(ce)>
+    ocp{
+      .theta = theta,
+      .f     = f,
+      .g     = g,
+      .cr    = cr,
+      .crl   = Vec<double, 4>::Constant(4, -1),
+      .cru   = Vec<double, 4>::Constant(4, 1),
+      .ce    = ce,
+      .cel   = Vec<double, 6>::Constant(6, -1),
+      .ceu   = Vec<double, 6>::Constant(6, 1),
+    };
 
   smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 8 * 5);
@@ -106,30 +107,30 @@ TEST(OcpToNlp, Jacobians)
 TEST(OcpToNlp, Flatten)
 {
   // objective
-  auto theta = []<typename T>(T tf, smooth::SO3<T>, smooth::SO3<T>, Vec<T> q) -> T {
+  auto theta = []<typename T>(T tf, smooth::SO3<T>, smooth::SO3<T>, Vec<T, 1> q) -> T {
     return (tf - 2) * (tf - 2) + q.sum();
   };
 
   // dynamics
-  auto f = []<typename T>(T, smooth::SO3<T> x, Eigen::Vector2<T> u) -> Vec<T> {
-    return Vec<T>{{u.x(), -u.y(), 0.01 * x.log().x()}};
+  auto f = []<typename T>(T, smooth::SO3<T> x, Eigen::Vector2<T> u) -> Vec<T, 3> {
+    return Vec<T, 3>{{u.x(), -u.y(), 0.01 * x.log().x()}};
   };
 
   // integrals
-  auto g = []<typename T>(T t, smooth::SO3<T> x, Eigen::Vector2<T> u) -> Vec<T> {
-    return Vec<T>{{t + x.log().squaredNorm() + u.squaredNorm()}};
+  auto g = []<typename T>(T t, smooth::SO3<T> x, Eigen::Vector2<T> u) -> Vec<T, 1> {
+    return Vec<T, 1>{{t + x.log().squaredNorm() + u.squaredNorm()}};
   };
 
   // running constraint
-  auto cr = []<typename T>(T t, smooth::SO3<T>, Eigen::Vector2<T> u) -> Vec<T> {
-    Vec<T> ret(3);
+  auto cr = []<typename T>(T t, smooth::SO3<T>, Eigen::Vector2<T> u) -> Vec<T, 3> {
+    Vec<T, 3> ret(3);
     ret << t, u;
     return ret;
   };
 
   // end constraint
-  auto ce = []<typename T>(T tf, smooth::SO3<T> x0, smooth::SO3<T> xf, Vec<T>) -> Vec<T> {
-    Vec<T> ret(7);
+  auto ce = []<typename T>(T tf, smooth::SO3<T> x0, smooth::SO3<T> xf, Vec<T, 1>) -> Vec<T, 7> {
+    Vec<T, 7> ret(7);
     ret << tf, x0.log(), xf.log();
     return ret;
   };
@@ -143,29 +144,22 @@ TEST(OcpToNlp, Flatten)
     decltype(cr),
     decltype(ce)>
     ocp{
-      .nx    = 3,
-      .nu    = 2,
-      .nq    = 1,
-      .ncr   = 3,
-      .nce   = 7,
       .theta = theta,
       .f     = f,
       .g     = g,
       .cr    = cr,
-      .crl   = Vec<double>::Constant(3, -1),
-      .cru   = Vec<double>::Constant(3, 1),
+      .crl   = Vec<double, 3>::Constant(3, -1),
+      .cru   = Vec<double, 3>::Constant(3, 1),
       .ce    = ce,
-      .cel   = Vec<double>::Constant(7, -1),
-      .ceu   = Vec<double>::Constant(7, 1),
+      .cel   = Vec<double, 7>::Constant(7, -1),
+      .ceu   = Vec<double, 7>::Constant(7, 1),
     };
 
   const auto xl_fun = []<typename T>(T) -> smooth::SO3<T> { return smooth::SO3<T>::Identity(); };
 
   const auto ul_fun = []<typename T>(T) -> Eigen::Vector2<T> { return Eigen::Vector2<T>::Zero(); };
 
-  ASSERT_TRUE(smooth::feedback::check_ocp(ocp));
-
   const auto flat_ocp = smooth::feedback::flatten_ocp(ocp, xl_fun, ul_fun);
 
-  ASSERT_TRUE(smooth::feedback::check_ocp(flat_ocp));
+  static_cast<void>(flat_ocp);
 }
