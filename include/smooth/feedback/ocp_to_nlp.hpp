@@ -66,8 +66,16 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
   static constexpr auto Ncr = ocp_t::Ncr;
   static constexpr auto Nce = ocp_t::Nce;
 
+  auto theta_new = [theta = ocp.theta, xl_fun = xl_fun]<typename T>(
+                     const T & tf,
+                     const Vector<T, Nx> & xe0,
+                     const Vector<T, Nx> & xef,
+                     const Vector<T, Nq> & q) -> T {
+    return theta.template operator()<T>(tf, rplus(xl_fun(T(0.)), xe0), rplus(xl_fun(tf), xef), q);
+  };
+
   auto f_new = [f = ocp.f, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
-                 const T & t, const Vector<T, Nx> & xe, const Vector<T, Nx> & ue) -> Vector<T, Nx> {
+                 const T & t, const Vector<T, Nx> & xe, const Vector<T, Nu> & ue) -> Vector<T, Nx> {
     using X_T = smooth::CastT<T, X>;
     using U_T = smooth::CastT<T, U>;
 
@@ -84,7 +92,7 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
   };
 
   auto g_new = [g = ocp.g, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
-                 const T & t, const Vector<T, Nx> & xe, const Vector<T, Nu> & ue) -> Vector<T, Nx> {
+                 const T & t, const Vector<T, Nx> & xe, const Vector<T, Nu> & ue) -> Vector<T, Nq> {
     return g.template operator()<T>(t, rplus(xl_fun(t), xe), rplus(ul_fun(t), ue));
   };
 
@@ -92,14 +100,6 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
     [cr = ocp.cr, xl_fun = xl_fun, ul_fun = ul_fun]<typename T>(
       const T & t, const Vector<T, Nx> & xe, const Vector<T, Nu> & ue) -> Vector<T, Ncr> {
     return cr.template operator()<T>(t, rplus(xl_fun(t), xe), rplus(ul_fun(t), ue));
-  };
-
-  auto theta_new = [theta = ocp.theta, xl_fun = xl_fun]<typename T>(
-                     const T & tf,
-                     const Vector<T, Nx> & xe0,
-                     const Vector<T, Nx> & xef,
-                     const Vector<T, Nq> & q) -> T {
-    return theta.template operator()<T>(tf, rplus(xl_fun(T(0.)), xe0), rplus(xl_fun(tf), xef), q);
   };
 
   auto ce_new = [ce = ocp.ce, xl_fun = xl_fun]<typename T>(
@@ -439,7 +439,8 @@ auto nlpsol_to_ocpsol(
   Eigen::MatrixXd Lcr(ocp.Ncr, N);
   Lcr = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.Ncr, crcon_L / ocp.Ncr);
 
-  auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::Vector<double, Ncr> {
+  auto lcrfun =
+    [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::Vector<double, Ncr> {
     return mesh.template eval<Eigen::Vector<double, Ncr>>(
       (t - t0) / (tf - t0), Lcr.colwise(), 0, false);
   };

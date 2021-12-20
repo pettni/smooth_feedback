@@ -46,11 +46,11 @@ using X = smooth::Bundle<smooth::SE2<T>, Eigen::Vector3<T>>;
 template<typename T>
 using U = Eigen::Vector2<T>;
 
-template<typename T>
-using Vec = Eigen::VectorX<T>;
+template<typename T, std::size_t N>
+using Vec = Eigen::Vector<T, N>;
 
 /// @brief Objective function
-const auto obj = []<typename T>(T tf, const X<T> &, const X<T> &, const Vec<T> & q) -> T {
+const auto obj = []<typename T>(T tf, const X<T> &, const X<T> &, const Vec<T, 1> & q) -> T {
   return tf + q.x();
 };
 
@@ -65,17 +65,17 @@ const auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tang
 };
 
 /// @brief Integrals
-const auto g = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T> {
-  return Vec<T>{{u.squaredNorm()}};
+const auto g = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T, 1> {
+  return Vec<T, 1>{{u.squaredNorm()}};
 };
 
 /// @brief Running constraints
-const auto cr = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T> { return u; };
+const auto cr = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T, 2> { return u; };
 
 /// @brief End constraints
-const auto ce = []<typename T>(T tf, const X<T> & x0, const X<T> & xf, const Vec<T> &) -> Vec<T> {
+const auto ce = []<typename T>(T tf, const X<T> & x0, const X<T> & xf, const Vec<T, 1> &) -> Vec<T, 10> {
   const smooth::SE2<T> target(smooth::SO2<T>(-0.5), Eigen::Vector2<T>{2, 0.5});
-  Vec<T> ret(10);
+  Vec<T, 10> ret(10);
   ret << tf, x0.template part<0>().log(), x0.template part<1>(), xf.template part<0>() - target;
   return ret;
 };
@@ -93,30 +93,21 @@ int main()
   smooth::feedback::
     OCP<X<double>, U<double>, decltype(obj), decltype(f), decltype(g), decltype(cr), decltype(ce)>
       ocp{
-        .nx    = smooth::Dof<X<double>>,
-        .nu    = smooth::Dof<U<double>>,
-        .nq    = 1,
-        .ncr   = 2,
-        .nce   = 10,
         .theta = obj,
         .f     = f,
         .g     = g,
         .cr    = cr,
-        .crl   = Vec<double>{{-1, -1}},
-        .cru   = Vec<double>{{1, 1}},
+        .crl   = Vec<double, 2>{{-1, -1}},
+        .cru   = Vec<double, 2>{{1, 1}},
         .ce    = ce,
-        .cel   = Vec<double>{{3, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-        .ceu   = Vec<double>{{15, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        .cel   = Vec<double, 10>{{3, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        .ceu   = Vec<double, 10>{{15, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
       };
 
   const auto xl = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
   const auto ul = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Constant(0.01); };
 
-  assert(smooth::feedback::check_ocp(ocp));
-
   const auto flatocp = smooth::feedback::flatten_ocp(ocp, xl, ul);
-
-  assert(smooth::feedback::check_ocp(flatocp));
 
   // target optimality
   const double target_err = 1e-6;
@@ -125,7 +116,7 @@ int main()
   smooth::feedback::Mesh<5, 10> mesh;
 
   // declare solution variable
-  std::vector<smooth::feedback::OCPSolution<X<double>, U<double>>> sols;
+  std::vector<typename decltype(ocp)::Solution> sols;
   std::optional<smooth::feedback::NLPSolution> nlpsol;
 
   const auto t0 = std::chrono::high_resolution_clock::now();
@@ -164,7 +155,7 @@ int main()
 
     // calculate errors
     auto errs = smooth::feedback::mesh_dyn_error(
-      flatocp.nx, flatocp.f, mesh, flatsol.t0, flatsol.tf, flatsol.x, flatsol.u);
+      flatocp.Nx, flatocp.f, mesh, flatsol.t0, flatsol.tf, flatsol.x, flatsol.u);
 
     std::cout << "interval errors " << errs.transpose() << std::endl;
 
@@ -198,7 +189,7 @@ int main()
       "-r")
       ->line_width(lw);
   }
-  legend(std::vector<std::string>{"path"});
+  matplot::legend(std::vector<std::string>{"path"});
 
   figure();
   hold(on);
@@ -208,7 +199,7 @@ int main()
     plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().y(); }), "-g")->line_width(lw);
     plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().z(); }), "-b")->line_width(lw);
   }
-  legend({"vx", "vy", "wz"});
+  matplot::legend({"vx", "vy", "wz"});
 
   figure();
   hold(on);
@@ -218,7 +209,7 @@ int main()
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(lw);
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(lw);
   }
-  legend({"nodes", "lambda_x", "lambda_y"});
+  matplot::legend({"nodes", "lambda_x", "lambda_y"});
 
   figure();
   hold(on);
@@ -226,7 +217,7 @@ int main()
     int lw = it++ + 1 < sols.size() ? 1 : 2;
     plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(lw);
   }
-  legend(std::vector<std::string>{"lambda_{cr}"});
+  matplot::legend(std::vector<std::string>{"lambda_{cr}"});
 
   figure();
   hold(on);
@@ -235,7 +226,7 @@ int main()
     plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-r")->line_width(lw);
     plot(tt, transform(tt, [&sol](double t) { return sol.u(t).y(); }), "-b")->line_width(lw);
   }
-  legend({"throttle", "steering"});
+  matplot::legend({"throttle", "steering"});
 
   show();
 #endif

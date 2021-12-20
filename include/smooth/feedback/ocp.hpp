@@ -39,6 +39,42 @@
 namespace smooth::feedback {
 
 /**
+ * @brief Solution to OCP problem.
+ */
+template<LieGroup _X, Manifold _U, int _Nq, int _Ncr, int _Nce>
+struct OCPSolution
+{
+  using X = _X;
+  using U = _U;
+
+  static constexpr int Nq  = _Nq;
+  static constexpr int Ncr = _Ncr;
+  static constexpr int Nce = _Nce;
+
+  double t0;
+  double tf;
+
+  /// @brief Integral values
+  Eigen::Vector<double, Nq> Q{};
+
+  /// @brief Callable functions for state and input
+  std::function<U(double)> u;
+  std::function<X(double)> x;
+
+  /// @brief Multipliers for integral constraints
+  Eigen::Vector<double, Nq> lambda_q{};
+
+  /// @brief Multipliers for endpoint constraints
+  Eigen::Vector<double, Nce> lambda_ce{};
+
+  /// @brief Multipliers for dynamics equality constraint
+  std::function<Eigen::Vector<double, Dof<X>>(double)> lambda_dyn{};
+
+  /// @brief Multipliers for active running constraints
+  std::function<Eigen::Vector<double, Ncr>(double)> lambda_cr{};
+};
+
+/**
  * @brief Optimal control problem definition
  * @tparam _X state space
  * @tparam _U input space
@@ -80,6 +116,9 @@ struct OCP
   static constexpr int Nce =
     std::invoke_result_t<CE, double, X, X, Eigen::Matrix<double, Nq, 1>>::SizeAtCompileTime;
 
+  /// @brief Solution type corresponding to this problem
+  using Solution = OCPSolution<X, U, Nq, Ncr, Nce>;
+
   static_assert(Nx > 0, "Static size required");
   static_assert(Nu > 0, "Static size required");
   static_assert(Nq > 0, "Static size required");
@@ -117,35 +156,6 @@ concept OCPType = traits::is_specialization_of_v<T, OCP>;
 template<typename T>
 concept FlatOCPType =
   OCPType<T> &&(smooth::traits::RnType<typename T::X> && smooth::traits::RnType<typename T::U>);
-
-/**
- * @brief Solution to OCP problem.
- */
-template<LieGroup X, Manifold U, int Nq, int Ncr, int Nce>
-struct OCPSolution
-{
-  double t0;
-  double tf;
-
-  /// @brief Integral values
-  Eigen::Vector<double, Nq> Q{};
-
-  /// @brief Callable functions for state and input
-  std::function<U(double)> u;
-  std::function<X(double)> x;
-
-  /// @brief Multipliers for integral constraints
-  Eigen::Vector<double, Nq> lambda_q{};
-
-  /// @brief Multipliers for endpoint constraints
-  Eigen::Vector<double, Nce> lambda_ce{};
-
-  /// @brief Multipliers for dynamics equality constraint
-  std::function<Eigen::Vector<double, Dof<X>>(double)> lambda_dyn{};
-
-  /// @brief Multipliers for active running constraints
-  std::function<Eigen::Vector<double, Ncr>(double)> lambda_cr{};
-};
 
 }  // namespace smooth::feedback
 
