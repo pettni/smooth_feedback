@@ -88,13 +88,9 @@ int main()
         {"tol", 1e-6},
       });
 
-    std::cout << "convert to ocpsol" << std::endl;
-
     // convert solution of nlp insto solution of ocp_di
     auto sol = smooth::feedback::nlpsol_to_ocpsol(ocp_di, mesh, nlpsol.value());
     sols.push_back(sol);
-
-    std::cout << "check errors" << std::endl;
 
     // calculate errors
     auto errs = smooth::feedback::mesh_dyn_error(ocp_di.Nx, f, mesh, sol.t0, sol.tf, sol.x, sol.u);

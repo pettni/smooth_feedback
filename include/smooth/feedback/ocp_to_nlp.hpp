@@ -410,7 +410,8 @@ auto nlpsol_to_ocpsol(
   Eigen::MatrixXd X(ocp.Nx, N + 1);
   X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.Nx, xvar_L / ocp.Nx);
 
-  auto xfun = [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::VectorXd {
+  auto xfun =
+    [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::Vector<double, Nx> {
     return mesh.template eval<Eigen::Vector<double, Nx>>(
       (t - t0) / (tf - t0), X.colwise(), 0, true);
   };
@@ -420,7 +421,8 @@ auto nlpsol_to_ocpsol(
   Eigen::MatrixXd U(ocp.Nu, N);
   U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.Nu, uvar_L / ocp.Nu);
 
-  auto ufun = [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::VectorXd {
+  auto ufun =
+    [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::Vector<double, Nu> {
     return mesh.template eval<Eigen::Vector<double, Nu>>(
       (t - t0) / (tf - t0), U.colwise(), 0, false);
   };
@@ -429,7 +431,7 @@ auto nlpsol_to_ocpsol(
   Ldyn = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.Nx, dcon_L / ocp.Nx);
 
   auto ldfun =
-    [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](double t) -> Eigen::VectorXd {
+    [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](double t) -> Eigen::Vector<double, Nx> {
     return mesh.template eval<Eigen::Vector<double, Nx>>(
       (t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
   };
@@ -437,7 +439,7 @@ auto nlpsol_to_ocpsol(
   Eigen::MatrixXd Lcr(ocp.Ncr, N);
   Lcr = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.Ncr, crcon_L / ocp.Ncr);
 
-  auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::VectorXd {
+  auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::Vector<double, Ncr> {
     return mesh.template eval<Eigen::Vector<double, Ncr>>(
       (t - t0) / (tf - t0), Lcr.colwise(), 0, false);
   };

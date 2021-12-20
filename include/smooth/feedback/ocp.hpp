@@ -121,7 +121,7 @@ concept FlatOCPType =
 /**
  * @brief Solution to OCP problem.
  */
-template<LieGroup X, Manifold U, int Nq, int Nce, int Ncr>
+template<LieGroup X, Manifold U, int Nq, int Ncr, int Nce>
 struct OCPSolution
 {
   double t0;
