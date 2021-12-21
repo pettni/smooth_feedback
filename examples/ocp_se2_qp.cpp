@@ -44,18 +44,15 @@ using namespace std::chrono;
 
 int main()
 {
-  smooth::feedback::Mesh<10, 10> mesh;
+  smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 50);
 
   const auto tf     = ocp_se2.cel.x();  // grabbing constraint on tf..
-  const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
   const auto ul_fun = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>{0, 0}; };
 
   const auto t0 = high_resolution_clock::now();
 
-  const auto qp = ocp_to_qp(ocp_se2, mesh, tf, xl_fun, ul_fun);
-
-  std::cout << "qp.A\n" << qp.A << '\n';
+  const auto qp = ocp_to_qp(ocp_se2, mesh, tf, xdes, ul_fun);  // linearize around desired x
 
   Eigen::MatrixXd lu(qp.u.rows(), 2);
   lu.col(0) = qp.l;
@@ -68,7 +65,7 @@ int main()
 
   const auto t2 = high_resolution_clock::now();
 
-  const auto ocpsol = smooth::feedback::qpsol_to_ocpsol(ocp_se2, mesh, qpsol, tf, xl_fun, ul_fun);
+  const auto ocpsol = smooth::feedback::qpsol_to_ocpsol(ocp_se2, mesh, qpsol, tf, xdes, ul_fun);
 
   std::cout << "ocp_to_qp      : " << duration_cast<microseconds>(t1 - t0).count() << '\n';
   std::cout << "solve_qp       : " << duration_cast<microseconds>(t2 - t1).count() << '\n';

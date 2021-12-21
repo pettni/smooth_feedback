@@ -69,6 +69,8 @@ QuadraticProgramSparse<double> ocp_to_qp(
   static constexpr auto Nu = ocp_t::Nu;
   static constexpr auto Nq = ocp_t::Nq;
 
+  const double t0 = 0.;
+
   const X xl0 = xl_fun(0.);
   const X xlf = xl_fun(tf);
   const Eigen::Matrix<double, 1, 1> ql(0);
@@ -187,25 +189,10 @@ QuadraticProgramSparse<double> ocp_to_qp(
     }
   }
 
-  auto xslin = mesh.all_nodes() | transform([&xl_fun](double t) { return xl_fun(t); });
-  auto uslin = mesh.all_nodes() | transform([&ul_fun](double t) { return ul_fun(t); });
+  auto xslin = mesh.all_nodes() | transform([&](double t) { return xl_fun(t0 + (tf - t0) * t); });
+  auto uslin = mesh.all_nodes() | transform([&](double t) { return ul_fun(t0 + (tf - t0) * t); });
 
   const Eigen::Vector<double, 1> qlin{1.};
-
-  //////////////////
-  //// INTEGRAL ////
-  //////////////////
-
-  colloc_integrate<2>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
-
-  ret.P = qo_q.x() * 0.5
-        * sparse_block_matrix({
-          {g_res.d2F_dXX, g_res.d2F_dXU},
-          {{}, g_res.d2F_dUU},
-        });
-
-  ret.q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dX.transpose();
-  ret.q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dU.transpose();
 
   /////////////////////////////
   //// RUNNING CONSTRAINTS ////
@@ -235,9 +222,24 @@ QuadraticProgramSparse<double> ocp_to_qp(
   ret.l.segment(cecon_B, cecon_L)    = ocp.cel - celin;
   ret.u.segment(cecon_B, cecon_L)    = ocp.ceu - celin;
 
-  ////////////////////////////////
-  //// FINALIZE COST FUNCTION ////
-  ////////////////////////////////
+  ///////////////////////
+  //// INTEGRAL COST ////
+  ///////////////////////
+
+  colloc_integrate<2>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
+
+  ret.P = qo_q.x()
+        * sparse_block_matrix({
+          {g_res.d2F_dXX, g_res.d2F_dXU},
+          {{}, g_res.d2F_dUU},
+        });
+
+  ret.q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dX.transpose();
+  ret.q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dU.transpose();
+
+  ///////////////////////
+  //// ENDPOINT COST ////
+  ///////////////////////
 
   // weights from x0 and xf (TODO double-check)
   for (auto row = 0u; row < Nx; ++row) {

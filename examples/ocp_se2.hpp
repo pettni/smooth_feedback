@@ -60,11 +60,20 @@ const auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tang
   return ret;
 };
 
+/// @brief Target trajectory
+const auto xdes = []<typename T>(T t) -> X<T> {
+  const Eigen::Vector3<T> vel{1., 0., 0.5};
+
+  X<T> ret;
+  ret.template part<0>()     = smooth::SE2<T>::exp(t * vel);
+  ret.template part<1>().x() = vel.x();
+  ret.template part<1>().y() = vel.z();
+  return ret;
+};
+
 /// @brief Integrals
-const auto g = []<typename T>(T, const X<T> & x, const U<T> & u) -> Vec<T, 1> {
-  const T y   = x.template part<0>().r2().y();
-  const T ang = x.template part<0>().so2().log().x();
-  return Vec<T, 1>{{y * y + ang * ang + u.squaredNorm()}};
+const auto g = []<typename T>(T t, const X<T> & x, const U<T> & u) -> Vec<T, 1> {
+  return Vec<T, 1>{(x - xdes(t)).squaredNorm() + u.squaredNorm()};
 };
 
 /// @brief Running constraints
@@ -89,8 +98,8 @@ inline const OcpSE2 ocp_se2{
   .crl   = Vec<double, 2>{{-1, -1}},
   .cru   = Vec<double, 2>{{1, 1}},
   .ce    = ce,
-  .cel   = Vec<double, 6>{{5, 0, 0, 0, 1, 0.5}},
-  .ceu   = Vec<double, 6>{{5, 0, 0, 0, 1, 0.5}},
+  .cel   = Vec<double, 6>{{5, 0, 0, 0, 1, 0}},
+  .ceu   = Vec<double, 6>{{5, 0, 0, 0, 1, 0}},
 };
 
 #endif  // OCP_SE2_HPP_
