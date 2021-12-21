@@ -148,11 +148,11 @@ QuadraticProgramSparse<double> ocp_to_qp(
   for (auto ival = 0u, M = 0u; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
 
-    const auto D = mesh.interval_diffmat(ival);
+    const auto [alpha, Dus] = mesh.interval_diffmat_unscaled(ival);
 
     // in each interval the collocation constraint is
     //
-    // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = X D
+    // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = alpha * X Dus
 
     for (const auto & [i, tau_i] : zip(iota(0u, Ki), mesh.interval_nodes(ival))) {
       const auto t_i           = tf * tau_i;                     // unscaled time
@@ -171,7 +171,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
       for (auto j = 0u; j < Ki + 1; ++j) {
         for (auto diag = 0u; diag < Nx; ++diag) {
-          ret.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= D(j, i);
+          ret.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
         }
       }
 

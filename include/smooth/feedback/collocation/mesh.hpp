@@ -313,7 +313,7 @@ public:
     const double tau0 = intervals_[i].tau0;
     const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
 
-    Eigen::MatrixXd ret;
+    Eigen::MatrixXd ret(k + 1, k);
 
     utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
       static constexpr auto K = Kmin + i;
@@ -327,7 +327,40 @@ public:
       }
     });
 
-    return (2. / (tauf - tau0)) * ret;
+    ret *= 2. / (tau0 - tauf);
+    return ret;
+  }
+
+  /**
+   * @brief Interval differentiation matrix (unscaled).
+   *
+   * Returns a Map D_us and a scalar alpha s.t. D = alpha * D_us
+   *
+   * @see interval_diffmat
+   */
+  inline std::pair<double, MatMap> interval_diffmat_unscaled(std::size_t i) const
+  {
+    const std::size_t k = intervals_[i].K;
+
+    const double tau0 = intervals_[i].tau0;
+    const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
+
+    MatMap ret(nullptr, 0, 0);
+
+    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
+      static constexpr auto K = Kmin + i;
+      if (K == k) {
+        static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
+        static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
+        static constexpr auto D_ext_s =
+          polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first)
+            .template block<K + 1, K>(0, 0);
+        // Eigen maps don't have copy constructors so use placement new
+        new (&ret) MatMap(D_ext_s[0].data(), k + 1, k);
+      }
+    });
+
+    return {2. / (tau0 - tauf), ret};
   }
 
   /**
