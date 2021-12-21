@@ -92,8 +92,10 @@ int main()
     sols.push_back(smooth::feedback::unflatten_ocpsol<X<double>, U<double>>(flatsol, xl, ul));
 
     // calculate errors
+    mesh.increase_degrees();
     auto errs = smooth::feedback::mesh_dyn_error(
-      flatocp.Nx, flatocp.f, mesh, flatsol.t0, flatsol.tf, flatsol.x, flatsol.u);
+      flatocp.f, mesh, flatsol.t0, flatsol.tf, flatsol.x, flatsol.u);
+    mesh.decrease_degrees();
 
     std::cout << "interval errors " << errs.transpose() << std::endl;
 

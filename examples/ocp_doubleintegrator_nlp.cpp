@@ -86,7 +86,9 @@ int main()
     sols.push_back(sol);
 
     // calculate errors
-    auto errs = smooth::feedback::mesh_dyn_error(ocp_di.Nx, f, mesh, sol.t0, sol.tf, sol.x, sol.u);
+    mesh.increase_degrees();
+    auto errs = smooth::feedback::mesh_dyn_error(f, mesh, sol.t0, sol.tf, sol.x, sol.u);
+    mesh.decrease_degrees();
 
     std::cout << "interval errors " << errs.transpose() << std::endl;
 

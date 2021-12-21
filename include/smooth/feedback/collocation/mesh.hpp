@@ -370,6 +370,22 @@ public:
   }
 
   /**
+   * @brief Increase the degree of all intervals by one (up to maximal degree Kmax + 1)
+   */
+  void increase_degrees()
+  {
+    for (auto & ival : intervals_) { ival.K = std::min(ival.K + 1, Kmax + 1); }
+  }
+
+  /**
+   * @brief Decrease the degree of all intervals by one (down to minimal degree Kmin)
+   */
+  void decrease_degrees()
+  {
+    for (auto & ival : intervals_) { ival.K = std::max(ival.K - 1, Kmin); }
+  }
+
+  /**
    * @brief Evaluate a function
    *
    * @tparam RetT return value type

@@ -163,7 +163,6 @@ auto colloc_dyn(
 /**
  * @brief Calculate relative dynamics errors for each interval in mesh.
  *
- * @param nx state space dimension
  * @param f dynamics function
  * @param m Mesh
  * @param t0 initial time variable
@@ -174,33 +173,24 @@ auto colloc_dyn(
  * @return vector with relative errors for every interval in m
  */
 Eigen::VectorXd mesh_dyn_error(
-  const std::size_t nx,
-  auto && f,
-  const MeshType auto & m,
-  const double t0,
-  const double tf,
-  auto && xfun,
-  auto && ufun)
+  auto && f, const MeshType auto & m, const double t0, const double tf, auto && xfun, auto && ufun)
 {
-  const auto N = m.N_ivals();
+  constexpr auto Nx = Dof<std::invoke_result_t<decltype(xfun), double>>;
 
-  // create a new mesh where each interval is extended
-  Mesh mext = m;
-  for (auto i = 0u; i < N; ++i) {
-    const std::size_t K = m.N_colloc_ival(i);
-    mext.set_N_colloc_ival(i, K + 1);
-  }
+  static_assert(Nx > 0, "Static size required");
+
+  const auto N = m.N_ivals();
 
   Eigen::VectorXd ival_errs(N);
 
   // for each interval
-  for (auto i = 0u, M = 0u; i < N; M += m.N_colloc_ival(i), ++i) {
-    const std::size_t Kext = mext.N_colloc_ival(i);
+  for (auto ival = 0u, M = 0u; ival < N; M += m.N_colloc_ival(ival), ++ival) {
+    const auto Kext = m.N_colloc_ival(ival);
 
     // evaluate xs and F at those points
-    Eigen::MatrixXd Fval(nx, Kext + 1);
-    Eigen::MatrixXd Xval(nx, Kext + 1);
-    for (const auto & [j, tau] : zip(std::views::iota(0u, Kext + 1), mext.interval_nodes(i))) {
+    Eigen::Matrix<double, Nx, -1> Fval(Nx, Kext + 1);
+    Eigen::Matrix<double, Nx, -1> Xval(Nx, Kext + 1);
+    for (const auto & [j, tau] : zip(std::views::iota(0u, Kext + 1), m.interval_nodes(ival))) {
       const double tj = t0 + (tf - t0) * tau;
 
       // evaluate x and u values at tj using current degree polynomials
@@ -216,14 +206,14 @@ Eigen::VectorXd mesh_dyn_error(
 
     // "integrate" system inside interval
     const Eigen::MatrixXd Xval_est =
-      Xval.col(0).replicate(1, Kext) + (tf - t0) * Fval.leftCols(Kext) * mext.interval_intmat(i);
+      Xval.col(0).replicate(1, Kext) + (tf - t0) * Fval.leftCols(Kext) * m.interval_intmat(ival);
 
     // absolute error in interval
     Eigen::VectorXd e_abs = (Xval_est - Xval.rightCols(Kext)).colwise().norm();
     Eigen::VectorXd e_rel = e_abs / (1. + Xval.rightCols(Kext).colwise().norm().maxCoeff());
 
     // mex relative error on interval
-    ival_errs(i) = e_rel.maxCoeff();
+    ival_errs(ival) = e_rel.maxCoeff();
   }
 
   return ival_errs;
