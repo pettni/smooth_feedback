@@ -45,10 +45,11 @@ using namespace std::chrono;
 int main()
 {
   smooth::feedback::Mesh<10, 10> mesh;
+  mesh.refine_ph(0, 50);
 
   const auto tf     = ocp_se2.cel.x();  // grabbing constraint on tf..
   const auto xl_fun = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
-  const auto ul_fun = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>{0.1, 0}; };
+  const auto ul_fun = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>{0, 0}; };
 
   const auto t0 = high_resolution_clock::now();
 
@@ -59,12 +60,6 @@ int main()
   Eigen::MatrixXd lu(qp.u.rows(), 2);
   lu.col(0) = qp.l;
   lu.col(1) = qp.u;
-
-  std::cout << "qp.lu\n" << lu.transpose() << '\n';
-
-  std::cout << "qp.P\n" << qp.P << '\n';
-
-  std::cout << "qp.q\n" << qp.q.transpose() << '\n';
 
   const auto t1 = high_resolution_clock::now();
 

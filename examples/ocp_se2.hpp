@@ -62,7 +62,9 @@ const auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tang
 
 /// @brief Integrals
 const auto g = []<typename T>(T, const X<T> & x, const U<T> & u) -> Vec<T, 1> {
-  return Vec<T, 1>{{std::pow(x.template part<0>().r2().y(), 2) + u.squaredNorm()}};
+  const T y   = x.template part<0>().r2().y();
+  const T ang = x.template part<0>().so2().log().x();
+  return Vec<T, 1>{{y * y + ang * ang + u.squaredNorm()}};
 };
 
 /// @brief Running constraints
@@ -87,8 +89,8 @@ inline const OcpSE2 ocp_se2{
   .crl   = Vec<double, 2>{{-1, -1}},
   .cru   = Vec<double, 2>{{1, 1}},
   .ce    = ce,
-  .cel   = Vec<double, 6>{{4, 0, 0, 0, 1, 0.5}},
-  .ceu   = Vec<double, 6>{{4, 0, 0, 0, 1, 0.5}},
+  .cel   = Vec<double, 6>{{5, 0, 0, 0, 1, 0.5}},
+  .ceu   = Vec<double, 6>{{5, 0, 0, 0, 1, 0.5}},
 };
 
 #endif  // OCP_SE2_HPP_
