@@ -55,6 +55,7 @@ namespace smooth::feedback {
  *
  * @see qpsol_to_ocpsol()
  */
+template<diff::Type DT = diff::Type::Default>
 QuadraticProgramSparse<double> ocp_to_qp(
   const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
 {
@@ -131,7 +132,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// OBJECTIVE LINEARIZATION ////
   /////////////////////////////////
 
-  const auto [th, dth, d2th] = diff::dr<2>(ocp.theta, wrt(tf, xl0, xlf, ql));
+  const auto [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
   const Eigen::Vector<double, Nx> qo_x0 = dth.template segment<Nx>(1);
   const Eigen::Vector<double, Nx> qo_xf = dth.template segment<Nx>(1 + Nx);
@@ -160,7 +161,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
       const auto ul_i          = ul_fun(t_i);                    // linearization input
 
       // LINEARIZE DYNAMICS
-      const auto [f_i, df_i] = diff::dr<1>(ocp.f, wrt(t_i, xl_i, ul_i));
+      const auto [f_i, df_i] = diff::dr<1, DT>(ocp.f, wrt(t_i, xl_i, ul_i));
 
       const Eigen::Matrix<double, Nx, Nx> A =
         tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.template middleCols<Nx>(1));
@@ -198,7 +199,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// RUNNING CONSTRAINTS ////
   /////////////////////////////
 
-  colloc_eval<true>(CRres, ocp.cr, mesh, 0., tf, xslin, uslin);
+  colloc_eval<1, DT>(CRres, ocp.cr, mesh, 0., tf, xslin, uslin);
 
   // TODO do this in-place (implement sparse_block_copy)
   ret.A.middleRows(crcon_B, crcon_L) = sparse_block_matrix({{CRres.dF_dX, CRres.dF_dU}});
@@ -210,7 +211,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   /////////////////////////
 
   const auto [celin, dcelin_dt0, dcelin_dtf, dcelin_dx, dcelin_dq] =
-    colloc_eval_endpt<true>(ocp_t::Nce, Nx, ocp.ce, 0., tf, xslin, qlin);
+    colloc_eval_endpt<1, DT>(ocp_t::Nce, Nx, ocp.ce, 0., tf, xslin, qlin);
 
   // integral constraints not supported
   // assert(dcelin_dq.cwiseAbs().maxCoeff() < 1e-9);
@@ -226,7 +227,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// INTEGRAL COST ////
   ///////////////////////
 
-  colloc_integrate<2>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
+  colloc_integrate<2, DT>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
 
   ret.P = qo_q.x()
         * sparse_block_matrix({

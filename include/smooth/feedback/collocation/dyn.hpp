@@ -60,7 +60,7 @@ using smooth::utils::zip;
  *
  * @note This only works on flat spaces, which is why xs and us are matrices rather than ranges.
  */
-template<bool Deriv, typename D1, typename D2>
+template<uint8_t Deriv, diff::Type DT = diff::Type::Default, typename D1, typename D2>
   requires(Deriv == 0 || Deriv == 1)
 auto colloc_dyn(
   const std::size_t nx,
@@ -83,7 +83,7 @@ auto colloc_dyn(
   Eigen::MatrixXd XD(nx, m.N_colloc());
   Eigen::SparseMatrix<double> dvecXD_dvecX;
 
-  colloc_eval<Deriv>(feval_res, f, m, t0, tf, xs.colwise(), us.colwise());
+  colloc_eval<Deriv, DT>(feval_res, f, m, t0, tf, xs.colwise(), us.colwise());
 
   if constexpr (Deriv == 1) {
     dvecXD_dvecX.resize(XD.size(), xs.size());

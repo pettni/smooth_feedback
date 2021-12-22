@@ -112,6 +112,7 @@ struct CollocEvalResult
  * with the function evaluated at all collocation points t_i in the Mesh m.
  *
  * @tparam Deriv differentiation order
+ * @tparam DT differentiation method
  *
  * @param[out] result
  * @param[in] f function (t, x, u) -> R^nf
@@ -121,7 +122,7 @@ struct CollocEvalResult
  * @param[in] xs state variables (size N+1)
  * @param[in] us input variables (size N)
  */
-template<uint8_t Deriv = 0>
+template<uint8_t Deriv = 0, diff::Type DT = diff::Type::Default>
   requires(Deriv == 0 || Deriv == 1)
 void colloc_eval(
   CollocEvalResult & res,
@@ -139,7 +140,8 @@ void colloc_eval(
 
   res.setZero();
 
-  for (const auto & [ival, tau, x, u] : utils::zip(std::views::iota(0u, N), m.all_nodes(), xs, us)) {
+  for (const auto & [ival, tau, x, u] :
+       utils::zip(std::views::iota(0u, N), m.all_nodes(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
 
     const X x_plain = x;
@@ -148,7 +150,7 @@ void colloc_eval(
     if constexpr (Deriv == 0u) {
       res.F.col(ival) = f(ti, x_plain, u_plain);
     } else if constexpr (Deriv == 1u) {
-      const auto [fval, dfval] = diff::dr<1>(f, wrt(ti, x_plain, u_plain));
+      const auto [fval, dfval] = diff::dr<1, DT>(f, wrt(ti, x_plain, u_plain));
 
       res.F.col(ival) = fval;
       for (auto row = 0u; row < res.nf; ++row) {
@@ -176,6 +178,7 @@ void colloc_eval(
  *  F = f(t_0, t_f, x_0, x_f, q)
  *
  * @tparam Der return derivatives w.r.t variables
+ * @tparam DT differentiation method
  *
  * @param nf dimensionality of f image
  * @param nf state space degrees of freedom
@@ -188,7 +191,7 @@ void colloc_eval(
  * @return If Deriv == false,
  * If Deriv == true, {F, dF_dt0, dF_dtf, dF_dX, dF_dQ},
  */
-template<bool Deriv>
+template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
   requires(Deriv == 0 || Deriv == 1)
 auto colloc_eval_endpt(
   const std::size_t nf,
@@ -221,10 +224,10 @@ auto colloc_eval_endpt(
 
   const Q q_plain = q;
 
-  if constexpr (!Deriv) {
+  if constexpr (Deriv == 0u) {
     return f.template operator()<double>(tf, x0, xf, q_plain);
-  } else {
-    const auto [Fval, J] = diff::dr(f, wrt(tf, x0, xf, q_plain));
+  } else if constexpr (Deriv == 1u) {
+    const auto [Fval, J] = diff::dr<1, DT>(f, wrt(tf, x0, xf, q_plain));
 
     assert(static_cast<std::size_t>(J.rows()) == nf);
     assert(static_cast<std::size_t>(J.cols()) == 1 + 2 * nx + q_plain.size());

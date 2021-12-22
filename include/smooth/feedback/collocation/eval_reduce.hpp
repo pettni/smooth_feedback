@@ -180,6 +180,7 @@ struct CollocEvalReduceResult
  * and its derivatives.
  *
  * @tparam Deriv differentiation order
+ * @tparam DT differentiation method
  *
  * @param[out] result
  * @param[in] f function (t, x, u) -> R^nf
@@ -190,7 +191,7 @@ struct CollocEvalReduceResult
  * @param[in] xs state variables x_i (size N+1)
  * @param[in] us input variables u_i (size N)
  */
-template<uint8_t Deriv = 0>
+template<uint8_t Deriv = 0, diff::Type DT = diff::Type::Default>
   requires(Deriv == 0 || Deriv == 1 || Deriv == 2)
 void colloc_eval_reduce(
   CollocEvalReduceResult & res,
@@ -220,7 +221,7 @@ void colloc_eval_reduce(
     if constexpr (Deriv == 0u) {
       res.F += l * f(ti, x_plain, u_plain);
     } else if constexpr (Deriv == 1u) {
-      const auto [F, dF] = diff::dr<1>(f, wrt(ti, x_plain, u_plain));
+      const auto [F, dF] = diff::dr<1, DT>(f, wrt(ti, x_plain, u_plain));
       res.F += l * F;
       for (auto row = 0u; row < res.nf; ++row) {
         res.dF_dt0.coeffRef(row, 0) += l * dF(row, 0) * (1. - tau);
@@ -236,7 +237,7 @@ void colloc_eval_reduce(
 
       assert(res.nf == 1);
 
-      const auto [F, dF, d2F] = diff::dr<2>(
+      const auto [F, dF, d2F] = diff::dr<2, DT>(
         [&](auto &&... args) { return f(std::forward<decltype(args)>(args)...).x(); },
         wrt(ti, x_plain, u_plain));
 
@@ -299,6 +300,7 @@ void colloc_eval_reduce(
  * @brief Evaluate integral on Mesh.
  *
  * @tparam Deriv differentiation order.
+ * @tparam DT differentiation method
  *
  * @param[out] result structure
  * @param[in] g integrand with signature (t, x, u) -> R^{nq}
@@ -308,7 +310,7 @@ void colloc_eval_reduce(
  * @param[in] xs state values (variable of size N+1)
  * @param[in] us input values (variable of size N)
  */
-template<uint8_t Deriv>
+template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
   requires(Deriv == 0 || Deriv == 1 || Deriv == 2)
 void colloc_integrate(
   CollocEvalReduceResult & res,
@@ -319,7 +321,7 @@ void colloc_integrate(
   std::ranges::range auto && xs,
   std::ranges::range auto && us)
 {
-  colloc_eval_reduce<Deriv>(res, m.all_weights(), g, m, t0, tf, xs, us);
+  colloc_eval_reduce<Deriv, DT>(res, m.all_weights(), g, m, t0, tf, xs, us);
 
   // result is equal to (tf - t0) * F, must update derivatives
 

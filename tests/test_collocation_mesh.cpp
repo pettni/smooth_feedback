@@ -105,6 +105,8 @@ TEST(CollocationMesh, DifferentiationIntegration)
     const auto I = m.interval_intmat(ival);
 
     // expect [dx0 ... dxN-1] = [x0 ... xN] * D
+    std::cout << dxvals << std::endl;
+    std::cout << xvals * D << std::endl;
     ASSERT_TRUE(dxvals.isApprox(xvals * D));
 
     // expect [x1 ... xN] = [x0 ... x0] + [dx0 ... dxN-1] * I

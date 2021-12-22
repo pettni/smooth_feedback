@@ -327,7 +327,7 @@ public:
       }
     });
 
-    ret *= 2. / (tau0 - tauf);
+    ret *= 2. / (tauf - tau0);
     return ret;
   }
 
@@ -360,7 +360,7 @@ public:
       }
     });
 
-    return {2. / (tau0 - tauf), ret};
+    return {2. / (tauf - tau0), ret};
   }
 
   /**
