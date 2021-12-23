@@ -7,7 +7,6 @@ configure_file(
 )
 
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-
 add_executable(test_ocp_to_qp test_ocp_to_qp.cpp)
 target_link_libraries(test_ocp_to_qp PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_ocp_to_qp)
@@ -63,6 +62,10 @@ gtest_discover_tests(test_utils_sparse)
 add_executable(test_ocp_to_nlp test_ocp_to_nlp.cpp)
 target_link_libraries(test_ocp_to_nlp PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_ocp_to_nlp)
+
+add_executable(exp exp.cpp)
+target_link_libraries(exp PRIVATE feedback GTest::Main)
+gtest_discover_tests(exp)
 
 pkg_check_modules(IPOPT ipopt QUIET)
 if (${IPOPT_FOUND})
