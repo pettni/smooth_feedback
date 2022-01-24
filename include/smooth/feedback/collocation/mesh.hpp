@@ -140,7 +140,7 @@ public:
    * If D < current degree,                   then nothing is done.
    * If D <= Kmax,                            then the polynomial degree is increased to D.
    *
-   * @note Allocates heap memory if the number of intervals is increased.
+   * @note May allocate heap memory due to vector resizing if the number of intervals is increased.
    */
   inline void refine_ph(std::size_t i, std::size_t D)
   {

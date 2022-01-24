@@ -127,7 +127,7 @@ public:
   }
 
   /**
-   * @brief IPOPT objective overload
+   * @brief IPOPT method to define objective
    */
   inline bool eval_f(
     Ipopt::Index n,
@@ -140,7 +140,7 @@ public:
   }
 
   /**
-   * @brief IPOPT method to define initial guess
+   * @brief IPOPT method to define gradient of objective
    */
   inline bool eval_grad_f(
     Ipopt::Index n,
@@ -154,7 +154,7 @@ public:
   }
 
   /**
-   * @brief IPOPT method to define initial guess
+   * @brief IPOPT method to define constraint function
    */
   inline bool eval_g(
     Ipopt::Index n,
@@ -168,7 +168,7 @@ public:
   }
 
   /**
-   * @brief IPOPT method to define initial guess
+   * @brief IPOPT method to define jacobian of constraint function
    */
   inline bool eval_jac_g(
     Ipopt::Index n,
