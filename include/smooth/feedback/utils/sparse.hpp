@@ -228,11 +228,11 @@ void block_add(
   Eigen::Index row0,
   Eigen::Index col0,
   const SpMat & source,
-  double scale = 1) requires(!SpMat::IsRowMajor)
+  double scale = 1)
 {
-  for (auto c = 0; c < source.cols(); ++c) {
+  for (auto c = 0; c < source.outerSize(); ++c) {
     for (Eigen::InnerIterator it(source, c); it; ++it) {
-      dest.coeffRef(row0 + it.index(), col0 + c) += scale * it.value();
+      dest.coeffRef(row0 + it.row(), col0 + it.col()) += scale * it.value();
     }
   }
 }

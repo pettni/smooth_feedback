@@ -95,6 +95,33 @@ struct MeshValue<2> : public MeshValue<1>
 };
 
 /**
+ * @brief Reset MeshValue to zeros.
+ *
+ * If sparse matrices are compressed the coefficients are set to zero, otherwise coefficients are
+ * removed but memory is kept.
+ */
+template<uint8_t Deriv>
+void setZero(MeshValue<Deriv> & mv)
+{
+  mv.F.setZero();
+
+  if constexpr (Deriv >= 1) {
+    if (mv.dF.isCompressed()) {
+      mv.dF.coeffs().setZero();
+    } else {
+      mv.dF.setZero();
+    }
+  }
+  if constexpr (Deriv >= 2) {
+    if (mv.d2F.isCompressed()) {
+      mv.d2F.coeffs().setZero();
+    } else {
+      mv.d2F.setZero();
+    }
+  }
+}
+
+/**
  * @brief Evaluate function on all points in mesh
  *
  * The variables layout is:
@@ -123,9 +150,9 @@ void mesh_eval(
   static constexpr auto nu = Dof<U>;
   static constexpr auto nf = Dof<std::invoke_result_t<decltype(f), double, X, U>>;
 
-  static_assert(nx > 0, "State dimension must be static");
-  static_assert(nu > 0, "Input dimension must be static");
-  static_assert(nf > 0, "Output size must be static");
+  static_assert(nx > -1, "State dimension must be static");
+  static_assert(nu > -1, "Input dimension must be static");
+  static_assert(nf > -1, "Output size must be static");
 
   const auto N = mesh.N_colloc();
 
@@ -148,13 +175,7 @@ void mesh_eval(
     out.allocated = true;
   }
 
-  out.F.setZero();
-  if constexpr (Deriv >= 1) {
-    if (out.dF.isCompressed()) { out.dF.coeffs().setZero(); }
-  }
-  if constexpr (Deriv >= 2) {
-    if (out.d2F.isCompressed()) { out.d2F.coeffs().setZero(); }
-  }
+  setZero(out);
 
   for (const auto & [ival, tau, x, u] : zip(iota(0u, N), mesh.all_nodes(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
@@ -198,9 +219,9 @@ void mesh_eval_reduce(
   static constexpr auto nu = Dof<U>;
   static constexpr auto nf = Dof<std::invoke_result_t<decltype(f), double, X, U>>;
 
-  static_assert(nx > 0, "State dimension must be static");
-  static_assert(nu > 0, "Input dimension must be static");
-  static_assert(nf > 0, "Output size must be static");
+  static_assert(nx > -1, "State dimension must be static");
+  static_assert(nu > -1, "Input dimension must be static");
+  static_assert(nf > -1, "Output size must be static");
 
   const auto N = mesh.N_colloc();
 
@@ -230,13 +251,7 @@ void mesh_eval_reduce(
     out.allocated = true;
   }
 
-  out.F.setZero();
-  if constexpr (Deriv >= 1) {
-    if (out.dF.isCompressed()) { out.dF.coeffs().setZero(); }
-  }
-  if constexpr (Deriv >= 2) {
-    if (out.d2F.isCompressed()) { out.d2F.coeffs().setZero(); }
-  }
+  setZero(out);
 
   for (const auto & [i, tau, l, x, u] : zip(iota(0u, N), mesh.all_nodes(), ls, xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
@@ -296,9 +311,45 @@ void mesh_eval_reduce(
       }
     }
   }
+}
 
-  if constexpr (Deriv >= 1) { out.dF.makeCompressed(); }
-  if constexpr (Deriv >= 2) { out.d2F.makeCompressed(); }
+template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
+  requires(Deriv <= 2)
+void mesh_integrate(
+  MeshValue<Deriv> & out,
+  const MeshType auto & mesh,
+  auto && f,
+  const double t0,
+  const double tf,
+  std::ranges::range auto && xs,
+  std::ranges::range auto && us)
+{
+  mesh_eval_reduce(out, mesh, std::forward<decltype(f)>(f), t0, tf, xs, us, mesh.all_weights());
+
+  if constexpr (Deriv >= 2) {
+    const auto nf   = out.F.size();
+    const auto nvar = out.dF.cols();
+
+    // scale second derivative
+    out.d2F *= (tf - t0);
+    for (auto j = 0u; j < nf; ++j) {
+      const auto b0 = nvar * j;
+      block_add(out.d2F, 0, b0 + 0, out.dF.row(j), -1);
+      block_add(out.d2F, 0, b0 + 0, out.dF.row(j).transpose(), -1);
+      block_add(out.d2F, 1, b0 + 0, out.dF.row(j), 1);
+      block_add(out.d2F, 0, b0 + 1, out.dF.row(j).transpose(), 1);
+    }
+  }
+
+  if constexpr (Deriv >= 1) {
+    // scale first derivative
+    out.dF *= (tf - t0);
+    out.dF.col(0) -= out.F.sparseView();
+    out.dF.col(1) += out.F.sparseView();
+  }
+
+  // scale value
+  out.F *= (tf - t0);
 }
 
 template<uint8_t Deriv, diff::Type DT = diff::Type::Default>

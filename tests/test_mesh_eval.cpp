@@ -196,3 +196,176 @@ TEST(MeshEval, EvalReduceDerivative)
   ASSERT_TRUE(d2f_num.isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
   ASSERT_TRUE(d2f_num.isApprox(Eigen::MatrixXd(out2.d2F), 1e-3));
 }
+
+TEST(MeshEval, IntegrateDerivative)
+{
+  // Mesh function
+  Functor f;
+
+  // Mesh
+  smooth::feedback::Mesh<5, 5> mesh;
+  mesh.refine_ph(0, 10);
+  const auto N = mesh.N_colloc();
+
+  // Mesh variables
+  const double t0                      = 1;
+  const double tf                      = 6;
+  const Eigen::Matrix<double, 3, -1> X = Eigen::Matrix<double, 3, -1>::Random(3, N + 1);
+  const Eigen::Matrix<double, 3, -1> U = Eigen::Matrix<double, 3, -1>::Random(3, N);
+
+  // Compute numerical outer derivative
+  const auto f_deriv =
+    [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
+    const Eigen::Matrix<double, 3, -1> Xvar = xvar.reshaped(3, N + 1);
+    const Eigen::Matrix<double, 3, -1> Uvar = uvar.reshaped(3, N);
+
+    smooth::feedback::MeshValue<0> o;
+    smooth::feedback::mesh_integrate(o, mesh, f, t0, tf, Xvar.colwise(), Uvar.colwise());
+    return o.F;
+  };
+
+  Eigen::VectorXd x_flat = X.reshaped();
+  Eigen::VectorXd u_flat = U.reshaped();
+
+  const auto [f_num, df_num, d2f_num] = smooth::diff::dr<2, smooth::diff::Type::Numerical>(
+    f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
+
+  // Compute analytical derivative (numerical inner derivatives)
+  smooth::feedback::MeshValue<2> out1;
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(
+    out1, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // Compute analytical derivative (analytic inner derivatives)
+  smooth::feedback::MeshValue<2> out2;
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(
+    out2, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // Compare values
+  ASSERT_TRUE(f_num.isApprox(out1.F));
+  ASSERT_TRUE(f_num.isApprox(out2.F));
+
+  // Compare first derivatives
+  ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out1.dF), 1e-3));
+  ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out2.dF), 1e-3));
+
+  // Compare second derivatives
+  ASSERT_TRUE(d2f_num.isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
+  ASSERT_TRUE(d2f_num.isApprox(Eigen::MatrixXd(out2.d2F), 1e-3));
+}
+
+TEST(MeshEval, TimeIntegral)
+{
+  using smooth::utils::zip, std::views::iota;
+
+  constexpr std::size_t nx = 1;
+  constexpr std::size_t nu = 0;
+  constexpr std::size_t nq = 1;
+
+  const double t0 = 3;
+  const double tf = 5;
+
+  // given trajectory
+  const auto x = [](double t) -> Eigen::Vector<double, nx> {
+    return Eigen::Vector<double, nx>{{0.1 * t * t - 0.4 * t + 0.2}};
+  };
+
+  // integrand
+  const auto g =
+    []<typename T>(const T &, const Eigen::Vector<T, nx> & x, const Eigen::Vector<T, nu> &)
+    -> Eigen::Vector<T, nq> { return Eigen::Vector<T, nq>{{0.1 + x.squaredNorm()}}; };
+
+  smooth::feedback::Mesh<5, 5> m;
+  m.refine_ph(0, 40);
+  ASSERT_EQ(m.N_ivals(), 8);
+
+  const auto N = m.N_colloc();
+
+  Eigen::Matrix<double, nx, -1> X(nx, N + 1);
+  Eigen::Matrix<double, nu, -1> U(nu, N);
+
+  // fill X with curve values at the two intervals
+  for (const auto & [i, tau] : zip(iota(0u), m.all_nodes())) { X.col(i) = x(t0 + (tf - t0) * tau); }
+  X.col(N) = x(tf);
+
+  Eigen::VectorXd Q{{0}};
+
+  smooth::feedback::MeshValue<2> out;
+  smooth::feedback::mesh_integrate(out, m, g, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_NEAR(out.F.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
+}
+
+TEST(MeshEval, StateIntegral)
+{
+  using smooth::utils::zip, std::views::iota;
+
+  constexpr std::size_t nx = 1;
+  constexpr std::size_t nu = 0;
+  constexpr std::size_t nq = 1;
+
+  const double t0 = 3;
+  const double tf = 5;
+
+  // given trajectory
+  const auto x = [](double t) { return Eigen::Vector<double, nx>{{1.5 * exp(-t)}}; };
+
+  // integrand
+  const auto g = []<typename T>(
+                   const T &,
+                   const Eigen::Vector<double, nx> & x,
+                   const Eigen::Vector<double, nu> &) -> Eigen::Vector<double, nq> {
+    return Eigen::Vector<double, nq>{{x.squaredNorm()}};
+  };
+
+  smooth::feedback::Mesh<5, 5> m;
+
+  // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
+  m.refine_ph(0, 16 * 5);
+  ASSERT_EQ(m.N_ivals(), 16);
+
+  const auto N = m.N_colloc();
+
+  Eigen::Matrix<double, nx, -1> X(nx, N + 1);
+  Eigen::Matrix<double, nu, -1> U(nu, N);
+
+  // fill X with curve values at the two intervals
+  for (const auto & [i, tau] : zip(iota(0u), m.all_nodes())) { X.col(i) = x(t0 + (tf - t0) * tau); }
+  X.col(N) = x(tf);
+
+  // Compute numerical outer derivative
+  const auto f_deriv =
+    [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
+    const Eigen::Matrix<double, nx, -1> Xvar = xvar.reshaped(nx, N + 1);
+    const Eigen::Matrix<double, nu, -1> Uvar = uvar.reshaped(nu, N);
+
+    smooth::feedback::MeshValue<0> o;
+    smooth::feedback::mesh_integrate(o, m, g, t0, tf, Xvar.colwise(), Uvar.colwise());
+    return o.F;
+  };
+
+  Eigen::VectorXd x_flat = X.reshaped();
+  Eigen::VectorXd u_flat = U.reshaped();
+
+  const auto [f_num, df_num, d2f_num] = smooth::diff::dr<2, smooth::diff::Type::Numerical>(
+    f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
+
+  // Compute analytical outer derivatives (numerical inner)
+  smooth::feedback::MeshValue<2> out1;
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(
+    out1, m, g, t0, tf, X.colwise(), U.colwise());
+
+  // Compare with numerical outer
+  ASSERT_NEAR(out1.F.x(), 0.00273752, 1e-4);
+  ASSERT_TRUE(Eigen::MatrixXd(out1.dF).isApprox(df_num, 1e-3));
+  ASSERT_TRUE(Eigen::MatrixXd(out1.d2F).isApprox(d2f_num, 1e-3));
+
+  // Compute analytical outer derivatives (analytic inner)
+  smooth::feedback::MeshValue<2> out2;
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(
+    out2, m, g, t0, tf, X.colwise(), U.colwise());
+
+  // Compare with numerical outer
+  ASSERT_NEAR(out2.F.x(), 0.00273752, 1e-4);
+  ASSERT_TRUE(Eigen::MatrixXd(out2.dF).isApprox(df_num, 1e-3));
+  ASSERT_TRUE(Eigen::MatrixXd(out2.d2F).isApprox(d2f_num, 1e-3));
+}

@@ -154,11 +154,12 @@ TEST(Utils, BlockCopy)
 
   smooth::feedback::block_add(dest, 0, 0, source1.leftCols(5));
   smooth::feedback::block_add(dest, 5, 5, source2_sp.rightCols(5));
+  smooth::feedback::block_add(dest, 0, 5, source2_sp.rightCols(5).transpose());
 
   Eigen::MatrixXd dest_d(dest);
 
   ASSERT_TRUE(dest_d.topLeftCorner(5, 5).isApprox(source1.leftCols(5)));
-  ASSERT_TRUE(dest_d.topRightCorner(5, 5).isApprox(Eigen::MatrixXd::Zero(5, 5)));
+  ASSERT_TRUE(dest_d.topRightCorner(5, 5).isApprox(source2.rightCols(5).transpose()));
   ASSERT_TRUE(dest_d.bottomRightCorner(5, 5).isApprox(source2.rightCols(5)));
   ASSERT_TRUE(dest_d.bottomLeftCorner(5, 5).isApprox(Eigen::MatrixXd::Zero(5, 5)));
 }
