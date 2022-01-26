@@ -210,7 +210,7 @@ auto colloc_eval_endpt(
 
   const X x0 = *std::ranges::begin(xs);
 
-  // hack to find size and last element in case if input range..
+  // hack to find size and last element in case of input range..
   // TODO write more efficient code for sized ranges
   auto numX  = 0u;
   const X xf = [&]() {

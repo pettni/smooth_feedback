@@ -185,7 +185,7 @@ public:
       assert(nele_jac == J.nonZeros());
 
       for (auto cntr = 0u, col = 0u; col < J.cols(); ++col) {
-        for (typename decltype(J)::InnerIterator it(J, col); it; ++it) {
+        for (Eigen::InnerIterator it(J, col); it; ++it) {
           iRow[cntr]   = it.index();
           jCol[cntr++] = col;
         }
@@ -195,7 +195,7 @@ public:
       assert(nele_jac == J.nonZeros());
 
       for (auto cntr = 0u, col = 0u; col < J.cols(); ++col) {
-        for (typename decltype(J)::InnerIterator it(J, col); it; ++it) {
+        for (Eigen::InnerIterator it(J, col); it; ++it) {
           values[cntr++] = it.value();
         }
       }

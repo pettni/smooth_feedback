@@ -38,6 +38,9 @@
 
 namespace smooth::feedback {
 
+template<typename T>
+concept SparseMat = (std::is_base_of_v<Eigen::SparseMatrixBase<T>, T>);
+
 /**
  * @brief Block sparse matrix construction.
  *
@@ -110,7 +113,7 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
     for (auto kcol = 0u, col0 = 0u; const auto &item : row) {
       if (item.has_value()) {
         for (auto col = 0; col < dims_cols(kcol); ++col) {
-          for (typename std::decay_t<decltype(*item)>::InnerIterator it(*item, col); it; ++it) {
+          for (Eigen::InnerIterator it(*item, col); it; ++it) {
             ret.insert(row0 + it.index(), col0 + col) = it.value();
           }
         }
@@ -146,12 +149,11 @@ inline Eigen::SparseMatrix<double> sparse_identity(std::size_t n)
  *
  * The result has the same storage order as X.
  */
-template<typename Derived>
-inline auto kron_identity(const Eigen::SparseCompressedBase<Derived> & X, std::size_t n)
+template<SparseMat Mat>
+inline auto kron_identity(const Mat & X, std::size_t n)
 {
-  Eigen::
-    SparseMatrix<typename Derived::Scalar, Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor>
-      ret(X.rows() * n, X.cols() * n);
+  Eigen::SparseMatrix<typename Mat::Scalar, Mat::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor>
+    ret(X.rows() * n, X.cols() * n);
 
   Eigen::Matrix<int, -1, 1> pattern(X.outerSize() * n);
 
@@ -164,7 +166,7 @@ inline auto kron_identity(const Eigen::SparseCompressedBase<Derived> & X, std::s
   ret.reserve(pattern);
 
   for (auto i0 = 0u; i0 < X.outerSize(); ++i0) {
-    for (typename std::decay_t<decltype(X)>::InnerIterator it(X, i0); it; ++it) {
+    for (Eigen::InnerIterator it(X, i0); it; ++it) {
       for (auto diag = 0u; diag < n; ++diag) {
         ret.insert(n * it.row() + diag, n * it.col() + diag) = it.value();
       }
@@ -202,6 +204,67 @@ inline auto kron_identity(const Eigen::MatrixBase<Derived> & X, std::size_t n)
   ret.makeCompressed();
 
   return ret;
+}
+
+/**
+ * @brief Write block into a sparse matrix (sparse source).
+ *
+ * After this function the output variable dest is s.t.
+ *
+ * dest[row0 + r, col0 + c] += scale * source[r, c]
+ *
+ * @param dest destination
+ * @param row0 starting row for block
+ * @param col0 starting column for block
+ * @param source block values
+ * @param scale scaling parameter
+ *
+ * @note Values are inserted with coeffRef().
+ */
+template<typename SpMat>
+  requires(std::is_base_of_v<Eigen::SparseMatrixBase<SpMat>, SpMat>)
+void block_add(
+  Eigen::SparseMatrix<double> & dest,
+  Eigen::Index row0,
+  Eigen::Index col0,
+  const SpMat & source,
+  double scale = 1) requires(!SpMat::IsRowMajor)
+{
+  for (auto c = 0; c < source.cols(); ++c) {
+    for (Eigen::InnerIterator it(source, c); it; ++it) {
+      dest.coeffRef(row0 + it.index(), col0 + c) += scale * it.value();
+    }
+  }
+}
+
+/**
+ * @brief Write block into a sparse matrix (dense source).
+ *
+ * After this function the output variable dest is s.t.
+ *
+ * dest[row0 + r, col0 + c] += scale * source[r, c]
+ *
+ * @param dest destination
+ * @param row0 starting row for block
+ * @param col0 starting column for block
+ * @param source block values
+ * @param scale scaling parameter
+ *
+ * @note Values are inserted with coeffRef().
+ */
+template<typename Derived>
+void block_add(
+  Eigen::SparseMatrix<double> & dest,
+  Eigen::Index row0,
+  Eigen::Index col0,
+  const Eigen::MatrixBase<Derived> & source,
+  double scale = 1)
+{
+  for (auto c = 0; c < source.cols(); ++c) {
+    for (auto r = 0; r < source.rows(); ++r) {
+      dest.coeffRef(row0 + r, col0 + c) += scale * source(r, c);
+    }
+  }
 }
 
 }  // namespace smooth::feedback

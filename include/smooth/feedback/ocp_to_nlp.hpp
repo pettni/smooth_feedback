@@ -290,6 +290,7 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
   };
 
   // CONSTRAINT JACOBIAN
+
   auto dg_dx =
     [var_beg = var_beg, var_len = var_len, mesh = mesh, ocp = ocp](const Eigen::VectorXd & x) {
       const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;

@@ -63,6 +63,10 @@ add_executable(test_ocp_to_nlp test_ocp_to_nlp.cpp)
 target_link_libraries(test_ocp_to_nlp PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_ocp_to_nlp)
 
+add_executable(test_mesh_eval test_mesh_eval.cpp)
+target_link_libraries(test_mesh_eval PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_mesh_eval)
+
 pkg_check_modules(IPOPT ipopt QUIET)
 if (${IPOPT_FOUND})
   add_executable(test_ocp_ipopt test_ocp_ipopt.cpp)
