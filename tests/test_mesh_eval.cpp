@@ -26,389 +26,571 @@
 #include <gtest/gtest.h>
 
 #include <Eigen/Core>
+#include <smooth/so3.hpp>
 
-#include "smooth/feedback/collocation/meshfunction.hpp"
+#include "smooth/feedback/collocation/mesh_function.hpp"
 
+using namespace Eigen;
+
+/// Reduce a hstacked Hessian (as returned by smooth::diff) with multipliers
+MatrixXd blocksum(const VectorXd & lambda, const MatrixXd & in)
+{
+  MatrixXd ret = MatrixXd::Zero(in.rows(), in.rows());
+  for (auto i = 0u; i < lambda.size(); ++i) {
+    ret += lambda(i) * in.block(0, i * in.rows(), in.rows(), in.rows());
+  }
+  return ret;
+}
+
+/// Sample analytic mesh function (does not allocate)
 struct Functor
 {
+  SparseMatrix<double> jac, hess;
+
+  Functor()
+  {
+    jac.resize(3, 6);
+
+    jac.coeffRef(0, 0) = 0.;
+    jac.coeffRef(0, 1) = 0.;
+    jac.coeffRef(0, 5) = 0.;
+
+    jac.coeffRef(1, 3) = 0.;
+
+    jac.coeffRef(2, 0) = 0.;
+    jac.coeffRef(2, 2) = 0.;
+    jac.coeffRef(2, 4) = 0.;
+
+    jac.makeCompressed();
+
+    hess.resize(6, 3 * 6);
+
+    hess.coeffRef(0, 0 * 6 + 1) = 0;
+    hess.coeffRef(0, 0 * 6 + 5) = 0;
+
+    hess.coeffRef(1, 0 * 6 + 0) = 0;
+    hess.coeffRef(1, 0 * 6 + 1) = 0;
+    hess.coeffRef(1, 0 * 6 + 5) = 0;
+
+    hess.coeffRef(5, 0 * 6 + 0) = 0;
+    hess.coeffRef(5, 0 * 6 + 1) = 0;
+
+    // second component
+
+    hess.coeffRef(3, 1 * 6 + 3) = 0;
+
+    // third component
+
+    hess.coeffRef(0, 2 * 6 + 0) = 0;
+    hess.coeffRef(0, 2 * 6 + 2) = 0;
+    hess.coeffRef(0, 2 * 6 + 4) = 0;
+
+    hess.coeffRef(2, 2 * 6 + 0) = 0;
+    hess.coeffRef(2, 2 * 6 + 4) = 0;
+
+    hess.coeffRef(4, 2 * 6 + 0) = 0;
+    hess.coeffRef(4, 2 * 6 + 2) = 0;
+
+    hess.makeCompressed();
+  }
+
   template<typename T>
-  Eigen::Vector3<T> operator()(T t, const Eigen::Vector3<T> & x, const Eigen::Vector3<T> & u)
+  Vector3<T> operator()(T t, const Vector3<T> & x, const Vector2<T> & u)
   {
-    return t * (x + 2 * u);
+    return Vector3<T>{
+      t * x.x() * x.x() * u.y(),
+      x.z() * x.z(),
+      t * t * x.y() * u.x(),
+    };
   }
 
-  Eigen::SparseMatrix<double>
-  jacobian(double t, const Eigen::Vector3d & x, const Eigen::Vector3d & u) const
+  const SparseMatrix<double> & jacobian(double t, const Vector3d & x, const Vector2d & u)
   {
-    Eigen::SparseMatrix<double> ret(3, 7);
-    ret.coeffRef(0, 0) = (x(0) + 2 * u(0));
-    ret.coeffRef(1, 0) = (x(1) + 2 * u(1));
-    ret.coeffRef(2, 0) = (x(2) + 2 * u(2));
+    jac.coeffRef(0, 0) = x.x() * x.x() * u.y();  // df0 / dt
+    jac.coeffRef(0, 1) = t * 2 * x.x() * u.y();  // df0 / dx0
+    jac.coeffRef(0, 5) = t * x.x() * x.x();      // df0 / du1
 
-    ret.coeffRef(0, 1) = t;
-    ret.coeffRef(1, 2) = t;
-    ret.coeffRef(2, 3) = t;
+    jac.coeffRef(1, 3) = 2 * x.z();  // df1 / dx2
 
-    ret.coeffRef(0, 4) = 2 * t;
-    ret.coeffRef(1, 5) = 2 * t;
-    ret.coeffRef(2, 6) = 2 * t;
+    jac.coeffRef(2, 0) = 2 * t * x.y() * u.x();  // df2 / dt
+    jac.coeffRef(2, 2) = t * t * u.x();          // df2 / dx1
+    jac.coeffRef(2, 4) = t * t * x.y();          // df2 / du1
 
-    ret.makeCompressed();
+    assert(jac.isCompressed());
 
-    return ret;
+    return jac;
   }
 
-  Eigen::SparseMatrix<double>
-  hessian(double, const Eigen::Vector3d &, const Eigen::Vector3d &) const
+  const SparseMatrix<double> & hessian(double t, const Vector3d & x, const Vector2d & u)
   {
-    Eigen::SparseMatrix<double> ret(7, 3 * 7);
-    ret.coeffRef(0, 1) = 1;
-    ret.coeffRef(0, 4) = 2;
-    ret.coeffRef(1, 0) = 1;
-    ret.coeffRef(4, 0) = 2;
+    // first component
 
-    ret.coeffRef(0, 7 + 2) = 1;
-    ret.coeffRef(0, 7 + 5) = 2;
-    ret.coeffRef(2, 7 + 0) = 1;
-    ret.coeffRef(5, 7 + 0) = 2;
+    hess.coeffRef(0, 0 * 6 + 1) = 2 * x.x() * u.y();  // d2f0 / dtx0
+    hess.coeffRef(0, 0 * 6 + 5) = x.x() * x.x();      // d2f0 / dtu1
 
-    ret.coeffRef(0, 14 + 3) = 1;
-    ret.coeffRef(0, 14 + 6) = 2;
-    ret.coeffRef(3, 14 + 0) = 1;
-    ret.coeffRef(6, 14 + 0) = 2;
+    hess.coeffRef(1, 0 * 6 + 0) = 2 * x.x() * u.y();  // d2f0 / dx0t
+    hess.coeffRef(1, 0 * 6 + 1) = 2 * t * u.y();      // d2f0 / dx0x0
+    hess.coeffRef(1, 0 * 6 + 5) = 2 * t * x.x();      // d2f0 / dx0u1
 
-    ret.makeCompressed();
+    hess.coeffRef(5, 0 * 6 + 0) = x.x() * x.x();  // d2f0 / du1t
+    hess.coeffRef(5, 0 * 6 + 1) = 2 * t * x.x();  // d2f0 / du1x0
 
-    return ret;
+    // second component
+
+    hess.coeffRef(3, 1 * 6 + 3) = 2;  // d2f1 / dx2x2
+
+    // third component
+
+    hess.coeffRef(0, 2 * 6 + 0) = 2 * x.y() * u.x();  // d2f2 / dtt
+    hess.coeffRef(0, 2 * 6 + 2) = 2 * t * u.x();      // d2f2 / dtx1
+    hess.coeffRef(0, 2 * 6 + 4) = 2 * t * x.y();      // d2f2 / dtu0
+
+    hess.coeffRef(2, 2 * 6 + 0) = 2 * t * u.x();  // d2f2 / dx1t
+    hess.coeffRef(2, 2 * 6 + 4) = t * t;          // d2f2 / dx1u0
+
+    hess.coeffRef(4, 2 * 6 + 0) = 2 * t * x.y();  // d2f2 / du0t
+    hess.coeffRef(4, 2 * 6 + 2) = t * t;          // d2f2 / du0x1
+
+    assert(hess.isCompressed());
+
+    return hess;
   }
 };
 
-TEST(MeshEval, EvalDerivative)
+class MeshFunction_Random : public testing::Test
 {
-  // Mesh function
-  Functor f;
+protected:
+  Functor f{};
 
-  // Mesh
-  smooth::feedback::Mesh<5, 5> mesh;
-  mesh.refine_ph(0, 10);
-  const auto N = mesh.N_colloc();
+  static constexpr int nx = 3, nu = 2;
 
-  // Mesh variables
-  const double t0                = 1;
-  const double tf                = 6;
-  Eigen::Matrix<double, 3, -1> X = Eigen::Matrix<double, 3, -1>::Random(3, N + 1);
-  Eigen::Matrix<double, 3, -1> U = Eigen::Matrix<double, 3, -1>::Random(3, N);
+  // mesh
+  std::size_t N;
+  smooth::feedback::Mesh<4, 6> mesh;
 
-  // Multipliers
-  Eigen::VectorXd lambda = Eigen::VectorXd::Random(N * 3);
+  // variables
+  double t0 = 1;
+  double tf = 6;
 
-  // Compute analytical derivative (autodiff)
-  smooth::feedback::MeshValue<2> out1;
-  out1.lambda = lambda;
-  smooth::feedback::mesh_eval<2, smooth::diff::Type::Numerical>(out1, mesh, f, t0, tf, X.colwise(), U.colwise());
+  Matrix<double, nx, -1> X;
+  Matrix<double, nu, -1> U;
 
-  // Compute analytical derivative (analytic)
-  smooth::feedback::MeshValue<2> out2;
-  out2.lambda = lambda;
-  smooth::feedback::mesh_eval<2, smooth::diff::Type::Analytic>(out2, mesh, f, t0, tf, X.colwise(), U.colwise());
+  VectorXd xflat;
+  VectorXd uflat;
 
-  ASSERT_TRUE(out1.F.isApprox(out2.F));
-  ASSERT_TRUE(out1.dF.isApprox(out2.dF, 1e-3));
-  ASSERT_TRUE(out1.d2F.isApprox(out2.d2F, 1e-3));
+  void SetUp() override
+  {
+    mesh.refine_ph(0, 8);
+    mesh.refine_ph(0, 5);
 
-  // Compute numerical derivative
-  const auto f_deriv =
-    [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
-    const Eigen::Matrix<double, 3, -1> Xvar = xvar.reshaped(3, N + 1);
-    const Eigen::Matrix<double, 3, -1> Uvar = uvar.reshaped(3, N);
+    N = mesh.N_colloc();
 
-    smooth::feedback::MeshValue<0> o;
-    smooth::feedback::mesh_eval(o, mesh, f, t0, tf, Xvar.colwise(), Uvar.colwise());
-    return o.F;
-  };
+    X.setRandom(nx, N + 1);
+    U.setRandom(nu, N);
 
-  Eigen::VectorXd x_flat = X.reshaped();
-  Eigen::VectorXd u_flat = U.reshaped();
-
-  const auto [fval, df_num, d2f_num] = smooth::diff::dr<2, smooth::diff::Type::Numerical>(
-    f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
-
-  Eigen::MatrixXd d2f_lambda_num = Eigen::MatrixXd::Zero(d2f_num.rows(), d2f_num.rows());
-  for (auto i = 0u; i < lambda.size(); ++i) {
-    d2f_lambda_num +=
-      lambda(i) * d2f_num.block(0, i * d2f_num.rows(), d2f_num.rows(), d2f_num.rows());
+    xflat = X.reshaped();
+    uflat = U.reshaped();
   }
+};
 
-  // Compare derivatives
-  ASSERT_TRUE(fval.isApprox(Eigen::MatrixXd(out1.F)));
-  ASSERT_TRUE(fval.isApprox(Eigen::MatrixXd(out2.F)));
-  ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out1.dF), 1e-3));
-  ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out2.dF), 1e-3));
-  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
-  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out2.d2F), 1e-3));
+TEST_F(MeshFunction_Random, TestTheTest)
+{
+  const double t                    = 1;
+  const Eigen::Vector<double, nx> x = Eigen::Vector<double, nx>::Random();
+  const Eigen::Vector<double, nu> u = Eigen::Vector<double, nu>::Random();
+
+  const auto [fn, dfn, d2fn] =
+    smooth::diff::dr<2, smooth::diff::Type::Numerical>(f, smooth::wrt(t, x, u));
+  const auto [fa, dfa, d2fa] =
+    smooth::diff::dr<2, smooth::diff::Type::Analytic>(f, smooth::wrt(t, x, u));
+
+  ASSERT_TRUE(fn.isApprox(fa));
+  ASSERT_TRUE(dfn.isApprox(Eigen::MatrixXd(dfa), 1e-3));
+  ASSERT_TRUE(d2fn.isApprox(Eigen::MatrixXd(d2fa), 1e-3));
 }
 
-TEST(MeshEval, IntegrateDerivative)
+TEST_F(MeshFunction_Random, EvalDerivative)
 {
-  // Mesh function
-  Functor f;
+  using namespace smooth;
 
-  // Mesh
-  smooth::feedback::Mesh<5, 5> mesh;
-  mesh.refine_ph(0, 10);
-  const auto N = mesh.N_colloc();
-
-  // Mesh variables
-  const double t0                      = 1;
-  const double tf                      = 6;
-  const Eigen::Matrix<double, 3, -1> X = Eigen::Matrix<double, 3, -1>::Random(3, N + 1);
-  const Eigen::Matrix<double, 3, -1> U = Eigen::Matrix<double, 3, -1>::Random(3, N);
-
-  // Multipliers
-  Eigen::VectorXd lambda = Eigen::VectorXd::Constant(3, 1);
-
-  // Compute analytical derivative (numerical inner derivatives)
-  smooth::feedback::MeshValue<2> out1;
-  out1.lambda = lambda;
-  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(out1, mesh, f, t0, tf, X.colwise(), U.colwise());
-
-  // Compute analytical derivative (analytic inner derivatives)
-  smooth::feedback::MeshValue<2> out2;
-  out2.lambda = lambda;
-  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(out2, mesh, f, t0, tf, X.colwise(), U.colwise());
-
-  // Compute numerical outer derivative
-  const auto f_deriv =
-    [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
-    const Eigen::Matrix<double, 3, -1> Xvar = xvar.reshaped(3, N + 1);
-    const Eigen::Matrix<double, 3, -1> Uvar = uvar.reshaped(3, N);
-
-    smooth::feedback::MeshValue<0> o;
-    smooth::feedback::mesh_integrate(o, mesh, f, t0, tf, Xvar.colwise(), Uvar.colwise());
+  // numerical derivative
+  auto fd = [&](double t0, double tf, const VectorXd & xvar, const VectorXd & uvar) -> VectorXd {
+    Eigen::Matrix<double, nx, -1> X = xvar.reshaped(nx, N + 1);
+    Eigen::Matrix<double, nu, -1> U = uvar.reshaped(nu, N);
+    feedback::MeshValue<0> o;
+    feedback::mesh_eval(o, mesh, f, t0, tf, X.colwise(), U.colwise());
     return o.F;
   };
+  auto [fval, dfval, d2fval] = diff::dr<2>(fd, wrt(t0, tf, xflat, uflat));
 
-  Eigen::VectorXd x_flat = X.reshaped();
-  Eigen::VectorXd u_flat = U.reshaped();
+  // analytic (analytic inner)
+  {
+    feedback::MeshValue<2> out;
+    out.lambda.setRandom(nx * N);
+    feedback::mesh_eval<2, diff::Type::Analytic>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
-  const auto [f_num, df_num, d2f_num] = smooth::diff::dr<2, smooth::diff::Type::Numerical>(
-    f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
-
-  Eigen::MatrixXd d2f_lambda_num = Eigen::MatrixXd::Zero(d2f_num.rows(), d2f_num.rows());
-  for (auto i = 0u; i < lambda.size(); ++i) {
-    d2f_lambda_num +=
-      lambda(i) * d2f_num.block(0, i * d2f_num.rows(), d2f_num.rows(), d2f_num.rows());
+    // compare values
+    ASSERT_TRUE(MatrixXd(out.dF).isApprox(dfval, 1e-3));
+    MatrixXd hess = MatrixXd(out.d2F).selfadjointView<Upper>();
+    ASSERT_TRUE(hess.isApprox(blocksum(out.lambda, d2fval), 1e-3));
   }
 
-  // Compare values
-  ASSERT_TRUE(f_num.isApprox(out1.F));
-  ASSERT_TRUE(f_num.isApprox(out2.F));
+  // analytic (numerical inner)
+  {
+    feedback::MeshValue<2> out;
+    out.lambda.setRandom(nx * N);
+    feedback::mesh_eval<2, diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
-  // Compare first derivatives
-  ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out1.dF), 1e-3));
-  ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out2.dF), 1e-3));
-
-  // Compare second derivatives
-  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
-  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out2.d2F), 1e-3));
+    // compare values
+    ASSERT_TRUE(MatrixXd(out.dF).isApprox(dfval, 1e-3));
+    MatrixXd hess = MatrixXd(out.d2F).selfadjointView<Upper>();
+    ASSERT_TRUE(hess.isApprox(blocksum(out.lambda, d2fval), 1e-3));
+  }
 }
 
-TEST(MeshEval, IntegrateTimeTrajectory)
+TEST_F(MeshFunction_Random, IntegralDerivative)
 {
-  using smooth::utils::zip, std::views::iota;
+  using namespace smooth;
 
-  constexpr std::size_t nx = 1;
-  constexpr std::size_t nu = 0;
-  constexpr std::size_t nq = 1;
-
-  const double t0 = 3;
-  const double tf = 5;
-
-  // given trajectory
-  const auto x = [](double t) -> Eigen::Vector<double, nx> {
-    return Eigen::Vector<double, nx>{{0.1 * t * t - 0.4 * t + 0.2}};
+  // numerical derivative
+  auto fd = [&](double t0, double tf, const VectorXd & xvar, const VectorXd & uvar) -> VectorXd {
+    Eigen::Matrix<double, nx, -1> X = xvar.reshaped(nx, N + 1);
+    Eigen::Matrix<double, nu, -1> U = uvar.reshaped(nu, N);
+    feedback::MeshValue<0> o;
+    feedback::mesh_integrate(o, mesh, f, t0, tf, X.colwise(), U.colwise());
+    return o.F;
   };
+  auto [fval, dfval, d2fval] = diff::dr<2>(fd, wrt(t0, tf, xflat, uflat));
 
-  // integrand
-  const auto g =
-    []<typename T>(const T &, const Eigen::Vector<T, nx> & x, const Eigen::Vector<T, nu> &)
-    -> Eigen::Vector<T, nq> { return Eigen::Vector<T, nq>{{0.1 + x.squaredNorm()}}; };
+  // analytic (analytic inner)
+  {
+    feedback::MeshValue<2> out;
+    out.lambda.setRandom(nx);
+    feedback::mesh_integrate<2, diff::Type::Analytic>(
+      out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
-  smooth::feedback::Mesh<5, 5> m;
-  m.refine_ph(0, 40);
-  ASSERT_EQ(m.N_ivals(), 8);
+    // compare values
+    ASSERT_TRUE(MatrixXd(out.dF).isApprox(dfval, 1e-3));
+    MatrixXd hess = MatrixXd(out.d2F).selfadjointView<Upper>();
+    ASSERT_TRUE(hess.isApprox(blocksum(out.lambda, d2fval), 1e-3));
+  }
 
-  const auto N = m.N_colloc();
+  // analytic (numerical inner)
+  {
+    feedback::MeshValue<2> out;
+    out.lambda.setRandom(nx);
+    feedback::mesh_integrate<2, diff::Type::Numerical>(
+      out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
-  Eigen::Matrix<double, nx, -1> X(nx, N + 1);
-  Eigen::Matrix<double, nu, -1> U(nu, N);
+    // compare values
+    ASSERT_TRUE(MatrixXd(out.dF).isApprox(dfval, 1e-3));
+    MatrixXd hess = MatrixXd(out.d2F).selfadjointView<Upper>();
+    ASSERT_TRUE(hess.isApprox(blocksum(out.lambda, d2fval), 1e-3));
+  }
+}
 
-  // fill X with curve values at the two intervals
-  for (const auto & [i, tau] : zip(iota(0u), m.all_nodes())) { X.col(i) = x(t0 + (tf - t0) * tau); }
-  X.col(N) = x(tf);
+TEST_F(MeshFunction_Random, DynDerivative)
+{
+  using namespace smooth;
 
+  // numerical derivative
+  auto fd = [&](double t0, double tf, const VectorXd & xvar, const VectorXd & uvar) -> VectorXd {
+    Eigen::Matrix<double, nx, -1> X = xvar.reshaped(nx, N + 1);
+    Eigen::Matrix<double, nu, -1> U = uvar.reshaped(nu, N);
+    feedback::MeshValue<0> o;
+    feedback::mesh_dyn(o, mesh, f, t0, tf, X.colwise(), U.colwise());
+    return o.F;
+  };
+  auto [fval, dfval, d2fval] = diff::dr<2>(fd, wrt(t0, tf, xflat, uflat));
+
+  // analytic (analytic inner)
+  {
+    feedback::MeshValue<2> out;
+    out.lambda.setRandom(nx * N);
+    feedback::mesh_dyn<2, diff::Type::Analytic>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+    // compare values
+    ASSERT_TRUE(MatrixXd(out.dF).isApprox(dfval, 1e-3));
+    MatrixXd hess = MatrixXd(out.d2F).selfadjointView<Upper>();
+    ASSERT_TRUE(hess.isApprox(blocksum(out.lambda, d2fval), 1e-3));
+  }
+
+  // analytic (numerical inner)
+  {
+    feedback::MeshValue<2> out;
+    out.lambda.setRandom(nx * N);
+    feedback::mesh_dyn<2, diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+    // compare values
+    ASSERT_TRUE(MatrixXd(out.dF).isApprox(dfval, 1e-3));
+    MatrixXd hess = MatrixXd(out.d2F).selfadjointView<Upper>();
+    ASSERT_TRUE(hess.isApprox(blocksum(out.lambda, d2fval), 1e-3));
+  }
+}
+
+TEST_F(MeshFunction_Random, EvalAllocationAnalytic)
+{
   smooth::feedback::MeshValue<2> out;
-  out.lambda.setConstant(1, 1);
-  smooth::feedback::mesh_integrate(out, m, g, t0, tf, X.colwise(), U.colwise());
+  out.lambda.setRandom(nx * N);
 
+  // first call: not allocated
+  ASSERT_FALSE(out.allocated);
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Analytic>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_FALSE(out.dF.isCompressed());
+  ASSERT_FALSE(out.d2F.isCompressed());
+
+  out.dF.makeCompressed();
+  out.d2F.makeCompressed();
+
+  // second call: allocated
+  ASSERT_TRUE(out.allocated);
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Analytic>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // expect to still be compressed (means we only touched existing coeffs)
+  ASSERT_TRUE(out.dF.isCompressed());
+  ASSERT_TRUE(out.d2F.isCompressed());
+}
+
+TEST_F(MeshFunction_Random, EvalAllocationNumerical)
+{
+  smooth::feedback::MeshValue<2> out;
+  out.lambda.setRandom(nx * N);
+
+  // first call: not allocated
+  ASSERT_FALSE(out.allocated);
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Numerical>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_FALSE(out.dF.isCompressed());
+  ASSERT_FALSE(out.d2F.isCompressed());
+
+  out.dF.makeCompressed();
+  out.d2F.makeCompressed();
+
+  // second call: allocated
+  ASSERT_TRUE(out.allocated);
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Numerical>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // expect to still be compressed (means we only touched existing coeffs)
+  ASSERT_TRUE(out.dF.isCompressed());
+  ASSERT_TRUE(out.d2F.isCompressed());
+}
+
+TEST_F(MeshFunction_Random, IntegrateAllocationAnalytic)
+{
+  smooth::feedback::MeshValue<2> out;
+  out.lambda.setRandom(nx);
+
+  // first call: not allocated
+  ASSERT_FALSE(out.allocated);
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_FALSE(out.dF.isCompressed());
+  ASSERT_FALSE(out.d2F.isCompressed());
+
+  out.dF.makeCompressed();
+  out.d2F.makeCompressed();
+
+  // second call: allocated
+  ASSERT_TRUE(out.allocated);
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // expect to still be compressed (means we only touched existing coeffs)
+  ASSERT_TRUE(out.dF.isCompressed());
+  ASSERT_TRUE(out.d2F.isCompressed());
+}
+
+TEST_F(MeshFunction_Random, IntegrateAllocationNumerical)
+{
+  smooth::feedback::MeshValue<2> out;
+  out.lambda.setRandom(nx);
+
+  // first call: not allocated
+  ASSERT_FALSE(out.allocated);
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_FALSE(out.dF.isCompressed());
+  ASSERT_FALSE(out.d2F.isCompressed());
+
+  out.dF.makeCompressed();
+  out.d2F.makeCompressed();
+
+  // second call: allocated
+  ASSERT_TRUE(out.allocated);
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // expect to still be compressed (means we only touched existing coeffs)
+  ASSERT_TRUE(out.dF.isCompressed());
+  ASSERT_TRUE(out.d2F.isCompressed());
+}
+
+TEST_F(MeshFunction_Random, DynAllocationAnalytic)
+{
+  smooth::feedback::MeshValue<2> out;
+  out.lambda.setRandom(nx * N);
+
+  // first call: not allocated
+  ASSERT_FALSE(out.allocated);
+  smooth::feedback::mesh_dyn<2, smooth::diff::Type::Analytic>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_FALSE(out.dF.isCompressed());
+  ASSERT_FALSE(out.d2F.isCompressed());
+
+  out.dF.makeCompressed();
+  out.d2F.makeCompressed();
+
+  // second call: allocated
+  ASSERT_TRUE(out.allocated);
+  smooth::feedback::mesh_dyn<2, smooth::diff::Type::Analytic>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // expect to still be compressed (means we only touched existing coeffs)
+  ASSERT_TRUE(out.dF.isCompressed());
+  ASSERT_TRUE(out.d2F.isCompressed());
+}
+
+TEST_F(MeshFunction_Random, DynAllocationNumerical)
+{
+  smooth::feedback::MeshValue<2> out;
+  out.lambda.setRandom(nx * N);
+
+  // first call: not allocated
+  ASSERT_FALSE(out.allocated);
+  smooth::feedback::mesh_dyn<2, smooth::diff::Type::Numerical>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_FALSE(out.dF.isCompressed());
+  ASSERT_FALSE(out.d2F.isCompressed());
+
+  out.dF.makeCompressed();
+  out.d2F.makeCompressed();
+
+  // second call: allocated
+  ASSERT_TRUE(out.allocated);
+  smooth::feedback::mesh_dyn<2, smooth::diff::Type::Numerical>(
+    out, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // expect to still be compressed (means we only touched existing coeffs)
+  ASSERT_TRUE(out.dF.isCompressed());
+  ASSERT_TRUE(out.d2F.isCompressed());
+}
+
+/**
+ * @brief Test using time-defined trajectory x(t) = 0.1 t^2 - 0.4 t + 0.2
+ */
+class MeshFunction_Traj1 : public testing::Test
+{
+protected:
+  static constexpr std::size_t nx = 1, nu = 0, nq = 1;
+
+  static constexpr auto df_dt =
+    []<typename T>(const T & t, const Vector<T, nx> &, const Vector<T, nu> &) -> Vector<T, nx> {
+    return Vector<T, nx>{{0.2 * t - 0.4}};
+  };
+
+  // variables
+  const double t0 = 3, tf = 5;
+  Matrix<double, nx, -1> X;
+  Matrix<double, nu, -1> U;
+
+  // mesh
+  smooth::feedback::Mesh<5, 5> m;
+
+  void SetUp() override
+  {
+    m.refine_ph(0, 40);
+    const auto N = m.N_colloc();
+
+    X.setRandom(nx, N + 1);
+    U.setRandom(nu, N);
+
+    for (const auto & [i, tau] : smooth::utils::zip(std::views::iota(0u), m.all_nodes())) {
+      const auto s = t0 + (tf - t0) * tau;
+      X(i)         = 0.1 * s * s - 0.4 * s + 0.2;
+    }
+  }
+};
+
+TEST_F(MeshFunction_Traj1, Integral)
+{
+  const auto g =
+    []<typename T>(const T &, const Vector<T, nx> & x, const Vector<T, nu> &) -> Vector<T, nq> {
+    return Vector<T, nq>{{0.1 + x.squaredNorm()}};
+  };
+
+  smooth::feedback::MeshValue<0> out;
+  smooth::feedback::mesh_integrate(out, m, g, t0, tf, X.colwise(), U.colwise());
   ASSERT_NEAR(out.F.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
 }
 
-struct IntegrandFunctor
+TEST_F(MeshFunction_Traj1, Dynamics)
 {
-  template<typename T>
-  Eigen::Vector<T, 1>
-  operator()(const T, const Eigen::Vector<double, 1> & x, const Eigen::Vector<double, 0> &) const
-  {
-    return Eigen::Vector<double, 1>{{x.squaredNorm()}};
-  }
+  smooth::feedback::MeshValue<1> out;
+  smooth::feedback::mesh_dyn<1>(out, m, df_dt, t0, tf, X.colwise(), U.colwise());
 
-  Eigen::SparseMatrix<double>
-  jacobian(const double, const Eigen::Vector<double, 1> & x, const Eigen::Vector<double, 0> &) const
-  {
-    Eigen::SparseMatrix<double> ret(1, 2);
-    ret.coeffRef(0, 1) = 2 * x.x();
-    ret.makeCompressed();
-    return ret;
-  }
+  ASSERT_LE(out.F.cwiseAbs().maxCoeff(), 1e-8);
+}
 
-  Eigen::SparseMatrix<double>
-  hessian(const double, const Eigen::Vector<double, 1> &, const Eigen::Vector<double, 0> &) const
+/**
+ * @brief Test using time-defined trajectory x(t) = 1.5 exp(-t)
+ */
+class MeshFunction_Traj2 : public testing::Test
+{
+protected:
+  static constexpr std::size_t nx = 1, nu = 0, nq = 1;
+
+  static constexpr auto df_dt =
+    []<typename T>(const T &, const Vector<T, nx> & x, const Vector<T, nu> &) -> Vector<T, nx> {
+    return Vector<T, nx>{{-x.x()}};
+  };
+
+  // variables
+  const double t0 = 3, tf = 5;
+  Matrix<double, nx, -1> X;
+  Matrix<double, nu, -1> U;
+
+  // mesh
+  smooth::feedback::Mesh<5, 5> m;
+
+  void SetUp() override
   {
-    Eigen::SparseMatrix<double> ret(2, 2);
-    ret.coeffRef(1, 1) = 2;
-    ret.makeCompressed();
-    return ret;
+    m.refine_ph(0, 40);
+    const auto N = m.N_colloc();
+
+    X.setRandom(nx, N + 1);
+    U.setRandom(nu, N);
+
+    for (const auto & [i, tau] : smooth::utils::zip(std::views::iota(0u), m.all_nodes())) {
+      const auto s = t0 + (tf - t0) * tau;
+      X(i)         = 1.5 * exp(-s);
+    }
   }
 };
 
-TEST(MeshEval, IntegrateStateTrajectory)
+TEST_F(MeshFunction_Traj2, Integral)
 {
-  using smooth::utils::zip, std::views::iota;
+  const auto g =
+    []<typename T>(const T &, const Vector<T, nx> & x, const Vector<T, nu> &) -> Vector<T, nq> {
+    return Vector<T, nq>{{x.squaredNorm()}};
+  };
 
-  constexpr std::size_t nx = 1;
-  constexpr std::size_t nu = 0;
-
-  const double t0 = 3;
-  const double tf = 5;
-
-  // given trajectory
-  const auto x = [](double t) { return Eigen::Vector<double, nx>{{1.5 * exp(-t)}}; };
-
-  // integrand
-  IntegrandFunctor g;
-
-  smooth::feedback::Mesh<5, 5> m;
-
-  // trajectory is not a polynomial, so we need a couple of intervals for a good approximation
-  m.refine_ph(0, 16 * 5);
-  ASSERT_EQ(m.N_ivals(), 16);
-
-  const auto N = m.N_colloc();
-
-  Eigen::Matrix<double, nx, -1> X(nx, N + 1);
-  Eigen::Matrix<double, nu, -1> U(nu, N);
-
-  // fill X with curve values at the two intervals
-  for (const auto & [i, tau] : zip(iota(0u), m.all_nodes())) { X.col(i) = x(t0 + (tf - t0) * tau); }
-  X.col(N) = x(tf);
-
-  // Compute analytical outer derivatives (numerical inner)
-  smooth::feedback::MeshValue<2> out1;
-  out1.lambda.setConstant(1, 1);
-  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(
-    out1, m, g, t0, tf, X.colwise(), U.colwise());
-
-  // Compute analytical outer derivatives (analytic inner)
-  smooth::feedback::MeshValue<2> out2;
-  out2.lambda.setConstant(1, 1);
-  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(
-    out2, m, g, t0, tf, X.colwise(), U.colwise());
-
-  // Ensure values
-  ASSERT_NEAR(out1.F.x(), 0.00273752, 1e-4);
-  ASSERT_NEAR(out2.F.x(), 0.00273752, 1e-4);
-
-  // Compare with each other
-  ASSERT_TRUE(Eigen::MatrixXd(out2.dF).isApprox(Eigen::MatrixXd(out1.dF), 1e-3));
-  ASSERT_TRUE(Eigen::MatrixXd(out2.d2F).isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
-
-  // Compare with numerical outer (slow)
-  // const auto f_deriv =
-  //   [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
-  //   const Eigen::Matrix<double, nx, -1> Xvar = xvar.reshaped(nx, N + 1);
-  //   const Eigen::Matrix<double, nu, -1> Uvar = uvar.reshaped(nu, N);
-  //
-  //   smooth::feedback::MeshValue<0> o;
-  //   smooth::feedback::mesh_integrate(o, m, g, t0, tf, Xvar.colwise(), Uvar.colwise());
-  //   return o.F;
-  // };
-  //
-  // Eigen::VectorXd x_flat = X.reshaped();
-  // Eigen::VectorXd u_flat = U.reshaped();
-  //
-  // const auto [f_num, df_num, d2f_num] = smooth::diff::dr<2, smooth::diff::Type::Numerical>(
-  //   f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
-  // ASSERT_TRUE(Eigen::MatrixXd(out1.dF).isApprox(df_num, 1e-3));
-  // ASSERT_TRUE(Eigen::MatrixXd(out1.d2F).isApprox(d2f_num, 1e-3));
-  // ASSERT_TRUE(Eigen::MatrixXd(out2.dF).isApprox(df_num, 1e-3));
-  // ASSERT_TRUE(Eigen::MatrixXd(out2.d2F).isApprox(d2f_num, 1e-3));
+  smooth::feedback::MeshValue<0> out;
+  smooth::feedback::mesh_integrate(out, m, g, t0, tf, X.colwise(), U.colwise());
+  ASSERT_NEAR(out.F.x(), 0.00273752, 1e-4);
 }
 
-TEST(MeshEval, DynTimeTrajectory)
+TEST_F(MeshFunction_Traj2, Dynamics)
 {
-  using smooth::utils::zip, std::views::iota;
-
-  // given trajectory
-  static constexpr std::size_t nx = 1;
-  static constexpr std::size_t nu = 0;
-
-  const auto x = [](double t) -> Eigen::Vector<double, nx> {
-    return Eigen::Vector<double, nx>{{0.1 * t * t - 0.4 * t + 0.2}};
-  };
-
-  // system dynamics
-  const auto f =
-    []<typename T>(const T & t, const Eigen::Vector<T, nx> &, const Eigen::Vector<T, nu> &)
-    -> Eigen::Vector<T, nx> { return Eigen::Vector<T, nx>{{0.2 * t - 0.4}}; };
-
-  double t0 = 3;
-  double tf = 5;
-
-  smooth::feedback::Mesh<5, 5> m;
-  m.refine_ph(0, 40);
-  const auto N = m.N_colloc();
-
-  Eigen::Matrix<double, nx, -1> X(nx, m.N_colloc() + 1);
-  Eigen::Matrix<double, nu, -1> U(nu, m.N_colloc());
-
-  // fill X with curve values at the two intervals
-  for (const auto & [i, tau] : smooth::utils::zip(iota(0u, N), m.all_nodes())) {
-    X.col(i) = x(t0 + (tf - t0) * tau);
-  }
-  X.col(N) = x(tf);
-
   smooth::feedback::MeshValue<1> out;
-  smooth::feedback::mesh_dyn<1>(out, m, f, t0, tf, X.colwise(), U.colwise());
-
-  ASSERT_EQ(out.F.size(), N);
+  smooth::feedback::mesh_dyn<1>(out, m, df_dt, t0, tf, X.colwise(), U.colwise());
   ASSERT_LE(out.F.cwiseAbs().maxCoeff(), 1e-8);
-
-  // Compare with numerical outer (slow)
-  const auto f_deriv =
-    [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
-    const Eigen::Matrix<double, nx, -1> Xvar = xvar.reshaped(nx, N + 1);
-    const Eigen::Matrix<double, nu, -1> Uvar = uvar.reshaped(nu, N);
-
-    smooth::feedback::MeshValue<0> o;
-    smooth::feedback::mesh_dyn(o, m, f, t0, tf, Xvar.colwise(), Uvar.colwise());
-    return o.F;
-  };
-
-  Eigen::VectorXd x_flat = X.reshaped();
-  Eigen::VectorXd u_flat = U.reshaped();
-
-  const auto [f_num, df_num] = smooth::diff::dr<1, smooth::diff::Type::Numerical>(
-    f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
-  ASSERT_TRUE(Eigen::MatrixXd(out.dF).isApprox(df_num, 1e-3));
 }
