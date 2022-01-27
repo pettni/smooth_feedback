@@ -130,7 +130,7 @@ public:
   inline std::size_t N_colloc_ival(std::size_t i) const { return intervals_[i].K; }
 
   /**
-   * @breif Refine interval using the ph strategy.
+   * @brief Refine interval using the ph strategy.
    *
    * @param i index of interval to refine
    * @param D target number of collocation points in refined interval

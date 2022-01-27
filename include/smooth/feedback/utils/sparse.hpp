@@ -54,16 +54,16 @@ concept SparseMat = (std::is_base_of_v<Eigen::SparseMatrixBase<T>, T>);
  */
 inline Eigen::SparseMatrix<double> sparse_block_matrix(
   const std::initializer_list<std::initializer_list<std::optional<Eigen::SparseMatrix<double>>>> &
-    l)
+    blocks)
 {
-  const auto n_rows = l.size();
-  const auto n_cols = std::begin(l)->size();
+  const auto n_rows = blocks.size();
+  const auto n_cols = std::begin(blocks)->size();
 
   Eigen::VectorXi dims_rows = Eigen::VectorXi::Constant(n_rows, -1);
   Eigen::VectorXi dims_cols = Eigen::VectorXi::Constant(n_cols, -1);
 
   // figure block row and col dimensions
-  for (auto krow = 0u; const auto & row : l) {
+  for (auto krow = 0u; const auto & row : blocks) {
     for (auto kcol = 0u; const auto & item : row) {
       if (item.has_value()) {
         if (dims_cols(kcol) == -1) {
@@ -95,7 +95,7 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   // allocate pattern
   Eigen::Matrix<decltype(ret)::StorageIndex, -1, 1> pattern(n_col);
   pattern.setZero();
-  for (const auto & row : l) {
+  for (const auto & row : blocks) {
     for (auto kcol = 0u, col0 = 0u; const auto &item : row) {
       if (item.has_value()) {
         for (auto col = 0; col < dims_cols(kcol); ++col) {
@@ -109,7 +109,7 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   ret.reserve(pattern);
 
   // insert values
-  for (auto krow = 0u, row0 = 0u; const auto &row : l) {
+  for (auto krow = 0u, row0 = 0u; const auto &row : blocks) {
     for (auto kcol = 0u, col0 = 0u; const auto &item : row) {
       if (item.has_value()) {
         for (auto col = 0; col < dims_cols(kcol); ++col) {
