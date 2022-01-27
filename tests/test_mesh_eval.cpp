@@ -99,6 +99,23 @@ TEST(MeshEval, EvalDerivative)
   Eigen::Matrix<double, 3, -1> X = Eigen::Matrix<double, 3, -1>::Random(3, N + 1);
   Eigen::Matrix<double, 3, -1> U = Eigen::Matrix<double, 3, -1>::Random(3, N);
 
+  // Multipliers
+  Eigen::VectorXd lambda = Eigen::VectorXd::Random(N * 3);
+
+  // Compute analytical derivative (autodiff)
+  smooth::feedback::MeshValue<2> out1;
+  out1.lambda = lambda;
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Numerical>(out1, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // Compute analytical derivative (analytic)
+  smooth::feedback::MeshValue<2> out2;
+  out2.lambda = lambda;
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Analytic>(out2, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  ASSERT_TRUE(out1.F.isApprox(out2.F));
+  ASSERT_TRUE(out1.dF.isApprox(out2.dF, 1e-3));
+  ASSERT_TRUE(out1.d2F.isApprox(out2.d2F, 1e-3));
+
   // Compute numerical derivative
   const auto f_deriv =
     [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
@@ -113,24 +130,22 @@ TEST(MeshEval, EvalDerivative)
   Eigen::VectorXd x_flat = X.reshaped();
   Eigen::VectorXd u_flat = U.reshaped();
 
-  const auto [fval, df_num] = smooth::diff::dr<1, smooth::diff::Type::Numerical>(
+  const auto [fval, df_num, d2f_num] = smooth::diff::dr<2, smooth::diff::Type::Numerical>(
     f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
 
-  // Compute analytical derivative (autodiff)
-  smooth::feedback::MeshValue<1> out1;
-  smooth::feedback::mesh_eval<1, smooth::diff::Type::Numerical>(
-    out1, mesh, f, t0, tf, X.colwise(), U.colwise());
-
-  // Compute analytical derivative (analytic)
-  smooth::feedback::MeshValue<1> out2;
-  smooth::feedback::mesh_eval<1, smooth::diff::Type::Analytic>(
-    out2, mesh, f, t0, tf, X.colwise(), U.colwise());
+  Eigen::MatrixXd d2f_lambda_num = Eigen::MatrixXd::Zero(d2f_num.rows(), d2f_num.rows());
+  for (auto i = 0u; i < lambda.size(); ++i) {
+    d2f_lambda_num +=
+      lambda(i) * d2f_num.block(0, i * d2f_num.rows(), d2f_num.rows(), d2f_num.rows());
+  }
 
   // Compare derivatives
   ASSERT_TRUE(fval.isApprox(Eigen::MatrixXd(out1.F)));
   ASSERT_TRUE(fval.isApprox(Eigen::MatrixXd(out2.F)));
   ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out1.dF), 1e-3));
   ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out2.dF), 1e-3));
+  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
+  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out2.d2F), 1e-3));
 }
 
 TEST(MeshEval, IntegrateDerivative)
@@ -149,6 +164,19 @@ TEST(MeshEval, IntegrateDerivative)
   const Eigen::Matrix<double, 3, -1> X = Eigen::Matrix<double, 3, -1>::Random(3, N + 1);
   const Eigen::Matrix<double, 3, -1> U = Eigen::Matrix<double, 3, -1>::Random(3, N);
 
+  // Multipliers
+  Eigen::VectorXd lambda = Eigen::VectorXd::Constant(3, 1);
+
+  // Compute analytical derivative (numerical inner derivatives)
+  smooth::feedback::MeshValue<2> out1;
+  out1.lambda = lambda;
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(out1, mesh, f, t0, tf, X.colwise(), U.colwise());
+
+  // Compute analytical derivative (analytic inner derivatives)
+  smooth::feedback::MeshValue<2> out2;
+  out2.lambda = lambda;
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(out2, mesh, f, t0, tf, X.colwise(), U.colwise());
+
   // Compute numerical outer derivative
   const auto f_deriv =
     [&](double t0, double tf, Eigen::VectorXd xvar, Eigen::VectorXd uvar) -> Eigen::VectorXd {
@@ -166,15 +194,11 @@ TEST(MeshEval, IntegrateDerivative)
   const auto [f_num, df_num, d2f_num] = smooth::diff::dr<2, smooth::diff::Type::Numerical>(
     f_deriv, smooth::wrt(t0, tf, x_flat, u_flat));
 
-  // Compute analytical derivative (numerical inner derivatives)
-  smooth::feedback::MeshValue<2> out1;
-  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(
-    out1, mesh, f, t0, tf, X.colwise(), U.colwise());
-
-  // Compute analytical derivative (analytic inner derivatives)
-  smooth::feedback::MeshValue<2> out2;
-  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(
-    out2, mesh, f, t0, tf, X.colwise(), U.colwise());
+  Eigen::MatrixXd d2f_lambda_num = Eigen::MatrixXd::Zero(d2f_num.rows(), d2f_num.rows());
+  for (auto i = 0u; i < lambda.size(); ++i) {
+    d2f_lambda_num +=
+      lambda(i) * d2f_num.block(0, i * d2f_num.rows(), d2f_num.rows(), d2f_num.rows());
+  }
 
   // Compare values
   ASSERT_TRUE(f_num.isApprox(out1.F));
@@ -185,8 +209,8 @@ TEST(MeshEval, IntegrateDerivative)
   ASSERT_TRUE(df_num.isApprox(Eigen::MatrixXd(out2.dF), 1e-3));
 
   // Compare second derivatives
-  ASSERT_TRUE(d2f_num.isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
-  ASSERT_TRUE(d2f_num.isApprox(Eigen::MatrixXd(out2.d2F), 1e-3));
+  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out1.d2F), 1e-3));
+  ASSERT_TRUE(d2f_lambda_num.isApprox(Eigen::MatrixXd(out2.d2F), 1e-3));
 }
 
 TEST(MeshEval, IntegrateTimeTrajectory)
@@ -224,6 +248,7 @@ TEST(MeshEval, IntegrateTimeTrajectory)
   X.col(N) = x(tf);
 
   smooth::feedback::MeshValue<2> out;
+  out.lambda.setConstant(1, 1);
   smooth::feedback::mesh_integrate(out, m, g, t0, tf, X.colwise(), U.colwise());
 
   ASSERT_NEAR(out.F.x(), 0.217333 + 0.1 * (tf - t0), 1e-4);
@@ -290,11 +315,13 @@ TEST(MeshEval, IntegrateStateTrajectory)
 
   // Compute analytical outer derivatives (numerical inner)
   smooth::feedback::MeshValue<2> out1;
+  out1.lambda.setConstant(1, 1);
   smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(
     out1, m, g, t0, tf, X.colwise(), U.colwise());
 
   // Compute analytical outer derivatives (analytic inner)
   smooth::feedback::MeshValue<2> out2;
+  out2.lambda.setConstant(1, 1);
   smooth::feedback::mesh_integrate<2, smooth::diff::Type::Analytic>(
     out2, m, g, t0, tf, X.colwise(), U.colwise());
 
@@ -350,8 +377,6 @@ TEST(MeshEval, DynTimeTrajectory)
 
   smooth::feedback::Mesh<5, 5> m;
   m.refine_ph(0, 40);
-  ASSERT_EQ(m.N_ivals(), 8);
-
   const auto N = m.N_colloc();
 
   Eigen::Matrix<double, nx, -1> X(nx, m.N_colloc() + 1);

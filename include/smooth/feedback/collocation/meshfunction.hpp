@@ -27,14 +27,16 @@
 #define SMOOTH__FEEDBACK__MESH_FUNCTION_HPP_
 
 // TODOS
-// - [ ] Create lambda vector in MeshValue<2>
-// - [ ] Add second derivative too all functions that sums with lambda
+// - [x] Create lambda vector in MeshValue<2>
+// - [x] Add second derivative too all functions that sums with lambda
+// - [ ] Add Hessian tests for more complicated dimensions
 // - [ ] Write tests that check for reallocation: call, compress, call again (expect compressed)
 
 /**
  * @file
  * @brief Evaluate transform-like functions and derivatives on collocation points.
  */
+
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
@@ -91,6 +93,9 @@ struct MeshValue<1> : public MeshValue<0>
 template<>
 struct MeshValue<2> : public MeshValue<1>
 {
+  // Multipliers (must be set before)
+  Eigen::VectorXd lambda;
+
   /// @brief Size numVar x numVar
   Eigen::SparseMatrix<double> d2F;
 };
@@ -128,9 +133,6 @@ void setZero(MeshValue<Deriv> & mv)
  * @tparam Deriv differentiation order (0, 1, or 2)
  * @tparam DT inner differentiation method (used to differentiate f)
  *
- * TODO implement Deriv = 2
- * TODO double check allocation pattern
- *
  * Computes the expression
  * \f[
  *  \begin{bmatrix}
@@ -152,7 +154,7 @@ void setZero(MeshValue<Deriv> & mv)
  * @param us input parameters {ui}
  */
 template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
-  requires(Deriv <= 1)
+  requires(Deriv <= 2)
 void mesh_eval(
   MeshValue<Deriv> & out,
   const MeshType auto & m,
@@ -182,14 +184,26 @@ void mesh_eval(
   if (!out.allocated) {
     out.F.resize(numOuts);
 
-    if constexpr (Deriv == 1) {
-      out.dF.resize(numOuts, numVars);
+    if constexpr (Deriv >= 1) {
       Eigen::VectorXi pattern = Eigen::VectorXi::Zero(numVars);
       pattern.segment(0, 1).setConstant(numOuts);                 // t0 is dense
       pattern.segment(1, 1).setConstant(numOuts);                 // tf is dense
       pattern.segment(2, nx * N).setConstant(nf);                 // block diagonal, last x not used
       pattern.segment(2 + nx * (N + 1), nu * N).setConstant(nf);  // block diagonal
+
+      out.dF.resize(numOuts, numVars);
       out.dF.reserve(pattern);
+    }
+
+    if constexpr (Deriv >= 2u) {
+      Eigen::VectorXi pattern = Eigen::VectorXi::Zero(numVars);
+      pattern.segment(0, 1).setConstant(numVars);  // t0 is dense
+      pattern.segment(1, 1).setConstant(numVars);  // tf is dense
+      pattern.segment(2, nx * N).setConstant(2 + nx + nu);
+      pattern.segment(2 + nx * (N + 1), nu * N).setConstant(2 + nx + nu);
+
+      out.d2F.resize(numVars, numVars);
+      out.d2F.reserve(pattern);
     }
 
     out.allocated = true;
@@ -199,28 +213,77 @@ void mesh_eval(
 
   for (const auto & [i, tau, x, u] : zip(iota(0u, N), m.all_nodes(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
+    const X xi      = x;
+    const U ui      = u;
 
-    const X x_plain = x;
-    const U u_plain = u;
+    const double mtau = 1. - tau;
 
-    const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, x_plain, u_plain));
+    const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
 
     out.F.segment(i * nf, nf) = std::get<0>(fval);
 
     if constexpr (Deriv >= 1u) {
       const auto & df = std::get<1>(fval);
-      block_add(out.dF, nf * i, 0, df.middleCols(0, 1), 1. - tau);
-      block_add(out.dF, nf * i, 1, df.middleCols(0, 1), tau);
-      block_add(out.dF, nf * i, 2 + i * nx, df.middleCols(1, nx));
-      block_add(out.dF, nf * i, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu));
+      const auto row0 = nf * i;
+
+      block_add(out.dF, row0, 0, df.middleCols(0, 1), mtau);
+      block_add(out.dF, row0, 1, df.middleCols(0, 1), tau);
+      block_add(out.dF, row0, 2 + i * nx, df.middleCols(1, nx));
+      block_add(out.dF, row0, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu));
+
+      if constexpr (Deriv >= 2u) {
+        assert(out.lambda.size() == numOuts);
+
+        const auto & d2f = std::get<2>(fval);
+
+        for (auto j = 0u; j < nf; ++j) {
+          const double l = out.lambda(row0 + j);
+
+          // destination block locations
+          const auto t0_d = 0;
+          const auto tf_d = 1;
+          const auto x_d  = 2 + i * nx;
+          const auto u_d  = 2 + (N + 1) * nx + i * nu;
+
+          // source block locations
+          const auto b_s = (1 + nx + nu) * j;
+          const auto t_s = 0;
+          const auto x_s = 1;
+          const auto u_s = 1 + nx;
+
+          // clang-format off
+          // t0 row
+          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * mtau);
+          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * tau);
+          block_add(out.d2F, t0_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * mtau);
+          block_add(out.d2F, t0_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * mtau);
+
+          // tf row
+          block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * mtau);
+          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * tau);
+          block_add(out.d2F, tf_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * tau);
+          block_add(out.d2F, tf_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * tau);
+
+          // x row
+          block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx, 1 ), l * mtau);
+          block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx, 1 ), l * tau);
+          block_add(out.d2F, x_d,  x_d, d2f.block(x_s, b_s + x_s, nx, nx), l);
+          block_add(out.d2F, x_d,  u_d, d2f.block(x_s, b_s + u_s, nx, nu), l);
+
+          // u row
+          block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu, 1 ), l * mtau);
+          block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu, 1 ), l * tau);
+          block_add(out.d2F, u_d,  x_d, d2f.block(u_s, b_s + x_s, nu, nx), l);
+          block_add(out.d2F, u_d,  u_d, d2f.block(u_s, b_s + u_s, nu, nu), l);
+          // clang-format on
+        }
+      }
     }
   }
 }
 
 /**
  * @brief Evaluate integral over a mesh.
- *
- * TODO double check allocation pattern
  *
  * @tparam Deriv differentiation order (0, 1, or 2)
  * @tparam DT inner differentiation method (used to differentiate f)
@@ -288,7 +351,7 @@ void mesh_integrate(
       pattern.segment(2, nx * N).setConstant(2 + nx);
       pattern.segment(2 + nx * (N + 1), nu * N).setConstant(2 + nu);
 
-      out.d2F.resize(numVars, numOuts * numVars);
+      out.d2F.resize(numVars, numVars);
       out.d2F.reserve(pattern.replicate(numOuts, 1).reshaped());
     }
 
@@ -299,34 +362,37 @@ void mesh_integrate(
 
   for (const auto & [i, tau, w, x, u] : zip(iota(0u, N), m.all_nodes(), m.all_weights(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
+    const X xi      = x;
+    const U ui      = u;
 
-    const X x_plain = x;
-    const U u_plain = u;
-
-    const double c    = w * (tf - t0);
     const double mtau = 1. - tau;
 
-    const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, x_plain, u_plain));
+    const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
 
     const auto & f = std::get<0>(fval);
-    out.F.noalias() += c * f;
+    out.F.noalias() += w * (tf - t0) * f;
 
     if constexpr (Deriv >= 1u) {
       const auto & df = std::get<1>(fval);
       // t0
-      block_add(out.dF, 0, 0, df.middleCols(0, 1), c * mtau);
+      block_add(out.dF, 0, 0, df.middleCols(0, 1), w * (tf - t0) * mtau);
       block_add(out.dF, 0, 0, f, -w);
       // tf
-      block_add(out.dF, 0, 1, df.middleCols(0, 1), c * tau);
+      block_add(out.dF, 0, 1, df.middleCols(0, 1), w * (tf - t0) * tau);
       block_add(out.dF, 0, 1, f, w);
       // x
-      block_add(out.dF, 0, 2 + i * nx, df.middleCols(1, nx), c);
+      block_add(out.dF, 0, 2 + i * nx, df.middleCols(1, nx), w * (tf - t0));
       // u
-      block_add(out.dF, 0, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu), c);
+      block_add(out.dF, 0, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu), w * (tf - t0));
 
       if constexpr (Deriv >= 2u) {
+        assert(out.lambda.size() == numOuts);
+
         const auto & d2f = std::get<2>(fval);
+
         for (auto j = 0u; j < nf; ++j) {
+          const double wl = w * out.lambda(j);
+
           // source block locations
           const auto b_s = (1 + nx + nu) * j;  // horizontal block
           const auto t_s = 0;                  // t
@@ -334,60 +400,59 @@ void mesh_integrate(
           const auto u_s = 1 + nx;             // u
 
           // destination block locations
-          const auto b_d  = (2 + nx * (N + 1) + nu * N) * j;  // horizontal block
-          const auto t0_d = 0;                                // t0
-          const auto tf_d = 1;                                // tf
-          const auto x_d  = 2 + nx * i;                       // x[i]
-          const auto u_d  = 2 + nx * (N + 1) + nu * i;        // u[i]
+          const auto t0_d = 0;                          // t0
+          const auto tf_d = 1;                          // tf
+          const auto x_d  = 2 + nx * i;                 // x[i]
+          const auto u_d  = 2 + nx * (N + 1) + nu * i;  // u[i]
 
           // clang-format off
           // t0t0
-          block_add(out.d2F, t0_d, b_d + t0_d, d2f.block(t_s, b_s + t_s, 1,  1), c * mtau * mtau);
-          block_add(out.d2F, t0_d, b_d + t0_d,  df.block(j,         t_s, 1,  1), -w * 2 * mtau);
+          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * mtau * mtau);
+          block_add(out.d2F, t0_d, t0_d,  df.block(j,         t_s, 1,  1), -wl * 2 * mtau);
           // t0tf
-          block_add(out.d2F, t0_d, b_d + tf_d, d2f.block(t_s, b_s + t_s, 1,  1), c * mtau * tau);
-          block_add(out.d2F, t0_d, b_d + tf_d,  df.block(j,         t_s, 1,  1), w * (1 - 2 * tau));
+          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * mtau * tau);
+          block_add(out.d2F, t0_d, tf_d,  df.block(j,         t_s, 1,  1), wl * (1 - 2 * tau));
           // t0x
-          block_add(out.d2F, t0_d, b_d + x_d,  d2f.block(t_s, b_s + x_s, 1, nx), c * mtau);
-          block_add(out.d2F, t0_d, b_d + x_d,   df.block(j,         x_s, 1, nx), -w);
+          block_add(out.d2F, t0_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * mtau);
+          block_add(out.d2F, t0_d, x_d,   df.block(j,         x_s, 1, nx), -wl);
           // t0u
-          block_add(out.d2F, t0_d, b_d + u_d,  d2f.block(t_s, b_s + u_s, 1, nu), c * mtau);
-          block_add(out.d2F, t0_d, b_d + u_d,   df.block(j,         u_s, 1, nu), -w);
+          block_add(out.d2F, t0_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau);
+          block_add(out.d2F, t0_d, u_d,   df.block(j,         u_s, 1, nu), -wl);
 
           // tft0
-          block_add(out.d2F, tf_d, b_d + t0_d, d2f.block(t_s, b_s + t_s, 1,  1), c * tau * mtau);
-          block_add(out.d2F, tf_d, b_d + t0_d,  df.block(j,         t_s, 1,  1), w * (1. - 2 * tau));
+          block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau);
+          block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau));
           // tftf
-          block_add(out.d2F, tf_d, b_d + tf_d, d2f.block(t_s, b_s + t_s, 1,  1), c * tau * tau);
-          block_add(out.d2F, tf_d, b_d + tf_d,  df.block(j,         t_s, 1,  1), w * 2 * tau);
+          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau);
+          block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau);
           // tfx
-          block_add(out.d2F, tf_d, b_d + x_d,  d2f.block(t_s, b_s + x_s, 1, nx), c * tau);
-          block_add(out.d2F, tf_d, b_d + x_d,   df.block(j,         x_s, 1, nx), w);
+          block_add(out.d2F, tf_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * tau);
+          block_add(out.d2F, tf_d, x_d,   df.block(j,         x_s, 1, nx), wl);
           // tfu
-          block_add(out.d2F, tf_d, b_d + u_d,  d2f.block(t_s, b_s + u_s, 1, nu), c * tau);
-          block_add(out.d2F, tf_d, b_d + u_d,   df.block(j,         u_s, 1, nu), w);
+          block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau);
+          block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl);
 
           // xt0
-          block_add(out.d2F, x_d, b_d + t0_d, d2f.block(x_s, b_s + t_s, nx,  1), c * mtau);
-          block_add(out.d2F, x_d, b_d + t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -w);
+          block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau);
+          block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl);
           // xtf
-          block_add(out.d2F, x_d, b_d + tf_d, d2f.block(x_s, b_s + t_s, nx,  1), c * tau);
-          block_add(out.d2F, x_d, b_d + tf_d,  df.block(j,         x_s, 1,  nx).transpose(), w);
+          block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau);
+          block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl);
           // xx
-          block_add(out.d2F, x_d, b_d + x_d,  d2f.block(x_s, b_s + x_s, nx, nx), c);
+          block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0));
           // xu
-          block_add(out.d2F, x_d, b_d + u_d,  d2f.block(x_s, b_s + u_s, nx, nu), c);
+          block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0));
 
           // ut0
-          block_add(out.d2F, u_d, b_d + t0_d, d2f.block(u_s, b_s + t_s, nu,  1), c * mtau);
-          block_add(out.d2F, u_d, b_d + t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -w);
+          block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau);
+          block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl);
           // utf
-          block_add(out.d2F, u_d, b_d + tf_d, d2f.block(u_s, b_s + t_s, nu,  1), c * tau);
-          block_add(out.d2F, u_d, b_d + tf_d,  df.block(j,         u_s, 1,  nu).transpose(), w);
+          block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau);
+          block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl);
           // ux
-          block_add(out.d2F, u_d, b_d + x_d,  d2f.block(u_s, b_s + x_s, nu, nx), c);
+          block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0));
           // uu
-          block_add(out.d2F, u_d, b_d + u_d,  d2f.block(u_s, b_s + u_s, nu, nu), c);
+          block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0));
           // clang-format on
         }
       }
@@ -400,9 +465,6 @@ void mesh_integrate(
  *
  * @tparam Deriv differentiation order (0, 1, or 2)
  * @tparam DT inner differentiation method (used to differentiate f)
- *
- * TODO implement Deriv = 2
- * TODO double check allocation pattern
  *
  * For interval \f$j\f$ with nodes \f$\tau_i\f$ and weights \f$w_i\f$ the corresponding dynamic
  * constraints are a block of the form
@@ -428,7 +490,7 @@ void mesh_integrate(
  * @param us input parameters {ui}
  */
 template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
-  requires(Deriv <= 1)
+  requires(Deriv <= 2)
 void mesh_dyn(
   MeshValue<Deriv> & out,
   const MeshType auto & m,
@@ -458,7 +520,7 @@ void mesh_dyn(
   if (!out.allocated) {
     out.F.resize(numOuts);
 
-    if constexpr (Deriv == 1) {
+    if constexpr (Deriv >= 1) {
       Eigen::VectorXi pattern = Eigen::VectorXi::Zero(numVars);
       pattern(0)              = numOuts;  // t0 dense
       pattern(1)              = numOuts;  // tf dense
@@ -474,6 +536,15 @@ void mesh_dyn(
 
       out.dF.resize(numOuts, numVars);
       out.dF.reserve(pattern);
+    }
+
+    if constexpr (Deriv >= 2) {
+      Eigen::VectorXi pattern(numVars);
+      pattern.head(2).setConstant(numVars);  // t0, tf dense
+      pattern.tail(nx * (N + 1) + nu * N).setConstant(2 + nx + nu);
+
+      out.d2F.resize(numVars, numVars);
+      out.d2F.reserve(pattern);
     }
 
     out.allocated = true;
@@ -492,29 +563,105 @@ void mesh_dyn(
     const X xi      = x;
     const U ui      = u;
 
+    const auto row0   = nx * i;
+    const double mtau = 1. - tau;
+
     const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
     const auto & f  = std::get<0>(fval);
 
-    out.F.segment(i * nx, nx) += w * (tf - t0) * f;
+    out.F.segment(row0, nx) += w * (tf - t0) * f;
 
     if constexpr (Deriv >= 1) {
       const auto & df = std::get<1>(fval);
 
+      // clang-format off
       // dF/dt0 = -f + (tf - t0) * df/dti * (1-tau)
-      block_add(out.dF, nx * i, 0, f, -w);
-      block_add(out.dF, nx * i, 0, df.col(0), w * (tf - t0) * (1. - tau));
+      block_add(out.dF, row0, 0, f, -w);
+      block_add(out.dF, row0, 0, df.col(0), w * (tf - t0) * mtau);
       // dF/dtf = f + (tf - t0) * df/dti * tau
-      block_add(out.dF, nx * i, 1, f, w);
-      block_add(out.dF, nx * i, 1, df.col(0), w * (tf - t0) * tau);
+      block_add(out.dF, row0, 1, f, w);
+      block_add(out.dF, row0, 1, df.col(0), w * (tf - t0) * tau);
       // dF/dx
-      block_add(out.dF, nx * i, 2 + nx * i, df.middleCols(1, nx), w * (tf - t0));
+      block_add(out.dF, row0, 2 + nx * i, df.middleCols(1, nx), w * (tf - t0));
       // dF/du
-      block_add(
-        out.dF, nx * i, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu), w * (tf - t0));
+      block_add(out.dF, row0, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu), w * (tf - t0));
+      // clang-format on
+
+      if constexpr (Deriv >= 2) {
+        assert(out.lambda.size() == numOuts);
+
+        const auto & d2f = std::get<2>(fval);
+
+        for (auto j = 0u; j < nx; ++j) {
+          const double wl = w * out.lambda(row0 + j);
+
+          // destination block locations
+          const auto t0_d = 0;
+          const auto tf_d = 1;
+          const auto x_d  = 2 + i * nx;
+          const auto u_d  = 2 + (N + 1) * nx + i * nu;
+
+          // source block locations
+          const auto b_s = (1 + nx + nu) * j;
+          const auto t_s = 0;
+          const auto x_s = 1;
+          const auto u_s = 1 + nx;
+
+          // clang-format off
+          // t0t0
+          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * (tf - t0) * mtau * mtau);
+          block_add(out.d2F, t0_d, t0_d,  df.block(j,         t_s, 1, 1 ), -wl * 2 * mtau);
+          // t0tf
+          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * (tf - t0) * mtau * tau);
+          block_add(out.d2F, t0_d, tf_d,  df.block(j,         t_s, 1, 1 ), wl * (1. - 2 * tau));
+          // t0x
+          block_add(out.d2F, t0_d, x_d, d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * mtau);
+          block_add(out.d2F, t0_d, x_d,  df.block(j,         x_s, 1, nx), -wl);
+          // t0u
+          block_add(out.d2F, t0_d, u_d, d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau);
+          block_add(out.d2F, t0_d, u_d,  df.block(j,         u_s, 1, nu), -wl);
+
+          // tft0
+          block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau);
+          block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau));
+          // tftf
+          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau);
+          block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau);
+          // tfx
+          block_add(out.d2F, tf_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * tau);
+          block_add(out.d2F, tf_d, x_d,   df.block(j,         x_s, 1, nx), wl);
+          // tfu
+          block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau);
+          block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl);
+
+          // xt0
+          block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau);
+          block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl);
+          // xtf
+          block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau);
+          block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl);
+          // xx
+          block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0));
+          // xu
+          block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0));
+
+          // ut0
+          block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau);
+          block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl);
+          // utf
+          block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau);
+          block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl);
+          // ux
+          block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0));
+          // uu
+          block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0));
+          // clang-format on
+        }
+      }
     }
   }
 
-  // ADD SECOND PART (LINEAR IN X)
+  // ADD SECOND PART (LINEAR IN X, NO SECOND DERIVATIVE..)
 
   auto ival      = 0u;  // current interval index
   auto ival_idx0 = 0u;  // node start index of current interval
