@@ -201,6 +201,7 @@ auto ocp_nlp_structure(const FlatOCPType auto & ocp, const MeshType auto & mesh)
  *
  * @see ocpsol_to_nlpsol(), nlpsol_to_ocpsol()
  */
+template<diff::Type DT = diff::Type::Default>
 NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 {
   static constexpr auto Nx = std::decay_t<decltype(ocp)>::Nx;
@@ -241,7 +242,7 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const Eigen::Vector<double, Nq> q =
       Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
 
-    const auto [fval, dfval] = smooth::diff::dr<1>(ocp.theta, smooth::wrt(tf, x0, xf, q));
+    const auto [fval, dfval] = smooth::diff::dr<1, DT>(ocp.theta, smooth::wrt(tf, x0, xf, q));
 
     Eigen::SparseMatrix<double> ret(1, n);
     block_add(ret, 0, tfvar_B, dfval.middleCols(0, 1));                                 // df / dtf
@@ -280,9 +281,9 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
       Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
 
     MeshValue<0> dyn_out, int_out, cr_out;
-    mesh_dyn(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
-    mesh_integrate(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
-    mesh_eval(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
+    mesh_dyn<0>(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
+    mesh_integrate<0>(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
+    mesh_eval<0>(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
 
     Eigen::VectorXd ret(m);
     // clang-format off
@@ -318,14 +319,14 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
       Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
 
     MeshValue<1> dyn_out, int_out, cr_out;
-    mesh_dyn(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
-    mesh_integrate(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
-    mesh_eval(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
+    mesh_dyn<1, DT>(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
+    mesh_integrate<1, DT>(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
+    mesh_eval<1, DT>(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
     const auto [ceval, dceval] = diff::dr<1>(ocp.ce, wrt(tf, x0, xf, q));
 
-    const Eigen::SparseMatrix<double> dG_dQ = -sparse_identity(ocp.Nq);
-
     Eigen::SparseMatrix<double> ret(m, n);
+
+    // TODO must allocate
 
     // dynamics constraint
     block_add(ret, dcon_B, tfvar_B, dyn_out.dF.middleCols(1, 1));
@@ -334,7 +335,7 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     // integral constraint
     block_add(ret, qcon_B, tfvar_B, int_out.dF.middleCols(1, 1));
-    block_add(ret, qcon_B, qvar_B, dG_dQ);
+    block_add_identity(ret, qcon_B, qvar_B, qvar_L, -1);
     block_add(ret, qcon_B, xvar_B, int_out.dF.middleCols(2, xvar_L));
     block_add(ret, qcon_B, uvar_B, int_out.dF.middleCols(2 + xvar_L, uvar_L));
 

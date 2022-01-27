@@ -106,6 +106,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   MeshValue<1> cr_out;
   MeshValue<2> int_out;
+  int_out.lambda.setConstant(1, 1);
 
   // output of this function
   QuadraticProgramSparse<double> ret;
@@ -197,7 +198,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// RUNNING CONSTRAINTS ////
   /////////////////////////////
 
-  mesh_eval(cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
+  mesh_eval<1, DT>(cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
 
   block_add(ret.A, crcon_B, 0, cr_out.dF.middleCols(2, xvar_L + uvar_L));
   ret.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - cr_out.F;
@@ -207,7 +208,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// END CONSTRAINTS ////
   /////////////////////////
 
-  const auto [ceval, dceval] = diff::dr<1>(ocp.ce, wrt(tf, xl0, xlf, qlin));
+  const auto [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, xl0, xlf, qlin));
 
   // integral constraints not supported
   assert(dceval.middleCols(1 + 2 * Nx, Nq).cwiseAbs().maxCoeff() < 1e-9);
@@ -222,8 +223,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// INTEGRAL COST ////
   ///////////////////////
 
-  int_out.lambda.setConstant(1, 1);
-  mesh_integrate(int_out, mesh, ocp.g, 0, tf, xslin, uslin);
+  mesh_integrate<2, DT>(int_out, mesh, ocp.g, 0, tf, xslin, uslin);
 
   ret.P = qo_q.x() * int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L);
   ret.q.segment(xvar_B, xvar_L) = qo_q.x() * int_out.dF.middleCols(2, xvar_L).transpose();

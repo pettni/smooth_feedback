@@ -219,7 +219,7 @@ inline auto kron_identity(const Eigen::MatrixBase<Derived> & X, std::size_t n)
  * @param source block values
  * @param scale scaling parameter
  *
- * @note Values are inserted with coeffRef().
+ * @note Values are accessed with coeffRef().
  */
 template<typename SpMat, int Options>
   requires(std::is_base_of_v<Eigen::SparseMatrixBase<SpMat>, SpMat>)
@@ -250,7 +250,7 @@ void block_add(
  * @param source block values
  * @param scale scaling parameter
  *
- * @note Values are inserted with coeffRef().
+ * @note Values are accessed with coeffRef().
  */
 template<typename Derived, int Options>
 void block_add(
@@ -265,6 +265,32 @@ void block_add(
       dest.coeffRef(row0 + r, col0 + c) += scale * source(r, c);
     }
   }
+}
+
+/**
+ * @brief Write identity matrix a sparse matrix.
+ *
+ * After this function the output variable dest is s.t.
+ *
+ * dest[row0 + k, col0 + k] += scale, k = 0...n
+ *
+ * @param dest destination
+ * @param row0 starting row for block
+ * @param col0 starting column for block
+ * @param n size of identity matrix
+ * @param scale scaling parameter
+ *
+ * @note Values are accessed with coeffRef().
+ */
+template<int Options>
+void block_add_identity(
+  Eigen::SparseMatrix<double, Options> & dest,
+  Eigen::Index row0,
+  Eigen::Index col0,
+  Eigen::Index n,
+  double scale = 1)
+{
+  for (auto k = 0u; k < n; ++k) { dest.coeffRef(row0 + k, col0 + k) += scale; }
 }
 
 }  // namespace smooth::feedback
