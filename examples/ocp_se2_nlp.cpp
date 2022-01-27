@@ -27,6 +27,7 @@
  * @file Solve optimal control problem on SE(2) as a nonlinear program.
  */
 
+#include <smooth/feedback/collocation/dyn_error.hpp>
 #include <smooth/feedback/compat/ipopt.hpp>
 #include <smooth/feedback/ocp_to_nlp.hpp>
 

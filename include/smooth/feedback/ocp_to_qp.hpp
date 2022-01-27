@@ -34,9 +34,8 @@
 #include <Eigen/Core>
 #include <smooth/diff.hpp>
 
-#include "collocation/eval.hpp"
-#include "collocation/eval_reduce.hpp"
 #include "collocation/mesh.hpp"
+#include "collocation/mesh_function.hpp"
 #include "ocp.hpp"
 #include "qp.hpp"
 
@@ -59,7 +58,7 @@ template<diff::Type DT = diff::Type::Default>
 QuadraticProgramSparse<double> ocp_to_qp(
   const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
 {
-  using smooth::utils::zip;
+  using utils::zip;
   using namespace std::views;
 
   using ocp_t = typename std::decay_t<decltype(ocp)>;
@@ -105,9 +104,8 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   // TODO move all allocation to a separate function...
 
-  // output of called functions
-  CollocEvalReduceResult g_res(1, ocp_t::Nx, Nu, N);
-  CollocEvalResult CRres(ocp_t::Ncr, Nx, Nu, N);
+  MeshValue<1> cr_out;
+  MeshValue<2> int_out;
 
   // output of this function
   QuadraticProgramSparse<double> ret;
@@ -199,44 +197,37 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// RUNNING CONSTRAINTS ////
   /////////////////////////////
 
-  colloc_eval<1, DT>(CRres, ocp.cr, mesh, 0., tf, xslin, uslin);
+  mesh_eval(cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
 
-  // TODO do this in-place (implement sparse_block_copy)
-  ret.A.middleRows(crcon_B, crcon_L) = sparse_block_matrix({{CRres.dF_dX, CRres.dF_dU}});
-  ret.l.segment(crcon_B, crcon_L)    = ocp.crl.replicate(N, 1) - CRres.F.reshaped();
-  ret.u.segment(crcon_B, crcon_L)    = ocp.cru.replicate(N, 1) - CRres.F.reshaped();
+  block_add(ret.A, crcon_B, 0, cr_out.dF.middleCols(2, xvar_L + uvar_L));
+  ret.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - cr_out.F;
+  ret.u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - cr_out.F;
 
   /////////////////////////
   //// END CONSTRAINTS ////
   /////////////////////////
 
-  const auto [celin, dcelin_dt0, dcelin_dtf, dcelin_dx, dcelin_dq] =
-    colloc_eval_endpt<1, DT>(ocp_t::Nce, Nx, ocp.ce, 0., tf, xslin, qlin);
+  const auto [ceval, dceval] = diff::dr<1>(ocp.ce, wrt(tf, xl0, xlf, qlin));
 
   // integral constraints not supported
-  // assert(dcelin_dq.cwiseAbs().maxCoeff() < 1e-9);
+  assert(dceval.middleCols(1 + 2 * Nx, Nq).cwiseAbs().maxCoeff() < 1e-9);
 
-  // TODO do this in-place
-  ret.A.middleRows(cecon_B, cecon_L) = sparse_block_matrix({
-    {dcelin_dx, Eigen::SparseMatrix<double>(cecon_L, uvar_L)},
-  });
-  ret.l.segment(cecon_B, cecon_L)    = ocp.cel - celin;
-  ret.u.segment(cecon_B, cecon_L)    = ocp.ceu - celin;
+  block_add(ret.A, cecon_B, xvar_B, dceval.middleCols(1, Nx));                     // dce / dx0
+  block_add(ret.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce/dxf
+
+  ret.l.segment(cecon_B, cecon_L) = ocp.cel - ceval;
+  ret.u.segment(cecon_B, cecon_L) = ocp.ceu - ceval;
 
   ///////////////////////
   //// INTEGRAL COST ////
   ///////////////////////
 
-  colloc_integrate<2, DT>(g_res, ocp.g, mesh, 0., tf, xslin, uslin);
+  int_out.lambda.setConstant(1, 1);
+  mesh_integrate(int_out, mesh, ocp.g, 0, tf, xslin, uslin);
 
-  ret.P = qo_q.x()
-        * sparse_block_matrix({
-          {g_res.d2F_dXX, g_res.d2F_dXU},
-          {{}, g_res.d2F_dUU},
-        });
-
-  ret.q.segment(xvar_B, xvar_L) = qo_q.x() * g_res.dF_dX.transpose();
-  ret.q.segment(uvar_B, uvar_L) = qo_q.x() * g_res.dF_dU.transpose();
+  ret.P = qo_q.x() * int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L);
+  ret.q.segment(xvar_B, xvar_L) = qo_q.x() * int_out.dF.middleCols(2, xvar_L).transpose();
+  ret.q.segment(uvar_B, uvar_L) = qo_q.x() * int_out.dF.middleCols(2 + xvar_L, uvar_L).transpose();
 
   ///////////////////////
   //// ENDPOINT COST ////

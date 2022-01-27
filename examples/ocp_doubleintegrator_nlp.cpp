@@ -28,6 +28,7 @@
  */
 
 #include <Eigen/Core>
+#include <smooth/feedback/collocation/dyn_error.hpp>
 #include <smooth/feedback/compat/ipopt.hpp>
 #include <smooth/feedback/ocp_to_nlp.hpp>
 

@@ -43,17 +43,17 @@ add_executable(test_pid test_pid.cpp)
 target_link_libraries(test_pid PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_pid)
 
-add_executable(test_collocation_dyn test_collocation_dyn.cpp)
-target_link_libraries(test_collocation_dyn PRIVATE feedback GTest::Main)
-gtest_discover_tests(test_collocation_dyn)
-
 add_executable(test_collocation_mesh test_collocation_mesh.cpp)
 target_link_libraries(test_collocation_mesh PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_collocation_mesh)
 
-add_executable(test_collocation_eval_reduce test_collocation_eval_reduce.cpp)
-target_link_libraries(test_collocation_eval_reduce PRIVATE feedback GTest::Main)
-gtest_discover_tests(test_collocation_eval_reduce)
+add_executable(test_collocation_mesh_function test_collocation_mesh_function.cpp)
+target_link_libraries(test_collocation_mesh_function PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_collocation_mesh_function)
+
+add_executable(test_collocation_dyn_error test_collocation_dyn_error.cpp)
+target_link_libraries(test_collocation_dyn_error PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_collocation_dyn_error)
 
 add_executable(test_utils_sparse test_utils_sparse.cpp)
 target_link_libraries(test_utils_sparse PRIVATE feedback GTest::Main)
@@ -63,9 +63,6 @@ add_executable(test_ocp_to_nlp test_ocp_to_nlp.cpp)
 target_link_libraries(test_ocp_to_nlp PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_ocp_to_nlp)
 
-add_executable(test_mesh_eval test_mesh_eval.cpp)
-target_link_libraries(test_mesh_eval PRIVATE feedback GTest::Main)
-gtest_discover_tests(test_mesh_eval)
 
 pkg_check_modules(IPOPT ipopt QUIET)
 if (${IPOPT_FOUND})

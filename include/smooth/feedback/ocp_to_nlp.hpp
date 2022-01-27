@@ -34,10 +34,8 @@
 #include <Eigen/Core>
 #include <smooth/lie_group.hpp>
 
-#include "collocation/dyn.hpp"
-#include "collocation/eval.hpp"
-#include "collocation/eval_reduce.hpp"
 #include "collocation/mesh.hpp"
+#include "collocation/mesh_function.hpp"
 #include "nlp.hpp"
 #include "ocp.hpp"
 
@@ -219,13 +217,14 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     assert(std::size_t(x.size()) == n);
 
-    const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
-    const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
-      x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Eigen::Vector<double, Nx> x0 = X.leftCols(1);
+    const Eigen::Vector<double, Nx> xf = X.rightCols(1);
+    const Eigen::Vector<double, Nq> q =
+      Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
 
-    return colloc_eval_endpt<false>(1, ocp.Nx, ocp.theta, t0, tf, X.colwise(), Q);
+    return ocp.theta(tf, x0, xf, q);
   };
 
   // OBJECTIVE JACOBIAN
@@ -235,18 +234,21 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
-    const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
-      x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Eigen::Vector<double, Nx> x0 = X.leftCols(1);
+    const Eigen::Vector<double, Nx> xf = X.rightCols(1);
+    const Eigen::Vector<double, Nq> q =
+      Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
 
-    const auto [fval, df_dt0, df_dtf, df_dvecX, df_dQ] =
-      colloc_eval_endpt<true>(1, ocp.Nx, ocp.theta, t0, tf, X.colwise(), Q);
+    const auto [fval, dfval] = smooth::diff::dr<1>(ocp.theta, smooth::wrt(tf, x0, xf, q));
 
-    return sparse_block_matrix({
-      {df_dtf, df_dQ, df_dvecX, Eigen::SparseMatrix<double>(1, uvar_L)},
-    });
+    Eigen::SparseMatrix<double> ret(1, n);
+    block_add(ret, 0, tfvar_B, dfval.middleCols(0, 1));                                 // df / dtf
+    block_add(ret, 0, xvar_B, dfval.middleCols(1, ocp.Nx));                             // df / dx0
+    block_add(ret, 0, xvar_B + xvar_L - ocp.Nx, dfval.middleCols(1 + ocp.Nx, ocp.Nx));  // df / dxf
+    block_add(ret, 0, qvar_B, dfval.middleCols(1 + 2 * ocp.Nx, ocp.Nq));                // df / dq
+    return ret;
   };
 
   // CONSTRAINT FUNCTION
@@ -267,67 +269,88 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
     const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
       x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
     const Eigen::Map<const Eigen::Matrix<double, Nu, -1>> U(
       x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
 
-    CollocEvalReduceResult Geval(ocp.Nq, ocp.Nx, ocp.Nu, mesh.N_colloc());
-    colloc_integrate<0>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
+    const Eigen::Vector<double, Nx> x0 = X.leftCols(1);
+    const Eigen::Vector<double, Nx> xf = X.rightCols(1);
+    const Eigen::Vector<double, Nq> q =
+      Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
 
-    CollocEvalResult CReval(ocp.Ncr, ocp.Nx, ocp.Nu, mesh.N_colloc());
-    colloc_eval<0>(CReval, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise());
+    MeshValue<0> dyn_out, int_out, cr_out;
+    mesh_dyn(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
+    mesh_integrate(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
+    mesh_eval(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
 
     Eigen::VectorXd ret(m);
     // clang-format off
-    ret.segment(dcon_B, dcon_L)   = colloc_dyn<false>(ocp.Nx, ocp.f, mesh, t0, tf, X, U);
-    ret.segment(qcon_B, qcon_L)   = Geval.F - Q;
-    ret.segment(crcon_B, crcon_L) = CReval.F.reshaped();
-    ret.segment(cecon_B, cecon_L) = colloc_eval_endpt<false>(ocp.Nce, ocp.Nx, ocp.ce, t0, tf, X.colwise(), Q).reshaped();
+    ret.segment(dcon_B, dcon_L)   = dyn_out.F;
+    ret.segment(qcon_B, qcon_L)   = int_out.F - q;
+    ret.segment(crcon_B, crcon_L) = cr_out.F;
+    ret.segment(cecon_B, cecon_L) = ocp.ce(tf, x0, xf, q);
     // clang-format on
     return ret;
   };
 
   // CONSTRAINT JACOBIAN
 
-  auto dg_dx =
-    [var_beg = var_beg, var_len = var_len, mesh = mesh, ocp = ocp](const Eigen::VectorXd & x) {
-      const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
-      const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
+  auto dg_dx = [var_beg = var_beg, var_len = var_len, con_beg = con_beg, mesh = mesh, ocp = ocp](
+                 const Eigen::VectorXd & x) {
+    const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-      assert(std::size_t(x.size()) == n);
+    const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
 
-      const double t0 = 0;
-      const double tf = x(tfvar_B);
-      const Eigen::Map<const Eigen::Vector<double, Nq>> Q(x.data() + qvar_B, qvar_L);
-      const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
-        x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
-      const Eigen::Map<const Eigen::Matrix<double, Nu, -1>> U(
-        x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
+    assert(std::size_t(x.size()) == n);
 
-      CollocEvalReduceResult Geval(ocp.Nq, ocp.Nx, ocp.Nu, mesh.N_colloc());
-      colloc_integrate<1>(Geval, ocp.g, mesh, t0, tf, X.colwise(), U.colwise());
+    const double t0 = 0;
+    const double tf = x(tfvar_B);
+    const Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(
+      x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Eigen::Map<const Eigen::Matrix<double, Nu, -1>> U(
+      x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
 
-      CollocEvalResult CReval(ocp.Ncr, ocp.Nx, ocp.Nu, mesh.N_colloc());
-      colloc_eval<1>(CReval, ocp.cr, mesh, t0, tf, X.colwise(), U.colwise());
+    const Eigen::Vector<double, Nx> x0 = X.leftCols(1);
+    const Eigen::Vector<double, Nx> xf = X.rightCols(1);
+    const Eigen::Vector<double, Nq> q =
+      Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
 
-      // clang-format off
-      const auto [Fval, dF_dt0, dF_dtf, dF_dX, dF_dU]        = colloc_dyn<true>(ocp.Nx, ocp.f, mesh, t0, tf, X, U);
-      const auto [CEval, dCE_dt0, dCE_dtf, dCE_dX, dCE_dQ]   = colloc_eval_endpt<true>(ocp.Nce, ocp.Nx, ocp.ce, t0, tf, X.colwise(), Q);
-      // clang-format on
+    MeshValue<1> dyn_out, int_out, cr_out;
+    mesh_dyn(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
+    mesh_integrate(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
+    mesh_eval(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
+    const auto [ceval, dceval] = diff::dr<1>(ocp.ce, wrt(tf, x0, xf, q));
 
-      const Eigen::SparseMatrix<double> dG_dQ = -sparse_identity(ocp.Nq);
+    const Eigen::SparseMatrix<double> dG_dQ = -sparse_identity(ocp.Nq);
 
-      return sparse_block_matrix({
-        // clang-format off
-        {       dF_dtf,     {},        dF_dX,        dF_dU},
-        { Geval.dF_dtf,  dG_dQ,  Geval.dF_dX,  Geval.dF_dU},
-        {CReval.dF_dtf,     {}, CReval.dF_dX, CReval.dF_dU},
-        {      dCE_dtf, dCE_dQ,       dCE_dX,            {}},
-        // clang-format on
-      });
-    };
+    Eigen::SparseMatrix<double> ret(m, n);
+
+    // dynamics constraint
+    block_add(ret, dcon_B, tfvar_B, dyn_out.dF.middleCols(1, 1));
+    block_add(ret, dcon_B, xvar_B, dyn_out.dF.middleCols(2, xvar_L));
+    block_add(ret, dcon_B, uvar_B, dyn_out.dF.middleCols(2 + xvar_L, uvar_L));
+
+    // integral constraint
+    block_add(ret, qcon_B, tfvar_B, int_out.dF.middleCols(1, 1));
+    block_add(ret, qcon_B, qvar_B, dG_dQ);
+    block_add(ret, qcon_B, xvar_B, int_out.dF.middleCols(2, xvar_L));
+    block_add(ret, qcon_B, uvar_B, int_out.dF.middleCols(2 + xvar_L, uvar_L));
+
+    // running constraint
+    block_add(ret, crcon_B, tfvar_B, cr_out.dF.middleCols(1, 1));
+    block_add(ret, crcon_B, xvar_B, cr_out.dF.middleCols(2, xvar_L));
+    block_add(ret, crcon_B, uvar_B, cr_out.dF.middleCols(2 + xvar_L, uvar_L));
+
+    // end constraint
+    block_add(ret, cecon_B, tfvar_B, dceval.middleCols(0, 1));
+    block_add(ret, cecon_B, xvar_B, dceval.middleCols(1, ocp.Nx));
+    block_add(ret, cecon_B, xvar_B + xvar_L - ocp.Nx, dceval.middleCols(1 + ocp.Nx, ocp.Nx));
+    block_add(ret, cecon_B, qvar_B, dceval.middleCols(1 + 2 * ocp.Nx, ocp.Nq));
+
+    return ret;
+  };
 
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
   const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;

@@ -221,10 +221,10 @@ inline auto kron_identity(const Eigen::MatrixBase<Derived> & X, std::size_t n)
  *
  * @note Values are inserted with coeffRef().
  */
-template<typename SpMat>
+template<typename SpMat, int Options>
   requires(std::is_base_of_v<Eigen::SparseMatrixBase<SpMat>, SpMat>)
 void block_add(
-  Eigen::SparseMatrix<double> & dest,
+  Eigen::SparseMatrix<double, Options> & dest,
   Eigen::Index row0,
   Eigen::Index col0,
   const SpMat & source,
@@ -252,9 +252,9 @@ void block_add(
  *
  * @note Values are inserted with coeffRef().
  */
-template<typename Derived>
+template<typename Derived, int Options>
 void block_add(
-  Eigen::SparseMatrix<double> & dest,
+  Eigen::SparseMatrix<double, Options> & dest,
   Eigen::Index row0,
   Eigen::Index col0,
   const Eigen::MatrixBase<Derived> & source,
