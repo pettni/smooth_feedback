@@ -685,8 +685,10 @@ void mesh_dyn(
 
       // update interval
       ++ival;
-      ival_idx0 += Nival;
-      Nival = m.N_colloc_ival(ival);
+      if (ival < m.N_ivals()) {
+        ival_idx0 += Nival;
+        Nival = m.N_colloc_ival(ival);
+      }
     }
 
     if (i < N) {

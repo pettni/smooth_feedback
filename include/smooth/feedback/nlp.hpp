@@ -78,8 +78,7 @@ struct NLP
   std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)> dg_dx;
 
   /// @brief Hessian of objective function (R^n -> R^{n x n}) [optional]
-  std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd, Eigen::VectorXd)>>
-    d2f_dx2 = std::nullopt;
+  std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)>> d2f_dx2 = {};
 
   /**
    * @brief Projected Hessian of constraint function (R^m, R^n -> R^{n x n}) [optional]
@@ -90,7 +89,7 @@ struct NLP
    * \mathbb{R}^n \f]
    */
   std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd, Eigen::VectorXd)>>
-    d2g_dx2 = std::nullopt;
+    d2g_dx2 = {};
 };
 
 struct NLPSolution

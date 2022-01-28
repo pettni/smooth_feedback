@@ -62,7 +62,7 @@ int main()
               << " collocation pts" << std::endl;
 
     // transcribe optimal control problem to nonlinear programming problem
-    const auto nlp = smooth::feedback::ocp_to_nlp(ocp_di, mesh);
+    const auto nlp = smooth::feedback::ocp_to_nlp<smooth::diff::Type::Analytic>(ocp_di, mesh);
 
     // solve nonlinear programming problem
     std::cout << "solving..." << std::endl;
@@ -75,7 +75,8 @@ int main()
       {
         {"linear_solver", "mumps"},
         {"hessian_approximation", "limited-memory"},
-        {"derivative_test", "first-order"},
+        // {"derivative_test", "second-order"},
+        // {"derivative_test_print_all", "yes"},
         // {"print_timing_statistics", "yes"},
       },
       {
@@ -88,7 +89,7 @@ int main()
 
     // calculate errors
     mesh.increase_degrees();
-    auto errs = smooth::feedback::mesh_dyn_error(f, mesh, sol.t0, sol.tf, sol.x, sol.u);
+    auto errs = smooth::feedback::mesh_dyn_error(ocp_di.f, mesh, sol.t0, sol.tf, sol.x, sol.u);
     mesh.decrease_degrees();
 
     std::cout << "interval errors " << errs.transpose() << std::endl;

@@ -127,7 +127,11 @@ public:
    * @note This is also equal to the polynomial degree inside interval i, since the polynomial is
    * fitted with an "extra" point belonging to the subsequent interval.
    */
-  inline std::size_t N_colloc_ival(std::size_t i) const { return intervals_[i].K; }
+  inline std::size_t N_colloc_ival(std::size_t i) const
+  {
+    assert(i < intervals_.size());
+    return intervals_[i].K;
+  }
 
   /**
    * @brief Refine interval using the ph strategy.
@@ -144,6 +148,7 @@ public:
    */
   inline void refine_ph(std::size_t i, std::size_t D)
   {
+    assert(i < intervals_.size());
     if (D > Kmax || intervals_[i].K > Kmax) {
       // refine by splitting interval into n intervals, each with degree Kmin_
       std::size_t n = std::max<std::size_t>(2u, (D + Kmin - 1) / Kmin);

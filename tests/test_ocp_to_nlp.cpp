@@ -34,34 +34,34 @@
 template<typename T, std::size_t N>
 using Vec = Eigen::Vector<T, N>;
 
-TEST(OcpToNlp, Jacobians)
+TEST(OcpToNlp, Derivatives)
 {
   // objective
   auto theta = []<typename T>(T tf, Vec<T, 2> x0, Vec<T, 2> xf, Vec<T, 1> q) -> T {
-    return (tf - 2) * (tf - 2) + x0.squaredNorm() + xf.squaredNorm() + q.sum();
+    return (tf - 2) * (tf - 2) + x0.cwiseProduct(xf).squaredNorm() + xf.squaredNorm() + q.sum();
   };
 
   // dynamics
   auto f = []<typename T>(T t, Vec<T, 2> x, Vec<T, 1> u) -> Vec<T, 2> {
-    return Vec<T, 2>{{x.y() + t, u.x()}};
+    return Vec<T, 2>{{x.y() + t, x.x() * u.x() * u.x()}};
   };
 
   // integrals
   auto g = []<typename T>(T t, Vec<T, 2> x, Vec<T, 1> u) -> Vec<T, 1> {
-    return Vec<T, 1>{{t + x.squaredNorm() + u.squaredNorm()}};
+    return Vec<T, 1>{{t + t * x.squaredNorm() + u.squaredNorm()}};
   };
 
   // running constraint
   auto cr = []<typename T>(T t, Vec<T, 2> x, Vec<T, 1> u) -> Vec<T, 4> {
     Vec<T, 4> ret(4);
-    ret << t, x, u;
+    ret << t, t * x * u.x(), u.cwiseAbs2();
     return ret;
   };
 
   // end constraint
   auto ce = []<typename T>(T tf, Vec<T, 2> x0, Vec<T, 2> xf, Vec<T, 1> q) -> Vec<T, 6> {
     Vec<T, 6> ret(6);
-    ret << tf, x0, xf, q;
+    ret << tf, x0.cwiseProduct(xf), xf, q.cwiseAbs2();
     return ret;
   };
 
@@ -85,23 +85,34 @@ TEST(OcpToNlp, Jacobians)
       .ceu   = Vec<double, 6>::Constant(6, 1),
     };
 
-  smooth::feedback::Mesh<5, 5> mesh;
-  mesh.refine_ph(0, 8 * 5);
+  smooth::feedback::Mesh<3, 3> mesh;
+  mesh.refine_ph(0, 4);
+  mesh.refine_ph(0, 4);
 
   auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
 
-  Eigen::VectorXd x = Eigen::VectorXd::Constant(nlp.n, 1);
+  srand(5);
+  const Eigen::VectorXd x      = Eigen::VectorXd::Random(nlp.n);
+  const Eigen::VectorXd lambda = Eigen::VectorXd::Random(nlp.m);
 
-  const auto df_dx = nlp.df_dx(x);
-  const auto dg_dx = nlp.dg_dx(x);
+  // Analytic derivatives
+  const auto df_dx   = nlp.df_dx(x);
+  const auto dg_dx   = nlp.dg_dx(x);
+  const auto d2f_dx2 = (*nlp.d2f_dx2)(x);
+  const auto d2g_dx2 = (*nlp.d2g_dx2)(x, lambda);
 
-  const auto [fval, df_dx_num] =
-    smooth::diff::dr<1, smooth::diff::Type::Numerical>(nlp.f, smooth::wrt(x));
-  const auto [gval, dg_dx_num] =
-    smooth::diff::dr<1, smooth::diff::Type::Numerical>(nlp.g, smooth::wrt(x));
+  // Numerical derivatives (of base function)
+  const auto [fval, df_dx_num, d2f_dx2_num] = smooth::diff::dr<2>(nlp.f, smooth::wrt(x));
+  const auto [gval, dg_dx_num]              = smooth::diff::dr<1>(nlp.g, smooth::wrt(x));
+  const auto g_l_fun = [&](Eigen::VectorXd x) -> double { return lambda.dot(nlp.g(x)); };
+  const auto [u1_, u2_, d2g_dx2_num] = smooth::diff::dr<2>(g_l_fun, smooth::wrt(x));
 
-  ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-8));
-  ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-8));
+  ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-4));
+  ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-4));
+  ASSERT_TRUE(Eigen::MatrixXd(Eigen::MatrixXd(d2f_dx2).selfadjointView<Eigen::Upper>())
+                .isApprox(d2f_dx2_num, 1e-3));
+  ASSERT_TRUE(Eigen::MatrixXd(Eigen::MatrixXd(d2g_dx2).selfadjointView<Eigen::Upper>())
+                .isApprox(d2g_dx2_num, 1e-3));
 }
 
 TEST(OcpToNlp, Flatten)

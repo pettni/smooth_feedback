@@ -78,8 +78,8 @@ int main()
       },
       {
         {"linear_solver", "mumps"},
-        {"hessian_approximation", "limited-memory"},
-        {"derivative_test", "first-order"},
+        {"hessian_approximation", "exact"},
+        // {"derivative_test", "first-order"},
         // {"print_timing_statistics", "yes"},
       },
       {

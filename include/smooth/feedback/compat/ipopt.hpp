@@ -73,9 +73,17 @@ public:
     m = nlp_.m;
 
     const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
+    nnz_jac_g    = J.nonZeros();
 
-    nnz_jac_g   = J.nonZeros();
-    nnz_h_lag   = 0;              // not used
+    if (nlp_.d2f_dx2.has_value() && nlp_.d2g_dx2.has_value()) {
+      auto H = (*nlp_.d2f_dx2)(Eigen::VectorXd::Zero(n));
+      H += (*nlp_.d2g_dx2)(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
+      H.makeCompressed();
+      nnz_h_lag = H.nonZeros();
+    } else {
+      nnz_h_lag = 0;  // not used
+    }
+
     index_style = TNLP::C_STYLE;  // zero-based
 
     return true;
@@ -184,22 +192,70 @@ public:
       const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
       assert(nele_jac == J.nonZeros());
 
-      for (auto cntr = 0u, col = 0u; col < J.cols(); ++col) {
-        for (Eigen::InnerIterator it(J, col); it; ++it) {
-          iRow[cntr]   = it.index();
-          jCol[cntr++] = col;
+      for (auto cntr = 0u, od = 0u; od < J.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(J, od); it; ++it) {
+          iRow[cntr]   = it.row();
+          jCol[cntr++] = it.col();
         }
       }
     } else {
       const auto J = nlp_.dg_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
       assert(nele_jac == J.nonZeros());
 
-      for (auto cntr = 0u, col = 0u; col < J.cols(); ++col) {
-        for (Eigen::InnerIterator it(J, col); it; ++it) {
-          values[cntr++] = it.value();
-        }
+      for (auto cntr = 0u, od = 0u; od < J.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(J, od); it; ++it) { values[cntr++] = it.value(); }
       }
     }
+    return true;
+  }
+
+  /**
+   * @brief IPOPT method to define problem Hessian
+   */
+  inline bool eval_h(
+    Ipopt::Index n,
+    const Ipopt::Number * x,
+    [[maybe_unused]] bool new_x,
+    Ipopt::Number sigma,
+    Ipopt::Index m,
+    const Ipopt::Number * lambda,
+    [[maybe_unused]] bool new_lambda,
+    [[maybe_unused]] Ipopt::Index nele_hess,
+    Ipopt::Index * iRow,
+    Ipopt::Index * jCol,
+    Ipopt::Number * values) override
+  {
+    assert(nlp_.d2f_dx2.has_value());
+    assert(nlp_.d2g_dx2.has_value());
+
+    if (values == NULL) {
+      auto H = (*nlp_.d2f_dx2)(Eigen::VectorXd::Zero(n));
+      H += (*nlp_.d2g_dx2)(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
+
+      assert(H.nonZeros() == nele_hess);
+
+      for (auto cntr = 0u, od = 0u; od < H.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(H, od); it; ++it) {
+          // transpose: H upper triangular but ipopt expects lower-triangular
+          iRow[cntr]   = it.col();
+          jCol[cntr++] = it.row();
+        }
+      }
+    } else {
+      Eigen::Map<const Eigen::VectorXd> xvar(x, n);
+      Eigen::Map<const Eigen::VectorXd> lvar(lambda, m);
+
+      auto H = (*nlp_.d2f_dx2)(xvar);
+      H *= sigma;
+      H += (*nlp_.d2g_dx2)(xvar, lvar);
+
+      assert(H.nonZeros() == nele_hess);
+
+      for (auto cntr = 0u, od = 0u; od < H.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(H, od); it; ++it) { values[cntr++] = it.value(); }
+      }
+    }
+
     return true;
   }
 
@@ -279,10 +335,6 @@ inline NLPSolution solve_nlp_ipopt(
   Ipopt::SmartPtr<IpoptNLP> ipopt_nlp          = new IpoptNLP(nlp);
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
-  for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
-  for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }
-  for (auto [opt, val] : opts_numeric) { app->Options()->SetNumericValue(opt, val); }
-
   // silence welcome message
   app->Options()->SetStringValue("sb", "yes");
 
@@ -295,6 +347,11 @@ inline NLPSolution solve_nlp_ipopt(
     app->Options()->SetStringValue("warm_start_init_point", "no");
     ipopt_nlp->sol().x.setZero(nlp.n);
   }
+
+  // override with user-provided options
+  for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
+  for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }
+  for (auto [opt, val] : opts_numeric) { app->Options()->SetNumericValue(opt, val); }
 
   app->Initialize();
   app->OptimizeTNLP(ipopt_nlp);

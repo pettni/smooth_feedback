@@ -204,6 +204,8 @@ auto ocp_nlp_structure(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 template<diff::Type DT = diff::Type::Default>
 NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 {
+  using namespace Eigen;
+
   static constexpr auto Nx = std::decay_t<decltype(ocp)>::Nx;
   static constexpr auto Nu = std::decay_t<decltype(ocp)>::Nu;
   static constexpr auto Nq = std::decay_t<decltype(ocp)>::Nq;
@@ -219,29 +221,26 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     assert(std::size_t(x.size()) == n);
 
     const double tf = x(tfvar_B);
-    Eigen::Map<const Eigen::Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
-    const Eigen::Vector<double, Nx> x0 = X.leftCols(1);
-    const Eigen::Vector<double, Nx> xf = X.rightCols(1);
-    const Eigen::Vector<double, Nq> q =
-      Eigen::Map<const Eigen::VectorXd>(x.data() + qvar_B, qvar_L);
+    Eigen::Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Vector<double, Nx> x0 = X.leftCols(1);
+    const Vector<double, Nx> xf = X.rightCols(1);
+    const Vector<double, Nq> q  = Eigen::Map<const VectorXd>(x.data() + qvar_B, qvar_L);
 
     return ocp.theta(tf, x0, xf, q);
   };
 
   // OBJECTIVE JACOBIAN
 
-  auto df_dx = [var_beg = var_beg, var_len = var_len, ocp = ocp](
-                 const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
-    using namespace Eigen;
-
+  auto df_dx =
+    [var_beg = var_beg, var_len = var_len, ocp = ocp](const VectorXd & x) -> SparseMatrix<double> {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
     const double tf = x(tfvar_B);
-    Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    Eigen::Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
     const Vector<double, Nx> x0 = X.leftCols(1);
     const Vector<double, Nx> xf = X.rightCols(1);
-    const Vector<double, Nq> q  = Map<const VectorXd>(x.data() + qvar_B, qvar_L);
+    const Vector<double, Nq> q  = Eigen::Map<const VectorXd>(x.data() + qvar_B, qvar_L);
 
     const auto [fval, dfval] = diff::dr<1, DT>(ocp.theta, wrt(tf, x0, xf, q));
 
@@ -264,8 +263,6 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
             con_len = con_len,
             mesh    = mesh,
             ocp     = ocp](const Eigen::VectorXd & x) -> Eigen::VectorXd {
-    using namespace Eigen;
-
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -276,12 +273,12 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
-    const Map<const Matrix<double, Nu, -1>> U(x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
+    const Eigen::Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Eigen::Map<const Matrix<double, Nu, -1>> U(x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
 
     const Vector<double, Nx> x0 = X.leftCols(1);
     const Vector<double, Nx> xf = X.rightCols(1);
-    const Vector<double, Nq> q  = Map<const VectorXd>(x.data() + qvar_B, qvar_L);
+    const Vector<double, Nq> q  = Eigen::Map<const VectorXd>(x.data() + qvar_B, qvar_L);
 
     MeshValue<0> dyn_out, int_out, cr_out;
     mesh_dyn<0>(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
@@ -301,9 +298,7 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
   // CONSTRAINT JACOBIAN
 
   auto dg_dx = [var_beg = var_beg, var_len = var_len, con_beg = con_beg, mesh = mesh, ocp = ocp](
-                 const Eigen::Ref<Eigen::VectorXd> x) {
-    using namespace Eigen;
-
+                 const Eigen::VectorXd & x) {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
@@ -313,17 +308,18 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
     const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
-    const Map<const Matrix<double, Nu, -1>> U(x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
+    const Eigen::Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Eigen::Map<const Matrix<double, Nu, -1>> U(x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
 
     const Vector<double, Nx> x0 = X.leftCols(1);
     const Vector<double, Nx> xf = X.rightCols(1);
-    const Vector<double, Nq> q  = Map<const VectorXd>(x.data() + qvar_B, qvar_L);
+    const Vector<double, Nq> q  = Eigen::Map<const VectorXd>(x.data() + qvar_B, qvar_L);
 
     MeshValue<1> dyn_out, int_out, cr_out;
     mesh_dyn<1, DT>(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
     mesh_integrate<1, DT>(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
     mesh_eval<1, DT>(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
+    const auto [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, x0, xf, q));
 
     Eigen::SparseMatrix<double> ret(m, n);
 
@@ -354,28 +350,24 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     return ret;
   };
 
-  [[maybe_unused]] auto d2 =
-    [var_beg = var_beg, var_len = var_len, con_beg = con_beg, mesh = mesh, ocp = ocp](
-      const Eigen::Ref<Eigen::VectorXd> x,
-      double sigma,
-      const Eigen::Ref<Eigen::VectorXd> lambda) -> Eigen::SparseMatrix<double> {
-    using namespace Eigen;
-
+  auto d2f_dx2 = [var_beg = var_beg,
+                  var_len = var_len,
+                  con_beg = con_beg,
+                  con_len = con_len,
+                  mesh    = mesh,
+                  ocp     = ocp](const Eigen::VectorXd & x) -> Eigen::SparseMatrix<double> {
     const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
     const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
-
     assert(std::size_t(x.size()) == n);
 
-    const double t0 = 0;
     const double tf = x(tfvar_B);
-    const Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
-    const Map<const Matrix<double, Nu, -1>> U(x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
+    Eigen::Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    Eigen::Map<const Matrix<double, Nu, -1>> U(x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
 
     const Vector<double, Nx> x0 = X.leftCols(1);
     const Vector<double, Nx> xf = X.rightCols(1);
-    const Vector<double, Nq> q  = Map<const VectorXd>(x.data() + qvar_B, qvar_L);
+    const Vector<double, Nq> q  = Eigen::Map<const VectorXd>(x.data() + qvar_B, qvar_L);
 
     SparseMatrix<double> ret(n, n);
     const auto [fval, dfval, d2fval] = diff::dr<2, DT>(ocp.theta, wrt(tf, x0, xf, q));
@@ -384,32 +376,109 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const auto xfvar_B = xvar_B + xvar_L - ocp.Nx;
 
     // clang-format off
+    block_add(ret, tfvar_B, tfvar_B, d2fval.block(             0,              0,      1,      1));  // tftf
+    block_add(ret, tfvar_B, x0var_B, d2fval.block(             0,              1,      1, ocp.Nx));  // tfx0
+    block_add(ret, tfvar_B, xfvar_B, d2fval.block(             0,     1 + ocp.Nx,      1, ocp.Nx));  // tfxf
+    block_add(ret, tfvar_B,  qvar_B, d2fval.block(             0, 1 + 2 * ocp.Nx,      1, ocp.Nq));  // tfq
 
-    // ADD lambda * hess(f)
+    block_add(ret, x0var_B, x0var_B, d2fval.block(             1,              1, ocp.Nx, ocp.Nx));  // x0x0
+    block_add(ret, x0var_B, xfvar_B, d2fval.block(             1,     1 + ocp.Nx, ocp.Nx, ocp.Nx));  // x0xf
+    block_add(ret, x0var_B,  qvar_B, d2fval.block(             1, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq));  // x0q
 
-    block_add(ret, tfvar_B, tfvar_B, d2fval.block(             0,              0,      1,      1), sigma);  // tftf
-    block_add(ret, tfvar_B, x0var_B, d2fval.block(             0,              1,      1, ocp.Nx), sigma);  // tfx0
-    block_add(ret, tfvar_B, xfvar_B, d2fval.block(             0,     1 + ocp.Nx,      1, ocp.Nx), sigma);  // tfxf
-    block_add(ret, tfvar_B,  qvar_B, d2fval.block(             0, 1 + 2 * ocp.Nx,      1, ocp.Nq), sigma);  // tfq
+    block_add(ret, xfvar_B, xfvar_B, d2fval.block(    1 + ocp.Nx,     1 + ocp.Nx, ocp.Nx, ocp.Nx));  // xfxf
+    block_add(ret, xfvar_B,  qvar_B, d2fval.block(    1 + ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq));  // xfq
 
-    block_add(ret, x0var_B, x0var_B, d2fval.block(             1,              1, ocp.Nx, ocp.Nx), sigma);  // x0x0
-    block_add(ret, x0var_B, xfvar_B, d2fval.block(             1,     1 + ocp.Nx, ocp.Nx, ocp.Nx), sigma);  // x0xf
-    block_add(ret, x0var_B,  qvar_B, d2fval.block(             1, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), sigma);  // x0q
+    block_add(ret,  qvar_B,  qvar_B, d2fval.block(1 + 2 * ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nq, ocp.Nq));  // qq
+    // clang-format on
 
-    block_add(ret, xfvar_B, xfvar_B, d2fval.block(    1 + ocp.Nx,     1 + ocp.Nx, ocp.Nx, ocp.Nx), sigma);  // xfxf
-    block_add(ret, xfvar_B,  qvar_B, d2fval.block(    1 + ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), sigma);  // xfq
+    return ret;
+  };
 
-    block_add(ret,  qvar_B,  qvar_B, d2fval.block(1 + 2 * ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nq, ocp.Nq), sigma);  // qq
+  auto d2g_dx2 =
+    [var_beg = var_beg,
+     var_len = var_len,
+     con_beg = con_beg,
+     con_len = con_len,
+     mesh    = mesh,
+     ocp     = ocp](const VectorXd & x, const VectorXd & lambda) -> Eigen::SparseMatrix<double> {
+    const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
+    const auto [tfvar_L, qvar_L, xvar_L, uvar_L]    = var_len;
 
-    // ADD \sum_i lambda_i hess(g_i)
+    const auto [dcon_B, qcon_B, crcon_B, cecon_B, m] = con_beg;
+    const auto [dcon_L, qcon_L, crcon_L, cecon_L]    = con_len;
+
+    assert(std::size_t(x.size()) == n);
+    assert(std::size_t(lambda.size()) == m);
+
+    const double t0 = 0;
+    const double tf = x(tfvar_B);
+    const Eigen::Map<const Matrix<double, Nx, -1>> X(x.data() + xvar_B, ocp.Nx, xvar_L / ocp.Nx);
+    const Eigen::Map<const Matrix<double, Nu, -1>> U(x.data() + uvar_B, ocp.Nu, uvar_L / ocp.Nu);
+
+    const Vector<double, Nx> x0 = X.leftCols(1);
+    const Vector<double, Nx> xf = X.rightCols(1);
+    const Vector<double, Nq> q  = Eigen::Map<const VectorXd>(x.data() + qvar_B, qvar_L);
+
+    const auto x0var_B = xvar_B;
+    const auto xfvar_B = xvar_B + xvar_L - ocp.Nx;
 
     MeshValue<2> dyn_out, int_out, cr_out;
+    dyn_out.lambda = lambda.segment(dcon_B, dcon_L);
+    int_out.lambda = lambda.segment(qcon_B, qcon_L);
+    cr_out.lambda  = lambda.segment(crcon_B, crcon_L);
     mesh_dyn<2, DT>(dyn_out, mesh, ocp.f, t0, tf, X.colwise(), U.colwise());
     mesh_integrate<2, DT>(int_out, mesh, ocp.g, t0, tf, X.colwise(), U.colwise());
     mesh_eval<2, DT>(cr_out, mesh, ocp.cr, t0, tf, X.colwise(), U.colwise());
-    const auto [ceval, dceval] = diff::dr<2, DT>(ocp.ce, wrt(tf, x0, xf, q));
+    const auto [ceval, dceval, d2ceval] = diff::dr<2, DT>(ocp.ce, wrt(tf, x0, xf, q));
 
+    SparseMatrix<double> ret(n, n);
+
+    // clang-format off
+    block_add(ret, tfvar_B, tfvar_B, dyn_out.d2F.block(1, 1, 1, 1));      // tftf
+    block_add(ret, tfvar_B, tfvar_B, int_out.d2F.block(1, 1, 1, 1));      // tftf
+    block_add(ret, tfvar_B, tfvar_B,  cr_out.d2F.block(1, 1, 1, 1));      // tftf
+
+    block_add(ret, tfvar_B, xvar_B, dyn_out.d2F.block(1, 2, 1, xvar_L));  // tfx
+    block_add(ret, tfvar_B, xvar_B, int_out.d2F.block(1, 2, 1, xvar_L));  // tfx
+    block_add(ret, tfvar_B, xvar_B,  cr_out.d2F.block(1, 2, 1, xvar_L));  // tfx
+
+    block_add(ret, tfvar_B, uvar_B, dyn_out.d2F.block(1, 2 + xvar_L, 1, uvar_L));  // tfu
+    block_add(ret, tfvar_B, uvar_B, int_out.d2F.block(1, 2 + xvar_L, 1, uvar_L));  // tfu
+    block_add(ret, tfvar_B, uvar_B,  cr_out.d2F.block(1, 2 + xvar_L, 1, uvar_L));  // tfu
+
+    block_add(ret, xvar_B, xvar_B, dyn_out.d2F.block(2,          2, xvar_L, xvar_L));  // xx
+    block_add(ret, xvar_B, xvar_B, int_out.d2F.block(2,          2, xvar_L, xvar_L));  // xx
+    block_add(ret, xvar_B, xvar_B,  cr_out.d2F.block(2,          2, xvar_L, xvar_L));  // xx
+
+    block_add(ret, xvar_B, uvar_B, dyn_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L));  // xu
+    block_add(ret, xvar_B, uvar_B, int_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L));  // xu
+    block_add(ret, xvar_B, uvar_B,  cr_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L));  // xu
+
+    block_add(ret, uvar_B, uvar_B, dyn_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L));  // uu
+    block_add(ret, uvar_B, uvar_B, int_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L));  // uu
+    block_add(ret, uvar_B, uvar_B,  cr_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L));  // uu
     // clang-format on
+
+    for (auto j = 0u; j < ocp.Nce; ++j) {
+      const auto b0 = (1 + 2 * ocp.Nx + ocp.Nq) * j;
+      // clang-format off
+      block_add(ret, tfvar_B, tfvar_B, d2ceval.block(             0, b0 +              0,      1,      1), lambda(cecon_B + j));  // tftf
+      block_add(ret, tfvar_B, x0var_B, d2ceval.block(             0, b0 +              1,      1, ocp.Nx), lambda(cecon_B + j));  // tfx0
+      block_add(ret, tfvar_B, xfvar_B, d2ceval.block(             0, b0 +     1 + ocp.Nx,      1, ocp.Nx), lambda(cecon_B + j));  // tfxf
+      block_add(ret, tfvar_B,  qvar_B, d2ceval.block(             0, b0 + 1 + 2 * ocp.Nx,      1, ocp.Nq), lambda(cecon_B + j));  // tfq
+
+      block_add(ret, x0var_B, x0var_B, d2ceval.block(             1, b0 +              1, ocp.Nx, ocp.Nx), lambda(cecon_B + j));  // x0x0
+      block_add(ret, x0var_B, xfvar_B, d2ceval.block(             1, b0 +     1 + ocp.Nx, ocp.Nx, ocp.Nx), lambda(cecon_B + j));  // x0xf
+      block_add(ret, x0var_B,  qvar_B, d2ceval.block(             1, b0 + 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), lambda(cecon_B + j));  // x0q
+
+      block_add(ret, xfvar_B, xfvar_B, d2ceval.block(    1 + ocp.Nx, b0 +     1 + ocp.Nx, ocp.Nx, ocp.Nx), lambda(cecon_B + j));  // xfxf
+      block_add(ret, xfvar_B,  qvar_B, d2ceval.block(    1 + ocp.Nx, b0 + 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), lambda(cecon_B + j));  // xfq
+
+      block_add(ret,  qvar_B,  qvar_B, d2ceval.block(1 + 2 * ocp.Nx, b0 + 1 + 2 * ocp.Nx, ocp.Nq, ocp.Nq), lambda(cecon_B + j));  // qq
+      // clang-format on
+    }
+
+    return ret;
   };
 
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
@@ -420,15 +489,15 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
 
   // VARIABLE BOUNDS
 
-  Eigen::VectorXd xl = Eigen::VectorXd::Constant(n, -std::numeric_limits<double>::infinity());
-  Eigen::VectorXd xu = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  VectorXd xl = VectorXd::Constant(n, -std::numeric_limits<double>::infinity());
+  VectorXd xu = VectorXd::Constant(n, std::numeric_limits<double>::infinity());
 
   xl.segment(tfvar_B, tfvar_L).setZero();  // tf lower bounded by zero
 
   // CONSTRAINT BOUNDS
 
-  Eigen::VectorXd gl(m);
-  Eigen::VectorXd gu(m);
+  VectorXd gl(m);
+  VectorXd gu(m);
 
   // derivative constraints are equalities
   gl.segment(dcon_B, dcon_L).setZero();
@@ -457,8 +526,8 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     .gu      = std::move(gu),
     .df_dx   = std::move(df_dx),
     .dg_dx   = std::move(dg_dx),
-    .d2f_dx2 = {},
-    .d2g_dx2 = {},
+    .d2f_dx2 = std::move(d2f_dx2),
+    .d2g_dx2 = std::move(d2g_dx2),
   };
 }
 
