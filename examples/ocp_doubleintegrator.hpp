@@ -78,7 +78,7 @@ struct DIDyn
 
   Eigen::SparseMatrix<double> hessian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(4, 4);
+    Eigen::SparseMatrix<double> ret(4, 8);
     return ret;
   }
 };
@@ -128,7 +128,7 @@ struct DICr
 
   Eigen::SparseMatrix<double> hessian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(4, 4);
+    Eigen::SparseMatrix<double> ret(4, 8);
     return ret;
   }
 };
@@ -158,7 +158,7 @@ struct DICe
   Eigen::SparseMatrix<double>
   hessian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
   {
-    Eigen::SparseMatrix<double> ret(6, 6);
+    Eigen::SparseMatrix<double> ret(6, 30);
     return ret;
   }
 };

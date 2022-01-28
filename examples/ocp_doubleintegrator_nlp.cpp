@@ -74,10 +74,10 @@ int main()
       },
       {
         {"linear_solver", "mumps"},
-        {"hessian_approximation", "limited-memory"},
+        {"hessian_approximation", "exact"},
         // {"derivative_test", "second-order"},
         // {"derivative_test_print_all", "yes"},
-        // {"print_timing_statistics", "yes"},
+        {"print_timing_statistics", "yes"},
       },
       {
         {"tol", 1e-6},
