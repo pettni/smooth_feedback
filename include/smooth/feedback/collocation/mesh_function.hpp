@@ -270,21 +270,15 @@ void mesh_eval(
           block_add(out.d2F, t0_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * mtau, true);
 
           // tf row
-          // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * mtau);
           block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * tau, true);
           block_add(out.d2F, tf_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * tau, true);
           block_add(out.d2F, tf_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * tau, true);
 
           // x row
-          // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx, 1 ), l * mtau);
-          // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx, 1 ), l * tau);
           block_add(out.d2F, x_d,  x_d, d2f.block(x_s, b_s + x_s, nx, nx), l, true);
           block_add(out.d2F, x_d,  u_d, d2f.block(x_s, b_s + u_s, nx, nu), l, true);
 
           // u row
-          // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu, 1 ), l * mtau);
-          // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu, 1 ), l * tau);
-          // block_add(out.d2F, u_d,  x_d, d2f.block(u_s, b_s + x_s, nu, nx), l);
           block_add(out.d2F, u_d,  u_d, d2f.block(u_s, b_s + u_s, nu, nu), l, true);
           // clang-format on
         }
@@ -442,9 +436,6 @@ void mesh_integrate(
           block_add(out.d2F, t0_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau, true);
           block_add(out.d2F, t0_d, u_d,   df.block(j,         u_s, 1, nu), -wl, true);
 
-          // tft0
-          // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau, true);
-          // block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau), true);
           // tftf
           block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau, true);
           block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau, true);
@@ -455,25 +446,11 @@ void mesh_integrate(
           block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau, true);
           block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl, true);
 
-          // xt0
-          // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau, true);
-          // block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl, true);
-          // xtf
-          // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau, true);
-          // block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl, true);
           // xx
           block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0), true);
           // xu
           block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0), true);
 
-          // ut0
-          // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau, true);
-          // block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl, true);
-          // utf
-          // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau, true);
-          // block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl, true);
-          // ux
-          // block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0), true);
           // uu
           block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0), true);
           // clang-format on
@@ -568,8 +545,8 @@ void mesh_dyn(
 
     if constexpr (Deriv >= 2) {
       Eigen::VectorXi pattern = Eigen::VectorXi::Zero(numVars);
-      pattern(0) = 1;
-      pattern(1) = 2;
+      pattern(0)              = 1;
+      pattern(1)              = 2;
       for (auto i = 0u; i < N; ++i) {
         for (auto j = 0u; j < nx; ++j) {
           pattern(2 + nx * i + j) = 2 + (j + 1);  // t0, tf, x upper diag
@@ -659,9 +636,6 @@ void mesh_dyn(
           block_add(out.d2F, t0_d, u_d, d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau, true);
           block_add(out.d2F, t0_d, u_d,  df.block(j,         u_s, 1, nu), -wl, true);
 
-          // tft0
-          // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau, true);
-          // block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau), true);
           // tftf
           block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau, true);
           block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau, true);
@@ -672,25 +646,11 @@ void mesh_dyn(
           block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau, true);
           block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl, true);
 
-          // xt0
-          // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau, true);
-          // block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl, true);
-          // xtf
-          // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau, true);
-          // block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl, true);
           // xx
           block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0), true);
           // xu
           block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0), true);
 
-          // ut0
-          // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau, true);
-          // block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl, true);
-          // utf
-          // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau, true);
-          // block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl, true);
-          // ux
-          // block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0), true);
           // uu
           block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0), true);
           // clang-format on
