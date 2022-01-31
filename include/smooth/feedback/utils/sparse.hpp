@@ -218,6 +218,7 @@ inline auto kron_identity(const Eigen::MatrixBase<Derived> & X, std::size_t n)
  * @param col0 starting column for block
  * @param source block values
  * @param scale scaling parameter
+ * @param upper_only only add into upper triangular part
  *
  * @note Values are accessed with coeffRef().
  */
@@ -228,11 +229,14 @@ void block_add(
   Eigen::Index row0,
   Eigen::Index col0,
   const SpMat & source,
-  double scale = 1)
+  double scale      = 1,
+  double upper_only = false)
 {
   for (auto c = 0; c < source.outerSize(); ++c) {
     for (Eigen::InnerIterator it(source, c); it; ++it) {
-      dest.coeffRef(row0 + it.row(), col0 + it.col()) += scale * it.value();
+      if (!upper_only || row0 + it.row() <= col0 + it.col()) {
+        dest.coeffRef(row0 + it.row(), col0 + it.col()) += scale * it.value();
+      }
     }
   }
 }
@@ -249,6 +253,7 @@ void block_add(
  * @param col0 starting column for block
  * @param source block values
  * @param scale scaling parameter
+ * @param upper_only only add into upper triangular part
  *
  * @note Values are accessed with coeffRef().
  */
@@ -258,10 +263,12 @@ void block_add(
   Eigen::Index row0,
   Eigen::Index col0,
   const Eigen::MatrixBase<Derived> & source,
-  double scale = 1)
+  double scale      = 1,
+  double upper_only = false)
 {
   for (auto c = 0; c < source.cols(); ++c) {
     for (auto r = 0; r < source.rows(); ++r) {
+      if (upper_only && row0 + r > col0 + c) { break; }
       dest.coeffRef(row0 + r, col0 + c) += scale * source(r, c);
     }
   }

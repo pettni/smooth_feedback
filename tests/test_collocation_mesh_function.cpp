@@ -409,6 +409,10 @@ TEST_F(MeshFunction_Random, EvalAllocationNumerical)
   out.dF.makeCompressed();
   out.d2F.makeCompressed();
 
+  // numerical eval gives non-sparse derivatives, so we expect all allocated memory to be used
+  ASSERT_EQ(out.dF.nonZeros(), out.dF.data().size());
+  ASSERT_EQ(out.d2F.nonZeros(), out.d2F.data().size());
+
   // second call: allocated
   ASSERT_TRUE(out.allocated);
   smooth::feedback::mesh_eval<2>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
@@ -455,6 +459,10 @@ TEST_F(MeshFunction_Random, IntegrateAllocationNumerical)
 
   ASSERT_FALSE(out.dF.isCompressed());
   ASSERT_FALSE(out.d2F.isCompressed());
+
+  // numerical eval gives non-sparse derivatives, so we expect all allocated memory to be used
+  ASSERT_EQ(out.dF.nonZeros(), out.dF.data().size());
+  ASSERT_EQ(out.d2F.nonZeros(), out.d2F.data().size());
 
   out.dF.makeCompressed();
   out.d2F.makeCompressed();
@@ -505,6 +513,10 @@ TEST_F(MeshFunction_Random, DynAllocationNumerical)
 
   ASSERT_FALSE(out.dF.isCompressed());
   ASSERT_FALSE(out.d2F.isCompressed());
+
+  // numerical eval gives non-sparse derivatives, so we expect all allocated memory to be used
+  ASSERT_EQ(out.dF.nonZeros(), out.dF.data().size());
+  ASSERT_EQ(out.d2F.nonZeros(), out.d2F.data().size());
 
   out.dF.makeCompressed();
   out.d2F.makeCompressed();

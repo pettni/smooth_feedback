@@ -376,19 +376,19 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     const auto xfvar_B = xvar_B + xvar_L - ocp.Nx;
 
     // clang-format off
-    block_add(ret, tfvar_B, tfvar_B, d2fval.block(             0,              0,      1,      1));  // tftf
-    block_add(ret, tfvar_B, x0var_B, d2fval.block(             0,              1,      1, ocp.Nx));  // tfx0
-    block_add(ret, tfvar_B, xfvar_B, d2fval.block(             0,     1 + ocp.Nx,      1, ocp.Nx));  // tfxf
-    block_add(ret, tfvar_B,  qvar_B, d2fval.block(             0, 1 + 2 * ocp.Nx,      1, ocp.Nq));  // tfq
+    block_add(ret, tfvar_B, tfvar_B, d2fval.block(             0,              0,      1,      1), 1, true);  // tftf
+    block_add(ret, tfvar_B, x0var_B, d2fval.block(             0,              1,      1, ocp.Nx), 1, true);  // tfx0
+    block_add(ret, tfvar_B, xfvar_B, d2fval.block(             0,     1 + ocp.Nx,      1, ocp.Nx), 1, true);  // tfxf
+    block_add(ret, tfvar_B,  qvar_B, d2fval.block(             0, 1 + 2 * ocp.Nx,      1, ocp.Nq), 1, true);  // tfq
 
-    block_add(ret, x0var_B, x0var_B, d2fval.block(             1,              1, ocp.Nx, ocp.Nx));  // x0x0
-    block_add(ret, x0var_B, xfvar_B, d2fval.block(             1,     1 + ocp.Nx, ocp.Nx, ocp.Nx));  // x0xf
-    block_add(ret, x0var_B,  qvar_B, d2fval.block(             1, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq));  // x0q
+    block_add(ret, x0var_B, x0var_B, d2fval.block(             1,              1, ocp.Nx, ocp.Nx), 1, true);  // x0x0
+    block_add(ret, x0var_B, xfvar_B, d2fval.block(             1,     1 + ocp.Nx, ocp.Nx, ocp.Nx), 1, true);  // x0xf
+    block_add(ret, x0var_B,  qvar_B, d2fval.block(             1, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), 1, true);  // x0q
 
-    block_add(ret, xfvar_B, xfvar_B, d2fval.block(    1 + ocp.Nx,     1 + ocp.Nx, ocp.Nx, ocp.Nx));  // xfxf
-    block_add(ret, xfvar_B,  qvar_B, d2fval.block(    1 + ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq));  // xfq
+    block_add(ret, xfvar_B, xfvar_B, d2fval.block(    1 + ocp.Nx,     1 + ocp.Nx, ocp.Nx, ocp.Nx), 1, true);  // xfxf
+    block_add(ret, xfvar_B,  qvar_B, d2fval.block(    1 + ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), 1, true);  // xfq
 
-    block_add(ret,  qvar_B,  qvar_B, d2fval.block(1 + 2 * ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nq, ocp.Nq));  // qq
+    block_add(ret,  qvar_B,  qvar_B, d2fval.block(1 + 2 * ocp.Nx, 1 + 2 * ocp.Nx, ocp.Nq, ocp.Nq), 1, true);  // qq
     // clang-format on
 
     return ret;
@@ -434,47 +434,47 @@ NLP ocp_to_nlp(const FlatOCPType auto & ocp, const MeshType auto & mesh)
     SparseMatrix<double> ret(n, n);
 
     // clang-format off
-    block_add(ret, tfvar_B, tfvar_B, dyn_out.d2F.block(1, 1, 1, 1));      // tftf
-    block_add(ret, tfvar_B, tfvar_B, int_out.d2F.block(1, 1, 1, 1));      // tftf
-    block_add(ret, tfvar_B, tfvar_B,  cr_out.d2F.block(1, 1, 1, 1));      // tftf
+    block_add(ret, tfvar_B, tfvar_B, dyn_out.d2F.block(1, 1, 1, 1), 1, true);      // tftf
+    block_add(ret, tfvar_B, tfvar_B, int_out.d2F.block(1, 1, 1, 1), 1, true);      // tftf
+    block_add(ret, tfvar_B, tfvar_B,  cr_out.d2F.block(1, 1, 1, 1), 1, true);      // tftf
 
-    block_add(ret, tfvar_B, xvar_B, dyn_out.d2F.block(1, 2, 1, xvar_L));  // tfx
-    block_add(ret, tfvar_B, xvar_B, int_out.d2F.block(1, 2, 1, xvar_L));  // tfx
-    block_add(ret, tfvar_B, xvar_B,  cr_out.d2F.block(1, 2, 1, xvar_L));  // tfx
+    block_add(ret, tfvar_B, xvar_B, dyn_out.d2F.block(1, 2, 1, xvar_L), 1, true);  // tfx
+    block_add(ret, tfvar_B, xvar_B, int_out.d2F.block(1, 2, 1, xvar_L), 1, true);  // tfx
+    block_add(ret, tfvar_B, xvar_B,  cr_out.d2F.block(1, 2, 1, xvar_L), 1, true);  // tfx
 
-    block_add(ret, tfvar_B, uvar_B, dyn_out.d2F.block(1, 2 + xvar_L, 1, uvar_L));  // tfu
-    block_add(ret, tfvar_B, uvar_B, int_out.d2F.block(1, 2 + xvar_L, 1, uvar_L));  // tfu
-    block_add(ret, tfvar_B, uvar_B,  cr_out.d2F.block(1, 2 + xvar_L, 1, uvar_L));  // tfu
+    block_add(ret, tfvar_B, uvar_B, dyn_out.d2F.block(1, 2 + xvar_L, 1, uvar_L), 1, true);  // tfu
+    block_add(ret, tfvar_B, uvar_B, int_out.d2F.block(1, 2 + xvar_L, 1, uvar_L), 1, true);  // tfu
+    block_add(ret, tfvar_B, uvar_B,  cr_out.d2F.block(1, 2 + xvar_L, 1, uvar_L), 1, true);  // tfu
 
-    block_add(ret, xvar_B, xvar_B, dyn_out.d2F.block(2,          2, xvar_L, xvar_L));  // xx
-    block_add(ret, xvar_B, xvar_B, int_out.d2F.block(2,          2, xvar_L, xvar_L));  // xx
-    block_add(ret, xvar_B, xvar_B,  cr_out.d2F.block(2,          2, xvar_L, xvar_L));  // xx
+    block_add(ret, xvar_B, xvar_B, dyn_out.d2F.block(2,          2, xvar_L, xvar_L), 1, true);  // xx
+    block_add(ret, xvar_B, xvar_B, int_out.d2F.block(2,          2, xvar_L, xvar_L), 1, true);  // xx
+    block_add(ret, xvar_B, xvar_B,  cr_out.d2F.block(2,          2, xvar_L, xvar_L), 1, true);  // xx
 
-    block_add(ret, xvar_B, uvar_B, dyn_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L));  // xu
-    block_add(ret, xvar_B, uvar_B, int_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L));  // xu
-    block_add(ret, xvar_B, uvar_B,  cr_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L));  // xu
+    block_add(ret, xvar_B, uvar_B, dyn_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), 1, true);  // xu
+    block_add(ret, xvar_B, uvar_B, int_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), 1, true);  // xu
+    block_add(ret, xvar_B, uvar_B,  cr_out.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), 1, true);  // xu
 
-    block_add(ret, uvar_B, uvar_B, dyn_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L));  // uu
-    block_add(ret, uvar_B, uvar_B, int_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L));  // uu
-    block_add(ret, uvar_B, uvar_B,  cr_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L));  // uu
+    block_add(ret, uvar_B, uvar_B, dyn_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), 1, true);  // uu
+    block_add(ret, uvar_B, uvar_B, int_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), 1, true);  // uu
+    block_add(ret, uvar_B, uvar_B,  cr_out.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), 1, true);  // uu
     // clang-format on
 
     for (auto j = 0u; j < ocp.Nce; ++j) {
       const auto b0 = (1 + 2 * ocp.Nx + ocp.Nq) * j;
       // clang-format off
-      block_add(ret, tfvar_B, tfvar_B, d2ceval.block(             0, b0 +              0,      1,      1), lambda(cecon_B + j));  // tftf
-      block_add(ret, tfvar_B, x0var_B, d2ceval.block(             0, b0 +              1,      1, ocp.Nx), lambda(cecon_B + j));  // tfx0
-      block_add(ret, tfvar_B, xfvar_B, d2ceval.block(             0, b0 +     1 + ocp.Nx,      1, ocp.Nx), lambda(cecon_B + j));  // tfxf
-      block_add(ret, tfvar_B,  qvar_B, d2ceval.block(             0, b0 + 1 + 2 * ocp.Nx,      1, ocp.Nq), lambda(cecon_B + j));  // tfq
+      block_add(ret, tfvar_B, tfvar_B, d2ceval.block(             0, b0 +              0,      1,      1), lambda(cecon_B + j), true);  // tftf
+      block_add(ret, tfvar_B, x0var_B, d2ceval.block(             0, b0 +              1,      1, ocp.Nx), lambda(cecon_B + j), true);  // tfx0
+      block_add(ret, tfvar_B, xfvar_B, d2ceval.block(             0, b0 +     1 + ocp.Nx,      1, ocp.Nx), lambda(cecon_B + j), true);  // tfxf
+      block_add(ret, tfvar_B,  qvar_B, d2ceval.block(             0, b0 + 1 + 2 * ocp.Nx,      1, ocp.Nq), lambda(cecon_B + j), true);  // tfq
 
-      block_add(ret, x0var_B, x0var_B, d2ceval.block(             1, b0 +              1, ocp.Nx, ocp.Nx), lambda(cecon_B + j));  // x0x0
-      block_add(ret, x0var_B, xfvar_B, d2ceval.block(             1, b0 +     1 + ocp.Nx, ocp.Nx, ocp.Nx), lambda(cecon_B + j));  // x0xf
-      block_add(ret, x0var_B,  qvar_B, d2ceval.block(             1, b0 + 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), lambda(cecon_B + j));  // x0q
+      block_add(ret, x0var_B, x0var_B, d2ceval.block(             1, b0 +              1, ocp.Nx, ocp.Nx), lambda(cecon_B + j), true);  // x0x0
+      block_add(ret, x0var_B, xfvar_B, d2ceval.block(             1, b0 +     1 + ocp.Nx, ocp.Nx, ocp.Nx), lambda(cecon_B + j), true);  // x0xf
+      block_add(ret, x0var_B,  qvar_B, d2ceval.block(             1, b0 + 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), lambda(cecon_B + j), true);  // x0q
 
-      block_add(ret, xfvar_B, xfvar_B, d2ceval.block(    1 + ocp.Nx, b0 +     1 + ocp.Nx, ocp.Nx, ocp.Nx), lambda(cecon_B + j));  // xfxf
-      block_add(ret, xfvar_B,  qvar_B, d2ceval.block(    1 + ocp.Nx, b0 + 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), lambda(cecon_B + j));  // xfq
+      block_add(ret, xfvar_B, xfvar_B, d2ceval.block(    1 + ocp.Nx, b0 +     1 + ocp.Nx, ocp.Nx, ocp.Nx), lambda(cecon_B + j), true);  // xfxf
+      block_add(ret, xfvar_B,  qvar_B, d2ceval.block(    1 + ocp.Nx, b0 + 1 + 2 * ocp.Nx, ocp.Nx, ocp.Nq), lambda(cecon_B + j), true);  // xfq
 
-      block_add(ret,  qvar_B,  qvar_B, d2ceval.block(1 + 2 * ocp.Nx, b0 + 1 + 2 * ocp.Nx, ocp.Nq, ocp.Nq), lambda(cecon_B + j));  // qq
+      block_add(ret,  qvar_B,  qvar_B, d2ceval.block(1 + 2 * ocp.Nx, b0 + 1 + 2 * ocp.Nx, ocp.Nq, ocp.Nq), lambda(cecon_B + j), true);  // qq
       // clang-format on
     }
 

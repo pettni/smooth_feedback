@@ -109,14 +109,22 @@ void setZero(MeshValue<Deriv> & mv)
     if (mv.dF.isCompressed()) {
       mv.dF.coeffs().setZero();
     } else {
-      mv.dF.setZero();
+      for (auto i = 0; i < mv.dF.outerSize(); ++i) {
+        for (Eigen::InnerIterator it(mv.dF, i); it; ++it) {
+          mv.dF.coeffRef(it.row(), it.col()) = 0;
+        }
+      }
     }
   }
   if constexpr (Deriv >= 2) {
     if (mv.d2F.isCompressed()) {
       mv.d2F.coeffs().setZero();
     } else {
-      mv.d2F.setZero();
+      for (auto i = 0; i < mv.d2F.outerSize(); ++i) {
+        for (Eigen::InnerIterator it(mv.d2F, i); it; ++it) {
+          mv.d2F.coeffRef(it.row(), it.col()) = 0;
+        }
+      }
     }
   }
 }
@@ -193,11 +201,18 @@ void mesh_eval(
 
     if constexpr (Deriv >= 2u) {
       Eigen::VectorXi pattern = Eigen::VectorXi::Zero(numVars);
-      pattern.segment(0, 1).setConstant(numVars);  // t0 is dense
-      pattern.segment(1, 1).setConstant(numVars);  // tf is dense
-      pattern.segment(2, nx * N).setConstant(2 + nx + nu);
-      pattern.segment(2 + nx * (N + 1), nu * N).setConstant(2 + nx + nu);
-
+      pattern.segment(0, 1).setConstant(1);  // t0
+      pattern.segment(1, 1).setConstant(2);  // t0, tf
+      for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < nx; ++j) {
+          pattern(2 + nx * i + j) = 2 + (j + 1);  // t0, tf, x upper diag
+        }
+      }
+      for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < nu; ++j) {
+          pattern(2 + nx * (N + 1) + nu * i + j) = 2 + nx + (j + 1);  // t0, tf, x, u upper diag
+        }
+      }
       out.d2F.resize(numVars, numVars);
       out.d2F.reserve(pattern);
     }
@@ -249,28 +264,28 @@ void mesh_eval(
 
           // clang-format off
           // t0 row
-          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * mtau);
-          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * tau);
-          block_add(out.d2F, t0_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * mtau);
-          block_add(out.d2F, t0_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * mtau);
+          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * mtau, true);
+          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * tau, true);
+          block_add(out.d2F, t0_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * mtau, true);
+          block_add(out.d2F, t0_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * mtau, true);
 
           // tf row
           // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * mtau);
-          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * tau);
-          block_add(out.d2F, tf_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * tau);
-          block_add(out.d2F, tf_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * tau);
+          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * tau, true);
+          block_add(out.d2F, tf_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * tau, true);
+          block_add(out.d2F, tf_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * tau, true);
 
           // x row
           // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx, 1 ), l * mtau);
           // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx, 1 ), l * tau);
-          block_add(out.d2F, x_d,  x_d, d2f.block(x_s, b_s + x_s, nx, nx), l);
-          block_add(out.d2F, x_d,  u_d, d2f.block(x_s, b_s + u_s, nx, nu), l);
+          block_add(out.d2F, x_d,  x_d, d2f.block(x_s, b_s + x_s, nx, nx), l, true);
+          block_add(out.d2F, x_d,  u_d, d2f.block(x_s, b_s + u_s, nx, nu), l, true);
 
           // u row
           // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu, 1 ), l * mtau);
           // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu, 1 ), l * tau);
           // block_add(out.d2F, u_d,  x_d, d2f.block(u_s, b_s + x_s, nu, nx), l);
-          block_add(out.d2F, u_d,  u_d, d2f.block(u_s, b_s + u_s, nu, nu), l);
+          block_add(out.d2F, u_d,  u_d, d2f.block(u_s, b_s + u_s, nu, nu), l, true);
           // clang-format on
         }
       }
@@ -338,16 +353,26 @@ void mesh_integrate(
 
     if constexpr (Deriv >= 1) {
       Eigen::VectorXi pattern = Eigen::VectorXi::Constant(numVars, numOuts);  // dense
+      pattern.segment(2 + nx * N, nx).setZero();
+
       out.dF.resize(numOuts, numVars);
       out.dF.reserve(pattern);
     }
 
     if constexpr (Deriv >= 2) {
       Eigen::VectorXi pattern = Eigen::VectorXi::Zero(numVars);  // dense
-      pattern(0)              = numVars;                         // t0 dense
-      pattern(1)              = numVars;                         // tf dense
-      pattern.segment(2, nx * N).setConstant(2 + nx);
-      pattern.segment(2 + nx * (N + 1), nu * N).setConstant(2 + nu);
+      pattern(0)              = 1;                               // t0 dense
+      pattern(1)              = 2;                               // tf dense
+      for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < nx; ++j) {
+          pattern(2 + nx * i + j) = 2 + (j + 1);  // t0, tf, x upper diag
+        }
+      }
+      for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < nu; ++j) {
+          pattern(2 + nx * (N + 1) + nu * i + j) = 2 + nx + (j + 1);  // t0, tf, x, u upper diag
+        }
+      }
 
       out.d2F.resize(numVars, numVars);
       out.d2F.reserve(pattern.replicate(numOuts, 1).reshaped());
@@ -405,52 +430,52 @@ void mesh_integrate(
 
           // clang-format off
           // t0t0
-          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * mtau * mtau);
-          block_add(out.d2F, t0_d, t0_d,  df.block(j,         t_s, 1,  1), -wl * 2 * mtau);
+          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * mtau * mtau, true);
+          block_add(out.d2F, t0_d, t0_d,  df.block(j,         t_s, 1,  1), -wl * 2 * mtau, true);
           // t0tf
-          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * mtau * tau);
-          block_add(out.d2F, t0_d, tf_d,  df.block(j,         t_s, 1,  1), wl * (1 - 2 * tau));
+          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * mtau * tau, true);
+          block_add(out.d2F, t0_d, tf_d,  df.block(j,         t_s, 1,  1), wl * (1 - 2 * tau), true);
           // t0x
-          block_add(out.d2F, t0_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * mtau);
-          block_add(out.d2F, t0_d, x_d,   df.block(j,         x_s, 1, nx), -wl);
+          block_add(out.d2F, t0_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * mtau, true);
+          block_add(out.d2F, t0_d, x_d,   df.block(j,         x_s, 1, nx), -wl, true);
           // t0u
-          block_add(out.d2F, t0_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau);
-          block_add(out.d2F, t0_d, u_d,   df.block(j,         u_s, 1, nu), -wl);
+          block_add(out.d2F, t0_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau, true);
+          block_add(out.d2F, t0_d, u_d,   df.block(j,         u_s, 1, nu), -wl, true);
 
           // tft0
-          // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau);
-          // block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau));
+          // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau, true);
+          // block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau), true);
           // tftf
-          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau);
-          block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau);
+          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau, true);
+          block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau, true);
           // tfx
-          block_add(out.d2F, tf_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * tau);
-          block_add(out.d2F, tf_d, x_d,   df.block(j,         x_s, 1, nx), wl);
+          block_add(out.d2F, tf_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * tau, true);
+          block_add(out.d2F, tf_d, x_d,   df.block(j,         x_s, 1, nx), wl, true);
           // tfu
-          block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau);
-          block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl);
+          block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau, true);
+          block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl, true);
 
           // xt0
-          // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau);
-          // block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl);
+          // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau, true);
+          // block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl, true);
           // xtf
-          // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau);
-          // block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl);
+          // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau, true);
+          // block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl, true);
           // xx
-          block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0));
+          block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0), true);
           // xu
-          block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0));
+          block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0), true);
 
           // ut0
-          // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau);
-          // block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl);
+          // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau, true);
+          // block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl, true);
           // utf
-          // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau);
-          // block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl);
+          // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau, true);
+          // block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl, true);
           // ux
-          // block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0));
+          // block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0), true);
           // uu
-          block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0));
+          block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0), true);
           // clang-format on
         }
       }
@@ -526,22 +551,35 @@ void mesh_dyn(
       pattern(1)              = numOuts;  // tf dense
 
       // x has blocks depending on mesh size
-      for (auto ival = 0u, idx0 = 2u; ival < m.N_ivals(); idx0 += m.N_colloc_ival(ival), ++ival) {
+      auto idx0 = 2u;
+      for (auto ival = 0u; ival < m.N_ivals(); ++ival) {
         const std::size_t K = m.N_colloc_ival(ival);
-        pattern.segment(idx0, (K + 1) * nx) += Eigen::VectorXi::Constant((K + 1) * nx, K);
+        pattern.segment(idx0, K * nx) += Eigen::VectorXi::Constant(K * nx, nx + K - 1);
+        pattern.segment(idx0 + K * nx, nx) += Eigen::VectorXi::Constant(nx, K);
+        idx0 += K * nx;
       }
 
       // u is block diagonal with small blocks
-      pattern.segment(2 + nx * (N + 1), nu * N).setConstant(nu);
+      pattern.segment(2 + nx * (N + 1), nu * N).setConstant(nx);
 
       out.dF.resize(numOuts, numVars);
       out.dF.reserve(pattern);
     }
 
     if constexpr (Deriv >= 2) {
-      Eigen::VectorXi pattern(numVars);
-      pattern.head(2).setConstant(numVars);  // t0, tf dense
-      pattern.tail(nx * (N + 1) + nu * N).setConstant(2 + nx + nu);
+      Eigen::VectorXi pattern = Eigen::VectorXi::Zero(numVars);
+      pattern(0) = 1;
+      pattern(1) = 2;
+      for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < nx; ++j) {
+          pattern(2 + nx * i + j) = 2 + (j + 1);  // t0, tf, x upper diag
+        }
+      }
+      for (auto i = 0u; i < N; ++i) {
+        for (auto j = 0u; j < nu; ++j) {
+          pattern(2 + nx * (N + 1) + nu * i + j) = 2 + nx + (j + 1);  // t0, tf, x, u upper diag
+        }
+      }
 
       out.d2F.resize(numVars, numVars);
       out.d2F.reserve(pattern);
@@ -609,52 +647,52 @@ void mesh_dyn(
 
           // clang-format off
           // t0t0
-          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * (tf - t0) * mtau * mtau);
-          block_add(out.d2F, t0_d, t0_d,  df.block(j,         t_s, 1, 1 ), -wl * 2 * mtau);
+          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * (tf - t0) * mtau * mtau, true);
+          block_add(out.d2F, t0_d, t0_d,  df.block(j,         t_s, 1, 1 ), -wl * 2 * mtau, true);
           // t0tf
-          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * (tf - t0) * mtau * tau);
-          block_add(out.d2F, t0_d, tf_d,  df.block(j,         t_s, 1, 1 ), wl * (1. - 2 * tau));
+          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * (tf - t0) * mtau * tau, true);
+          block_add(out.d2F, t0_d, tf_d,  df.block(j,         t_s, 1, 1 ), wl * (1. - 2 * tau), true);
           // t0x
-          block_add(out.d2F, t0_d, x_d, d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * mtau);
-          block_add(out.d2F, t0_d, x_d,  df.block(j,         x_s, 1, nx), -wl);
+          block_add(out.d2F, t0_d, x_d, d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * mtau, true);
+          block_add(out.d2F, t0_d, x_d,  df.block(j,         x_s, 1, nx), -wl, true);
           // t0u
-          block_add(out.d2F, t0_d, u_d, d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau);
-          block_add(out.d2F, t0_d, u_d,  df.block(j,         u_s, 1, nu), -wl);
+          block_add(out.d2F, t0_d, u_d, d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * mtau, true);
+          block_add(out.d2F, t0_d, u_d,  df.block(j,         u_s, 1, nu), -wl, true);
 
           // tft0
-          // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau);
-          // block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau));
+          // block_add(out.d2F, tf_d, t0_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * mtau, true);
+          // block_add(out.d2F, tf_d, t0_d,  df.block(j,         t_s, 1,  1), wl * (1. - 2 * tau), true);
           // tftf
-          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau);
-          block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau);
+          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1,  1), wl * (tf - t0) * tau * tau, true);
+          block_add(out.d2F, tf_d, tf_d,  df.block(j,         t_s, 1,  1), wl * 2 * tau, true);
           // tfx
-          block_add(out.d2F, tf_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * tau);
-          block_add(out.d2F, tf_d, x_d,   df.block(j,         x_s, 1, nx), wl);
+          block_add(out.d2F, tf_d, x_d,  d2f.block(t_s, b_s + x_s, 1, nx), wl * (tf - t0) * tau, true);
+          block_add(out.d2F, tf_d, x_d,   df.block(j,         x_s, 1, nx), wl, true);
           // tfu
-          block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau);
-          block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl);
+          block_add(out.d2F, tf_d, u_d,  d2f.block(t_s, b_s + u_s, 1, nu), wl * (tf - t0) * tau, true);
+          block_add(out.d2F, tf_d, u_d,   df.block(j,         u_s, 1, nu), wl, true);
 
           // xt0
-          // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau);
-          // block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl);
+          // block_add(out.d2F, x_d, t0_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * mtau, true);
+          // block_add(out.d2F, x_d, t0_d,  df.block(j,         x_s, 1,  nx).transpose(), -wl, true);
           // xtf
-          // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau);
-          // block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl);
+          // block_add(out.d2F, x_d, tf_d, d2f.block(x_s, b_s + t_s, nx,  1), wl * (tf - t0) * tau, true);
+          // block_add(out.d2F, x_d, tf_d,  df.block(j,         x_s, 1,  nx).transpose(), wl, true);
           // xx
-          block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0));
+          block_add(out.d2F, x_d, x_d,  d2f.block(x_s, b_s + x_s, nx, nx), wl * (tf - t0), true);
           // xu
-          block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0));
+          block_add(out.d2F, x_d, u_d,  d2f.block(x_s, b_s + u_s, nx, nu), wl * (tf - t0), true);
 
           // ut0
-          // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau);
-          // block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl);
+          // block_add(out.d2F, u_d, t0_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * mtau, true);
+          // block_add(out.d2F, u_d, t0_d,  df.block(j,         u_s, 1,  nu).transpose(), -wl, true);
           // utf
-          // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau);
-          // block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl);
+          // block_add(out.d2F, u_d, tf_d, d2f.block(u_s, b_s + t_s, nu,  1), wl * (tf - t0) * tau, true);
+          // block_add(out.d2F, u_d, tf_d,  df.block(j,         u_s, 1,  nu).transpose(), wl, true);
           // ux
-          // block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0));
+          // block_add(out.d2F, u_d, x_d,  d2f.block(u_s, b_s + x_s, nu, nx), wl * (tf - t0), true);
           // uu
-          block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0));
+          block_add(out.d2F, u_d, u_d,  d2f.block(u_s, b_s + u_s, nu, nu), wl * (tf - t0), true);
           // clang-format on
         }
       }
