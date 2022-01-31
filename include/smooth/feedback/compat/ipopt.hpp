@@ -77,10 +77,10 @@ public:
     nnz_jac_g    = J.nonZeros();
 
     if constexpr (HessianNLPType<Problem>) {
-      auto H = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
-      H += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
-      H.makeCompressed();
-      nnz_h_lag = H.nonZeros();
+      H_ = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
+      H_ += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
+      H_.makeCompressed();
+      nnz_h_lag = H_.nonZeros();
     } else {
       nnz_h_lag = 0;  // not used
     }
@@ -157,8 +157,8 @@ public:
     [[maybe_unused]] bool new_x,
     Ipopt::Number * grad_f) override
   {
-    Eigen::Map<Eigen::RowVectorXd>(grad_f, n) =
-      Eigen::MatrixXd(nlp_.df_dx(Eigen::Map<const Eigen::VectorXd>(x, n)));
+    const auto & df_dx = nlp_.df_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
+    for (auto i = 0; i < n; ++i) { grad_f[i] = df_dx.coeff(0, i); }
     return true;
   }
 
@@ -226,14 +226,15 @@ public:
     Ipopt::Index * jCol,
     Ipopt::Number * values) override
   {
+    assert(HessianNLPType<Problem>);
+    assert(H_.isCompressed());
+    assert(H_.nonZeros() == nele_hess);
+
+    H_.coeffs().setZero();
+
     if (values == NULL) {
-      Eigen::SparseMatrix<double> H = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
-      H += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
-
-      assert(H.nonZeros() == nele_hess);
-
-      for (auto cntr = 0u, od = 0u; od < H.outerSize(); ++od) {
-        for (Eigen::InnerIterator it(H, od); it; ++it) {
+      for (auto cntr = 0u, od = 0u; od < H_.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(H_, od); it; ++it) {
           // transpose: H upper triangular but ipopt expects lower-triangular
           iRow[cntr]   = it.col();
           jCol[cntr++] = it.row();
@@ -243,14 +244,12 @@ public:
       Eigen::Map<const Eigen::VectorXd> xvar(x, n);
       Eigen::Map<const Eigen::VectorXd> lvar(lambda, m);
 
-      Eigen::SparseMatrix<double> H = nlp_.d2f_dx2(xvar);
-      H *= sigma;
-      H += nlp_.d2g_dx2(xvar, lvar);
+      H_ += nlp_.d2f_dx2(xvar);
+      H_ *= sigma;
+      H_ += nlp_.d2g_dx2(xvar, lvar);
 
-      assert(H.nonZeros() == nele_hess);
-
-      for (auto cntr = 0u, od = 0u; od < H.outerSize(); ++od) {
-        for (Eigen::InnerIterator it(H, od); it; ++it) { values[cntr++] = it.value(); }
+      for (auto cntr = 0u, od = 0u; od < H_.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(H_, od); it; ++it) { values[cntr++] = it.value(); }
       }
     }
 
@@ -310,6 +309,7 @@ public:
 private:
   Problem nlp_;
   NLPSolution sol_;
+  Eigen::SparseMatrix<double> H_;
 };
 
 /**
