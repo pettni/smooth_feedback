@@ -75,7 +75,7 @@ int main()
       {
         {"linear_solver", "mumps"},
         {"hessian_approximation", "exact"},
-        // {"derivative_test", "second-order"},
+        // {"derivative_test", "first-order"},
         // {"derivative_test_print_all", "yes"},
         {"print_timing_statistics", "yes"},
       },

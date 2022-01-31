@@ -493,7 +493,7 @@ private:
 
 /// @brief MeshType is a specialization of Mesh
 template<typename T>
-concept MeshType = traits::is_specialization_of_sizet_v<T, Mesh>;
+concept MeshType = traits::is_specialization_of_sizet_v<std::decay_t<T>, Mesh>;
 
 }  // namespace smooth::feedback
 

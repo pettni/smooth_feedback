@@ -39,6 +39,43 @@
 
 namespace smooth::feedback {
 
+template<typename T>
+concept NLPType = requires(
+  T & nlp,
+  const Eigen::Ref<const Eigen::VectorXd> x,
+  const Eigen::Ref<const Eigen::VectorXd> lambda,
+  Eigen::Ref<Eigen::VectorXd> out1,
+  Eigen::Ref<Eigen::SparseMatrix<double>> out2)
+{
+  // clang-format off
+  {nlp.n()} -> std::convertible_to<std::size_t>;
+  {nlp.m()} -> std::convertible_to<std::size_t>;
+
+  // variable bounds
+  {nlp.xl()} -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.xu()} -> std::convertible_to<Eigen::VectorXd>;
+
+  // objective and its derivatives
+  {nlp.f(x)}     -> std::convertible_to<double>;
+  {nlp.df_dx(x)} -> std::convertible_to<Eigen::SparseMatrix<double>>;
+
+  // constraint, its bounds, and its derivatives
+  {nlp.g(x)}     -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.gl()}     -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.gu()}     -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.dg_dx(x)} -> std::convertible_to<Eigen::SparseMatrix<double>>;
+  // clang-format on
+};
+
+template<typename T>
+concept HessianNLPType = NLPType<T> && requires(T & nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)
+{
+  // clang-format off
+  {nlp.d2f_dx2(x)}         -> std::convertible_to<Eigen::SparseMatrix<double>>;
+  {nlp.d2g_dx2(x, lambda)} -> std::convertible_to<Eigen::SparseMatrix<double>>;
+  // clang-format on
+};
+
 /**
  * @brief Nonlinear Programming Problem
  * \f[

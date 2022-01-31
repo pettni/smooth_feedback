@@ -150,12 +150,12 @@ struct OCP
 
 /// @brief Concept that is true for OCP specializations
 template<typename T>
-concept OCPType = traits::is_specialization_of_v<T, OCP>;
+concept OCPType = traits::is_specialization_of_v<std::decay_t<T>, OCP>;
 
 /// @brief Concept that is true for FlatOCP specializations
 template<typename T>
-concept FlatOCPType =
-  OCPType<T> &&(smooth::traits::RnType<typename T::X> && smooth::traits::RnType<typename T::U>);
+concept FlatOCPType = OCPType<T> &&(smooth::traits::RnType<typename std::decay_t<T>::X> &&
+                                      smooth::traits::RnType<typename std::decay_t<T>::U>);
 
 }  // namespace smooth::feedback
 

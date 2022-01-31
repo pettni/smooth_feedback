@@ -41,18 +41,19 @@
 
 namespace smooth::feedback {
 
+template<NLPType Problem>
 class IpoptNLP : public Ipopt::TNLP
 {
 public:
   /**
    * @brief Ipopt wrapper for NLP (rvlaue version).
    */
-  inline IpoptNLP(NLP && nlp) : nlp_(std::move(nlp)) {}
+  inline IpoptNLP(Problem && nlp) : nlp_(std::move(nlp)) {}
 
   /**
    * @brief Ipopt wrapper for NLP (lvalue version).
    */
-  inline IpoptNLP(const NLP & nlp) : nlp_(nlp) {}
+  inline IpoptNLP(const Problem & nlp) : nlp_(nlp) {}
 
   /**
    * @brief Access solution.
@@ -69,15 +70,15 @@ public:
     Ipopt::Index & nnz_h_lag,
     IndexStyleEnum & index_style) override
   {
-    n = nlp_.n;
-    m = nlp_.m;
+    n = nlp_.n();
+    m = nlp_.m();
 
     const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
     nnz_jac_g    = J.nonZeros();
 
-    if (nlp_.d2f_dx2.has_value() && nlp_.d2g_dx2.has_value()) {
-      auto H = (*nlp_.d2f_dx2)(Eigen::VectorXd::Zero(n));
-      H += (*nlp_.d2g_dx2)(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
+    if constexpr (HessianNLPType<Problem>) {
+      auto H = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
+      H += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
       H.makeCompressed();
       nnz_h_lag = H.nonZeros();
     } else {
@@ -100,10 +101,10 @@ public:
     Ipopt::Number * g_l,
     Ipopt::Number * g_u) override
   {
-    Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl.cwiseMax(Eigen::VectorXd::Constant(n, -2e19));
-    Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu.cwiseMin(Eigen::VectorXd::Constant(n, 2e19));
-    Eigen::Map<Eigen::VectorXd>(g_l, m) = nlp_.gl.cwiseMax(Eigen::VectorXd::Constant(m, -2e19));
-    Eigen::Map<Eigen::VectorXd>(g_u, m) = nlp_.gu.cwiseMin(Eigen::VectorXd::Constant(m, 2e19));
+    Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl().cwiseMax(Eigen::VectorXd::Constant(n, -2e19));
+    Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu().cwiseMin(Eigen::VectorXd::Constant(n, 2e19));
+    Eigen::Map<Eigen::VectorXd>(g_l, m) = nlp_.gl().cwiseMax(Eigen::VectorXd::Constant(m, -2e19));
+    Eigen::Map<Eigen::VectorXd>(g_u, m) = nlp_.gu().cwiseMin(Eigen::VectorXd::Constant(m, 2e19));
 
     return true;
   }
@@ -189,7 +190,7 @@ public:
     Ipopt::Number * values) override
   {
     if (values == NULL) {
-      const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
+      const auto & J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
       assert(nele_jac == J.nonZeros());
 
       for (auto cntr = 0u, od = 0u; od < J.outerSize(); ++od) {
@@ -199,7 +200,7 @@ public:
         }
       }
     } else {
-      const auto J = nlp_.dg_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
+      const auto & J = nlp_.dg_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
       assert(nele_jac == J.nonZeros());
 
       for (auto cntr = 0u, od = 0u; od < J.outerSize(); ++od) {
@@ -225,12 +226,9 @@ public:
     Ipopt::Index * jCol,
     Ipopt::Number * values) override
   {
-    assert(nlp_.d2f_dx2.has_value());
-    assert(nlp_.d2g_dx2.has_value());
-
     if (values == NULL) {
-      auto H = (*nlp_.d2f_dx2)(Eigen::VectorXd::Zero(n));
-      H += (*nlp_.d2g_dx2)(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
+      Eigen::SparseMatrix<double> H = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
+      H += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
 
       assert(H.nonZeros() == nele_hess);
 
@@ -245,9 +243,9 @@ public:
       Eigen::Map<const Eigen::VectorXd> xvar(x, n);
       Eigen::Map<const Eigen::VectorXd> lvar(lambda, m);
 
-      auto H = (*nlp_.d2f_dx2)(xvar);
+      Eigen::SparseMatrix<double> H = nlp_.d2f_dx2(xvar);
       H *= sigma;
-      H += (*nlp_.d2g_dx2)(xvar, lvar);
+      H += nlp_.d2g_dx2(xvar, lvar);
 
       assert(H.nonZeros() == nele_hess);
 
@@ -310,7 +308,7 @@ public:
   }
 
 private:
-  NLP nlp_;
+  Problem nlp_;
   NLPSolution sol_;
 };
 
@@ -326,13 +324,15 @@ private:
  * @see https://coin-or.github.io/Ipopt/OPTIONS.html for a list of available options
  */
 inline NLPSolution solve_nlp_ipopt(
-  const NLP & nlp,
+  const NLPType auto & nlp,
   std::optional<NLPSolution> warmstart                         = {},
   std::vector<std::pair<std::string, int>> opts_integer        = {},
   std::vector<std::pair<std::string, std::string>> opts_string = {},
   std::vector<std::pair<std::string, double>> opts_numeric     = {})
 {
-  Ipopt::SmartPtr<IpoptNLP> ipopt_nlp          = new IpoptNLP(nlp);
+  using NlpType = std::decay_t<decltype(nlp)>;
+
+  Ipopt::SmartPtr<IpoptNLP<NlpType>> ipopt_nlp = new IpoptNLP<NlpType>(nlp);
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
   // silence welcome message
@@ -345,7 +345,7 @@ inline NLPSolution solve_nlp_ipopt(
   } else {
     // initial guess not given, set to zero
     app->Options()->SetStringValue("warm_start_init_point", "no");
-    ipopt_nlp->sol().x.setZero(nlp.n);
+    ipopt_nlp->sol().x.setZero(nlp.n());
   }
 
   // override with user-provided options
