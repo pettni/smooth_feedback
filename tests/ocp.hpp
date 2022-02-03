@@ -91,24 +91,25 @@ struct TestOcpIntegrand
   template<typename T>
   Vec<T, 1> operator()(T, const X<T> & x, const U<T> & u) const
   {
-    return Vec<T, 1>{x.r2().squaredNorm() + u.squaredNorm()};
+    return 0.5 * Vec<T, 1>{(x - X<T>::Identity()).squaredNorm() + u.squaredNorm()};
   }
 
   Eigen::SparseMatrix<double> jacobian(double, const X<double> & x, const U<double> & u) const
   {
+    const auto a = x - X<double>::Identity();
     Eigen::SparseMatrix<double> ret(1, 5);
-    ret.coeffRef(0, 1) = 2 * x.r2().x();
-    ret.coeffRef(0, 2) = 2 * x.r2().y();
-    ret.coeffRef(0, 4) = 2 * u.x();
+    ret.middleCols(1, 3) = (a.transpose() * smooth::dr_expinv<X<double>>(a)).sparseView();
+    ret.coeffRef(0, 4)   = u.x();
     return ret;
   }
 
-  Eigen::SparseMatrix<double> hessian(double, const X<double> &, const U<double> &) const
+  Eigen::SparseMatrix<double> hessian(double, const X<double> & x, const U<double> &) const
   {
+    const auto H = smooth::hessian_rminus_norm(x, X<double>::Identity());
+
     Eigen::SparseMatrix<double> ret(5, 5);
-    ret.coeffRef(1, 1) = 2;
-    ret.coeffRef(2, 2) = 2;
-    ret.coeffRef(4, 4) = 2;
+    smooth::feedback::block_add(ret, 1, 1, H);
+    ret.coeffRef(4, 4) = 1;
     return ret;
   }
 };
@@ -116,22 +117,21 @@ struct TestOcpIntegrand
 struct TestOcpCr
 {
   template<typename T>
-  Vec<T, 2> operator()(T, const X<T> & x, const U<T> & u) const
+  Vec<T, 1> operator()(T, const X<T> &, const U<T> & u) const
   {
-    return Vec<T, 2>{x.r2().y(), u.x()};
+    return Vec<T, 1>{u.x()};
   }
 
   Eigen::SparseMatrix<double> jacobian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(2, 5);
-    ret.coeffRef(0, 2) = 1;
-    ret.coeffRef(1, 4) = 1;
+    Eigen::SparseMatrix<double> ret(1, 5);
+    ret.coeffRef(0, 4) = 1;
     return ret;
   }
 
   Eigen::SparseMatrix<double> hessian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(5, 2 * 5);
+    Eigen::SparseMatrix<double> ret(5, 1 * 5);
     return ret;
   }
 };
@@ -196,8 +196,8 @@ inline const OcpTest ocp_test{
   .f     = TestOcpDyn{},
   .g     = TestOcpIntegrand{},
   .cr    = TestOcpCr{},
-  .crl   = Vec<double, 2>{{-0.5, -1}},
-  .cru   = Vec<double, 2>{{1.5, 1}},
+  .crl   = Vec<double, 1>{{-1}},
+  .cru   = Vec<double, 1>{{1}},
   .ce    = TestOcpCe{},
   .cel   = Vec<double, 7>{{5, 1, 1, 0, 0.1, 0, 0}},
   .ceu   = Vec<double, 7>{{5, 1, 1, 0, 0.1, 0, 0}},

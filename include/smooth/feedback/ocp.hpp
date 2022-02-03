@@ -160,7 +160,7 @@ template<typename T>
 concept FlatOCPType = OCPType<T> &&(smooth::traits::RnType<typename std::decay_t<T>::X> &&
                                       smooth::traits::RnType<typename std::decay_t<T>::U>);
 
-bool test_ocp_derivatives(const OCPType auto & ocp)
+bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
 {
   // test derivatives
   std::srand(5);
@@ -201,7 +201,7 @@ bool test_ocp_derivatives(const OCPType auto & ocp)
 
   bool success = true;
 
-  for (auto i = 0u; i < 5; ++i) {
+  for (auto trial = 0u; trial < num_trials; ++trial) {
     // endpt parameters
     const double tf                        = std::rand();
     const X x0                             = Random<X>();
