@@ -77,7 +77,7 @@ inline auto flatten_ocp(const OCPType auto & ocp, auto && xl_fun, auto && ul_fun
     using X_T = CastT<T, X>;
     using U_T = CastT<T, U>;
 
-    // can not double-differentiate, so we neglect derivative of linearization w.r.t. t
+    // can not double-differentiate, so we hide derivative of f_new w.r.t. t
     const double tdbl    = static_cast<double>(t);
     const auto [xl, dxl] = diff::dr(xl_fun, wrt(tdbl));
     const auto ul        = ul_fun(tdbl);
@@ -226,8 +226,12 @@ private:
   MeshValue<2> dyn_out2_, int_out2_, cr_out2_;
 
 public:
-  // TODO move constructor
-  OCPNLP(const Ocp & ocp, const Mesh & mesh) : ocp_(ocp), mesh_(mesh), N_(mesh_.N_colloc())
+  /// @brief Constructor (lvalue version)
+  OCPNLP(const Ocp & ocp, const Mesh & mesh) : OCPNLP(Ocp(ocp), Mesh(mesh)) {}
+
+  /// @brief Constructor (rvalue version)
+  OCPNLP(Ocp && ocp, Mesh && mesh)
+      : ocp_(std::move(ocp)), mesh_(std::move(mesh)), N_(mesh_.N_colloc())
   {
     const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp_, mesh_);
 
@@ -546,9 +550,9 @@ public:
  */
 template<diff::Type DT = diff::Type::Default>
 auto ocp_to_nlp(FlatOCPType auto && ocp, MeshType auto && mesh)
-  -> detail::OCPNLP<decltype(ocp), decltype(mesh), DT>
+  -> detail::OCPNLP<std::decay_t<decltype(ocp)>, std::decay_t<decltype(mesh)>, DT>
 {
-  return detail::OCPNLP<decltype(ocp), decltype(mesh), DT>(
+  return detail::OCPNLP<std::decay_t<decltype(ocp)>, std::decay_t<decltype(mesh)>, DT>(
     std::forward<decltype(ocp)>(ocp), std::forward<decltype(mesh)>(mesh));
 }
 
@@ -633,12 +637,15 @@ auto nlpsol_to_ocpsol(
 }
 
 /**
- * @brief Convert ocp  solution to nonlinear program
+ * @brief Convert ocp solution to nonlinear program solution
+ *
+ * @note Allocates memory for return type.
  */
 NLPSolution
 ocpsol_to_nlpsol(const FlatOCPType auto & ocp, const MeshType auto & mesh, const auto & ocpsol)
 {
-  const std::size_t N                             = mesh.N_colloc();
+  const auto N = mesh.N_colloc();
+
   const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp, mesh);
 
   const auto [tfvar_B, qvar_B, xvar_B, uvar_B, n] = var_beg;
@@ -650,12 +657,7 @@ ocpsol_to_nlpsol(const FlatOCPType auto & ocp, const MeshType auto & mesh, const
   const double t0 = 0;
   const double tf = ocpsol.tf;
 
-  Eigen::VectorXd x(n);
-  Eigen::VectorXd zl(n), zu(n);
-  Eigen::VectorXd lambda(m);
-
-  zl.setZero();
-  zu.setZero();
+  Eigen::VectorXd x(n), lambda(m);
 
   x(tfvar_B)                = ocpsol.tf;
   x.segment(qvar_B, qvar_L) = ocpsol.Q;

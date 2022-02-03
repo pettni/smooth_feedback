@@ -32,7 +32,10 @@
  */
 
 #include <Eigen/Core>
+#include <smooth/diff.hpp>
 #include <smooth/lie_group.hpp>
+
+#include <iostream>
 
 #include "traits.hpp"
 
@@ -156,6 +159,163 @@ concept OCPType = traits::is_specialization_of_v<std::decay_t<T>, OCP>;
 template<typename T>
 concept FlatOCPType = OCPType<T> &&(smooth::traits::RnType<typename std::decay_t<T>::X> &&
                                       smooth::traits::RnType<typename std::decay_t<T>::U>);
+
+bool test_ocp_derivatives(const OCPType auto & ocp)
+{
+  // test derivatives
+  std::srand(5);
+
+  using OCP = std::decay_t<decltype(ocp)>;
+
+  using X = typename OCP::X;
+  using U = typename OCP::U;
+  using Q = Eigen::Vector<double, OCP::Nq>;
+
+  static_assert(diff::detail::diffable_order1<decltype(ocp.f), std::tuple<double, X, U>>);
+  static_assert(diff::detail::diffable_order2<decltype(ocp.f), std::tuple<double, X, U>>);
+
+  static_assert(diff::detail::diffable_order1<decltype(ocp.g), std::tuple<double, X, U>>);
+  static_assert(diff::detail::diffable_order2<decltype(ocp.g), std::tuple<double, X, U>>);
+
+  static_assert(diff::detail::diffable_order1<decltype(ocp.cr), std::tuple<double, X, U>>);
+  static_assert(diff::detail::diffable_order2<decltype(ocp.cr), std::tuple<double, X, U>>);
+
+  static_assert(diff::detail::diffable_order1<decltype(ocp.ce), std::tuple<double, X, X, Q>>);
+  static_assert(diff::detail::diffable_order2<decltype(ocp.ce), std::tuple<double, X, X, Q>>);
+
+  static_assert(diff::detail::diffable_order1<decltype(ocp.theta), std::tuple<double, X, X, Q>>);
+  static_assert(diff::detail::diffable_order2<decltype(ocp.theta), std::tuple<double, X, X, Q>>);
+
+  const auto cmp = [](const auto & m1, const auto & m2) {
+    return (
+      // clang-format off
+      (m1.cols() == m2.cols())
+      && (m1.rows() == m2.rows())
+      && (
+          m1.isApprox(m2, 1e-4) ||
+          Eigen::MatrixXd(m1 - m2).cwiseAbs().maxCoeff() < 1e-4
+      )
+      // clang-format on
+    );
+  };
+
+  bool success = true;
+
+  for (auto i = 0u; i < 5; ++i) {
+    // endpt parameters
+    const double tf                        = std::rand();
+    const X x0                             = Random<X>();
+    const X xf                             = Random<X>();
+    const Eigen::Vector<double, OCP::Nq> q = Eigen::Vector<double, OCP::Nq>::Random();
+
+    double t  = std::rand();
+    const X x = Random<X>();
+    const U u = Random<U>();
+
+    {
+      // theta
+      const auto [f_def, df_def, d2f_def] =
+        diff::dr<2, diff::Type::Default>(ocp.theta, wrt(tf, x0, xf, q));
+      const auto [f_num, df_num, d2f_num] =
+        diff::dr<2, diff::Type::Numerical>(ocp.theta, wrt(tf, x0, xf, q));
+
+      if (!cmp(df_def, df_num)) {
+        std::cout << "Error in 1st derivative of theta. Derivative is\n"
+                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(df_num) << '\n';
+        success = false;
+      };
+      if (!cmp(d2f_def, d2f_num)) {
+        std::cout << "Error in 2nd derivative of theta. Derivative is\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
+        success = false;
+      };
+    }
+
+    {
+      // end constraints
+      const auto [f_def, df_def, d2f_def] =
+        diff::dr<2, diff::Type::Default>(ocp.ce, wrt(tf, x0, xf, q));
+      const auto [f_num, df_num, d2f_num] =
+        diff::dr<2, diff::Type::Numerical>(ocp.ce, wrt(tf, x0, xf, q));
+
+      if (!cmp(df_def, df_num)) {
+        std::cout << "Error in 1st derivative of ce. Derivative is\n"
+                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(df_num) << '\n';
+        success = false;
+      };
+      if (!cmp(d2f_def, d2f_num)) {
+        std::cout << "Error in 2nd derivative of ce. Derivative is\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
+        success = false;
+      };
+    }
+
+    {
+      // dynamics
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Default>(ocp.f, wrt(t, x, u));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, diff::Type::Numerical>(ocp.f, wrt(t, x, u));
+
+      if (!cmp(df_def, df_num)) {
+        std::cout << "Error in 1st derivative of f. Derivative is\n"
+                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(df_num) << '\n';
+        success = false;
+      };
+
+      if (!cmp(d2f_def, d2f_num)) {
+        std::cout << "Error in 2nd derivative of f. Derivative is\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
+        success = false;
+      };
+    }
+
+    {
+      // integral
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Default>(ocp.g, wrt(t, x, u));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, diff::Type::Numerical>(ocp.g, wrt(t, x, u));
+
+      if (!cmp(df_def, df_num)) {
+        std::cout << "Error in 1st derivative of g. Derivative is\n"
+                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(df_num) << '\n';
+        success = false;
+      };
+      if (!cmp(d2f_def, d2f_num)) {
+        std::cout << "Error in 2nd derivative of g. Derivative is\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
+        success = false;
+      };
+    }
+
+    {
+      // running constraints
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Default>(ocp.cr, wrt(t, x, u));
+      const auto [f_num, df_num, d2f_num] =
+        diff::dr<2, diff::Type::Numerical>(ocp.cr, wrt(t, x, u));
+
+      if (!cmp(df_def, df_num)) {
+        std::cout << "Error in 1st derivative of cr. Derivative is\n"
+                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(df_num) << '\n';
+        success = false;
+      };
+      if (!cmp(d2f_def, d2f_num)) {
+        std::cout << "Error in 2nd derivative of cr. Derivative is\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
+        success = false;
+      };
+    }
+  }
+
+  return success;
+}
 
 }  // namespace smooth::feedback
 

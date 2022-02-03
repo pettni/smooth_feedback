@@ -44,6 +44,8 @@
 
 int main()
 {
+  smooth::feedback::test_ocp_derivatives(ocp_di);
+
   // target optimality
   double target_err = 1e-6;
 
