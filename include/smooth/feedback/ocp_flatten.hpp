@@ -64,6 +64,8 @@ struct FlatDyn
   using E = Tangent<X>;
   using V = Tangent<U>;
 
+  // Function: drexp_e f - dlexp_e dxl
+  //   = \sum Bn (-1)^n / n!  ad_a^n f - \sum Bn / n!  ad_a^n dxl
   template<typename T>
   CastT<T, E> operator()(const T & t, const CastT<T, E> & e, const CastT<T, V> & v) const
   {
@@ -79,29 +81,58 @@ struct FlatDyn
          - dl_expinv<CastT<T, X>>(e) * dxlval.template cast<T>();
   }
 
-  // Function: g_i = A_il f_l
-  //
   // First derivative
-  // d_k g_i = d_k(A_il) f_l + A_il d_k f_l
-  //
-  // Second derivative
-  // d_j d_k g_i = d_jk(A_il) f_l + d_k(A_il) d_j f_l + d_j A_il d_k f_l + A_il d_jk f_l
-  //
-
+  //     \sum Bn (-1)^n / n! dr (ad_a^n f)_a  - \sum Bn / n! dr ( ad_a^n dxl )_a
   Eigen::SparseMatrix<double> jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
-    const auto x       = rplus(xl(t), e);
-    const auto u       = rplus(ul(t), v);
-    const auto fval    = f(t, x, u);
-    const auto & dfval = f.jacobian(t, x, u);
-    const auto K       = d2r_expinv<X>(e);
+    const double tdbl          = static_cast<double>(t);
+    const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
+
+    const auto x             = rplus(xlval, e);
+    const auto u             = rplus(ul(t), v);
+    const auto & dfval       = f.jacobian(t, x, u);  // nx * (1 + nx + nu)
+    const TangentMap<X> ad_e = ad<X>(e);
 
     Eigen::SparseMatrix<double> ret(Nouts, Nvars);
-    block_add(ret, 0, 0, dr_expinv<X>(e) * dfval);  // A_il d_k f_l = A_il * [Jf]_lk
-    for (auto i = 0u; i < Dof<X>; ++i) {            // d_k(A_il) f_l
-      block_add(ret, i, 1, fval.transpose() * K.template block<Dof<X>, Dof<X>>(0, i * Dof<X>));
+
+    // w.r.t. t
+
+    block_add(ret, 0, 0, dfval.middleCols(0, 1));
+
+    // w.r.t. x
+
+    // know that d (ad_a b)_a = -ad_b + ad_a db_a,
+    // so d (ad_a^n b)_a = -ad_{ad_a^{n-1} b} + ad_a d (ad_a^{n-1} b)_a
+
+    double coeff1      = 1;                                       // hold (-1)^i / i!
+    Tangent<X> g1i     = f(t, x, u);                              // (ad_a)^i * f
+    TangentMap<X> dg1i = dfval.middleCols(1, Nx) * dr_exp<X>(e);  // derivative of g1i w.r.t. e
+
+    double coeff2      = 1;                      // hold 1 / i!
+    Tangent<X> g2i     = dxlval;                 // (ad_a)^i * dxl
+    TangentMap<X> dg2i = TangentMap<X>::Zero();  // derivative of g2i w.r.t. e
+
+    for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
+      if (smooth::detail::kBn[iter] != 0) {
+        block_add(ret, 0, 1, (smooth::detail::kBn[iter] * coeff1) * dg1i);
+        block_add(ret, 0, 1, (smooth::detail::kBn[iter] * coeff2) * dg2i, -1);
+      }
+      dg1i.applyOnTheLeft(ad_e);
+      dg1i -= ad<X>(g1i);
+      g1i.applyOnTheLeft(ad_e);
+
+      dg2i.applyOnTheLeft(ad_e);
+      dg2i -= ad<X>(g2i);
+      g2i.applyOnTheLeft(ad_e);
+
+      coeff1 *= (-1.) / (iter + 1);
+      coeff2 *= 1. / (iter + 1);
     }
+
+    // w.r.t. u
+    block_add(ret, 0, 1 + Nx, dr_expinv<X>(e) * dfval.middleCols(1 + Nx, Nu) * dr_exp<U>(v));
+
     return ret;
   }
 
@@ -109,19 +140,74 @@ struct FlatDyn
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
-    // TODO incorrect, needs a lot of work
-    const auto x = rplus(xl(t), e);
-    const auto u = rplus(ul(t), v);
-    // const auto fval    = f(t, x, u);
-    const auto & dfval = f.jacobian(t, x, u);  // nx * (1 + nx + nu)
+    using smooth::detail::kBn;
 
-    const auto K = d2r_expinv<X>(e);
+    const double tdbl          = static_cast<double>(t);
+    const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
 
-    Eigen::SparseMatrix<double> hess(Nvars, Nouts * Nvars);
-    for (auto i = 0u; i < Dof<X>; ++i) {
-      block_add(hess, 0, 0, dfval.transpose() * K.template block<Dof<X>, Dof<X>>(0, i * Dof<X>));
+    const auto x             = rplus(xlval, e);
+    const auto u             = rplus(ul(t), v);
+    const auto & dfval       = f.jacobian(t, x, u);  // nx x (1 + nx + nu)
+    const auto & d2fval      = f.hessian(t, x, u);   // (1 + nx + nu) x (nx * (1 + nx + nu))
+    const TangentMap<X> ad_e = ad<X>(e);
+
+    Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
+
+    // w.r.t. t
+
+    block_add(ret, 0, 0, dfval.block(0, 0, 1, 1));
+
+    // w.r.t. x
+
+    double coef      = 1;                                       // hold (-1)^i / i!
+    Tangent<X> vi    = f(t, x, u);                              // (ad_a)^i * f
+    TangentMap<X> ji = dfval.middleCols(1, Nx) * dr_exp<X>(e);  // first derivative of vi w.r.t. e
+    smooth::detail::hess_t<X> hi;                               // second derivative of vi w.r.t. e
+    for (auto i = 0u; i < Nx; ++i) {
+      hi.middleCols(i * Nx, Nx) = d2fval.middleCols(i * (1 + Nx + Nu) + 1, Nx);
     }
-    return hess;
+
+    for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
+      // add to result
+      if (kBn[iter] != 0) {
+        for (auto i = 0u; i < Nx; ++i) {
+          block_add(ret, 1, i * (1 + Nx + Nu) + 1, (kBn[iter] * coef) * hi.middleCols(i * Nx, Nx));
+        }
+      }
+
+      // update hi
+      smooth::detail::hess_t<X> hip = smooth::detail::hess_t<X>::Zero();
+      for (auto k = 0u; k < Nx; ++k) {
+        Eigen::Matrix<double, Nx, Nx> ek_gens;
+        for (auto l = 0u; l < Nx; ++l) {
+          ek_gens.row(l) = Eigen::Vector<double, Nx>::Unit(k).transpose()
+                         * smooth::detail::algebra_generators<X>[l];
+        }
+
+        hip.middleCols(k * Nx, Nx) += ek_gens * ji;
+        hip.middleCols(k * Nx, Nx) -= ji.transpose() * ek_gens;
+
+        for (auto l = 0u; l < Nx; ++l) {
+          hip.middleCols(k * Nx, Nx) += ad_e(k, l) * hi.middleCols(l * Nx, Nx);
+        }
+      }
+
+      hi = hip;
+
+      // update ji
+      ji.applyOnTheLeft(ad_e);
+      ji -= ad<X>(vi);
+
+      // update vi
+      vi.applyOnTheLeft(ad_e);
+
+      coef *= (-1.) / (iter + 1);
+    }
+
+    // w.r.t. u
+    block_add(ret, 1 + Nx, 1 + Nx, d2fval.block(1 + Nx, 1 + Nx, Nu, Nu));
+
+    return ret;
   }
 };
 
