@@ -133,13 +133,13 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   const auto [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
-  const Eigen::Vector<double, Nx> qo_x0 = dth.template segment<Nx>(1);
-  const Eigen::Vector<double, Nx> qo_xf = dth.template segment<Nx>(1 + Nx);
-  const Eigen::Vector<double, Nq> qo_q  = dth.template segment<Nq>(1 + 2 * Nx);
+  const Eigen::Vector<double, Nx> qo_x0 = dth.middleCols(1, Nx);
+  const Eigen::Vector<double, Nx> qo_xf = dth.middleCols(1 + Nx, Nx);
+  const Eigen::Vector<double, Nq> qo_q  = dth.middleCols(1 + 2 * Nx, Nq);
 
-  const Eigen::Matrix<double, Nx, Nx> Qo_x0  = d2th.template block<Nx, Nx>(1, 1) / 2;
-  const Eigen::Matrix<double, Nx, Nx> Qo_x0f = d2th.template block<Nx, Nx>(1, 1 + Nx) / 2;
-  const Eigen::Matrix<double, Nx, Nx> Qo_xf  = d2th.template block<Nx, Nx>(1 + Nx, 1 + Nx) / 2;
+  const Eigen::Matrix<double, Nx, Nx> Qo_x0  = d2th.block(1, 1, Nx, Nx) / 2;
+  const Eigen::Matrix<double, Nx, Nx> Qo_x0f = d2th.block(1, 1 + Nx, Nx, Nx) / 2;
+  const Eigen::Matrix<double, Nx, Nx> Qo_xf  = d2th.block(1 + Nx, 1 + Nx, Nx, Nx) / 2;
 
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////
@@ -211,10 +211,10 @@ QuadraticProgramSparse<double> ocp_to_qp(
   const auto [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, xl0, xlf, qlin));
 
   // integral constraints not supported
-  assert(dceval.middleCols(1 + 2 * Nx, Nq).cwiseAbs().maxCoeff() < 1e-9);
+  // assert(dceval.middleCols(1 + 2 * Nx, Nq).cwiseAbs().maxCoeff() < 1e-9);
 
   block_add(ret.A, cecon_B, xvar_B, dceval.middleCols(1, Nx));                     // dce / dx0
-  block_add(ret.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce/dxf
+  block_add(ret.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce / dxf
 
   ret.l.segment(cecon_B, cecon_L) = ocp.cel - ceval;
   ret.u.segment(cecon_B, cecon_L) = ocp.ceu - ceval;

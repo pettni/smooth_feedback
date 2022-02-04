@@ -53,65 +53,75 @@ template<LieGroup X, Manifold U, typename F, typename Xl, typename Ul>
 struct FlatDyn
 {
   F f;
-  Xl xl_fun;
-  Ul ul_fun;
+  Xl xl;
+  Ul ul;
 
   static constexpr auto Nx    = Dof<X>;
   static constexpr auto Nu    = Dof<U>;
   static constexpr auto Nouts = Nx;
   static constexpr auto Nvars = 1 + Nx + Nu;
 
+  using E = Tangent<X>;
+  using V = Tangent<U>;
+
   template<typename T>
-  Eigen::Vector<T, Nx>
-  operator()(const T & t, const Eigen::Vector<T, Nx> & e, const Eigen::Vector<T, Nu> & v) const
+  CastT<T, E> operator()(const T & t, const CastT<T, E> & e, const CastT<T, V> & v) const
   {
     // can not double-differentiate, so we hide derivative of f_new w.r.t. t
-    const double tdbl    = static_cast<double>(t);
-    const auto [xl, dxl] = diff::dr(xl_fun, wrt(tdbl));
-    const auto ul        = ul_fun(tdbl);
+    const double tdbl          = static_cast<double>(t);
+    const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
+    const auto ulval           = ul(tdbl);
 
-    const CastT<T, X> x = rplus(xl.template cast<T>(), e);
-    const CastT<T, U> u = rplus(ul.template cast<T>(), v);
+    const CastT<T, X> x = rplus(xlval.template cast<T>(), e);
+    const CastT<T, U> u = rplus(ulval.template cast<T>(), v);
 
     return dr_expinv<CastT<T, X>>(e) * f.template operator()<T>(t, x, u)
-         - dl_expinv<CastT<T, X>>(e) * dxl.template cast<T>();
+         - dl_expinv<CastT<T, X>>(e) * dxlval.template cast<T>();
   }
 
-  Eigen::SparseMatrix<double>
-  jacobian(double t, const Eigen::Vector<double, Nx> & e, const Eigen::Vector<double, Nu> & v)
-    // clang-format off
-        requires(
-          diff::detail::diffable_order1<F, std::tuple<double, X, U>>
-        )
-  // clang-format on
-  {
-    // TODO compute this one
-    const auto x    = rplus(xl_fun(t), e);
-    const auto u    = rplus(ul_fun(t), v);
-    const auto & df = f.jacobian(t, x, u);
+  // Function: g_i = A_il f_l
+  //
+  // First derivative
+  // d_k g_i = d_k(A_il) f_l + A_il d_k f_l
+  //
+  // Second derivative
+  // d_j d_k g_i = d_jk(A_il) f_l + d_k(A_il) d_j f_l + d_j A_il d_k f_l + A_il d_jk f_l
+  //
 
-    Eigen::SparseMatrix<double> j(Nouts, Nvars);
-    j = df;
-    return j;
+  Eigen::SparseMatrix<double> jacobian(double t, const E & e, const V & v) requires(
+    diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
+  {
+    const auto x       = rplus(xl(t), e);
+    const auto u       = rplus(ul(t), v);
+    const auto fval    = f(t, x, u);
+    const auto & dfval = f.jacobian(t, x, u);
+    const auto K       = d2r_expinv<X>(e);
+
+    Eigen::SparseMatrix<double> ret(Nouts, Nvars);
+    block_add(ret, 0, 0, dr_expinv<X>(e) * dfval);  // A_il d_k f_l = A_il * [Jf]_lk
+    for (auto i = 0u; i < Dof<X>; ++i) {            // d_k(A_il) f_l
+      block_add(ret, i, 1, fval.transpose() * K.template block<Dof<X>, Dof<X>>(0, i * Dof<X>));
+    }
+    return ret;
   }
 
-  Eigen::SparseMatrix<double>
-  hessian(double t, const Eigen::Vector<double, Nx> & e, const Eigen::Vector<double, Nu> & v)
-    // clang-format off
-      requires(
-        diff::detail::diffable_order1<F, std::tuple<double, X, U>>
-        && diff::detail::diffable_order2<F, std::tuple<double, X, U>>
-      )
-  // clang-format on
+  Eigen::SparseMatrix<double> hessian(double t, const E & e, const V & v) requires(
+    diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
+      diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
-    // TODO compute this one
-    const auto x     = rplus(xl_fun(t), e);
-    const auto u     = rplus(ul_fun(t), v);
-    const auto & d2f = f.hessian(t, x, u);
+    // TODO incorrect, needs a lot of work
+    const auto x = rplus(xl(t), e);
+    const auto u = rplus(ul(t), v);
+    // const auto fval    = f(t, x, u);
+    const auto & dfval = f.jacobian(t, x, u);  // nx * (1 + nx + nu)
 
-    Eigen::SparseMatrix<double> h(Nvars, Nouts * Nvars);
-    h = d2f;
-    return h;
+    const auto K = d2r_expinv<X>(e);
+
+    Eigen::SparseMatrix<double> hess(Nvars, Nouts * Nvars);
+    for (auto i = 0u; i < Dof<X>; ++i) {
+      block_add(hess, 0, 0, dfval.transpose() * K.template block<Dof<X>, Dof<X>>(0, i * Dof<X>));
+    }
+    return hess;
   }
 };
 
@@ -119,18 +129,20 @@ struct FlatDyn
  * @brief Flattening of inner function (t, x, u) -> Vector, and its derivatives.
  *
  * @note Ignores derivative dependence on t in xl(t)
- * @note Derivatives very much WIP
  */
 template<LieGroup X, Manifold U, std::size_t Nouts, typename F, typename Xl, typename Ul>
 struct FlatInnerFun
 {
   F f;
-  Xl xl_fun;
-  Ul ul_fun;
+  Xl xl;
+  Ul ul;
 
   static constexpr auto Nx    = Dof<X>;
   static constexpr auto Nu    = Dof<U>;
   static constexpr auto Nvars = 1 + Nx + Nu;
+
+  using E = Tangent<X>;
+  using V = Tangent<U>;
 
   static constexpr auto t_B = 0;
   static constexpr auto x_B = t_B + 1;
@@ -138,24 +150,15 @@ struct FlatInnerFun
 
   template<typename T>
   Eigen::Vector<T, Nouts>
-  operator()(const T & t, const Eigen::Vector<T, Nx> & e, const Eigen::Vector<T, Nu> & v) const
+  operator()(const T & t, const CastT<T, E> & e, const CastT<T, V> & v) const
   {
-    const auto x = rplus(xl_fun(t), e);
-    const auto u = rplus(ul_fun(t), v);
-    return f.template operator()<T>(t, x, u);
+    return f.template operator()<T>(t, rplus(xl(t), e), rplus(ul(t), v));
   }
 
-  Eigen::SparseMatrix<double>
-  jacobian(double t, const Eigen::Vector<double, Nx> & e, const Eigen::Vector<double, Nu> & v)
-    // clang-format off
-    requires(
-      diff::detail::diffable_order1<F, std::tuple<double, X, U>>
-    )
-  // clang-format on
+  Eigen::SparseMatrix<double> jacobian(double t, const E & e, const V & v) requires(
+    diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
-    const auto x    = rplus(xl_fun(t), e);
-    const auto u    = rplus(ul_fun(t), v);
-    const auto & df = f.jacobian(t, x, u);
+    const auto & df = f.jacobian(t, rplus(xl(t), e), rplus(ul(t), v));
 
     Eigen::SparseMatrix<double> ret(Nouts, Nvars);
     block_add(ret, 0, t_B, df.middleCols(t_B, 1));
@@ -164,17 +167,12 @@ struct FlatInnerFun
     return ret;
   }
 
-  Eigen::SparseMatrix<double>
-  hessian(double t, const Eigen::Vector<double, Nx> & e, const Eigen::Vector<double, Nu> & v)
-    // clang-format off
-    requires(
-      diff::detail::diffable_order1<F, std::tuple<double, X, U>>
-      && diff::detail::diffable_order2<F, std::tuple<double, X, U>>
-    )
-  // clang-format on
+  Eigen::SparseMatrix<double> hessian(double t, const E & e, const V & v) requires(
+    diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
+      diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
-    const auto x = rplus(xl_fun(t), e);
-    const auto u = rplus(ul_fun(t), v);
+    const auto x = rplus(xl(t), e);
+    const auto u = rplus(ul(t), v);
 
     const auto & Jf = f.jacobian(t, x, u);
     const auto & Hf = f.hessian(t, x, u);
@@ -182,8 +180,8 @@ struct FlatInnerFun
     const auto Je = dr_exp<X>(e);
     const auto Jv = dr_exp<U>(v);
 
-    const auto He = hessian_rplus<X>(e);
-    const auto Hv = hessian_rplus<U>(v);
+    const auto He = d2r_exp<X>(e);
+    const auto Hv = d2r_exp<U>(v);
 
     Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
 
@@ -191,29 +189,17 @@ struct FlatInnerFun
       const auto b0 = Nvars * no;           // block index
 
       // clang-format off
-      // tt
-      block_add(ret, t_B, b0 + t_B, Hf.block(t_B, b0 + t_B, 1,  1));
-      // te
-      block_add(ret, t_B, b0 + x_B, Hf.block(t_B, b0 + x_B, 1, Nx) * Je);
-      // tv
-      block_add(ret, t_B, b0 + u_B, Hf.block(t_B, b0 + u_B, 1, Nu) * Jv);
+      block_add(ret, t_B, b0 + t_B, Hf.block(t_B, b0 + t_B, 1,  1));       // tt
+      block_add(ret, t_B, b0 + x_B, Hf.block(t_B, b0 + x_B, 1, Nx) * Je);  // te
+      block_add(ret, t_B, b0 + u_B, Hf.block(t_B, b0 + u_B, 1, Nu) * Jv);  // tv
 
-      // If g = f(x + e), then
-      // Hg_ijk = Hf_imk Jp_mj Jp_lk + Jf_il Hp_ljk
+      block_add(ret, x_B, b0 + t_B, Je.transpose() * Hf.block(x_B, b0 + t_B, Nx,  1));       // et
+      block_add(ret, x_B, b0 + x_B, Je.transpose() * Hf.block(x_B, b0 + x_B, Nx, Nx) * Je);  // ee
+      block_add(ret, x_B, b0 + u_B, Je.transpose() * Hf.block(x_B, b0 + u_B, Nx, Nu) * Jv);  // ev
 
-      // et
-      block_add(ret, x_B, b0 + t_B, Je.transpose() * Hf.block(x_B, b0 + t_B, Nx, 1));
-      // ee
-      block_add(ret, x_B, b0 + x_B, Je.transpose() * Hf.block(x_B, b0 + x_B, Nx, Nx) * Je);
-      // ev
-      block_add(ret, x_B, b0 + u_B, Je.transpose() * Hf.block(x_B, b0 + u_B, Nx, Nu) * Jv);
-
-      // vt
-      block_add(ret, u_B, b0 + t_B, Jv.transpose() * Hf.block(u_B, b0 + t_B, Nu, 1));
-      // ve
-      block_add(ret, u_B, b0 + x_B, Jv.transpose() * Hf.block(u_B, b0 + x_B, Nu, Nx) * Je);
-      // vv
-      block_add(ret, u_B, b0 + u_B, Jv.transpose() * Hf.block(u_B, b0 + u_B, Nu, Nu) * Jv);
+      block_add(ret, u_B, b0 + t_B, Jv.transpose() * Hf.block(u_B, b0 + t_B, Nu,  1));       // vt
+      block_add(ret, u_B, b0 + x_B, Jv.transpose() * Hf.block(u_B, b0 + x_B, Nu, Nx) * Je);  // ve
+      block_add(ret, u_B, b0 + u_B, Jv.transpose() * Hf.block(u_B, b0 + u_B, Nu, Nu) * Jv);  // vv
 
       // second derivatives w.r.t. x+e
       for (auto nx = 0u; nx < Nx; ++nx) {
@@ -236,7 +222,6 @@ struct FlatInnerFun
  * @brief Flattening of endpoint function (tf, x0, xf, q) -> Vector, and its derivatives.
  *
  * @note Ignores dependence of tf in (xl(tf) + ef)
- * @note Currently does not support Hessians that are not block-diagonal...
  */
 template<
   LieGroup X,
@@ -249,11 +234,14 @@ template<
 struct FlatEndptFun
 {
   F f;
-  Xl xl_fun;
-  Ul ul_fun;
+  Xl xl;
+  Ul ul;
 
   static constexpr auto Nx    = Dof<X>;
   static constexpr auto Nvars = 1 + 2 * Nx + Nq;
+
+  using E = Tangent<X>;
+  using Q = Eigen::Vector<Scalar<X>, Nq>;
 
   static constexpr auto tf_B = 0;
   static constexpr auto x0_B = tf_B + 1;
@@ -262,27 +250,16 @@ struct FlatEndptFun
 
   template<typename T>
   auto operator()(
-    const T & tf,
-    const Eigen::Vector<T, Nx> & e0,
-    const Eigen::Vector<T, Nx> & ef,
-    const Eigen::Vector<T, Nq> & q) const
+    const T & tf, const CastT<T, E> & e0, const CastT<T, E> & ef, const CastT<T, Q> & q) const
   {
-    return f.template operator()<T>(tf, rplus(xl_fun(T(0.)), e0), rplus(xl_fun(tf), ef), q);
+    return f.template operator()<T>(tf, rplus(xl(T(0.)), e0), rplus(xl(tf), ef), q);
   }
 
-  Eigen::SparseMatrix<double> jacobian(
-    double tf,
-    const Eigen::Vector<double, Nx> & e0,
-    const Eigen::Vector<double, Nx> & ef,
-    const Eigen::Vector<double, Nq> & q)
-    // clang-format off
-        requires(
-          diff::detail::diffable_order1<F, std::tuple<double, X, X, Eigen::Vector<double, Nq>>>
-        )
-  // clang-format on
+  Eigen::SparseMatrix<double> jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
+    diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
-    const auto xl_0            = xl_fun(0.);
-    const auto [xl_tf, dxl_tf] = diff::dr(xl_fun, wrt(tf));
+    const auto xl_0            = xl(0.);
+    const auto [xl_tf, dxl_tf] = diff::dr(xl, wrt(tf));
 
     const auto dx0_e0 = dr_exp<X>(e0);
     const auto dxf_ef = dr_exp<X>(ef);
@@ -301,30 +278,22 @@ struct FlatEndptFun
     return j;
   }
 
-  Eigen::SparseMatrix<double> hessian(
-    double tf,
-    const Eigen::Vector<double, Nx> & e0,
-    const Eigen::Vector<double, Nx> & ef,
-    const Eigen::Vector<double, Nq> & q)
-    // clang-format off
-      requires(
-        diff::detail::diffable_order1<F, std::tuple<double, X, X, Eigen::Vector<double, Nq>>>
-        && diff::detail::diffable_order2<F, std::tuple<double, X, X, Eigen::Vector<double, Nq>>>
-      )
-  // clang-format on
+  Eigen::SparseMatrix<double> hessian(double tf, const E & e0, const E & ef, const Q & q) requires(
+    diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>> &&
+      diff::detail::diffable_order2<F, std::tuple<double, X, X, Q>>)
   {
-    const auto x0 = rplus(xl_fun(0.), e0);
-    const auto xf = rplus(xl_fun(tf), ef);
+    const auto x0 = rplus(xl(0.), e0);
+    const auto xf = rplus(xl(tf), ef);
 
     // derivatives of f
     const auto & Jf = f.jacobian(tf, x0, xf, q);  // Nouts x Nx
     const auto & Hf = f.hessian(tf, x0, xf, q);   // Nx x (Nouts * Nx)
 
     // derivatives of (x + e) w.r.t. e
-    const auto Jp0 = dr_exp<X>(e0);         // Nx x Nx
-    const auto Hp0 = hessian_rplus<X>(e0);  // Nx x (Nx * Nx)
-    const auto Jpf = dr_exp<X>(ef);         // Nx x Nx
-    const auto Hpf = hessian_rplus<X>(ef);  // Nx x (Nx * Nx)
+    const auto Jp0 = dr_exp<X>(e0);   // Nx x Nx
+    const auto Hp0 = d2r_exp<X>(e0);  // Nx x (Nx * Nx)
+    const auto Jpf = dr_exp<X>(ef);   // Nx x Nx
+    const auto Hpf = d2r_exp<X>(ef);  // Nx x (Nx * Nx)
 
     Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
 
@@ -334,29 +303,25 @@ struct FlatEndptFun
       // terms involving second derivatives w.r.t. f
 
       // clang-format off
-      // wrt tf
-      block_add(ret, tf_B, b0 + tf_B, Hf.block(tf_B, b0 + tf_B, 1,  1));
-      block_add(ret, tf_B, b0 + x0_B, Hf.block(tf_B, b0 + x0_B, 1, Nx) * Jp0);
-      block_add(ret, tf_B, b0 + xf_B, Hf.block(tf_B, b0 + xf_B, 1, Nx) * Jpf);
-      block_add(ret, tf_B, b0 +  q_B, Hf.block(tf_B, b0 +  q_B, 1, Nq));
+      block_add(ret, tf_B, b0 + tf_B, Hf.block(tf_B, b0 + tf_B, 1,  1));        // tftf
+      block_add(ret, tf_B, b0 + x0_B, Hf.block(tf_B, b0 + x0_B, 1, Nx) * Jp0);  // tfx0
+      block_add(ret, tf_B, b0 + xf_B, Hf.block(tf_B, b0 + xf_B, 1, Nx) * Jpf);  // tfxf
+      block_add(ret, tf_B, b0 +  q_B, Hf.block(tf_B, b0 +  q_B, 1, Nq));        // tfq
 
-      // wrt x0
-      block_add(ret, x0_B, b0 + tf_B, Jp0.transpose() * Hf.block(x0_B, b0 + tf_B, Nx,  1));
-      block_add(ret, x0_B, b0 + x0_B, Jp0.transpose() * Hf.block(x0_B, b0 + x0_B, Nx, Nx) * Jp0);
-      block_add(ret, x0_B, b0 + xf_B, Jp0.transpose() * Hf.block(x0_B, b0 + xf_B, Nx, Nx) * Jpf);
-      block_add(ret, x0_B, b0 +  q_B, Jp0.transpose() * Hf.block(x0_B, b0 +  q_B, Nx, Nq));
+      block_add(ret, x0_B, b0 + tf_B, Jp0.transpose() * Hf.block(x0_B, b0 + tf_B, Nx,  1));        // x0tf
+      block_add(ret, x0_B, b0 + x0_B, Jp0.transpose() * Hf.block(x0_B, b0 + x0_B, Nx, Nx) * Jp0);  // x0x0
+      block_add(ret, x0_B, b0 + xf_B, Jp0.transpose() * Hf.block(x0_B, b0 + xf_B, Nx, Nx) * Jpf);  // x0xf
+      block_add(ret, x0_B, b0 +  q_B, Jp0.transpose() * Hf.block(x0_B, b0 +  q_B, Nx, Nq));        // x0q
 
-      // wrt xf
-      block_add(ret, xf_B, b0 + tf_B, Jpf.transpose() * Hf.block(xf_B, b0 + tf_B, Nx,  1));
-      block_add(ret, xf_B, b0 + x0_B, Jpf.transpose() * Hf.block(xf_B, b0 + x0_B, Nx, Nx) * Jp0);
-      block_add(ret, xf_B, b0 + xf_B, Jpf.transpose() * Hf.block(xf_B, b0 + xf_B, Nx, Nx) * Jpf);
-      block_add(ret, xf_B, b0 +  q_B, Jpf.transpose() * Hf.block(xf_B, b0 +  q_B, Nx, Nq));
+      block_add(ret, xf_B, b0 + tf_B, Jpf.transpose() * Hf.block(xf_B, b0 + tf_B, Nx,  1));        // xftf
+      block_add(ret, xf_B, b0 + x0_B, Jpf.transpose() * Hf.block(xf_B, b0 + x0_B, Nx, Nx) * Jp0);  // xfx0
+      block_add(ret, xf_B, b0 + xf_B, Jpf.transpose() * Hf.block(xf_B, b0 + xf_B, Nx, Nx) * Jpf);  // xfxf
+      block_add(ret, xf_B, b0 +  q_B, Jpf.transpose() * Hf.block(xf_B, b0 +  q_B, Nx, Nq));        // xfq
 
-      // wrt q
-      block_add(ret,  q_B, b0 + tf_B, Hf.block(q_B, b0 + tf_B, Nq,  1));
-      block_add(ret,  q_B, b0 + x0_B, Hf.block(q_B, b0 + x0_B, Nq, Nx) * Jp0);
-      block_add(ret,  q_B, b0 + xf_B, Hf.block(q_B, b0 + xf_B, Nq, Nx) * Jpf);
-      block_add(ret,  q_B, b0 +  q_B, Hf.block(q_B, b0 +  q_B, Nq, Nq));
+      block_add(ret,  q_B, b0 + tf_B, Hf.block(q_B, b0 + tf_B, Nq,  1));        // qtf
+      block_add(ret,  q_B, b0 + x0_B, Hf.block(q_B, b0 + x0_B, Nq, Nx) * Jp0);  // qx0
+      block_add(ret,  q_B, b0 + xf_B, Hf.block(q_B, b0 + xf_B, Nq, Nx) * Jpf);  // qxf
+      block_add(ret,  q_B, b0 +  q_B, Hf.block(q_B, b0 +  q_B, Nq, Nq));        // qq
       // clang-format on
 
       // terms involving second derivatives w.r.t. e0 and ef
@@ -385,21 +350,21 @@ struct FlatEndptFun
  * @return FlatOCPType in variables (xe, ue) obtained via variables change x = xl ⊕ xe, u = ul ⊕
  * ue,
  */
-auto flatten_ocp2(const OCPType auto & ocp, auto && xl, auto && ul)
+auto flatten_ocp(const OCPType auto & ocp, auto && xl, auto && ul)
 {
   using ocp_t = std::decay_t<decltype(ocp)>;
   using X     = typename ocp_t::X;
   using U     = typename ocp_t::U;
-  using xl_t  = decltype(xl);
-  using ul_t  = decltype(ul);
+  using Xl    = decltype(xl);
+  using Ul    = decltype(ul);
 
   static constexpr auto Nq = ocp_t::Nq;
 
-  detail::FlatEndptFun<X, U, Nq, 1, decltype(ocp.theta), xl_t, ul_t> flat_theta{ocp.theta, xl, ul};
-  detail::FlatDyn<X, U, decltype(ocp.f), xl_t, ul_t> flat_f{ocp.f, xl, ul};
-  detail::FlatInnerFun<X, U, Nq, decltype(ocp.g), xl_t, ul_t> flat_g{ocp.g, xl, ul};
-  detail::FlatInnerFun<X, U, ocp_t::Ncr, decltype(ocp.cr), xl_t, ul_t> flat_cr{ocp.cr, xl, ul};
-  detail::FlatEndptFun<X, U, Nq, ocp_t::Nce, decltype(ocp.ce), xl_t, ul_t> flat_ce{ocp.ce, xl, ul};
+  detail::FlatEndptFun<X, U, Nq, 1, decltype(ocp.theta), Xl, Ul> flat_theta{ocp.theta, xl, ul};
+  detail::FlatDyn<X, U, decltype(ocp.f), Xl, Ul> flat_f{ocp.f, xl, ul};
+  detail::FlatInnerFun<X, U, Nq, decltype(ocp.g), Xl, Ul> flat_g{ocp.g, xl, ul};
+  detail::FlatInnerFun<X, U, ocp_t::Ncr, decltype(ocp.cr), Xl, Ul> flat_cr{ocp.cr, xl, ul};
+  detail::FlatEndptFun<X, U, Nq, ocp_t::Nce, decltype(ocp.ce), Xl, Ul> flat_ce{ocp.ce, xl, ul};
 
   return OCP<
     Eigen::Vector<double, Dof<X>>,
@@ -418,6 +383,36 @@ auto flatten_ocp2(const OCPType auto & ocp, auto && xl, auto && ul)
     .ce    = std::move(flat_ce),
     .cel   = ocp.cel,
     .ceu   = ocp.ceu,
+  };
+}
+
+/**
+ * @brief Unflatten a FlatOCPSolution
+ *
+ * If flat_sol is a solution to flat_ocp = flatten_ocp(ocp, xl_fun, ul_fun),
+ * then unflatten_ocpsol(flat_sol, xl_fun, ul_fun) is a solution to ocp.
+ */
+template<LieGroup X, Manifold U>
+auto unflatten_ocpsol(const auto & flatsol, auto && xl_fun, auto && ul_fun)
+{
+  using ocpsol_t = std::decay_t<decltype(flatsol)>;
+
+  auto u_unflat = [ul_fun = std::forward<decltype(ul_fun)>(ul_fun),
+                   usol   = flatsol.u](double t) -> U { return rplus(ul_fun(t), usol(t)); };
+
+  auto x_unflat = [xl_fun = std::forward<decltype(xl_fun)>(xl_fun),
+                   xsol   = flatsol.x](double t) -> X { return rplus(xl_fun(t), xsol(t)); };
+
+  return OCPSolution<X, U, ocpsol_t::Nq, ocpsol_t::Ncr, ocpsol_t::Nce>{
+    .t0         = flatsol.t0,
+    .tf         = flatsol.tf,
+    .Q          = flatsol.Q,
+    .u          = std::move(u_unflat),
+    .x          = std::move(x_unflat),
+    .lambda_q   = flatsol.lambda_q,
+    .lambda_ce  = flatsol.lambda_ce,
+    .lambda_dyn = flatsol.lambda_dyn,
+    .lambda_cr  = flatsol.lambda_cr,
   };
 }
 

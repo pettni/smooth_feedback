@@ -220,13 +220,13 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
         diff::dr<2, diff::Type::Numerical>(ocp.theta, wrt(tf, x0, xf, q));
 
       if (!cmp(df_def, df_num)) {
-        std::cout << "Error in 1st derivative of theta. Derivative is\n"
+        std::cout << "Error in 1st derivative of theta: got\n"
                   << Eigen::MatrixXd(df_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(df_num) << '\n';
         success = false;
       };
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2nd derivative of theta. Derivative is\n"
+        std::cout << "Error in 2nd derivative of theta: got\n"
                   << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
@@ -241,13 +241,13 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
         diff::dr<2, diff::Type::Numerical>(ocp.ce, wrt(tf, x0, xf, q));
 
       if (!cmp(df_def, df_num)) {
-        std::cout << "Error in 1st derivative of ce. Derivative is\n"
+        std::cout << "Error in 1st derivative of ce: got\n"
                   << Eigen::MatrixXd(df_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(df_num) << '\n';
         success = false;
       };
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2nd derivative of ce. Derivative is\n"
+        std::cout << "Error in 2nd derivative of ce: got\n"
                   << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
@@ -260,14 +260,14 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
       const auto [f_num, df_num, d2f_num] = diff::dr<2, diff::Type::Numerical>(ocp.f, wrt(t, x, u));
 
       if (!cmp(df_def, df_num)) {
-        std::cout << "Error in 1st derivative of f. Derivative is\n"
+        std::cout << "Error in 1st derivative of f: got\n"
                   << Eigen::MatrixXd(df_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(df_num) << '\n';
         success = false;
       };
 
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2nd derivative of f. Derivative is\n"
+        std::cout << "Error in 2nd derivative of f: got\n"
                   << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
@@ -280,13 +280,13 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
       const auto [f_num, df_num, d2f_num] = diff::dr<2, diff::Type::Numerical>(ocp.g, wrt(t, x, u));
 
       if (!cmp(df_def, df_num)) {
-        std::cout << "Error in 1st derivative of g. Derivative is\n"
+        std::cout << "Error in 1st derivative of g: got\n"
                   << Eigen::MatrixXd(df_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(df_num) << '\n';
         success = false;
       };
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2nd derivative of g. Derivative is\n"
+        std::cout << "Error in 2nd derivative of g: got\n"
                   << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
@@ -300,13 +300,13 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
         diff::dr<2, diff::Type::Numerical>(ocp.cr, wrt(t, x, u));
 
       if (!cmp(df_def, df_num)) {
-        std::cout << "Error in 1st derivative of cr. Derivative is\n"
+        std::cout << "Error in 1st derivative of cr: got\n"
                   << Eigen::MatrixXd(df_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(df_num) << '\n';
         success = false;
       };
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2nd derivative of cr. Derivative is\n"
+        std::cout << "Error in 2nd derivative of cr: got\n"
                   << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
                   << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;

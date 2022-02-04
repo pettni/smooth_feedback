@@ -44,8 +44,6 @@ using namespace std::chrono;
 
 int main()
 {
-  smooth::feedback::test_ocp_derivatives(ocp_se2);
-
   smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 50);
 

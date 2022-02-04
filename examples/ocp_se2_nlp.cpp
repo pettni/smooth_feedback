@@ -29,6 +29,7 @@
 
 #include <smooth/feedback/collocation/dyn_error.hpp>
 #include <smooth/feedback/compat/ipopt.hpp>
+#include <smooth/feedback/ocp_flatten.hpp>
 #include <smooth/feedback/ocp_to_nlp.hpp>
 
 #include <chrono>
@@ -77,8 +78,7 @@ int main()
         {"print_level", 5},
       },
       {
-        {"linear_solver", "mumps"},
-        {"hessian_approximation", "exact"},
+        {"linear_solver", "mumps"}, {"hessian_approximation", "exact"},
         // {"derivative_test", "first-order"},
         // {"print_timing_statistics", "yes"},
       },
