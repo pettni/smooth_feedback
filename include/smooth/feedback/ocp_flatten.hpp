@@ -47,7 +47,6 @@ namespace detail {
  * @brief Flattening of dynamics function (t, x, u) -> Tangent, and its derivatives.
  *
  * @note Ignores derivative dependence on t in xl(t)
- * @note Derivatives very much WIP
  */
 template<LieGroup X, Manifold U, typename F, typename Xl, typename Ul>
 struct FlatDyn
@@ -96,9 +95,6 @@ struct FlatDyn
 
     Eigen::SparseMatrix<double> ret(Nouts, Nvars);
 
-    // know that d (ad_a b)_a = -ad_b + ad_a db_a,
-    // so d (ad_a^n b)_a = -ad_{ad_a^{n-1} b} + ad_a d (ad_a^{n-1} b)_a
-
     double coeff1                            = 1;           // hold (-1)^i / i!
     Tangent<X> g1i                           = f(t, x, u);  // (ad_a)^i * f
     Eigen::Matrix<double, Nouts, Nvars> dg1i = dfval;       // derivative of g1i w.r.t. e
@@ -135,6 +131,7 @@ struct FlatDyn
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
     using smooth::detail::kBn;
+    using Ht = Eigen::Matrix<double, Nvars, Nouts * Nvars>;
 
     const double tdbl          = static_cast<double>(t);
     const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
@@ -147,30 +144,21 @@ struct FlatDyn
 
     Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
 
-    // w.r.t. t
+    double coef                            = 1;           // hold (-1)^i / i!
+    Tangent<X> vi                          = f(t, x, u);  // (ad_a)^i * f
+    Eigen::Matrix<double, Nouts, Nvars> ji = dfval;       // dr (vi)_{t, e, v}
+    Ht hi;  // dr (ji' e_k)_{t, e, v}  where k-derivatives are stacked in horizontal blocks
 
-    block_add(ret, 0, 0, dfval.block(0, 0, 1, 1));
-
-    // w.r.t. x
-
-    double coef      = 1;                                       // hold (-1)^i / i!
-    Tangent<X> vi    = f(t, x, u);                              // (ad_a)^i * f
-    TangentMap<X> ji = dfval.middleCols(1, Nx) * dr_exp<X>(e);  // first derivative of vi w.r.t. e
-    smooth::detail::hess_t<X> hi;                               // second derivative of vi w.r.t. e
-    for (auto i = 0u; i < Nx; ++i) {
-      hi.middleCols(i * Nx, Nx) = d2fval.middleCols(i * (1 + Nx + Nu) + 1, Nx);
-    }
+    ji.middleCols(1, Nx) *= dr_exp<X>(e);
+    ji.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
+    hi = d2fval;  // TODO: add drexp's?
 
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
       // add to result
-      if (kBn[iter] != 0) {
-        for (auto i = 0u; i < Nx; ++i) {
-          block_add(ret, 1, i * (1 + Nx + Nu) + 1, (kBn[iter] * coef) * hi.middleCols(i * Nx, Nx));
-        }
-      }
+      if (kBn[iter] != 0) { block_add(ret, 0, 0, (kBn[iter] * coef) * hi); }
 
       // update hi
-      smooth::detail::hess_t<X> hip = smooth::detail::hess_t<X>::Zero();
+      Ht hip = Ht::Zero();
       for (auto k = 0u; k < Nx; ++k) {
         Eigen::Matrix<double, Nx, Nx> ek_gens;
         for (auto l = 0u; l < Nx; ++l) {
@@ -178,11 +166,10 @@ struct FlatDyn
                          * smooth::detail::algebra_generators<X>[l];
         }
 
-        hip.middleCols(k * Nx, Nx) += ek_gens * ji;
-        hip.middleCols(k * Nx, Nx) -= ji.transpose() * ek_gens;
-
+        hip.middleCols(k * Nvars, Nvars).middleRows(1, Nx) += ek_gens * ji;
+        hip.middleCols(k * Nvars, Nvars).middleCols(1, Nx) -= ji.transpose() * ek_gens;
         for (auto l = 0u; l < Nx; ++l) {
-          hip.middleCols(k * Nx, Nx) += ad_e(k, l) * hi.middleCols(l * Nx, Nx);
+          hip.middleCols(k * Nvars, Nvars) += ad_e(k, l) * hi.middleCols(l * Nvars, Nvars);
         }
       }
 
@@ -190,16 +177,13 @@ struct FlatDyn
 
       // update ji
       ji.applyOnTheLeft(ad_e);
-      ji -= ad<X>(vi);
+      ji.middleCols(1, Nx) -= ad<X>(vi);
 
       // update vi
       vi.applyOnTheLeft(ad_e);
 
       coef *= (-1.) / (iter + 1);
     }
-
-    // w.r.t. u
-    block_add(ret, 1 + Nx, 1 + Nx, d2fval.block(1 + Nx, 1 + Nx, Nu, Nu));
 
     return ret;
   }
