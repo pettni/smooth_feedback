@@ -85,6 +85,7 @@ struct FlatDyn
         )
   // clang-format on
   {
+    // TODO compute this one
     const auto x    = rplus(xl_fun(t), e);
     const auto u    = rplus(ul_fun(t), v);
     const auto & df = f.jacobian(t, x, u);
@@ -103,6 +104,7 @@ struct FlatDyn
       )
   // clang-format on
   {
+    // TODO compute this one
     const auto x     = rplus(xl_fun(t), e);
     const auto u     = rplus(ul_fun(t), v);
     const auto & d2f = f.hessian(t, x, u);
@@ -130,6 +132,10 @@ struct FlatInnerFun
   static constexpr auto Nu    = Dof<U>;
   static constexpr auto Nvars = 1 + Nx + Nu;
 
+  static constexpr auto t_B = 0;
+  static constexpr auto x_B = t_B + 1;
+  static constexpr auto u_B = x_B + Nx;
+
   template<typename T>
   Eigen::Vector<T, Nouts>
   operator()(const T & t, const Eigen::Vector<T, Nx> & e, const Eigen::Vector<T, Nu> & v) const
@@ -142,36 +148,87 @@ struct FlatInnerFun
   Eigen::SparseMatrix<double>
   jacobian(double t, const Eigen::Vector<double, Nx> & e, const Eigen::Vector<double, Nu> & v)
     // clang-format off
-        requires(
-          diff::detail::diffable_order1<F, std::tuple<double, X, U>>
-        )
+    requires(
+      diff::detail::diffable_order1<F, std::tuple<double, X, U>>
+    )
   // clang-format on
   {
     const auto x    = rplus(xl_fun(t), e);
     const auto u    = rplus(ul_fun(t), v);
     const auto & df = f.jacobian(t, x, u);
 
-    Eigen::SparseMatrix<double> j(Nouts, Nvars);
-    j = df;
-    return j;
+    Eigen::SparseMatrix<double> ret(Nouts, Nvars);
+    block_add(ret, 0, t_B, df.middleCols(t_B, 1));
+    block_add(ret, 0, x_B, df.middleCols(x_B, Nx) * dr_exp<X>(e));
+    block_add(ret, 0, u_B, df.middleCols(u_B, Nu) * dr_exp<U>(v));
+    return ret;
   }
 
   Eigen::SparseMatrix<double>
   hessian(double t, const Eigen::Vector<double, Nx> & e, const Eigen::Vector<double, Nu> & v)
     // clang-format off
-        requires(
-          diff::detail::diffable_order1<F, std::tuple<double, X, U>>
-          && diff::detail::diffable_order2<F, std::tuple<double, X, U>>
-        )
+    requires(
+      diff::detail::diffable_order1<F, std::tuple<double, X, U>>
+      && diff::detail::diffable_order2<F, std::tuple<double, X, U>>
+    )
   // clang-format on
   {
-    const auto x     = rplus(xl_fun(t), e);
-    const auto u     = rplus(ul_fun(t), v);
-    const auto & d2f = f.hessian(t, x, u);
+    const auto x = rplus(xl_fun(t), e);
+    const auto u = rplus(ul_fun(t), v);
 
-    Eigen::SparseMatrix<double> h(Nvars, Nouts * Nvars);
-    h = d2f;
-    return h;
+    const auto & Jf = f.jacobian(t, x, u);
+    const auto & Hf = f.hessian(t, x, u);
+
+    const auto Je = dr_exp<X>(e);
+    const auto Jv = dr_exp<U>(v);
+
+    const auto He = hessian_rplus<X>(e);
+    const auto Hv = hessian_rplus<U>(v);
+
+    Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
+
+    for (auto no = 0u; no < Nouts; ++no) {  // for each output
+      const auto b0 = Nvars * no;           // block index
+
+      // clang-format off
+      // tt
+      block_add(ret, t_B, b0 + t_B, Hf.block(t_B, b0 + t_B, 1,  1));
+      // te
+      block_add(ret, t_B, b0 + x_B, Hf.block(t_B, b0 + x_B, 1, Nx) * Je);
+      // tv
+      block_add(ret, t_B, b0 + u_B, Hf.block(t_B, b0 + u_B, 1, Nu) * Jv);
+
+      // If g = f(x + e), then
+      // Hg_ijk = Hf_imk Jp_mj Jp_lk + Jf_il Hp_ljk
+
+      // et
+      block_add(ret, x_B, b0 + t_B, Je.transpose() * Hf.block(x_B, b0 + t_B, Nx, 1));
+      // ee
+      block_add(ret, x_B, b0 + x_B, Je.transpose() * Hf.block(x_B, b0 + x_B, Nx, Nx) * Je);
+      // ev
+      block_add(ret, x_B, b0 + u_B, Je.transpose() * Hf.block(x_B, b0 + u_B, Nx, Nu) * Jv);
+
+      // vt
+      block_add(ret, u_B, b0 + t_B, Jv.transpose() * Hf.block(u_B, b0 + t_B, Nu, 1));
+      // ve
+      block_add(ret, u_B, b0 + x_B, Jv.transpose() * Hf.block(u_B, b0 + x_B, Nu, Nx) * Je);
+      // vv
+      block_add(ret, u_B, b0 + u_B, Jv.transpose() * Hf.block(u_B, b0 + u_B, Nu, Nu) * Jv);
+
+      // second derivatives w.r.t. x+e
+      for (auto nx = 0u; nx < Nx; ++nx) {
+        // TODO: skip if Jf isn't filled
+        block_add(ret, x_B, b0 + x_B, Jf.coeff(no, x_B + nx) * He.block(0, nx * Nx, Nx, Nx));
+      }
+
+      // second derivatives w.r.t. u+v
+      for (auto nu = 0u; nu < Nu; ++nu) {
+        // TODO: skip if Jf isn't filled
+        block_add(ret, u_B, b0 + u_B, Jf.coeff(no, u_B + nu) * Hv.block(0, nu * Nu, Nu, Nu));
+      }
+      // clang-format on
+    }
+    return ret;
   }
 };
 
@@ -235,11 +292,11 @@ struct FlatEndptFun
 
     Eigen::SparseMatrix<double> j(Nouts, Nvars);
     // clang-format off
-      block_add(j, 0, tf_B, dtheta.middleCols(tf_B, 1));
-      // block_add(j, 0, tf_B, dtheta.middleCols(xf_B, Nx) * dxf_tf);
-      block_add(j, 0, x0_B, dtheta.middleCols(x0_B, Nx) * dx0_e0);
-      block_add(j, 0, xf_B, dtheta.middleCols(xf_B, Nx) * dxf_ef);
-      block_add(j, 0,  q_B, dtheta.middleCols( q_B, Nq));
+    block_add(j, 0, tf_B, dtheta.middleCols(tf_B, 1));
+    // block_add(j, 0, tf_B, dtheta.middleCols(xf_B, Nx) * dxf_tf);  // ignore this dependence for now..
+    block_add(j, 0, x0_B, dtheta.middleCols(x0_B, Nx) * dx0_e0);
+    block_add(j, 0, xf_B, dtheta.middleCols(xf_B, Nx) * dxf_ef);
+    block_add(j, 0,  q_B, dtheta.middleCols( q_B, Nq));
     // clang-format on
     return j;
   }
@@ -271,26 +328,45 @@ struct FlatEndptFun
 
     Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
 
-    // for each output
-    for (auto nf = 0u; nf < Nouts; ++nf) {
-      const auto b0 = Nvars * nf;  // block index
+    for (auto no = 0u; no < Nouts; ++no) {  // for each output
+      const auto b0 = Nvars * no;           // block index
 
+      // terms involving second derivatives w.r.t. f
+
+      // clang-format off
       // wrt tf
-      block_add(ret, tf_B, b0 + tf_B, Hf.block(tf_B, b0 + tf_B, 1, 1));
+      block_add(ret, tf_B, b0 + tf_B, Hf.block(tf_B, b0 + tf_B, 1,  1));
+      block_add(ret, tf_B, b0 + x0_B, Hf.block(tf_B, b0 + x0_B, 1, Nx) * Jp0);
+      block_add(ret, tf_B, b0 + xf_B, Hf.block(tf_B, b0 + xf_B, 1, Nx) * Jpf);
+      block_add(ret, tf_B, b0 +  q_B, Hf.block(tf_B, b0 +  q_B, 1, Nq));
 
-      // If g = f(x + e), then
-      // Hg_ijk = Hf_imk Jp_mj Jp_lk + Jf_il Hp_ljk
-
-      // wrt e0, ef
+      // wrt x0
+      block_add(ret, x0_B, b0 + tf_B, Jp0.transpose() * Hf.block(x0_B, b0 + tf_B, Nx,  1));
       block_add(ret, x0_B, b0 + x0_B, Jp0.transpose() * Hf.block(x0_B, b0 + x0_B, Nx, Nx) * Jp0);
+      block_add(ret, x0_B, b0 + xf_B, Jp0.transpose() * Hf.block(x0_B, b0 + xf_B, Nx, Nx) * Jpf);
+      block_add(ret, x0_B, b0 +  q_B, Jp0.transpose() * Hf.block(x0_B, b0 +  q_B, Nx, Nq));
+
+      // wrt xf
+      block_add(ret, xf_B, b0 + tf_B, Jpf.transpose() * Hf.block(xf_B, b0 + tf_B, Nx,  1));
+      block_add(ret, xf_B, b0 + x0_B, Jpf.transpose() * Hf.block(xf_B, b0 + x0_B, Nx, Nx) * Jp0);
       block_add(ret, xf_B, b0 + xf_B, Jpf.transpose() * Hf.block(xf_B, b0 + xf_B, Nx, Nx) * Jpf);
-      for (auto nx = 0u; nx < Nx; ++nx) {
-        block_add(ret, x0_B, b0 + x0_B, Jf.coeff(nf, x0_B + nx) * Hp0.block(0, nx * Nx, Nx, Nx));
-        block_add(ret, xf_B, b0 + xf_B, Jf.coeff(nf, xf_B + nx) * Hpf.block(0, nx * Nx, Nx, Nx));
-      }
+      block_add(ret, xf_B, b0 +  q_B, Jpf.transpose() * Hf.block(xf_B, b0 +  q_B, Nx, Nq));
 
       // wrt q
-      block_add(ret, q_B, b0 + q_B, Hf.block(q_B, b0 + q_B, Nq, Nq));
+      block_add(ret,  q_B, b0 + tf_B, Hf.block(q_B, b0 + tf_B, Nq,  1));
+      block_add(ret,  q_B, b0 + x0_B, Hf.block(q_B, b0 + x0_B, Nq, Nx) * Jp0);
+      block_add(ret,  q_B, b0 + xf_B, Hf.block(q_B, b0 + xf_B, Nq, Nx) * Jpf);
+      block_add(ret,  q_B, b0 +  q_B, Hf.block(q_B, b0 +  q_B, Nq, Nq));
+      // clang-format on
+
+      // terms involving second derivatives w.r.t. e0 and ef
+
+      for (auto nx = 0u; nx < Nx; ++nx) {
+        // TODO: skip if Jf isn't filled
+        block_add(ret, x0_B, b0 + x0_B, Jf.coeff(no, x0_B + nx) * Hp0.block(0, nx * Nx, Nx, Nx));
+        // TODO: skip if Jf isn't filled
+        block_add(ret, xf_B, b0 + xf_B, Jf.coeff(no, xf_B + nx) * Hpf.block(0, nx * Nx, Nx, Nx));
+      }
     }
 
     return ret;
