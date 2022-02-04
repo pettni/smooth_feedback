@@ -401,7 +401,7 @@ TEST_F(MeshFunction_Random, EvalAllocationNumerical)
 
   // first call: not allocated
   ASSERT_FALSE(out.allocated);
-  smooth::feedback::mesh_eval<2>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
   ASSERT_FALSE(out.dF.isCompressed());
   ASSERT_FALSE(out.d2F.isCompressed());
@@ -415,7 +415,7 @@ TEST_F(MeshFunction_Random, EvalAllocationNumerical)
 
   // second call: allocated
   ASSERT_TRUE(out.allocated);
-  smooth::feedback::mesh_eval<2>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+  smooth::feedback::mesh_eval<2, smooth::diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
   // expect to still be compressed (means we only touched existing coeffs)
   ASSERT_TRUE(out.dF.isCompressed());
@@ -455,7 +455,7 @@ TEST_F(MeshFunction_Random, IntegrateAllocationNumerical)
 
   // first call: not allocated
   ASSERT_FALSE(out.allocated);
-  smooth::feedback::mesh_integrate<2>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
   ASSERT_FALSE(out.dF.isCompressed());
   ASSERT_FALSE(out.d2F.isCompressed());
@@ -469,7 +469,7 @@ TEST_F(MeshFunction_Random, IntegrateAllocationNumerical)
 
   // second call: allocated
   ASSERT_TRUE(out.allocated);
-  smooth::feedback::mesh_integrate<2>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+  smooth::feedback::mesh_integrate<2, smooth::diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
   // expect to still be compressed (means we only touched existing coeffs)
   ASSERT_TRUE(out.dF.isCompressed());
@@ -509,7 +509,7 @@ TEST_F(MeshFunction_Random, DynAllocationNumerical)
 
   // first call: not allocated
   ASSERT_FALSE(out.allocated);
-  smooth::feedback::mesh_dyn<2>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+  smooth::feedback::mesh_dyn<2, smooth::diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
   ASSERT_FALSE(out.dF.isCompressed());
   ASSERT_FALSE(out.d2F.isCompressed());
@@ -523,7 +523,7 @@ TEST_F(MeshFunction_Random, DynAllocationNumerical)
 
   // second call: allocated
   ASSERT_TRUE(out.allocated);
-  smooth::feedback::mesh_dyn<2>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
+  smooth::feedback::mesh_dyn<2, smooth::diff::Type::Numerical>(out, mesh, f, t0, tf, X.colwise(), U.colwise());
 
   // expect to still be compressed (means we only touched existing coeffs)
   ASSERT_TRUE(out.dF.isCompressed());

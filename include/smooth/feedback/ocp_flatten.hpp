@@ -367,8 +367,8 @@ auto flatten_ocp(const OCPType auto & ocp, auto && xl, auto && ul)
   detail::FlatEndptFun<X, U, Nq, ocp_t::Nce, decltype(ocp.ce), Xl, Ul> flat_ce{ocp.ce, xl, ul};
 
   return OCP<
-    Eigen::Vector<double, Dof<X>>,
-    Eigen::Vector<double, Dof<U>>,
+    Tangent<X>,
+    Tangent<U>,
     decltype(flat_theta),
     decltype(flat_f),
     decltype(flat_g),
