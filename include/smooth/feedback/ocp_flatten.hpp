@@ -96,42 +96,36 @@ struct FlatDyn
 
     Eigen::SparseMatrix<double> ret(Nouts, Nvars);
 
-    // w.r.t. t
-
-    block_add(ret, 0, 0, dfval.middleCols(0, 1));
-
-    // w.r.t. x
-
     // know that d (ad_a b)_a = -ad_b + ad_a db_a,
     // so d (ad_a^n b)_a = -ad_{ad_a^{n-1} b} + ad_a d (ad_a^{n-1} b)_a
 
-    double coeff1      = 1;                                       // hold (-1)^i / i!
-    Tangent<X> g1i     = f(t, x, u);                              // (ad_a)^i * f
-    TangentMap<X> dg1i = dfval.middleCols(1, Nx) * dr_exp<X>(e);  // derivative of g1i w.r.t. e
+    double coeff1                            = 1;           // hold (-1)^i / i!
+    Tangent<X> g1i                           = f(t, x, u);  // (ad_a)^i * f
+    Eigen::Matrix<double, Nouts, Nvars> dg1i = dfval;       // derivative of g1i w.r.t. e
+    dg1i.middleCols(1, Nx) *= dr_exp<X>(e);
+    dg1i.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
 
-    double coeff2      = 1;                      // hold 1 / i!
-    Tangent<X> g2i     = dxlval;                 // (ad_a)^i * dxl
-    TangentMap<X> dg2i = TangentMap<X>::Zero();  // derivative of g2i w.r.t. e
+    double coeff2  = 1;                        // hold 1 / i!
+    Tangent<X> g2i = dxlval;                   // (ad_a)^i * dxl
+    Eigen::Matrix<double, Nouts, Nvars> dg2i;  // derivative of g1i w.r.t. e
+    dg2i.setZero();
 
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
       if (smooth::detail::kBn[iter] != 0) {
-        block_add(ret, 0, 1, (smooth::detail::kBn[iter] * coeff1) * dg1i);
-        block_add(ret, 0, 1, (smooth::detail::kBn[iter] * coeff2) * dg2i, -1);
+        block_add(ret, 0, 0, (smooth::detail::kBn[iter] * coeff1) * dg1i);
+        block_add(ret, 0, 0, (smooth::detail::kBn[iter] * coeff2) * dg2i, -1);
       }
       dg1i.applyOnTheLeft(ad_e);
-      dg1i -= ad<X>(g1i);
+      dg1i.middleCols(1, Nx) -= ad<X>(g1i);
       g1i.applyOnTheLeft(ad_e);
 
       dg2i.applyOnTheLeft(ad_e);
-      dg2i -= ad<X>(g2i);
+      dg2i.middleCols(1, Nx) -= ad<X>(g2i);
       g2i.applyOnTheLeft(ad_e);
 
       coeff1 *= (-1.) / (iter + 1);
       coeff2 *= 1. / (iter + 1);
     }
-
-    // w.r.t. u
-    block_add(ret, 0, 1 + Nx, dr_expinv<X>(e) * dfval.middleCols(1 + Nx, Nu) * dr_exp<U>(v));
 
     return ret;
   }
