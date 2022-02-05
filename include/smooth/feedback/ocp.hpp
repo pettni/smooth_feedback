@@ -162,9 +162,6 @@ concept FlatOCPType = OCPType<T> &&(smooth::traits::RnType<typename std::decay_t
 
 bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
 {
-  // test derivatives
-  std::srand(5);
-
   using OCP = std::decay_t<decltype(ocp)>;
 
   using X = typename OCP::X;
@@ -203,14 +200,13 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
 
   for (auto trial = 0u; trial < num_trials; ++trial) {
     // endpt parameters
-    const double tf                        = std::rand();
+    const double tf                        = 1 + static_cast<double>(std::rand()) / RAND_MAX;
     const X x0                             = Random<X>();
     const X xf                             = Random<X>();
     const Eigen::Vector<double, OCP::Nq> q = Eigen::Vector<double, OCP::Nq>::Random();
-
-    double t  = std::rand();
-    const X x = Random<X>();
-    const U u = Random<U>();
+    const double t                         = 1 + static_cast<double>(std::rand()) / RAND_MAX;
+    const X x                              = Random<X>();
+    const U u                              = Random<U>();
 
     {
       // theta

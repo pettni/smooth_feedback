@@ -85,6 +85,8 @@ struct FlatDyn
   Eigen::SparseMatrix<double> jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
+    using Jt = Eigen::Matrix<double, Nouts, Nvars>;
+
     const double tdbl          = static_cast<double>(t);
     const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
 
@@ -95,42 +97,45 @@ struct FlatDyn
 
     Eigen::SparseMatrix<double> ret(Nouts, Nvars);
 
-    double coeff1                            = 1;           // hold (-1)^i / i!
-    Tangent<X> g1i                           = f(t, x, u);  // (ad_a)^i * f
-    Eigen::Matrix<double, Nouts, Nvars> dg1i = dfval;       // derivative of g1i w.r.t. e
-    dg1i.middleCols(1, Nx) *= dr_exp<X>(e);
-    dg1i.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
+    double coef    = 1;           // hold (-1)^i / i!
+    Tangent<X> vi1 = f(t, x, u);  // (ad_a)^i * f
+    Jt ji1         = dfval;       // derivative of vi1 w.r.t. e
+    ji1.middleCols(1, Nx) *= dr_exp<X>(e);
+    ji1.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
 
-    double coeff2  = 1;                        // hold 1 / i!
-    Tangent<X> g2i = dxlval;                   // (ad_a)^i * dxl
-    Eigen::Matrix<double, Nouts, Nvars> dg2i;  // derivative of g1i w.r.t. e
-    dg2i.setZero();
+    Tangent<X> vi2 = dxlval;  // (ad_a)^i * dxl
+    Jt ji2;                   // derivative of vi1 w.r.t. e
+    ji2.setZero();
 
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
       if (smooth::detail::kBn[iter] != 0) {
-        block_add(ret, 0, 0, (smooth::detail::kBn[iter] * coeff1) * dg1i);
-        block_add(ret, 0, 0, (smooth::detail::kBn[iter] * coeff2) * dg2i, -1);
+        block_add(ret, 0, 0, ji1, smooth::detail::kBn[iter] * coef);
+        block_add(ret, 0, 0, ji2, -1 * smooth::detail::kBn[iter] * std::abs(coef));
       }
-      dg1i.applyOnTheLeft(ad_e);
-      dg1i.middleCols(1, Nx) -= ad<X>(g1i);
-      g1i.applyOnTheLeft(ad_e);
 
-      dg2i.applyOnTheLeft(ad_e);
-      dg2i.middleCols(1, Nx) -= ad<X>(g2i);
-      g2i.applyOnTheLeft(ad_e);
+      // update ji1, vi1
+      ji1.applyOnTheLeft(ad_e);
+      ji1.middleCols(1, Nx) -= ad<X>(vi1);
+      vi1.applyOnTheLeft(ad_e);
 
-      coeff1 *= (-1.) / (iter + 1);
-      coeff2 *= 1. / (iter + 1);
+      // update ji2, vi2
+      ji2.applyOnTheLeft(ad_e);
+      ji2.middleCols(1, Nx) -= ad<X>(vi2);
+      vi2.applyOnTheLeft(ad_e);
+
+      coef *= (-1.) / (iter + 1);
     }
 
     return ret;
   }
 
+  // Second derivative
+  //    \sum Bn (-1)^n / n! d2r (ad_a^n f)_aa - \sum Bn / n! d2r(ad_a^n dxl)_aa
   Eigen::SparseMatrix<double> hessian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
-    using smooth::detail::kBn;
+    using Jt = Eigen::Matrix<double, Nouts, Nvars>;
     using Ht = Eigen::Matrix<double, Nvars, Nouts * Nvars>;
 
     const double tdbl          = static_cast<double>(t);
@@ -144,43 +149,55 @@ struct FlatDyn
 
     Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
 
-    double coef                            = 1;           // hold (-1)^i / i!
-    Tangent<X> vi                          = f(t, x, u);  // (ad_a)^i * f
-    Eigen::Matrix<double, Nouts, Nvars> ji = dfval;       // dr (vi)_{t, e, v}
-    Ht hi;  // dr (ji' e_k)_{t, e, v}  where k-derivatives are stacked in horizontal blocks
+    double coef    = 1;           // hold (-1)^i / i!
+    Tangent<X> vi1 = f(t, x, u);  // (ad_a)^i * f
+    Jt ji1         = dfval;       // dr (vi1)_{t, e, v}
+    ji1.middleCols(1, Nx) *= dr_exp<X>(e);
+    ji1.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
+    Ht hi1         = d2fval;      // dr (ji1' e_k)_{t, e, v}
+    // TODO d2fval is w.r.t. (t, x, u), need derivative w.r.t. (t, e, v)
 
-    ji.middleCols(1, Nx) *= dr_exp<X>(e);
-    ji.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
-    hi = d2fval;  // TODO: add drexp's?
+    Tangent<X> vi2 = dxlval;      // (ad_a)^i * dxl
+    Jt ji2         = Jt::Zero();  // dr (vi2)_{t, e, v}
+    Ht hi2         = Ht::Zero();  // dr (ji2' e_k)_{t, e, v}
 
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
       // add to result
-      if (kBn[iter] != 0) { block_add(ret, 0, 0, (kBn[iter] * coef) * hi); }
+      if (smooth::detail::kBn[iter] != 0) {
+        block_add(ret, 0, 0, hi1, smooth::detail::kBn[iter] * coef);
+        block_add(ret, 0, 0, hi2, -1 * smooth::detail::kBn[iter] * std::abs(coef));
+      }
 
-      // update hi
-      Ht hip = Ht::Zero();
+      // update hi1 and hi2
+      Ht hi1p = Ht::Zero(), hi2p = Ht::Zero();
       for (auto k = 0u; k < Nx; ++k) {
         Eigen::Matrix<double, Nx, Nx> ek_gens;
         for (auto l = 0u; l < Nx; ++l) {
-          ek_gens.row(l) = Eigen::Vector<double, Nx>::Unit(k).transpose()
-                         * smooth::detail::algebra_generators<X>[l];
+          // ek_gens[l][j] = generator_l[k][j]
+          ek_gens.row(l) = smooth::detail::algebra_generators<X>[l].row(k);
+
+          hi1p.middleCols(k * Nvars, Nvars) += ad_e(k, l) * hi1.middleCols(l * Nvars, Nvars);
+          hi2p.middleCols(k * Nvars, Nvars) += ad_e(k, l) * hi2.middleCols(l * Nvars, Nvars);
         }
 
-        hip.middleCols(k * Nvars, Nvars).middleRows(1, Nx) += ek_gens * ji;
-        hip.middleCols(k * Nvars, Nvars).middleCols(1, Nx) -= ji.transpose() * ek_gens;
-        for (auto l = 0u; l < Nx; ++l) {
-          hip.middleCols(k * Nvars, Nvars) += ad_e(k, l) * hi.middleCols(l * Nvars, Nvars);
-        }
+        hi1p.middleCols(k * Nvars, Nvars).middleRows(1, Nx) += ek_gens * ji1;
+        hi1p.middleCols(k * Nvars, Nvars).middleCols(1, Nx) -= ji1.transpose() * ek_gens;
+
+        hi2p.middleCols(k * Nvars, Nvars).middleRows(1, Nx) += ek_gens * ji2;
+        hi2p.middleCols(k * Nvars, Nvars).middleCols(1, Nx) -= ji2.transpose() * ek_gens;
       }
+      hi1 = hi1p;
+      hi2 = hi2p;
 
-      hi = hip;
+      // update ji1 and ji2
+      ji1.applyOnTheLeft(ad_e);
+      ji1.middleCols(1, Nx) -= ad<X>(vi1);
+      ji2.applyOnTheLeft(ad_e);
+      ji2.middleCols(1, Nx) -= ad<X>(vi2);
 
-      // update ji
-      ji.applyOnTheLeft(ad_e);
-      ji.middleCols(1, Nx) -= ad<X>(vi);
-
-      // update vi
-      vi.applyOnTheLeft(ad_e);
+      // update vi1 and vi2
+      vi1.applyOnTheLeft(ad_e);
+      vi2.applyOnTheLeft(ad_e);
 
       coef *= (-1.) / (iter + 1);
     }
@@ -224,11 +241,12 @@ struct FlatInnerFun
   {
     const auto & df = f.jacobian(t, rplus(xl(t), e), rplus(ul(t), v));
 
-    Eigen::SparseMatrix<double> ret(Nouts, Nvars);
-    block_add(ret, 0, t_B, df.middleCols(t_B, 1));
-    block_add(ret, 0, x_B, df.middleCols(x_B, Nx) * dr_exp<X>(e));
-    block_add(ret, 0, u_B, df.middleCols(u_B, Nu) * dr_exp<U>(v));
-    return ret;
+    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
+    block_add_identity(Jblocks, 0, 0, 1);
+    block_add(Jblocks, 1, 1, dr_exp<X>(e));
+    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+
+    return df * Jblocks;
   }
 
   Eigen::SparseMatrix<double> hessian(double t, const E & e, const V & v) requires(
@@ -241,42 +259,33 @@ struct FlatInnerFun
     const auto & Jf = f.jacobian(t, x, u);
     const auto & Hf = f.hessian(t, x, u);
 
-    const auto Je = dr_exp<X>(e);
-    const auto Jv = dr_exp<U>(v);
-
     const auto He = d2r_exp<X>(e);
     const auto Hv = d2r_exp<U>(v);
+
+    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
+    block_add_identity(Jblocks, 0, 0, 1);
+    block_add(Jblocks, 1, 1, dr_exp<X>(e));
+    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<U>(v));
 
     Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
 
     for (auto no = 0u; no < Nouts; ++no) {  // for each output
       const auto b0 = Nvars * no;           // block index
 
-      // clang-format off
-      block_add(ret, t_B, b0 + t_B, Hf.block(t_B, b0 + t_B, 1,  1));       // tt
-      block_add(ret, t_B, b0 + x_B, Hf.block(t_B, b0 + x_B, 1, Nx) * Je);  // te
-      block_add(ret, t_B, b0 + u_B, Hf.block(t_B, b0 + u_B, 1, Nu) * Jv);  // tv
+      // second derivatives w.r.t. f
+      block_add(ret, 0, b0, Jblocks.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks);
 
-      block_add(ret, x_B, b0 + t_B, Je.transpose() * Hf.block(x_B, b0 + t_B, Nx,  1));       // et
-      block_add(ret, x_B, b0 + x_B, Je.transpose() * Hf.block(x_B, b0 + x_B, Nx, Nx) * Je);  // ee
-      block_add(ret, x_B, b0 + u_B, Je.transpose() * Hf.block(x_B, b0 + u_B, Nx, Nu) * Jv);  // ev
-
-      block_add(ret, u_B, b0 + t_B, Jv.transpose() * Hf.block(u_B, b0 + t_B, Nu,  1));       // vt
-      block_add(ret, u_B, b0 + x_B, Jv.transpose() * Hf.block(u_B, b0 + x_B, Nu, Nx) * Je);  // ve
-      block_add(ret, u_B, b0 + u_B, Jv.transpose() * Hf.block(u_B, b0 + u_B, Nu, Nu) * Jv);  // vv
-
-      // second derivatives w.r.t. x+e
+      // second derivatives w.r.t. e
       for (auto nx = 0u; nx < Nx; ++nx) {
         // TODO: skip if Jf isn't filled
         block_add(ret, x_B, b0 + x_B, Jf.coeff(no, x_B + nx) * He.block(0, nx * Nx, Nx, Nx));
       }
 
-      // second derivatives w.r.t. u+v
+      // second derivatives w.r.t. v
       for (auto nu = 0u; nu < Nu; ++nu) {
         // TODO: skip if Jf isn't filled
         block_add(ret, u_B, b0 + u_B, Jf.coeff(no, u_B + nu) * Hv.block(0, nu * Nu, Nu, Nu));
       }
-      // clang-format on
     }
     return ret;
   }
@@ -322,24 +331,18 @@ struct FlatEndptFun
   Eigen::SparseMatrix<double> jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
-    const auto xl_0            = xl(0.);
-    const auto [xl_tf, dxl_tf] = diff::dr(xl, wrt(tf));
+    const auto x0 = xl(0.);
+    const auto xf = xl(tf);
 
-    const auto dx0_e0 = dr_exp<X>(e0);
-    const auto dxf_ef = dr_exp<X>(ef);
-    // const auto dxf_tf = Ad(smooth::exp<X>(-ef)) * dxl_tf;
+    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
+    block_add_identity(Jblocks, 0, 0, 1);
+    block_add(Jblocks, 1, 1, dr_exp<X>(e0));
+    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
+    block_add_identity(Jblocks, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
+    // const auto dxf_tf = Ad(smooth::exp<X>(-ef)) * dxl_tf;  // skipping this for now
 
-    const auto & dtheta = f.jacobian(tf, rplus(xl_0, e0), rplus(xl_tf, ef), q);
-
-    Eigen::SparseMatrix<double> j(Nouts, Nvars);
-    // clang-format off
-    block_add(j, 0, tf_B, dtheta.middleCols(tf_B, 1));
-    // block_add(j, 0, tf_B, dtheta.middleCols(xf_B, Nx) * dxf_tf);  // ignore this dependence for now..
-    block_add(j, 0, x0_B, dtheta.middleCols(x0_B, Nx) * dx0_e0);
-    block_add(j, 0, xf_B, dtheta.middleCols(xf_B, Nx) * dxf_ef);
-    block_add(j, 0,  q_B, dtheta.middleCols( q_B, Nq));
-    // clang-format on
-    return j;
+    const auto & dtheta = f.jacobian(tf, rplus(x0, e0), rplus(xf, ef), q);
+    return dtheta * Jblocks;
   }
 
   Eigen::SparseMatrix<double> hessian(double tf, const E & e0, const E & ef, const Q & q) requires(
@@ -354,42 +357,23 @@ struct FlatEndptFun
     const auto & Hf = f.hessian(tf, x0, xf, q);   // Nx x (Nouts * Nx)
 
     // derivatives of (x + e) w.r.t. e
-    const auto Jp0 = dr_exp<X>(e0);   // Nx x Nx
     const auto Hp0 = d2r_exp<X>(e0);  // Nx x (Nx * Nx)
-    const auto Jpf = dr_exp<X>(ef);   // Nx x Nx
     const auto Hpf = d2r_exp<X>(ef);  // Nx x (Nx * Nx)
 
-    Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
+    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
+    block_add_identity(Jblocks, 0, 0, 1);
+    block_add(Jblocks, 1, 1, dr_exp<X>(e0));
+    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
+    block_add_identity(Jblocks, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
 
+    Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
     for (auto no = 0u; no < Nouts; ++no) {  // for each output
       const auto b0 = Nvars * no;           // block index
 
       // terms involving second derivatives w.r.t. f
-
-      // clang-format off
-      block_add(ret, tf_B, b0 + tf_B, Hf.block(tf_B, b0 + tf_B, 1,  1));        // tftf
-      block_add(ret, tf_B, b0 + x0_B, Hf.block(tf_B, b0 + x0_B, 1, Nx) * Jp0);  // tfx0
-      block_add(ret, tf_B, b0 + xf_B, Hf.block(tf_B, b0 + xf_B, 1, Nx) * Jpf);  // tfxf
-      block_add(ret, tf_B, b0 +  q_B, Hf.block(tf_B, b0 +  q_B, 1, Nq));        // tfq
-
-      block_add(ret, x0_B, b0 + tf_B, Jp0.transpose() * Hf.block(x0_B, b0 + tf_B, Nx,  1));        // x0tf
-      block_add(ret, x0_B, b0 + x0_B, Jp0.transpose() * Hf.block(x0_B, b0 + x0_B, Nx, Nx) * Jp0);  // x0x0
-      block_add(ret, x0_B, b0 + xf_B, Jp0.transpose() * Hf.block(x0_B, b0 + xf_B, Nx, Nx) * Jpf);  // x0xf
-      block_add(ret, x0_B, b0 +  q_B, Jp0.transpose() * Hf.block(x0_B, b0 +  q_B, Nx, Nq));        // x0q
-
-      block_add(ret, xf_B, b0 + tf_B, Jpf.transpose() * Hf.block(xf_B, b0 + tf_B, Nx,  1));        // xftf
-      block_add(ret, xf_B, b0 + x0_B, Jpf.transpose() * Hf.block(xf_B, b0 + x0_B, Nx, Nx) * Jp0);  // xfx0
-      block_add(ret, xf_B, b0 + xf_B, Jpf.transpose() * Hf.block(xf_B, b0 + xf_B, Nx, Nx) * Jpf);  // xfxf
-      block_add(ret, xf_B, b0 +  q_B, Jpf.transpose() * Hf.block(xf_B, b0 +  q_B, Nx, Nq));        // xfq
-
-      block_add(ret,  q_B, b0 + tf_B, Hf.block(q_B, b0 + tf_B, Nq,  1));        // qtf
-      block_add(ret,  q_B, b0 + x0_B, Hf.block(q_B, b0 + x0_B, Nq, Nx) * Jp0);  // qx0
-      block_add(ret,  q_B, b0 + xf_B, Hf.block(q_B, b0 + xf_B, Nq, Nx) * Jpf);  // qxf
-      block_add(ret,  q_B, b0 +  q_B, Hf.block(q_B, b0 +  q_B, Nq, Nq));        // qq
-      // clang-format on
+      block_add(ret, 0, b0, Jblocks.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks);
 
       // terms involving second derivatives w.r.t. e0 and ef
-
       for (auto nx = 0u; nx < Nx; ++nx) {
         // TODO: skip if Jf isn't filled
         block_add(ret, x0_B, b0 + x0_B, Jf.coeff(no, x0_B + nx) * Hp0.block(0, nx * Nx, Nx, Nx));

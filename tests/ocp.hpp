@@ -27,6 +27,7 @@
 #include <Eigen/Sparse>
 #include <smooth/algo/hessian.hpp>
 #include <smooth/feedback/ocp.hpp>
+#include <smooth/feedback/utils/sparse.hpp>
 #include <smooth/se2.hpp>
 
 template<typename T>
@@ -35,8 +36,15 @@ using X = smooth::SE2<T>;
 template<typename T>
 using U = Eigen::Vector<T, 1>;
 
+template<typename T>
+using Q = Eigen::Vector<T, 1>;
+
 template<typename T, std::size_t N>
 using Vec = Eigen::Vector<T, N>;
+
+static constexpr auto Nx     = smooth::Dof<X<double>>;
+static constexpr auto Ninner = 1 + Nx + smooth::Dof<U<double>>;
+static constexpr auto Nouter = 1 + 2 * Nx + smooth::Dof<Q<double>>;
 
 /// @brief Objective function
 struct TestOcpObjective
@@ -50,7 +58,7 @@ struct TestOcpObjective
   Eigen::SparseMatrix<double>
   jacobian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
   {
-    Eigen::SparseMatrix<double> ret(1, 8);
+    Eigen::SparseMatrix<double> ret(1, Nouter);
     ret.coeffRef(0, 7) = 1;
     return ret;
   }
@@ -58,7 +66,7 @@ struct TestOcpObjective
   Eigen::SparseMatrix<double>
   hessian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
   {
-    Eigen::SparseMatrix<double> ret(8, 8);
+    Eigen::SparseMatrix<double> ret(Nouter, Nouter);
     return ret;
   }
 };
@@ -73,7 +81,7 @@ struct TestOcpDyn
 
   Eigen::SparseMatrix<double> jacobian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(3, 5);
+    Eigen::SparseMatrix<double> ret(Nx, Ninner);
     ret.coeffRef(1, 4) = 1;
     ret.coeffRef(2, 4) = -1;
     return ret;
@@ -81,7 +89,7 @@ struct TestOcpDyn
 
   Eigen::SparseMatrix<double> hessian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(5, 3 * 5);
+    Eigen::SparseMatrix<double> ret(Ninner, Nx * Ninner);
     return ret;
   }
 };
@@ -97,7 +105,7 @@ struct TestOcpIntegrand
   Eigen::SparseMatrix<double> jacobian(double, const X<double> & x, const U<double> & u) const
   {
     const auto a = x - X<double>::Identity();
-    Eigen::SparseMatrix<double> ret(1, 5);
+    Eigen::SparseMatrix<double> ret(1, Ninner);
     ret.middleCols(1, 3) = (a.transpose() * smooth::dr_expinv<X<double>>(a)).sparseView();
     ret.coeffRef(0, 4)   = u.x();
     return ret;
@@ -107,7 +115,7 @@ struct TestOcpIntegrand
   {
     const auto H = smooth::hessian_rminus_norm(x, X<double>::Identity());
 
-    Eigen::SparseMatrix<double> ret(5, 5);
+    Eigen::SparseMatrix<double> ret(Ninner, 1 * Ninner);
     smooth::feedback::block_add(ret, 1, 1, H);
     ret.coeffRef(4, 4) = 1;
     return ret;
@@ -124,24 +132,26 @@ struct TestOcpCr
 
   Eigen::SparseMatrix<double> jacobian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(1, 5);
+    Eigen::SparseMatrix<double> ret(1, Ninner);
     ret.coeffRef(0, 4) = 1;
     return ret;
   }
 
   Eigen::SparseMatrix<double> hessian(double, const X<double> &, const U<double> &) const
   {
-    Eigen::SparseMatrix<double> ret(5, 1 * 5);
+    Eigen::SparseMatrix<double> ret(Ninner, 1 * Ninner);
     return ret;
   }
 };
 
 struct TestOcpCe
 {
+  static constexpr auto Nce = 7;
+
   template<typename T>
-  Vec<T, 7> operator()(T tf, const X<T> & x0, const X<T> & xf, const Vec<T, 1> &) const
+  Vec<T, Nce> operator()(T tf, const X<T> & x0, const X<T> & xf, const Vec<T, 1> &) const
   {
-    Vec<T, 7> ret;
+    Vec<T, Nce> ret;
     ret << tf, x0.log(), xf.log();
     return ret;
   }
@@ -149,42 +159,30 @@ struct TestOcpCe
   Eigen::SparseMatrix<double>
   jacobian(double, const X<double> & x0, const X<double> & xf, const Vec<double, 1> &) const
   {
-    const auto dlog_x0 = smooth::dr_expinv<X<double>>(x0.log());
-    const auto dlog_xf = smooth::dr_expinv<X<double>>(xf.log());
-
-    Eigen::SparseMatrix<double> ret(7, 8);
+    Eigen::SparseMatrix<double> ret(Nce, Nouter);
     ret.coeffRef(0, 0) = 1;
-    for (auto i = 0u; i < smooth::Dof<X<double>>; ++i) {
-      for (auto j = 0u; j < smooth::Dof<X<double>>; ++j) {
-        ret.coeffRef(1 + i, 1 + j) = dlog_x0(i, j);
-      }
-    }
-    for (auto i = 0u; i < smooth::Dof<X<double>>; ++i) {
-      for (auto j = 0u; j < smooth::Dof<X<double>>; ++j) {
-        ret.coeffRef(4 + i, 4 + j) = dlog_xf(i, j);
-      }
-    }
+    smooth::feedback::block_add(ret, 1, 1, smooth::dr_expinv<X<double>>(x0.log()));
+    smooth::feedback::block_add(ret, 4, 4, smooth::dr_expinv<X<double>>(xf.log()));
     return ret;
   }
 
   Eigen::SparseMatrix<double>
   hessian(double, const X<double> & x0, const X<double> & xf, const Vec<double, 1> &) const
   {
-    Eigen::Matrix<double, -1, -1> ret(8, 7 * 8);
-    ret.setZero();
+    Eigen::SparseMatrix<double> ret(Nouter, Nce * Nouter);
 
-    const auto d2_logx0 = smooth::hessian_rminus<X<double>>(x0, X<double>::Identity());  // 3 x 9
-    const auto d2_logxf = smooth::hessian_rminus<X<double>>(xf, X<double>::Identity());  // 3 x 9
+    const auto d2_logx0 = smooth::hessian_rminus<X<double>>(x0, X<double>::Identity());
+    const auto d2_logxf = smooth::hessian_rminus<X<double>>(xf, X<double>::Identity());
 
-    ret.block(1, 8 * 1 + 1, 3, 3) = d2_logx0.block(0, 0, 3, 3);
-    ret.block(1, 8 * 2 + 1, 3, 3) = d2_logx0.block(0, 3, 3, 3);
-    ret.block(1, 8 * 3 + 1, 3, 3) = d2_logx0.block(0, 6, 3, 3);
+    smooth::feedback::block_add(ret, 1, Nouter * 1 + 1, d2_logx0.block(0, 0, 3, 3));
+    smooth::feedback::block_add(ret, 1, Nouter * 2 + 1, d2_logx0.block(0, 3, 3, 3));
+    smooth::feedback::block_add(ret, 1, Nouter * 3 + 1, d2_logx0.block(0, 6, 3, 3));
 
-    ret.block(4, 8 * 4 + 4, 3, 3) = d2_logxf.block(0, 0, 3, 3);
-    ret.block(4, 8 * 5 + 4, 3, 3) = d2_logxf.block(0, 3, 3, 3);
-    ret.block(4, 8 * 6 + 4, 3, 3) = d2_logxf.block(0, 6, 3, 3);
+    smooth::feedback::block_add(ret, 4, Nouter * 4 + 4, d2_logxf.block(0, 0, 3, 3));
+    smooth::feedback::block_add(ret, 4, Nouter * 5 + 4, d2_logxf.block(0, 3, 3, 3));
+    smooth::feedback::block_add(ret, 4, Nouter * 6 + 4, d2_logxf.block(0, 6, 3, 3));
 
-    return ret.sparseView();
+    return ret;
   }
 };
 
