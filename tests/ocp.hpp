@@ -26,6 +26,7 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <smooth/algo/hessian.hpp>
+#include <smooth/bundle.hpp>
 #include <smooth/feedback/ocp.hpp>
 #include <smooth/feedback/utils/sparse.hpp>
 #include <smooth/se2.hpp>
@@ -34,7 +35,7 @@ template<typename T>
 using X = smooth::SE2<T>;
 
 template<typename T>
-using U = Eigen::Vector<T, 1>;
+using U = Eigen::Vector<T, 2>;
 
 template<typename T>
 using Q = Eigen::Vector<T, 1>;
@@ -43,8 +44,19 @@ template<typename T, std::size_t N>
 using Vec = Eigen::Vector<T, N>;
 
 static constexpr auto Nx     = smooth::Dof<X<double>>;
+static constexpr auto Nq     = smooth::Dof<Q<double>>;
+static constexpr auto Nu     = smooth::Dof<U<double>>;
 static constexpr auto Ninner = 1 + Nx + smooth::Dof<U<double>>;
 static constexpr auto Nouter = 1 + 2 * Nx + smooth::Dof<Q<double>>;
+
+static constexpr auto t_B_inner = 0;
+static constexpr auto x_B_inner = t_B_inner + 1;
+static constexpr auto u_B_inner = x_B_inner + Nx;
+
+static constexpr auto tf_B_outer = 0;
+static constexpr auto x0_B_outer = tf_B_outer + 1;
+static constexpr auto xf_B_outer = x0_B_outer + Nx;
+static constexpr auto q_B_outer  = xf_B_outer + Nx;
 
 /// @brief Objective function
 struct TestOcpObjective
@@ -59,7 +71,7 @@ struct TestOcpObjective
   jacobian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
   {
     Eigen::SparseMatrix<double> ret(1, Nouter);
-    ret.coeffRef(0, 7) = 1;
+    ret.coeffRef(0, q_B_outer) = 1;
     return ret;
   }
 
@@ -74,22 +86,32 @@ struct TestOcpObjective
 struct TestOcpDyn
 {
   template<typename T>
-  smooth::Tangent<X<T>> operator()(T, const X<T> &, const U<T> & u) const
+  smooth::Tangent<X<T>> operator()(T, const X<T> & x, const U<T> & u) const
   {
-    return {T(0), u.x(), -u.x()};
+    return {
+      u.x() - 0.1 * x.r2().x(),
+      0,
+      u.y(),
+    };
   }
 
-  Eigen::SparseMatrix<double> jacobian(double, const X<double> &, const U<double> &) const
+  Eigen::SparseMatrix<double> jacobian(double, const X<double> & x, const U<double> &) const
   {
     Eigen::SparseMatrix<double> ret(Nx, Ninner);
-    ret.coeffRef(1, 4) = 1;
-    ret.coeffRef(2, 4) = -1;
+    ret.coeffRef(0, x_B_inner)     = -0.1 * std::cos(x.so2().angle());  // df1 / dx
+    ret.coeffRef(0, x_B_inner + 1) = 0.1 * std::sin(x.so2().angle());   // df1 / dy
+    ret.coeffRef(0, u_B_inner)     = 1;
+    ret.coeffRef(2, u_B_inner + 1) = 1;
     return ret;
   }
 
-  Eigen::SparseMatrix<double> hessian(double, const X<double> &, const U<double> &) const
+  Eigen::SparseMatrix<double> hessian(double, const X<double> & x, const U<double> &) const
   {
     Eigen::SparseMatrix<double> ret(Ninner, Nx * Ninner);
+    ret.coeffRef(x_B_inner + 0, 0 * Nx + x_B_inner + 2) =
+      0.1 * std::sin(x.so2().angle());  // d2f1 / dx dth
+    ret.coeffRef(x_B_inner + 1, 0 * Nx + x_B_inner + 2) =
+      0.1 * std::cos(x.so2().angle());  // d2f1 / dy dth
     return ret;
   }
 };
@@ -106,8 +128,9 @@ struct TestOcpIntegrand
   {
     const auto a = x - X<double>::Identity();
     Eigen::SparseMatrix<double> ret(1, Ninner);
-    ret.middleCols(1, 3) = (a.transpose() * smooth::dr_expinv<X<double>>(a)).sparseView();
-    ret.coeffRef(0, 4)   = u.x();
+    ret.middleCols(x_B_inner, Nx)  = (a.transpose() * smooth::dr_expinv<X<double>>(a)).sparseView();
+    ret.coeffRef(0, u_B_inner)     = u.x();
+    ret.coeffRef(0, u_B_inner + 1) = u.y();
     return ret;
   }
 
@@ -116,8 +139,9 @@ struct TestOcpIntegrand
     const auto H = smooth::hessian_rminus_norm(x, X<double>::Identity());
 
     Eigen::SparseMatrix<double> ret(Ninner, 1 * Ninner);
-    smooth::feedback::block_add(ret, 1, 1, H);
-    ret.coeffRef(4, 4) = 1;
+    smooth::feedback::block_add(ret, x_B_inner, x_B_inner, H);
+    ret.coeffRef(u_B_inner, u_B_inner)         = 1;
+    ret.coeffRef(u_B_inner + 1, u_B_inner + 1) = 1;
     return ret;
   }
 };
@@ -133,7 +157,7 @@ struct TestOcpCr
   Eigen::SparseMatrix<double> jacobian(double, const X<double> &, const U<double> &) const
   {
     Eigen::SparseMatrix<double> ret(1, Ninner);
-    ret.coeffRef(0, 4) = 1;
+    ret.coeffRef(0, u_B_inner) = 1;
     return ret;
   }
 
@@ -146,7 +170,7 @@ struct TestOcpCr
 
 struct TestOcpCe
 {
-  static constexpr auto Nce = 7;
+  static constexpr auto Nce = 1 + 2 * Nx;
 
   template<typename T>
   Vec<T, Nce> operator()(T tf, const X<T> & x0, const X<T> & xf, const Vec<T, 1> &) const
@@ -160,9 +184,11 @@ struct TestOcpCe
   jacobian(double, const X<double> & x0, const X<double> & xf, const Vec<double, 1> &) const
   {
     Eigen::SparseMatrix<double> ret(Nce, Nouter);
-    ret.coeffRef(0, 0) = 1;
-    smooth::feedback::block_add(ret, 1, 1, smooth::dr_expinv<X<double>>(x0.log()));
-    smooth::feedback::block_add(ret, 4, 4, smooth::dr_expinv<X<double>>(xf.log()));
+    ret.coeffRef(tf_B_outer, tf_B_outer) = 1;
+    smooth::feedback::block_add(
+      ret, x0_B_outer, x0_B_outer, smooth::dr_expinv<X<double>>(x0.log()));
+    smooth::feedback::block_add(
+      ret, xf_B_outer, xf_B_outer, smooth::dr_expinv<X<double>>(xf.log()));
     return ret;
   }
 
@@ -174,13 +200,13 @@ struct TestOcpCe
     const auto d2_logx0 = smooth::hessian_rminus<X<double>>(x0, X<double>::Identity());
     const auto d2_logxf = smooth::hessian_rminus<X<double>>(xf, X<double>::Identity());
 
-    smooth::feedback::block_add(ret, 1, Nouter * 1 + 1, d2_logx0.block(0, 0, 3, 3));
-    smooth::feedback::block_add(ret, 1, Nouter * 2 + 1, d2_logx0.block(0, 3, 3, 3));
-    smooth::feedback::block_add(ret, 1, Nouter * 3 + 1, d2_logx0.block(0, 6, 3, 3));
+    for (auto i = 0u; i < Nx; ++i) {
+      smooth::feedback::block_add(
+        ret, x0_B_outer, Nouter * (1 + i) + x0_B_outer, d2_logx0.block(0, i * Nx, Nx, Nx));
 
-    smooth::feedback::block_add(ret, 4, Nouter * 4 + 4, d2_logxf.block(0, 0, 3, 3));
-    smooth::feedback::block_add(ret, 4, Nouter * 5 + 4, d2_logxf.block(0, 3, 3, 3));
-    smooth::feedback::block_add(ret, 4, Nouter * 6 + 4, d2_logxf.block(0, 6, 3, 3));
+      smooth::feedback::block_add(
+        ret, xf_B_outer, Nouter * (1 + Nx + i) + xf_B_outer, d2_logxf.block(0, i * Nx, Nx, Nx));
+    }
 
     return ret;
   }
@@ -197,6 +223,6 @@ inline const OcpTest ocp_test{
   .crl   = Vec<double, 1>{{-1}},
   .cru   = Vec<double, 1>{{1}},
   .ce    = TestOcpCe{},
-  .cel   = Vec<double, 7>{{5, 1, 1, 0, 0.1, 0, 0}},
-  .ceu   = Vec<double, 7>{{5, 1, 1, 0, 0.1, 0, 0}},
+  .cel   = Vec<double, 1 + 2 * Nx>::Random(),
+  .ceu   = Vec<double, 1 + 2 * Nx>::Random(),
 };

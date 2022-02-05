@@ -92,14 +92,14 @@ struct FlatDyn
 
     const auto x             = rplus(xlval, e);
     const auto u             = rplus(ul(t), v);
-    const auto & dfval       = f.jacobian(t, x, u);  // nx * (1 + nx + nu)
+    const auto & Jf          = f.jacobian(t, x, u);  // nx * (1 + nx + nu)
     const TangentMap<X> ad_e = ad<X>(e);
 
     Eigen::SparseMatrix<double> ret(Nouts, Nvars);
 
     double coef    = 1;           // hold (-1)^i / i!
     Tangent<X> vi1 = f(t, x, u);  // (ad_a)^i * f
-    Jt ji1         = dfval;       // derivative of vi1 w.r.t. e
+    Jt ji1         = Jf;          // derivative of vi1 w.r.t. e
     ji1.middleCols(1, Nx) *= dr_exp<X>(e);
     ji1.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
 
@@ -143,19 +143,40 @@ struct FlatDyn
 
     const auto x             = rplus(xlval, e);
     const auto u             = rplus(ul(t), v);
-    const auto & dfval       = f.jacobian(t, x, u);  // nx x (1 + nx + nu)
-    const auto & d2fval      = f.hessian(t, x, u);   // (1 + nx + nu) x (nx * (1 + nx + nu))
+    const auto He            = d2r_exp<X>(e);
+    const auto Hv            = d2r_exp<U>(v);
+    const auto & Jf          = f.jacobian(t, x, u);  // nx x (1 + nx + nu)
+    const auto & Hf          = f.hessian(t, x, u);   // (1 + nx + nu) x (nx * (1 + nx + nu))
     const TangentMap<X> ad_e = ad<X>(e);
+
+    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
+    block_add_identity(Jblocks, 0, 0, 1);
+    block_add(Jblocks, 1, 1, dr_exp<X>(e));
+    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<U>(v));
 
     Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
 
-    double coef    = 1;           // hold (-1)^i / i!
-    Tangent<X> vi1 = f(t, x, u);  // (ad_a)^i * f
-    Jt ji1         = dfval;       // dr (vi1)_{t, e, v}
-    ji1.middleCols(1, Nx) *= dr_exp<X>(e);
-    ji1.middleCols(1 + Nx, Nu) *= dr_exp<U>(v);
-    Ht hi1         = d2fval;      // dr (ji1' e_k)_{t, e, v}
-    // TODO d2fval is w.r.t. (t, x, u), need derivative w.r.t. (t, e, v)
+    double coef    = 1;             // hold (-1)^i / i!
+    Tangent<X> vi1 = f(t, x, u);    // (ad_a)^i * f
+    Jt ji1         = Jf * Jblocks;  // dr (vi1)_{t, e, v}
+    Ht hi1;                         // dr (ji1' e_k)_{t, e, v}
+    for (auto no = 0u; no < Nx; ++no) {
+      const auto b0 = no * Nvars;
+
+      // second derivatives w.r.t. f
+      hi1.middleCols(b0, Nvars) = Jblocks.transpose() * Hf.middleCols(b0, Nvars) * Jblocks;
+
+      // second derivatives w.r.t. e
+      for (auto nx = 0u; nx < Nx; ++nx) {
+        hi1.middleCols(b0, Nvars).block(1, 1, Nx, Nx) +=
+          Jf.coeff(no, 1 + nx) * He.block(0, nx * Nx, Nx, Nx);
+      }
+      // second derivatives w.r.t. v
+      for (auto nu = 0u; nu < Nu; ++nu) {
+        hi1.middleCols(b0, Nvars).block(1 + Nx, 1 + Nx, Nu, Nu) +=
+          Jf.coeff(no, 1 + Nx + nu) * Hv.block(0, nu * Nu, Nu, Nu);
+      }
+    };
 
     Tangent<X> vi2 = dxlval;      // (ad_a)^i * dxl
     Jt ji2         = Jt::Zero();  // dr (vi2)_{t, e, v}

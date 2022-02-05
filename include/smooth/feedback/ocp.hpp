@@ -160,6 +160,12 @@ template<typename T>
 concept FlatOCPType = OCPType<T> &&(smooth::traits::RnType<typename std::decay_t<T>::X> &&
                                       smooth::traits::RnType<typename std::decay_t<T>::U>);
 
+/**
+ * @brief Test analytic derivatives for an OCP problem.
+ *
+ * @tparam DT differentiation method to compare against.
+ */
+template<diff::Type DT = diff::Type::Numerical>
 bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
 {
   using OCP = std::decay_t<decltype(ocp)>;
@@ -211,9 +217,8 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
     {
       // theta
       const auto [f_def, df_def, d2f_def] =
-        diff::dr<2, diff::Type::Default>(ocp.theta, wrt(tf, x0, xf, q));
-      const auto [f_num, df_num, d2f_num] =
-        diff::dr<2, diff::Type::Numerical>(ocp.theta, wrt(tf, x0, xf, q));
+        diff::dr<2, diff::Type::Analytic>(ocp.theta, wrt(tf, x0, xf, q));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.theta, wrt(tf, x0, xf, q));
 
       if (!cmp(df_def, df_num)) {
         std::cout << "Error in 1st derivative of theta: got\n"
@@ -232,9 +237,8 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
     {
       // end constraints
       const auto [f_def, df_def, d2f_def] =
-        diff::dr<2, diff::Type::Default>(ocp.ce, wrt(tf, x0, xf, q));
-      const auto [f_num, df_num, d2f_num] =
-        diff::dr<2, diff::Type::Numerical>(ocp.ce, wrt(tf, x0, xf, q));
+        diff::dr<2, diff::Type::Analytic>(ocp.ce, wrt(tf, x0, xf, q));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.ce, wrt(tf, x0, xf, q));
 
       if (!cmp(df_def, df_num)) {
         std::cout << "Error in 1st derivative of ce: got\n"
@@ -252,8 +256,8 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
 
     {
       // dynamics
-      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Default>(ocp.f, wrt(t, x, u));
-      const auto [f_num, df_num, d2f_num] = diff::dr<2, diff::Type::Numerical>(ocp.f, wrt(t, x, u));
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.f, wrt(t, x, u));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.f, wrt(t, x, u));
 
       if (!cmp(df_def, df_num)) {
         std::cout << "Error in 1st derivative of f: got\n"
@@ -272,8 +276,8 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
 
     {
       // integral
-      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Default>(ocp.g, wrt(t, x, u));
-      const auto [f_num, df_num, d2f_num] = diff::dr<2, diff::Type::Numerical>(ocp.g, wrt(t, x, u));
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.g, wrt(t, x, u));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.g, wrt(t, x, u));
 
       if (!cmp(df_def, df_num)) {
         std::cout << "Error in 1st derivative of g: got\n"
@@ -291,9 +295,8 @@ bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
 
     {
       // running constraints
-      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Default>(ocp.cr, wrt(t, x, u));
-      const auto [f_num, df_num, d2f_num] =
-        diff::dr<2, diff::Type::Numerical>(ocp.cr, wrt(t, x, u));
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.cr, wrt(t, x, u));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.cr, wrt(t, x, u));
 
       if (!cmp(df_def, df_num)) {
         std::cout << "Error in 1st derivative of cr: got\n"

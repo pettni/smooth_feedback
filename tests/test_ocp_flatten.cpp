@@ -27,16 +27,20 @@
 
 #include <Eigen/Core>
 
+// #include <smooth/compat/autodiff.hpp>
 #include "smooth/feedback/ocp_flatten.hpp"
 
 #include "ocp.hpp"
 
 TEST(OcpFlatten, Basic)
 {
+  // constexpr auto DT = smooth::diff::Type::Autodiff;
+  constexpr auto DT = smooth::diff::Type::Numerical;
+
   // test derivatives
   std::srand(10);
 
-  const auto t1 = smooth::feedback::test_ocp_derivatives(ocp_test, 5);
+  const auto t1 = smooth::feedback::test_ocp_derivatives<DT>(ocp_test, 5);
   ASSERT_TRUE(t1);
 
   const auto xl = []<typename T>(const T &) {
@@ -47,7 +51,7 @@ TEST(OcpFlatten, Basic)
   };
 
   auto ocp_flat = smooth::feedback::flatten_ocp(ocp_test, xl, ul);
-  const auto t2 = smooth::feedback::test_ocp_derivatives(ocp_flat, 5);
+  const auto t2 = smooth::feedback::test_ocp_derivatives<DT>(ocp_flat, 5);
 
   ASSERT_TRUE(t2);
 }
