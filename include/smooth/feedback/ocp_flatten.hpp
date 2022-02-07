@@ -43,6 +43,52 @@
 namespace smooth::feedback {
 
 namespace detail {
+
+/**
+ * @brief (Right) Hessian of composed function (f \circ g)(x).
+ *
+ * @param[out] out result                   [No x No*Nx]
+ * @param[in] Jf (Right) Jacobian of f at y = g(x)  [No x Ny]
+ * @param[in] Hf (Right) Hessian of f at y = g(x)   [Ny x No*Ny]
+ * @param[in] Jg (Right) Jacobian of g at x         [Ni x Nx]
+ * @param[in] Hg (Right) Hessian of g at x          [Nx x Ni*Nx]
+ */
+inline void d2r_fog(
+  Eigen::SparseMatrix<double> & out,
+  const Eigen::SparseMatrix<double> & Jf,
+  const Eigen::SparseMatrix<double> & Hf,
+  const Eigen::SparseMatrix<double> & Jg,
+  const Eigen::SparseMatrix<double> & Hg)
+{
+  const auto Nout_o = Jf.rows();
+  const auto Nvar_y = Jf.cols();
+
+  const auto Nout_i = Jg.rows();
+  const auto Nvar_x = Jg.cols();
+
+  // check some dimensions
+  assert(Nvar_y == Nout_i);
+  assert(Hf.rows() == Nvar_y);
+  assert(Hf.cols() == Nout_o * Nvar_y);
+  assert(Hg.rows() == Nvar_x);
+  assert(Hg.cols() == Nout_i * Nvar_x);
+
+  out.resize(Nvar_x, Nvar_x * Nout_o);
+  out.isCompressed() ? (void)out.coeffs().setZero() : assert(out.nonZeros() == 0);
+
+  for (auto no = 0u; no < Nout_o; ++no) {
+    block_add(out, 0, no * Nvar_x, Jg.transpose() * Hf.middleCols(no * Nvar_y, Nvar_y) * Jg);
+  }
+
+  for (auto i = 0u; i < Jf.outerSize(); ++i) {
+    for (Eigen::InnerIterator it(Jf, i); it; ++it) {
+      block_add(out, 0, it.row() * Nvar_x, Hg.middleCols(it.col() * Nvar_x, Nvar_x), it.value());
+    }
+  }
+
+  out.makeCompressed();
+}
+
 /**
  * @brief Flattening of dynamics function (t, x, u) -> Tangent, and its derivatives.
  *
@@ -64,7 +110,7 @@ private:
   Xl xl;
   Ul ul;
 
-  Eigen::SparseMatrix<double> Jblocks_;
+  Eigen::SparseMatrix<double> Joplus_;
   Eigen::SparseMatrix<double> J_;
   Eigen::SparseMatrix<double> H_;
 
@@ -72,7 +118,7 @@ public:
   template<typename A1, typename A2, typename A3>
   FlatDyn(A1 && a1, A2 && a2, A3 && a3)
       : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
-        Jblocks_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+        Joplus_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
   {}
 
   // Function: drexp_e f - dlexp_e dxl
@@ -162,23 +208,23 @@ public:
     const auto & Hf          = f.hessian(t, x, u);   // (1 + nx + nu) x (nx * (1 + nx + nu))
     const TangentMap<X> ad_e = ad<X>(e);
 
-    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
-    block_add_identity(Jblocks_, 0, 0, 1);
-    block_add(Jblocks_, 1, 1, dr_exp<X>(e));
-    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
-    Jblocks_.makeCompressed();
+    Joplus_.isCompressed() ? (void)Joplus_.coeffs().setZero() : assert(Joplus_.nonZeros());
+    block_add_identity(Joplus_, 0, 0, 1);
+    block_add(Joplus_, 1, 1, dr_exp<X>(e));
+    block_add(Joplus_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Joplus_.makeCompressed();
 
-    double coef    = 1;              // hold (-1)^i / i!
-    Tangent<X> vi1 = f(t, x, u);     // (ad_a)^i * f
-    Jt ji1         = Jf * Jblocks_;  // dr (vi1)_{t, e, v}
-    Ht hi1;                          // dr (ji1' e_k)_{t, e, v}
+    double coef    = 1;             // hold (-1)^i / i!
+    Tangent<X> vi1 = f(t, x, u);    // (ad_a)^i * f
+    Jt ji1         = Jf * Joplus_;  // dr (vi1)_{t, e, v}
+    Ht hi1;                         // dr (ji1' e_k)_{t, e, v}
 
     H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
     for (auto no = 0u; no < Nx; ++no) {
       const auto b0 = no * Nvars;
 
       // second derivatives w.r.t. f
-      hi1.middleCols(b0, Nvars) = Jblocks_.transpose() * Hf.middleCols(b0, Nvars) * Jblocks_;
+      hi1.middleCols(b0, Nvars) = Joplus_.transpose() * Hf.middleCols(b0, Nvars) * Joplus_;
 
       // second derivatives w.r.t. e
       for (auto nx = 0u; nx < Nx; ++nx) {
@@ -266,13 +312,42 @@ private:
   static constexpr auto x_B = t_B + 1;
   static constexpr auto u_B = x_B + Nx;
 
-  Eigen::SparseMatrix<double> Jblocks_, J_, H_;
+  Eigen::SparseMatrix<double> Joplus_, Hoplus_, J_, H_;
+
+  /// @brief Calculate jacobian of (t, x, u) \oplus (0, e, v) w.r.t. (t, x, u)
+  void update_joplus(const E & e, const V & v)
+  {
+    Joplus_.isCompressed() ? (void)Joplus_.coeffs().setZero() : assert(Joplus_.nonZeros());
+    block_add_identity(Joplus_, 0, 0, 1);
+    block_add(Joplus_, 1, 1, dr_exp<X>(e));
+    block_add(Joplus_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Joplus_.makeCompressed();
+  }
+
+  /// @brief Calculate hessian of (t, x, u) \oplus (0, e, v) w.r.t. (t, x, u)
+  void update_hoplus(const E & e, const V & v)
+  {
+    const auto & He = d2r_exp<X>(e);  // expensive and non-sparse
+    const auto & Hv = d2r_exp<U>(v);  // expensive and non-sparse
+
+    Hoplus_.isCompressed() ? (void)Hoplus_.coeffs().setZero() : assert(Hoplus_.nonZeros());
+    for (auto nx = 0u; nx < Nx; ++nx) {
+      const auto b0 = Nvars * (1 + nx);
+      block_add(Hoplus_, x_B, b0 + x_B, He.middleCols(nx * Nx, Nx));
+    }
+    for (auto nu = 0u; nu < Nu; ++nu) {
+      const auto b0 = Nvars * (1 + Nx + nu);
+      block_add(Hoplus_, u_B, b0 + u_B, Hv.middleCols(nu * Nu, Nu));
+    }
+    Hoplus_.makeCompressed();
+  }
 
 public:
   template<typename A1, typename A2, typename A3>
   FlatInnerFun(A1 && a1, A2 && a2, A3 && a3)
       : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
-        Jblocks_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+        Joplus_(Nvars, Nvars), Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars),
+        H_(Nvars, Nouts * Nvars)
   {}
 
   template<typename T>
@@ -285,16 +360,13 @@ public:
   const Eigen::SparseMatrix<double> & jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
-    const auto & df = f.jacobian(t, rplus(xl(t), e), rplus(ul(t), v));
-
-    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
-    block_add_identity(Jblocks_, 0, 0, 1);
-    block_add(Jblocks_, 1, 1, dr_exp<X>(e));
-    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
-    Jblocks_.makeCompressed();
-
+    // derivative of f
+    const auto & Jf = f.jacobian(t, rplus(xl(t), e), rplus(ul(t), v));
+    // derivative of +
+    update_joplus(e, v);
+    // update result
     J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
-    J_ = df * Jblocks_;
+    J_ = Jf * Joplus_;
     J_.makeCompressed();
     return J_;
   }
@@ -306,39 +378,15 @@ public:
     const auto x = rplus(xl(t), e);
     const auto u = rplus(ul(t), v);
 
+    // derivatives of f
     const auto & Jf = f.jacobian(t, x, u);
     const auto & Hf = f.hessian(t, x, u);
-
-    const auto He = d2r_exp<X>(e);
-    const auto Hv = d2r_exp<U>(v);
-
-    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
-    block_add_identity(Jblocks_, 0, 0, 1);
-    block_add(Jblocks_, 1, 1, dr_exp<X>(e));
-    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
-    Jblocks_.makeCompressed();
-
+    // derivatives of +
+    update_joplus(e, v);
+    update_hoplus(e, v);
+    // update result
     H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
-
-    for (auto no = 0u; no < Nouts; ++no) {  // for each output
-      const auto b0 = Nvars * no;           // block index
-
-      // second derivatives w.r.t. f
-      block_add(H_, 0, b0, Jblocks_.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks_);
-
-      // second derivatives w.r.t. e
-      for (auto nx = 0u; nx < Nx; ++nx) {
-        // TODO: skip if Jf isn't filled
-        block_add(H_, x_B, b0 + x_B, Jf.coeff(no, x_B + nx) * He.block(0, nx * Nx, Nx, Nx));
-      }
-
-      // second derivatives w.r.t. v
-      for (auto nu = 0u; nu < Nu; ++nu) {
-        // TODO: skip if Jf isn't filled
-        block_add(H_, u_B, b0 + u_B, Jf.coeff(no, u_B + nu) * Hv.block(0, nu * Nu, Nu, Nu));
-      }
-    }
-
+    d2r_fog(H_, Jf, Hf, Joplus_, Hoplus_);
     H_.makeCompressed();
     return H_;
   }
@@ -375,13 +423,44 @@ private:
   static constexpr auto xf_B = x0_B + Nx;
   static constexpr auto q_B  = xf_B + Nx;
 
-  Eigen::SparseMatrix<double> Jblocks_, J_, H_;
+  Eigen::SparseMatrix<double> Joplus_, Hoplus_, J_, H_;
+
+  /// @brief Calculate jacobian of (tf, x0, xf, q) + (0, e0, ef, 0) w.r.t. (tf, e0, ef, q)
+  void update_joplus(const E & e0, const E & ef)
+  {
+    Joplus_.isCompressed() ? (void)Joplus_.coeffs().setZero() : assert(Joplus_.nonZeros());
+    block_add_identity(Joplus_, 0, 0, 1);
+    // const auto dxf_tf = Ad(smooth::exp<X>(-ef)) * dxl_tf;  // skipping this for now
+    block_add(Joplus_, 1, 1, dr_exp<X>(e0));
+    block_add(Joplus_, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
+    block_add_identity(Joplus_, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
+    Joplus_.makeCompressed();
+  }
+
+  /// @brief Calculate hessian of (tf, x0, xf, q) + (0, e0, ef, 0) w.r.t. (tf, e0, ef, q)
+  void update_hoplus(const E & e0, const E & ef)
+  {
+    const auto & He0 = d2r_exp<X>(e0);  // expensive and non-sparse
+    const auto & Hef = d2r_exp<X>(ef);  // expensive and non-sparse
+
+    Hoplus_.isCompressed() ? (void)Hoplus_.coeffs().setZero() : assert(Hoplus_.nonZeros());
+    for (auto nx = 0u; nx < Nx; ++nx) {
+      const auto b0 = Nvars * (1 + nx);
+      block_add(Hoplus_, x0_B, b0 + x0_B, He0.middleCols(nx * Nx, Nx));
+    }
+    for (auto nx = 0u; nx < Nx; ++nx) {
+      const auto b0 = Nvars * (1 + Nx + nx);
+      block_add(Hoplus_, xf_B, b0 + xf_B, Hef.middleCols(nx * Nx, Nx));
+    }
+    Hoplus_.makeCompressed();
+  }
 
 public:
   template<typename A1, typename A2, typename A3>
   FlatEndptFun(A1 && a1, A2 && a2, A3 && a3)
       : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
-        Jblocks_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+        Joplus_(Nvars, Nvars), Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars),
+        H_(Nvars, Nouts * Nvars)
   {}
   template<typename T>
   auto operator()(
@@ -394,21 +473,13 @@ public:
   jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
-    const auto x0 = xl(0.);
-    const auto xf = xl(tf);
-
-    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
-    block_add_identity(Jblocks_, 0, 0, 1);
-    block_add(Jblocks_, 1, 1, dr_exp<X>(e0));
-    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
-    block_add_identity(Jblocks_, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
-    Jblocks_.makeCompressed();
-    // const auto dxf_tf = Ad(smooth::exp<X>(-ef)) * dxl_tf;  // skipping this for now
-
-    const auto & dtheta = f.jacobian(tf, rplus(x0, e0), rplus(xf, ef), q);
-
+    // derivative of f
+    const auto & Jf = f.jacobian(tf, rplus(xl(0.), e0), rplus(xl(tf), ef), q);
+    // derivative of +
+    update_joplus(e0, ef);
+    // update result
     J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
-    J_ = dtheta * Jblocks_;
+    J_ = Jf * Joplus_;
     J_.makeCompressed();
     return J_;
   }
@@ -424,34 +495,13 @@ public:
     // derivatives of f
     const auto & Jf = f.jacobian(tf, x0, xf, q);  // Nouts x Nx
     const auto & Hf = f.hessian(tf, x0, xf, q);   // Nx x (Nouts * Nx)
-
-    // derivatives of (x + e) w.r.t. e
-    const auto Hp0 = d2r_exp<X>(e0);  // Nx x (Nx * Nx)
-    const auto Hpf = d2r_exp<X>(ef);  // Nx x (Nx * Nx)
-
-    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
-    block_add_identity(Jblocks_, 0, 0, 1);
-    block_add(Jblocks_, 1, 1, dr_exp<X>(e0));
-    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
-    block_add_identity(Jblocks_, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
-    Jblocks_.makeCompressed();
-
+    // derivatives of +
+    update_joplus(e0, ef);
+    update_hoplus(e0, ef);
+    // update result
     H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
-    for (auto no = 0u; no < Nouts; ++no) {  // for each output
-      const auto b0 = Nvars * no;           // block index
-
-      // terms involving second derivatives w.r.t. f
-      block_add(H_, 0, b0, Jblocks_.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks_);
-
-      // terms involving second derivatives w.r.t. e0 and ef
-      for (auto nx = 0u; nx < Nx; ++nx) {
-        // TODO: skip if Jf isn't filled
-        block_add(H_, x0_B, b0 + x0_B, Jf.coeff(no, x0_B + nx) * Hp0.block(0, nx * Nx, Nx, Nx));
-        // TODO: skip if Jf isn't filled
-        block_add(H_, xf_B, b0 + xf_B, Jf.coeff(no, xf_B + nx) * Hpf.block(0, nx * Nx, Nx, Nx));
-      }
-    }
-
+    d2r_fog(H_, Jf, Hf, Joplus_, Hoplus_);
+    H_.makeCompressed();
     return H_;
   }
 };
