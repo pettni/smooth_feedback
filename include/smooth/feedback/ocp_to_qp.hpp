@@ -133,9 +133,9 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
   const auto [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
-  const Eigen::Vector<double, Nx> qo_x0 = dth.middleCols(1, Nx);
-  const Eigen::Vector<double, Nx> qo_xf = dth.middleCols(1 + Nx, Nx);
-  const Eigen::Vector<double, Nq> qo_q  = dth.middleCols(1 + 2 * Nx, Nq);
+  const Eigen::Vector<double, Nx> qo_x0 = dth.middleCols(1, Nx).transpose();
+  const Eigen::Vector<double, Nx> qo_xf = dth.middleCols(1 + Nx, Nx).transpose();
+  const Eigen::Vector<double, Nq> qo_q  = dth.middleCols(1 + 2 * Nx, Nq).transpose();
 
   const Eigen::Matrix<double, Nx, Nx> Qo_x0  = d2th.block(1, 1, Nx, Nx) / 2;
   const Eigen::Matrix<double, Nx, Nx> Qo_x0f = d2th.block(1, 1 + Nx, Nx, Nx) / 2;
