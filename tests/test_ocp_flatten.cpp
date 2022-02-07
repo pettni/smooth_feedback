@@ -50,8 +50,10 @@ TEST(OcpFlatten, Basic)
     return smooth::Default<smooth::CastT<T, OcpTest::U>>();
   };
 
-  auto ocp_flat = smooth::feedback::flatten_ocp(ocp_test, xl, ul);
-  const auto t2 = smooth::feedback::test_ocp_derivatives<DT>(ocp_flat, 5);
+  auto ocp_flat  = smooth::feedback::flatten_ocp(ocp_test, xl, ul);
+  const auto t2a = smooth::feedback::test_ocp_derivatives<DT>(ocp_flat, 5);
+  ASSERT_TRUE(t2a);
 
-  ASSERT_TRUE(t2);
+  const auto t2b = smooth::feedback::test_ocp_derivatives<DT>(ocp_flat, 5);
+  ASSERT_TRUE(t2b);
 }

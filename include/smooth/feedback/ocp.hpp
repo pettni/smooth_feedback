@@ -166,7 +166,7 @@ concept FlatOCPType = OCPType<T> &&(smooth::traits::RnType<typename std::decay_t
  * @tparam DT differentiation method to compare against.
  */
 template<diff::Type DT = diff::Type::Numerical>
-bool test_ocp_derivatives(const OCPType auto & ocp, uint32_t num_trials = 1)
+bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1)
 {
   using OCP = std::decay_t<decltype(ocp)>;
 

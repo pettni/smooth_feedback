@@ -49,12 +49,9 @@ namespace detail {
  * @note Ignores derivative dependence on t in xl(t)
  */
 template<LieGroup X, Manifold U, typename F, typename Xl, typename Ul>
-struct FlatDyn
+class FlatDyn
 {
-  F f;
-  Xl xl;
-  Ul ul;
-
+private:
   static constexpr auto Nx    = Dof<X>;
   static constexpr auto Nu    = Dof<U>;
   static constexpr auto Nouts = Nx;
@@ -62,6 +59,21 @@ struct FlatDyn
 
   using E = Tangent<X>;
   using V = Tangent<U>;
+
+  F f;
+  Xl xl;
+  Ul ul;
+
+  Eigen::SparseMatrix<double> Jblocks_;
+  Eigen::SparseMatrix<double> J_;
+  Eigen::SparseMatrix<double> H_;
+
+public:
+  template<typename A1, typename A2, typename A3>
+  FlatDyn(A1 && a1, A2 && a2, A3 && a3)
+      : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
+        Jblocks_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+  {}
 
   // Function: drexp_e f - dlexp_e dxl
   //   = \sum Bn (-1)^n / n!  ad_a^n f - \sum Bn / n!  ad_a^n dxl
@@ -82,7 +94,7 @@ struct FlatDyn
 
   // First derivative
   //     \sum Bn (-1)^n / n! dr (ad_a^n f)_a  - \sum Bn / n! dr ( ad_a^n dxl )_a
-  Eigen::SparseMatrix<double> jacobian(double t, const E & e, const V & v) requires(
+  const Eigen::SparseMatrix<double> & jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     using Jt = Eigen::Matrix<double, Nouts, Nvars>;
@@ -95,8 +107,6 @@ struct FlatDyn
     const auto & Jf          = f.jacobian(t, x, u);  // nx * (1 + nx + nu)
     const TangentMap<X> ad_e = ad<X>(e);
 
-    Eigen::SparseMatrix<double> ret(Nouts, Nvars);
-
     double coef    = 1;           // hold (-1)^i / i!
     Tangent<X> vi1 = f(t, x, u);  // (ad_a)^i * f
     Jt ji1         = Jf;          // derivative of vi1 w.r.t. e
@@ -107,10 +117,12 @@ struct FlatDyn
     Jt ji2;                   // derivative of vi1 w.r.t. e
     ji2.setZero();
 
+    J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
+
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
       if (smooth::detail::kBn[iter] != 0) {
-        block_add(ret, 0, 0, ji1, smooth::detail::kBn[iter] * coef);
-        block_add(ret, 0, 0, ji2, -1 * smooth::detail::kBn[iter] * std::abs(coef));
+        block_add(J_, 0, 0, ji1, smooth::detail::kBn[iter] * coef);
+        block_add(J_, 0, 0, ji2, -1 * smooth::detail::kBn[iter] * std::abs(coef));
       }
 
       // update ji1, vi1
@@ -126,12 +138,13 @@ struct FlatDyn
       coef *= (-1.) / (iter + 1);
     }
 
-    return ret;
+    J_.makeCompressed();
+    return J_;
   }
 
   // Second derivative
   //    \sum Bn (-1)^n / n! d2r (ad_a^n f)_aa - \sum Bn / n! d2r(ad_a^n dxl)_aa
-  Eigen::SparseMatrix<double> hessian(double t, const E & e, const V & v) requires(
+  const Eigen::SparseMatrix<double> & hessian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
@@ -149,22 +162,23 @@ struct FlatDyn
     const auto & Hf          = f.hessian(t, x, u);   // (1 + nx + nu) x (nx * (1 + nx + nu))
     const TangentMap<X> ad_e = ad<X>(e);
 
-    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
-    block_add_identity(Jblocks, 0, 0, 1);
-    block_add(Jblocks, 1, 1, dr_exp<X>(e));
-    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
+    block_add_identity(Jblocks_, 0, 0, 1);
+    block_add(Jblocks_, 1, 1, dr_exp<X>(e));
+    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Jblocks_.makeCompressed();
 
-    Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
+    double coef    = 1;              // hold (-1)^i / i!
+    Tangent<X> vi1 = f(t, x, u);     // (ad_a)^i * f
+    Jt ji1         = Jf * Jblocks_;  // dr (vi1)_{t, e, v}
+    Ht hi1;                          // dr (ji1' e_k)_{t, e, v}
 
-    double coef    = 1;             // hold (-1)^i / i!
-    Tangent<X> vi1 = f(t, x, u);    // (ad_a)^i * f
-    Jt ji1         = Jf * Jblocks;  // dr (vi1)_{t, e, v}
-    Ht hi1;                         // dr (ji1' e_k)_{t, e, v}
+    H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
     for (auto no = 0u; no < Nx; ++no) {
       const auto b0 = no * Nvars;
 
       // second derivatives w.r.t. f
-      hi1.middleCols(b0, Nvars) = Jblocks.transpose() * Hf.middleCols(b0, Nvars) * Jblocks;
+      hi1.middleCols(b0, Nvars) = Jblocks_.transpose() * Hf.middleCols(b0, Nvars) * Jblocks_;
 
       // second derivatives w.r.t. e
       for (auto nx = 0u; nx < Nx; ++nx) {
@@ -185,8 +199,8 @@ struct FlatDyn
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
       // add to result
       if (smooth::detail::kBn[iter] != 0) {
-        block_add(ret, 0, 0, hi1, smooth::detail::kBn[iter] * coef);
-        block_add(ret, 0, 0, hi2, -1 * smooth::detail::kBn[iter] * std::abs(coef));
+        block_add(H_, 0, 0, hi1, smooth::detail::kBn[iter] * coef);
+        block_add(H_, 0, 0, hi2, -1 * smooth::detail::kBn[iter] * std::abs(coef));
       }
 
       // update hi1 and hi2
@@ -223,7 +237,8 @@ struct FlatDyn
       coef *= (-1.) / (iter + 1);
     }
 
-    return ret;
+    H_.makeCompressed();
+    return H_;
   }
 };
 
@@ -233,8 +248,9 @@ struct FlatDyn
  * @note Ignores derivative dependence on t in xl(t)
  */
 template<LieGroup X, Manifold U, std::size_t Nouts, typename F, typename Xl, typename Ul>
-struct FlatInnerFun
+class FlatInnerFun
 {
+private:
   F f;
   Xl xl;
   Ul ul;
@@ -250,6 +266,15 @@ struct FlatInnerFun
   static constexpr auto x_B = t_B + 1;
   static constexpr auto u_B = x_B + Nx;
 
+  Eigen::SparseMatrix<double> Jblocks_, J_, H_;
+
+public:
+  template<typename A1, typename A2, typename A3>
+  FlatInnerFun(A1 && a1, A2 && a2, A3 && a3)
+      : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
+        Jblocks_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+  {}
+
   template<typename T>
   Eigen::Vector<T, Nouts>
   operator()(const T & t, const CastT<T, E> & e, const CastT<T, V> & v) const
@@ -257,20 +282,24 @@ struct FlatInnerFun
     return f.template operator()<T>(t, rplus(xl(t), e), rplus(ul(t), v));
   }
 
-  Eigen::SparseMatrix<double> jacobian(double t, const E & e, const V & v) requires(
+  const Eigen::SparseMatrix<double> & jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const auto & df = f.jacobian(t, rplus(xl(t), e), rplus(ul(t), v));
 
-    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
-    block_add_identity(Jblocks, 0, 0, 1);
-    block_add(Jblocks, 1, 1, dr_exp<X>(e));
-    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
+    block_add_identity(Jblocks_, 0, 0, 1);
+    block_add(Jblocks_, 1, 1, dr_exp<X>(e));
+    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Jblocks_.makeCompressed();
 
-    return df * Jblocks;
+    J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
+    J_ = df * Jblocks_;
+    J_.makeCompressed();
+    return J_;
   }
 
-  Eigen::SparseMatrix<double> hessian(double t, const E & e, const V & v) requires(
+  const Eigen::SparseMatrix<double> & hessian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
@@ -283,32 +312,35 @@ struct FlatInnerFun
     const auto He = d2r_exp<X>(e);
     const auto Hv = d2r_exp<U>(v);
 
-    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
-    block_add_identity(Jblocks, 0, 0, 1);
-    block_add(Jblocks, 1, 1, dr_exp<X>(e));
-    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
+    block_add_identity(Jblocks_, 0, 0, 1);
+    block_add(Jblocks_, 1, 1, dr_exp<X>(e));
+    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<U>(v));
+    Jblocks_.makeCompressed();
 
-    Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
+    H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
 
     for (auto no = 0u; no < Nouts; ++no) {  // for each output
       const auto b0 = Nvars * no;           // block index
 
       // second derivatives w.r.t. f
-      block_add(ret, 0, b0, Jblocks.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks);
+      block_add(H_, 0, b0, Jblocks_.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks_);
 
       // second derivatives w.r.t. e
       for (auto nx = 0u; nx < Nx; ++nx) {
         // TODO: skip if Jf isn't filled
-        block_add(ret, x_B, b0 + x_B, Jf.coeff(no, x_B + nx) * He.block(0, nx * Nx, Nx, Nx));
+        block_add(H_, x_B, b0 + x_B, Jf.coeff(no, x_B + nx) * He.block(0, nx * Nx, Nx, Nx));
       }
 
       // second derivatives w.r.t. v
       for (auto nu = 0u; nu < Nu; ++nu) {
         // TODO: skip if Jf isn't filled
-        block_add(ret, u_B, b0 + u_B, Jf.coeff(no, u_B + nu) * Hv.block(0, nu * Nu, Nu, Nu));
+        block_add(H_, u_B, b0 + u_B, Jf.coeff(no, u_B + nu) * Hv.block(0, nu * Nu, Nu, Nu));
       }
     }
-    return ret;
+
+    H_.makeCompressed();
+    return H_;
   }
 };
 
@@ -325,8 +357,9 @@ template<
   typename F,
   typename Xl,
   typename Ul>
-struct FlatEndptFun
+class FlatEndptFun
 {
+private:
   F f;
   Xl xl;
   Ul ul;
@@ -342,6 +375,14 @@ struct FlatEndptFun
   static constexpr auto xf_B = x0_B + Nx;
   static constexpr auto q_B  = xf_B + Nx;
 
+  Eigen::SparseMatrix<double> Jblocks_, J_, H_;
+
+public:
+  template<typename A1, typename A2, typename A3>
+  FlatEndptFun(A1 && a1, A2 && a2, A3 && a3)
+      : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
+        Jblocks_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+  {}
   template<typename T>
   auto operator()(
     const T & tf, const CastT<T, E> & e0, const CastT<T, E> & ef, const CastT<T, Q> & q) const
@@ -349,24 +390,31 @@ struct FlatEndptFun
     return f.template operator()<T>(tf, rplus(xl(T(0.)), e0), rplus(xl(tf), ef), q);
   }
 
-  Eigen::SparseMatrix<double> jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
+  const Eigen::SparseMatrix<double> &
+  jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
     const auto x0 = xl(0.);
     const auto xf = xl(tf);
 
-    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
-    block_add_identity(Jblocks, 0, 0, 1);
-    block_add(Jblocks, 1, 1, dr_exp<X>(e0));
-    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
-    block_add_identity(Jblocks, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
+    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
+    block_add_identity(Jblocks_, 0, 0, 1);
+    block_add(Jblocks_, 1, 1, dr_exp<X>(e0));
+    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
+    block_add_identity(Jblocks_, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
+    Jblocks_.makeCompressed();
     // const auto dxf_tf = Ad(smooth::exp<X>(-ef)) * dxl_tf;  // skipping this for now
 
     const auto & dtheta = f.jacobian(tf, rplus(x0, e0), rplus(xf, ef), q);
-    return dtheta * Jblocks;
+
+    J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
+    J_ = dtheta * Jblocks_;
+    J_.makeCompressed();
+    return J_;
   }
 
-  Eigen::SparseMatrix<double> hessian(double tf, const E & e0, const E & ef, const Q & q) requires(
+  const Eigen::SparseMatrix<double> &
+  hessian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, X, Q>>)
   {
@@ -381,29 +429,30 @@ struct FlatEndptFun
     const auto Hp0 = d2r_exp<X>(e0);  // Nx x (Nx * Nx)
     const auto Hpf = d2r_exp<X>(ef);  // Nx x (Nx * Nx)
 
-    Eigen::SparseMatrix<double> Jblocks(Nvars, Nvars);
-    block_add_identity(Jblocks, 0, 0, 1);
-    block_add(Jblocks, 1, 1, dr_exp<X>(e0));
-    block_add(Jblocks, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
-    block_add_identity(Jblocks, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
+    Jblocks_.isCompressed() ? (void)Jblocks_.coeffs().setZero() : assert(Jblocks_.nonZeros());
+    block_add_identity(Jblocks_, 0, 0, 1);
+    block_add(Jblocks_, 1, 1, dr_exp<X>(e0));
+    block_add(Jblocks_, 1 + Nx, 1 + Nx, dr_exp<X>(ef));
+    block_add_identity(Jblocks_, 1 + 2 * Nx, 1 + 2 * Nx, Nq);
+    Jblocks_.makeCompressed();
 
-    Eigen::SparseMatrix<double> ret(Nvars, Nouts * Nvars);
+    H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
     for (auto no = 0u; no < Nouts; ++no) {  // for each output
       const auto b0 = Nvars * no;           // block index
 
       // terms involving second derivatives w.r.t. f
-      block_add(ret, 0, b0, Jblocks.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks);
+      block_add(H_, 0, b0, Jblocks_.transpose() * Hf.block(0, b0, Nvars, Nvars) * Jblocks_);
 
       // terms involving second derivatives w.r.t. e0 and ef
       for (auto nx = 0u; nx < Nx; ++nx) {
         // TODO: skip if Jf isn't filled
-        block_add(ret, x0_B, b0 + x0_B, Jf.coeff(no, x0_B + nx) * Hp0.block(0, nx * Nx, Nx, Nx));
+        block_add(H_, x0_B, b0 + x0_B, Jf.coeff(no, x0_B + nx) * Hp0.block(0, nx * Nx, Nx, Nx));
         // TODO: skip if Jf isn't filled
-        block_add(ret, xf_B, b0 + xf_B, Jf.coeff(no, xf_B + nx) * Hpf.block(0, nx * Nx, Nx, Nx));
+        block_add(H_, xf_B, b0 + xf_B, Jf.coeff(no, xf_B + nx) * Hpf.block(0, nx * Nx, Nx, Nx));
       }
     }
 
-    return ret;
+    return H_;
   }
 };
 
