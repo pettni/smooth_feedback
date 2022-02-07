@@ -154,6 +154,7 @@ void setZero(MeshValue<Deriv> & mv)
  * @param tf final time parameter
  * @param xs state parameters {xi}
  * @param us input parameters {ui}
+ * @param scale scale values with quadrature weights
  */
 template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
   requires(Deriv <= 2)
@@ -164,7 +165,8 @@ void mesh_eval(
   const double t0,
   const double tf,
   std::ranges::range auto && xs,
-  std::ranges::range auto && us)
+  std::ranges::range auto && us,
+  bool scale = false)
 {
   using utils::zip, std::views::iota;
   using X = PlainObject<std::decay_t<std::ranges::range_value_t<decltype(xs)>>>;
@@ -222,25 +224,27 @@ void mesh_eval(
 
   setZero(out);
 
-  for (const auto & [i, tau, x, u] : zip(iota(0u, N), m.all_nodes(), xs, us)) {
+  for (const auto & [i, tau, w_quad, x, u] :
+       zip(iota(0u, N), m.all_nodes(), m.all_weights(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
     const X xi      = x;
     const U ui      = u;
 
     const double mtau = 1. - tau;
+    const double w    = scale ? w_quad : 1.;
 
     const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
 
-    out.F.segment(i * nf, nf) = std::get<0>(fval);
+    out.F.segment(i * nf, nf) = w * std::get<0>(fval);
 
     if constexpr (Deriv >= 1u) {
       const auto & df = std::get<1>(fval);
       const auto row0 = nf * i;
 
-      block_add(out.dF, row0, 0, df.middleCols(0, 1), mtau);
-      block_add(out.dF, row0, 1, df.middleCols(0, 1), tau);
-      block_add(out.dF, row0, 2 + i * nx, df.middleCols(1, nx));
-      block_add(out.dF, row0, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu));
+      block_add(out.dF, row0, 0, df.middleCols(0, 1), w * mtau);
+      block_add(out.dF, row0, 1, df.middleCols(0, 1), w * tau);
+      block_add(out.dF, row0, 2 + i * nx, df.middleCols(1, nx), w);
+      block_add(out.dF, row0, 2 + nx * (N + 1) + nu * i, df.middleCols(1 + nx, nu), w);
 
       if constexpr (Deriv >= 2u) {
         assert(out.lambda.size() == numOuts);
@@ -248,7 +252,7 @@ void mesh_eval(
         const auto & d2f = std::get<2>(fval);
 
         for (auto j = 0u; j < nf; ++j) {
-          const double l = out.lambda(row0 + j);
+          const double wl = w * out.lambda(row0 + j);
 
           // destination block locations
           const auto t0_d = 0;
@@ -264,22 +268,22 @@ void mesh_eval(
 
           // clang-format off
           // t0 row
-          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * mtau, true);
-          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * mtau * tau, true);
-          block_add(out.d2F, t0_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * mtau, true);
-          block_add(out.d2F, t0_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * mtau, true);
+          block_add(out.d2F, t0_d, t0_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * mtau * mtau, true);
+          block_add(out.d2F, t0_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * mtau * tau, true);
+          block_add(out.d2F, t0_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), wl * mtau, true);
+          block_add(out.d2F, t0_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), wl * mtau, true);
 
           // tf row
-          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), l * tau * tau, true);
-          block_add(out.d2F, tf_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), l * tau, true);
-          block_add(out.d2F, tf_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), l * tau, true);
+          block_add(out.d2F, tf_d, tf_d, d2f.block(t_s, b_s + t_s, 1, 1 ), wl * tau * tau, true);
+          block_add(out.d2F, tf_d,  x_d, d2f.block(t_s, b_s + x_s, 1, nx), wl * tau, true);
+          block_add(out.d2F, tf_d,  u_d, d2f.block(t_s, b_s + u_s, 1, nu), wl * tau, true);
 
           // x row
-          block_add(out.d2F, x_d,  x_d, d2f.block(x_s, b_s + x_s, nx, nx), l, true);
-          block_add(out.d2F, x_d,  u_d, d2f.block(x_s, b_s + u_s, nx, nu), l, true);
+          block_add(out.d2F, x_d,  x_d, d2f.block(x_s, b_s + x_s, nx, nx), wl, true);
+          block_add(out.d2F, x_d,  u_d, d2f.block(x_s, b_s + u_s, nx, nu), wl, true);
 
           // u row
-          block_add(out.d2F, u_d,  u_d, d2f.block(u_s, b_s + u_s, nu, nu), l, true);
+          block_add(out.d2F, u_d,  u_d, d2f.block(u_s, b_s + u_s, nu, nu), wl, true);
           // clang-format on
         }
       }

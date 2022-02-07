@@ -159,9 +159,13 @@ public:
     gl_.segment(qcon_B, qcon_L).setZero();
     gu_.segment(qcon_B, qcon_L).setZero();
 
-    // running constraints
+    // running constraints (scaled by quadrature weights)
     gl_.segment(crcon_B, crcon_L) = ocp.crl.replicate(N_, 1);
     gu_.segment(crcon_B, crcon_L) = ocp.cru.replicate(N_, 1);
+    for (const auto & [i, w] : utils::zip(std::views::iota(0u, N_), mesh_.all_weights())) {
+      gl_.segment(crcon_B + i * ocp_.Ncr, ocp_.Ncr) *= w;
+      gu_.segment(crcon_B + i * ocp_.Ncr, ocp_.Ncr) *= w;
+    }
 
     // end constraints
     gl_.segment(cecon_B, cecon_L) = ocp.cel;
@@ -282,7 +286,7 @@ public:
 
     mesh_dyn<0>(dyn_out0_, mesh_, ocp_.f, t0, tf, X.colwise(), U.colwise());
     mesh_integrate<0>(int_out0_, mesh_, ocp_.g, t0, tf, X.colwise(), U.colwise());
-    mesh_eval<0>(cr_out0_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise());
+    mesh_eval<0>(cr_out0_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise(), true);
 
     g_.segment(dcon_B, dcon_L)   = dyn_out0_.F;
     g_.segment(qcon_B, qcon_L)   = int_out0_.F - q;
@@ -311,7 +315,7 @@ public:
 
     mesh_dyn<1, DT>(dyn_out1_, mesh_, ocp_.f, t0, tf, X.colwise(), U.colwise());
     mesh_integrate<1, DT>(int_out1_, mesh_, ocp_.g, t0, tf, X.colwise(), U.colwise());
-    mesh_eval<1, DT>(cr_out1_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise());
+    mesh_eval<1, DT>(cr_out1_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise(), true);
     const auto & [ceval, dceval] = diff::dr<1, DT>(ocp_.ce, wrt(tf, x0, xf, q));
 
     if (dg_dx_.isCompressed()) { dg_dx_.coeffs().setZero(); }
@@ -365,7 +369,7 @@ public:
     cr_out2_.lambda  = lambda.segment(crcon_B, crcon_L);
     mesh_dyn<2, DT>(dyn_out2_, mesh_, ocp_.f, t0, tf, X.colwise(), U.colwise());
     mesh_integrate<2, DT>(int_out2_, mesh_, ocp_.g, t0, tf, X.colwise(), U.colwise());
-    mesh_eval<2, DT>(cr_out2_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise());
+    mesh_eval<2, DT>(cr_out2_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise(), true);
     const auto & [ceval, dceval, d2ceval] = diff::dr<2, DT>(ocp_.ce, wrt(tf, x0, xf, q));
 
     if (d2g_dx2_.isCompressed()) { d2g_dx2_.coeffs().setZero(); }
