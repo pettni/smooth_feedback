@@ -26,30 +26,34 @@
 #include <gtest/gtest.h>
 
 #include <Eigen/Core>
+#include <smooth/compat/autodiff.hpp>
 
-// #include <smooth/compat/autodiff.hpp>
 #include "smooth/feedback/ocp_flatten.hpp"
+
+constexpr auto DT = smooth::diff::Type::Autodiff;
+// constexpr auto DT = smooth::diff::Type::Numerical;
 
 #include "ocp.hpp"
 
 TEST(OcpFlatten, Basic)
 {
-  // constexpr auto DT = smooth::diff::Type::Autodiff;
-  constexpr auto DT = smooth::diff::Type::Numerical;
-
   // test derivatives
   std::srand(10);
 
+  std::cout << "TEST CURVED\n";
   const auto t1 = smooth::feedback::test_ocp_derivatives<DT>(ocp_test, 5);
   ASSERT_TRUE(t1);
 
-  const auto xl = []<typename T>(const T &) {
-    return smooth::Default<smooth::CastT<T, OcpTest::X>>();
+  const auto xl = []<typename T>(const T & t) -> smooth::CastT<T, OcpTest::X> {
+    const Eigen::Vector<T, Nx> vel{1, 2, 3};
+    return smooth::exp<smooth::CastT<T, OcpTest::X>>(t * vel);
   };
-  const auto ul = []<typename T>(const T &) {
-    return smooth::Default<smooth::CastT<T, OcpTest::U>>();
+  const auto ul = []<typename T>(const T & t) -> smooth::CastT<T, OcpTest::U> {
+    const Eigen::Vector<T, Nu> vel{1, 2};
+    return smooth::exp<smooth::CastT<T, OcpTest::U>>(t * vel);
   };
 
+  std::cout << "TEST FLAT\n";
   auto ocp_flat  = smooth::feedback::flatten_ocp(ocp_test, xl, ul);
   const auto t2a = smooth::feedback::test_ocp_derivatives<DT>(ocp_flat, 5);
   ASSERT_TRUE(t2a);
