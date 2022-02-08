@@ -40,7 +40,6 @@ TEST(OcpFlatten, Basic)
   // test derivatives
   std::srand(10);
 
-  std::cout << "TEST CURVED\n";
   const auto t1 = smooth::feedback::test_ocp_derivatives<DT>(ocp_test, 5);
   ASSERT_TRUE(t1);
 
@@ -53,7 +52,6 @@ TEST(OcpFlatten, Basic)
     return smooth::exp<smooth::CastT<T, OcpTest::U>>(t * vel);
   };
 
-  std::cout << "TEST FLAT\n";
   auto ocp_flat  = smooth::feedback::flatten_ocp(ocp_test, xl, ul);
   const auto t2a = smooth::feedback::test_ocp_derivatives<DT>(ocp_flat, 5);
   ASSERT_TRUE(t2a);

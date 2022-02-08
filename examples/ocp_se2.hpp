@@ -130,7 +130,8 @@ struct SE2Integral
     const auto a = x - xdes(t);
 
     Eigen::SparseMatrix<double> ret(1, 8);
-    // TODO: don't have derivative w.r.t. t
+    ret.coeffRef(0, 0) = -(a.transpose() * smooth::dl_expinv<X<double>>(a))
+                            .dot(Eigen::Vector<double, 5>{1., 0., 0.5, 0, 0});
     ret.middleCols(1, 5) = (a.transpose() * smooth::dr_expinv<X<double>>(a)).sparseView();
     ret.coeffRef(0, 6)   = u.x();
     ret.coeffRef(0, 7)   = u.y();
