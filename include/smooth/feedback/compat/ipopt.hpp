@@ -48,12 +48,16 @@ public:
   /**
    * @brief Ipopt wrapper for NLP (rvlaue version).
    */
-  inline IpoptNLP(Problem && nlp) : nlp_(std::move(nlp)) {}
+  inline IpoptNLP(Problem && nlp, bool use_hessian = false)
+      : nlp_(std::move(nlp)), use_hessian_(use_hessian)
+  {}
 
   /**
    * @brief Ipopt wrapper for NLP (lvalue version).
    */
-  inline IpoptNLP(const Problem & nlp) : nlp_(nlp) {}
+  inline IpoptNLP(const Problem & nlp, bool use_hessian = false)
+      : nlp_(nlp), use_hessian_(use_hessian)
+  {}
 
   /**
    * @brief Access solution.
@@ -76,13 +80,16 @@ public:
     const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
     nnz_jac_g    = J.nonZeros();
 
+    nnz_h_lag = 0;  // default
     if constexpr (HessianNLPType<Problem>) {
-      H_ = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
-      H_ += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
-      H_.makeCompressed();
-      nnz_h_lag = H_.nonZeros();
+      if (use_hessian_) {
+        H_ = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
+        H_ += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
+        H_.makeCompressed();
+        nnz_h_lag = H_.nonZeros();
+      }
     } else {
-      nnz_h_lag = 0;  // not used
+      assert(use_hessian_ == false);
     }
 
     index_style = TNLP::C_STYLE;  // zero-based
@@ -226,6 +233,7 @@ public:
     Ipopt::Index * jCol,
     Ipopt::Number * values) override
   {
+    assert(use_hessian_);
     assert(HessianNLPType<Problem>);
     assert(H_.isCompressed());
     assert(H_.nonZeros() == nele_hess);
@@ -308,6 +316,7 @@ public:
 
 private:
   Problem nlp_;
+  bool use_hessian_;
   NLPSolution sol_;
   Eigen::SparseMatrix<double> H_;
 };
@@ -330,9 +339,15 @@ inline NLPSolution solve_nlp_ipopt(
   std::vector<std::pair<std::string, std::string>> opts_string = {},
   std::vector<std::pair<std::string, double>> opts_numeric     = {})
 {
-  using NlpType = std::decay_t<decltype(nlp)>;
+  using NlpType    = std::decay_t<decltype(nlp)>;
+  bool use_hessian = false;
 
-  Ipopt::SmartPtr<IpoptNLP<NlpType>> ipopt_nlp = new IpoptNLP<NlpType>(nlp);
+  auto it = std::find_if(opts_string.begin(), opts_string.end(), [](const auto & p) {
+    return p.first == "hessian_approximation";
+  });
+  if (it != opts_string.end() && it->second == "exact") { use_hessian = true; }
+
+  Ipopt::SmartPtr<IpoptNLP<NlpType>> ipopt_nlp = new IpoptNLP<NlpType>(nlp, use_hessian);
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
   // silence welcome message

@@ -28,7 +28,6 @@
 #include <Eigen/Core>
 #include <smooth/so3.hpp>
 
-// #include "smooth/compat/autodiff.hpp"
 #include "smooth/feedback/ocp_to_nlp.hpp"
 
 template<typename T, std::size_t N>

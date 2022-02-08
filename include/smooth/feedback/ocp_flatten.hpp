@@ -48,9 +48,9 @@ namespace detail {
  * @brief (Right) Hessian of composed function (f \circ g)(x).
  *
  * @param[out] out result                           [No x No*Nx]
- * @param[in] Jf (Right) Jacobian of f at y = g(x)  [No x Ny]
+ * @param[in] Jf (Right) Jacobian of f at y = g(x)  [No x Ny   ]
  * @param[in] Hf (Right) Hessian of f at y = g(x)   [Ny x No*Ny]
- * @param[in] Jg (Right) Jacobian of g at x         [Ni x Nx]
+ * @param[in] Jg (Right) Jacobian of g at x         [Ni x Nx   ]
  * @param[in] Hg (Right) Hessian of g at x          [Nx x Ni*Nx]
  */
 inline void d2r_fog(
@@ -63,8 +63,8 @@ inline void d2r_fog(
   const auto Nout_o = Jf.rows();
   const auto Nvar_y = Jf.cols();
 
-  const auto Nout_i = Jg.rows();
-  const auto Nvar_x = Jg.cols();
+  [[maybe_unused]] const auto Nout_i = Jg.rows();
+  const auto Nvar_x                  = Jg.cols();
 
   // check some dimensions
   assert(Nvar_y == Nout_i);
@@ -98,6 +98,39 @@ inline auto algebra_generators_sparse = []() -> std::array<Eigen::SparseMatrix<d
   for (auto i = 0u; i < Dof<G>; ++i) {
     ret[i] = smooth::detail::algebra_generators<G>[i].sparseView();
     ret[i].makeCompressed();
+  }
+  return ret;
+}();
+
+/**
+ * @brief Ad sparse.
+ */
+template<LieGroup G>
+void ad_sparse(Eigen::SparseMatrix<double> & out, const Tangent<G> & a)
+{
+  if (out.isCompressed()) {
+    out.coeffs().setZero();
+  } else {
+    out.setZero();
+  }
+  out.resize(Dof<G>, Dof<G>);
+
+  for (auto i = 0u; i < Dof<G>; ++i) { out += a(i) * algebra_generators_sparse<G>[i]; }
+
+  out.makeCompressed();
+}
+
+/**
+ * @brief Sparse matrices containing reordered rows of algebra generators.
+ */
+template<LieGroup G>
+inline auto algebra_generators_sparse_rowwise =
+  []() -> std::array<Eigen::SparseMatrix<double, Eigen::RowMajor>, Dof<G>> {
+  std::array<Eigen::SparseMatrix<double, Eigen::RowMajor>, Dof<G>> ret;
+  for (auto k = 0u; k < Dof<G>; ++k) {
+    ret[k].resize(Dof<G>, Dof<G>);
+    for (auto i = 0u; i < Dof<G>; ++i) { ret[k].row(i) = algebra_generators_sparse<G>[i].row(k); }
+    ret[k].makeCompressed();
   }
   return ret;
 }();
@@ -144,37 +177,77 @@ private:
   Xl xl;
   Ul ul;
 
-  Eigen::SparseMatrix<double> Joplus_, J_, H_;
+  Eigen::SparseMatrix<double> Joplus_, Hoplus_, J_, H_;
 
-  void update_joplus(const E & e, const V & v)
+  // Would ideally like to remove these temporaries...
+  Eigen::SparseMatrix<double> ji_, ji_tmp_, hi_, hi_tmp_;
+  Eigen::SparseMatrix<double> ad_e, ad_vi;
+  Eigen::SparseMatrix<double> drexp_ext_;
+
+  /// @brief Calculate jacobian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
+  void update_joplus(const E & e, const V & v, const E & dxl, const V & dul)
   {
     Joplus_.isCompressed() ? (void)Joplus_.coeffs().setZero() : assert(Joplus_.nonZeros());
     block_add_identity(Joplus_, t_B, t_B, 1);
+    block_add(Joplus_, x_B, t_B, Ad<X>(smooth::exp<X>(-e)) * dxl);
+    block_add(Joplus_, u_B, t_B, Ad<U>(smooth::exp<U>(-v)) * dul);
     block_add(Joplus_, x_B, x_B, dr_exp<X>(e));
     block_add(Joplus_, u_B, u_B, dr_exp<U>(v));
     Joplus_.makeCompressed();
+  }
+
+  /// @brief Calculate hessian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
+  void update_hoplus(const E & e, const V & v, const E & dxl, const V & dul)
+  {
+    const auto & He = d2r_exp<X>(e);  // expensive and non-sparse
+    const auto & Hv = d2r_exp<U>(v);  // expensive and non-sparse
+
+    // d (Ad_X b) = -ad_(Ad_X b) * Ad_X
+    const TangentMap<X> Adexp_X  = Ad<X>(smooth::exp<X>(-e));
+    const TangentMap<X> dAdexp_X = ad<X>(Adexp_X * dxl) * Adexp_X * dr_exp<X>(-e);
+    const TangentMap<U> Adexp_U  = Ad<U>(smooth::exp<U>(-v));
+    const TangentMap<U> dAdexp_U = ad<U>(Adexp_U * dul) * Adexp_U * dr_exp<U>(-v);
+
+    Hoplus_.isCompressed() ? (void)Hoplus_.coeffs().setZero() : assert(Hoplus_.nonZeros());
+    for (auto nx = 0u; nx < Nx; ++nx) {
+      const auto b0 = Nvars * (x_B + nx);
+      block_add(Hoplus_, t_B, b0 + x_B, dAdexp_X.middleRows(nx, 1));
+    }
+    for (auto nu = 0u; nu < Nu; ++nu) {
+      const auto b0 = Nvars * (u_B + nu);
+      block_add(Hoplus_, t_B, b0 + u_B, dAdexp_U.middleRows(nu, 1));
+    }
+    for (auto nx = 0u; nx < Nx; ++nx) {
+      const auto b0 = Nvars * (x_B + nx);
+      block_add(Hoplus_, x_B, b0 + x_B, He.middleCols(nx * Nx, Nx));
+    }
+    for (auto nu = 0u; nu < Nu; ++nu) {
+      const auto b0 = Nvars * (u_B + nu);
+      block_add(Hoplus_, u_B, b0 + u_B, Hv.middleCols(nu * Nu, Nu));
+    }
+    Hoplus_.makeCompressed();
   }
 
 public:
   template<typename A1, typename A2, typename A3>
   FlatDyn(A1 && a1, A2 && a2, A3 && a3)
       : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
-        Joplus_(Nvars, Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+        Joplus_(Nvars, Nvars), Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars),
+        H_(Nvars, Nouts * Nvars), ji_(Nouts, Nvars), ji_tmp_(Nouts, Nvars),
+        hi_(Nvars, Nouts * Nvars), hi_tmp_(Nvars, Nouts * Nvars), drexp_ext_(Nx, Nx)
   {}
 
   template<typename T>
   CastT<T, E> operator()(const T & t, const CastT<T, E> & e, const CastT<T, V> & v) const
   {
-    // can not double-differentiate, so we hide derivative of f_new w.r.t. t
-    const double tdbl          = static_cast<double>(t);
-    const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
-    const auto ulval           = ul(tdbl);
+    using XT = CastT<T, X>;
 
-    const CastT<T, X> x = rplus(xlval.template cast<T>(), e);
-    const CastT<T, U> u = rplus(ulval.template cast<T>(), v);
+    // can not double-differentiate, so we hide derivative of xl w.r.t. t
+    const double tdbl           = static_cast<double>(t);
+    const auto [unused, dxlval] = diff::dr(xl, wrt(tdbl));
 
-    return dr_expinv<CastT<T, X>>(e) * (f(t, x, u) - dxlval.template cast<T>())
-         + ad<CastT<T, X>>(e) * dxlval.template cast<T>();
+    return dr_expinv<XT>(e) * (f(t, rplus(xl(t), e), rplus(ul(t), v)) - dxlval.template cast<T>())
+         + ad<XT>(e) * dxlval.template cast<T>();
   }
 
   // First derivative
@@ -183,23 +256,23 @@ public:
   {
     const double tdbl          = static_cast<double>(t);
     const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
+    const auto [ulval, dulval] = diff::dr(ul, wrt(tdbl));
     const auto x               = rplus(xlval, e);
-    const auto u               = rplus(ul(t), v);
+    const auto u               = rplus(ulval, v);
 
     // left stuff
-    Eigen::SparseMatrix<double> Je(Nx, Nx);
-    block_add(Je, 0, 0, dr_expinv<X>(e));
+    block_add(drexp_ext_, 0, 0, dr_expinv<X>(e));
     const auto & d2r_exp = d2r_expinv<X>(e);  // expensive and non-sparse
     // value and derivative of f
     const auto fval = f(t, x, u);
     const auto & Jf = f.jacobian(t, x, u);
     // derivatives of +
-    update_joplus(e, v);
+    update_joplus(e, v, dxlval, dulval);
 
     J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
 
     // Add drexpinv * d (f \circ +)
-    J_ = Je * Jf * Joplus_;
+    J_ = drexp_ext_ * Jf * Joplus_;
 
     // Add d ( drexpinv ) * (f \circ (+) - dxl) + d ( ad ) * dxl
     for (auto i = 0u; i < d2r_exp.outerSize(); ++i) {
@@ -207,6 +280,8 @@ public:
         J_.coeffRef(it.col() / Nx, 1 + (it.col() % Nx)) +=
           (fval(it.row()) - dxlval(it.row())) * it.value();
       }
+    }
+    for (auto i = 0u; i < d_ad<X>.outerSize(); ++i) {
       for (Eigen::InnerIterator it(d_ad<X>, i); it; ++it) {
         J_.coeffRef(it.col() / Nx, 1 + (it.col() % Nx)) += dxlval(it.row()) * it.value();
       }
@@ -222,87 +297,55 @@ public:
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
-    using Jt = Eigen::Matrix<double, Nouts, Nvars>;
-    using Ht = Eigen::Matrix<double, Nvars, Nouts * Nvars>;
-
     const double tdbl          = static_cast<double>(t);
     const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
+    const auto [ulval, dulval] = diff::dr(ul, wrt(tdbl));
 
-    const auto x             = rplus(xlval, e);
-    const auto u             = rplus(ul(t), v);
-    const auto He            = d2r_exp<X>(e);
-    const auto Hv            = d2r_exp<U>(v);
-    const auto & Jf          = f.jacobian(t, x, u);  // nx x (1 + nx + nu)
-    const auto & Hf          = f.hessian(t, x, u);   // (1 + nx + nu) x (nx * (1 + nx + nu))
-    const TangentMap<X> ad_e = ad<X>(e);
+    const auto x    = rplus(xlval, e);
+    const auto u    = rplus(ul(t), v);
+    const auto & Jf = f.jacobian(t, x, u);  // nx x (1 + nx + nu)
+    const auto & Hf = f.hessian(t, x, u);   // (1 + nx + nu) x (nx * (1 + nx + nu))
+    ad_sparse<X>(ad_e, e);
 
-    update_joplus(e, v);
+    update_joplus(e, v, dxlval, dulval);
+    update_hoplus(e, v, dxlval, dulval);
 
-    double coef    = 1;             // hold (-1)^i / i!
-    Tangent<X> vi1 = f(t, x, u);    // (ad_a)^i * f
-    Jt ji1         = Jf * Joplus_;  // dr (vi1)_{t, e, v}
-    Ht hi1;                         // dr (ji1' e_k)_{t, e, v}
+    double coef   = 1;                       // hold (-1)^i / i!
+    Tangent<X> vi = f(t, x, u) - dxlval;     // (ad_a)^i * (f - dxl)
+    ji_           = Jf * Joplus_;            // dr (vi)_{t, e, v}
+    d2r_fog(hi_, Jf, Hf, Joplus_, Hoplus_);  // d2r (vi)_{t, e, v}
 
     H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
-    for (auto no = 0u; no < Nx; ++no) {
-      const auto b0 = no * Nvars;
-
-      // second derivatives w.r.t. f
-      hi1.middleCols(b0, Nvars) = Joplus_.transpose() * Hf.middleCols(b0, Nvars) * Joplus_;
-
-      // second derivatives w.r.t. e
-      for (auto nx = 0u; nx < Nx; ++nx) {
-        hi1.middleCols(b0, Nvars).block(1, 1, Nx, Nx) +=
-          Jf.coeff(no, 1 + nx) * He.block(0, nx * Nx, Nx, Nx);
-      }
-      // second derivatives w.r.t. v
-      for (auto nu = 0u; nu < Nu; ++nu) {
-        hi1.middleCols(b0, Nvars).block(1 + Nx, 1 + Nx, Nu, Nu) +=
-          Jf.coeff(no, 1 + Nx + nu) * Hv.block(0, nu * Nu, Nu, Nu);
-      }
-    };
-
-    Tangent<X> vi2 = dxlval;      // (ad_a)^i * dxl
-    Jt ji2         = Jt::Zero();  // dr (vi2)_{t, e, v}
-    Ht hi2         = Ht::Zero();  // dr (ji2' e_k)_{t, e, v}
-
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
-      // add to result
       if (smooth::detail::kBn[iter] != 0) {
-        block_add(H_, 0, 0, hi1, smooth::detail::kBn[iter] * coef);
-        block_add(H_, 0, 0, hi2, -1 * smooth::detail::kBn[iter] * std::abs(coef));
+        block_add(H_, 0, 0, hi_, smooth::detail::kBn[iter] * coef);
       }
 
-      // update hi1 and hi2
-      Ht hi1p = Ht::Zero(), hi2p = Ht::Zero();
-      for (auto k = 0u; k < Nx; ++k) {
-        Eigen::Matrix<double, Nx, Nx> ek_gens;
-        for (auto l = 0u; l < Nx; ++l) {
-          // ek_gens[l][j] = generator_l[k][j]
-          ek_gens.row(l) = smooth::detail::algebra_generators<X>[l].row(k);
-
-          hi1p.middleCols(k * Nvars, Nvars) += ad_e(k, l) * hi1.middleCols(l * Nvars, Nvars);
-          hi2p.middleCols(k * Nvars, Nvars) += ad_e(k, l) * hi2.middleCols(l * Nvars, Nvars);
+      // update hi_
+      hi_tmp_.setZero();
+      for (auto i = 0u; i < ad_e.outerSize(); ++i) {
+        for (Eigen::InnerIterator it(ad_e, i); it; ++it) {
+          const auto b0 = it.row() * Nvars;
+          block_add(hi_tmp_, 0, b0, hi_.middleCols(it.col() * Nvars, Nvars), it.value());
         }
-
-        hi1p.middleCols(k * Nvars, Nvars).middleRows(1, Nx) += ek_gens * ji1;
-        hi1p.middleCols(k * Nvars, Nvars).middleCols(1, Nx) -= ji1.transpose() * ek_gens;
-
-        hi2p.middleCols(k * Nvars, Nvars).middleRows(1, Nx) += ek_gens * ji2;
-        hi2p.middleCols(k * Nvars, Nvars).middleCols(1, Nx) -= ji2.transpose() * ek_gens;
       }
-      hi1 = hi1p;
-      hi2 = hi2p;
+      for (auto k = 0u; k < Nx; ++k) {
+        const auto b0 = k * Nvars;
+        block_add(hi_tmp_, 1, b0, algebra_generators_sparse_rowwise<X>[k] * ji_);
+        block_add(
+          hi_tmp_, 0, b0 + 1, ji_.transpose() * algebra_generators_sparse_rowwise<X>[k], -1);
+      }
+      std::swap(hi_, hi_tmp_);
 
-      // update ji1 and ji2
-      ji1.applyOnTheLeft(ad_e);
-      ji1.middleCols(1, Nx) -= ad<X>(vi1);
-      ji2.applyOnTheLeft(ad_e);
-      ji2.middleCols(1, Nx) -= ad<X>(vi2);
+      // update ji
+      ji_tmp_.setZero();
+      ji_tmp_ = ad_e * ji_;
+      ad_sparse<X>(ad_vi, vi);
+      block_add(ji_tmp_, 0, 1, ad_vi, -1);
+      std::swap(ji_, ji_tmp_);
 
-      // update vi1 and vi2
-      vi1.applyOnTheLeft(ad_e);
-      vi2.applyOnTheLeft(ad_e);
+      // update vi
+      vi.applyOnTheLeft(ad_e);
 
       coef *= (-1.) / (iter + 1);
     }
@@ -530,7 +573,7 @@ public:
     update_joplus(e0, ef, dxlfval);
     // update result
     J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
-    block_add(J_, 0, 0, Jf * Joplus_);
+    J_ = Jf * Joplus_;
     J_.makeCompressed();
     return J_;
   }
