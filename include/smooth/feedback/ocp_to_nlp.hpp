@@ -109,12 +109,10 @@ private:
   MeshValue<2> dyn_out2_, int_out2_, cr_out2_;
 
 public:
-  /// @brief Constructor (lvalue version)
-  OCPNLP(const Ocp & ocp, const Mesh & mesh) : OCPNLP(Ocp(ocp), Mesh(mesh)) {}
-
-  /// @brief Constructor (rvalue version)
-  OCPNLP(Ocp && ocp, Mesh && mesh)
-      : ocp_(std::move(ocp)), mesh_(std::move(mesh)), N_(mesh_.N_colloc())
+  /// @brief Constructor
+  template<typename OcpArg, typename MeshArg>
+  OCPNLP(OcpArg && ocp, MeshArg && mesh)
+      : ocp_(std::forward<OcpArg>(ocp)), mesh_(std::forward<MeshArg>(mesh)), N_(mesh_.N_colloc())
   {
     const auto [var_beg, var_len, con_beg, con_len] = detail::ocp_nlp_structure(ocp_, mesh_);
 

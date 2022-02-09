@@ -161,7 +161,7 @@ template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
 void mesh_eval(
   MeshValue<Deriv> & out,
   const MeshType auto & m,
-  auto && f,
+  auto & f,
   const double t0,
   const double tf,
   std::ranges::range auto && xs,
@@ -233,12 +233,12 @@ void mesh_eval(
     const double mtau = 1. - tau;
     const double w    = scale ? w_quad : 1.;
 
-    const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
+    const auto fvals = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
 
-    out.F.segment(i * nf, nf) = w * std::get<0>(fval);
+    out.F.segment(i * nf, nf) = w * std::get<0>(fvals);
 
     if constexpr (Deriv >= 1u) {
-      const auto & df = std::get<1>(fval);
+      const auto & df = std::get<1>(fvals);
       const auto row0 = nf * i;
 
       block_add(out.dF, row0, 0, df.middleCols(0, 1), w * mtau);
@@ -249,7 +249,7 @@ void mesh_eval(
       if constexpr (Deriv >= 2u) {
         assert(out.lambda.size() == numOuts);
 
-        const auto & d2f = std::get<2>(fval);
+        const auto & d2f = std::get<2>(fvals);
 
         for (auto j = 0u; j < nf; ++j) {
           const double wl = w * out.lambda(row0 + j);
@@ -321,7 +321,7 @@ template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
 void mesh_integrate(
   MeshValue<Deriv> & out,
   const MeshType auto & m,
-  auto && f,
+  auto & f,
   const double t0,
   const double tf,
   std::ranges::range auto && xs,
@@ -388,13 +388,13 @@ void mesh_integrate(
 
     const double mtau = 1. - tau;
 
-    const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
+    const auto fvals = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
 
-    const auto & f = std::get<0>(fval);
+    const auto & f = std::get<0>(fvals);
     out.F.noalias() += w * (tf - t0) * f;
 
     if constexpr (Deriv >= 1u) {
-      const auto & df = std::get<1>(fval);
+      const auto & df = std::get<1>(fvals);
       // t0
       block_add(out.dF, 0, 0, df.middleCols(0, 1), w * (tf - t0) * mtau);
       block_add(out.dF, 0, 0, f, -w);
@@ -409,7 +409,7 @@ void mesh_integrate(
       if constexpr (Deriv >= 2u) {
         assert(out.lambda.size() == numOuts);
 
-        const auto & d2f = std::get<2>(fval);
+        const auto & d2f = std::get<2>(fvals);
 
         for (auto j = 0u; j < nf; ++j) {
           const double wl = w * out.lambda(j);
@@ -487,7 +487,7 @@ void mesh_integrate(
  *
  * @param out result structure
  * @param m mesh
- * @param f integrand
+ * @param f right-hand side of dynamics
  * @param t0 initial time parameter
  * @param tf final time parameter
  * @param xs state parameters {xi}
@@ -498,7 +498,7 @@ template<uint8_t Deriv, diff::Type DT = diff::Type::Default>
 void mesh_dyn(
   MeshValue<Deriv> & out,
   const MeshType auto & m,
-  auto && f,
+  auto & f,
   const double t0,
   const double tf,
   std::ranges::range auto && xs,
@@ -585,20 +585,20 @@ void mesh_dyn(
     const auto row0   = nx * i;
     const double mtau = 1. - tau;
 
-    const auto fval = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
-    const auto & f  = std::get<0>(fval);
+    const auto fvals = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
+    const auto fval  = std::get<0>(fvals);
 
-    out.F.segment(row0, nx) += w * (tf - t0) * f;
+    out.F.segment(row0, nx) += w * (tf - t0) * fval;
 
     if constexpr (Deriv >= 1) {
-      const auto & df = std::get<1>(fval);
+      const auto & df = std::get<1>(fvals);
 
       // clang-format off
       // dF/dt0 = -f + (tf - t0) * df/dti * (1-tau)
-      block_add(out.dF, row0, 0, f, -w);
+      block_add(out.dF, row0, 0, fval, -w);
       block_add(out.dF, row0, 0, df.col(0), w * (tf - t0) * mtau);
       // dF/dtf = f + (tf - t0) * df/dti * tau
-      block_add(out.dF, row0, 1, f, w);
+      block_add(out.dF, row0, 1, fval, w);
       block_add(out.dF, row0, 1, df.col(0), w * (tf - t0) * tau);
       // dF/dx
       block_add(out.dF, row0, 2 + nx * i, df.middleCols(1, nx), w * (tf - t0));
@@ -609,7 +609,7 @@ void mesh_dyn(
       if constexpr (Deriv >= 2) {
         assert(out.lambda.size() == numOuts);
 
-        const auto & d2f = std::get<2>(fval);
+        const auto & d2f = std::get<2>(fvals);
 
         for (auto j = 0u; j < nx; ++j) {
           const double wl = w * out.lambda(row0 + j);

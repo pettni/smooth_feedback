@@ -7,9 +7,9 @@
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// in the Software without restriction, including without limitation the rights to use, copy,
+// modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the following conditions:
 //
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
@@ -49,7 +49,7 @@ int main()
   const auto xl = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
   const auto ul = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Constant(0.01); };
 
-  const auto flatocp = smooth::feedback::flatten_ocp(ocp_se2, xl, ul);
+  auto flatocp = smooth::feedback::flatten_ocp(ocp_se2, xl, ul);
   std::cout << "TESTING FLAT DERIVATIVES\n";
   smooth::feedback::test_ocp_derivatives(flatocp);
 
@@ -83,7 +83,7 @@ int main()
       },
       {
         {"linear_solver", "mumps"},
-        {"hessian_approximation", "exact"},
+        {"hessian_approximation", "limited-memory"},
         // {"derivative_test", "first-order"},
         {"print_timing_statistics", "yes"},
       },

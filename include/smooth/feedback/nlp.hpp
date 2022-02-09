@@ -39,13 +39,23 @@
 
 namespace smooth::feedback {
 
+/**
+ * @brief Nonlinear Programming Problem
+ * \f[
+ *  \begin{cases}
+ *   \min_{x}    & f(x)                    \\
+ *   \text{s.t.} & x_l \leq x \leq x_u     \\
+ *               & g_l \leq g(x) \leq g_u
+ *  \end{cases}
+ * \f]
+ * for \f$ f : \mathbb{R}^n \rightarrow \mathbb{R} \f$ and
+ * \f$ g : \mathbb{R}^n \rightarrow \mathbb{R}^m \f$.
+ */
 template<typename T>
 concept NLPType = requires(
-  T & nlp,
+  std::decay_t<T> & nlp,
   const Eigen::Ref<const Eigen::VectorXd> x,
-  const Eigen::Ref<const Eigen::VectorXd> lambda,
-  Eigen::Ref<Eigen::VectorXd> out1,
-  Eigen::Ref<Eigen::SparseMatrix<double>> out2)
+  const Eigen::Ref<const Eigen::VectorXd> lambda)
 {
   // clang-format off
   {nlp.n()} -> std::convertible_to<std::size_t>;
@@ -67,8 +77,12 @@ concept NLPType = requires(
   // clang-format on
 };
 
+/**
+ * @brief Nonlinear Programming Problem with Hessian information
+ */
 template<typename T>
-concept HessianNLPType = NLPType<T> && requires(T & nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)
+concept HessianNLPType =
+  NLPType<T> && requires(std::decay_t<T> & nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)
 {
   // clang-format off
   {nlp.d2f_dx2(x)}         -> std::convertible_to<Eigen::SparseMatrix<double>>;
@@ -77,58 +91,8 @@ concept HessianNLPType = NLPType<T> && requires(T & nlp, Eigen::VectorXd x, Eige
 };
 
 /**
- * @brief Nonlinear Programming Problem
- * \f[
- *  \begin{cases}
- *   \min_{x}    & f(x)                    \\
- *   \text{s.t.} & x_l \leq x \leq x_u     \\
- *               & g_l \leq g(x) \leq g_u
- *  \end{cases}
- * \f]
- * for \f$ f : \mathbb{R}^n \rightarrow \mathbb{R} \f$ and
- * \f$ g : \mathbb{R}^n \rightarrow \mathbb{R}^m \f$.
+ * @brief Solution to a Nonlinear Programming Problem
  */
-struct NLP
-{
-  /// @brief Number of variables
-  std::size_t n;
-
-  /// @brief Number of constraints
-  std::size_t m;
-
-  /// @brief Objective function (R^n -> R)
-  std::function<double(Eigen::VectorXd)> f;
-
-  /// @brief Variable bounds (R^n)
-  Eigen::VectorXd xl, xu;
-
-  /// @brief Constraint function (R^n -> R^m)
-  std::function<Eigen::VectorXd(Eigen::VectorXd)> g;
-
-  /// @brief Constaint bounds (R^m)
-  Eigen::VectorXd gl, gu;
-
-  /// @brief Jacobian of objective function (R^n -> R^{n x n})
-  std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)> df_dx;
-
-  /// @brief Jacobian of constraint function (R^n -> R^{m x n})
-  std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)> dg_dx;
-
-  /// @brief Hessian of objective function (R^n -> R^{n x n}) [optional]
-  std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)>> d2f_dx2 = {};
-
-  /**
-   * @brief Projected Hessian of constraint function (R^m, R^n -> R^{n x n}) [optional]
-   *
-   * Should return the derivative
-   * \f[
-   *  H_g(\lambda, x) = \nabla^2_x \lambda^T g(x), \quad \lambda \in \mathbb{R}^m, x \in
-   * \mathbb{R}^n \f]
-   */
-  std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd, Eigen::VectorXd)>>
-    d2g_dx2 = {};
-};
-
 struct NLPSolution
 {
   /// @brief Solver status

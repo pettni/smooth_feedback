@@ -300,6 +300,23 @@ void block_add_identity(
   for (auto k = 0u; k < n; ++k) { dest.coeffRef(row0 + k, col0 + k) += scale; }
 }
 
+/**
+ * @brief Zero a sparse matrix without changing allocation.
+ *
+ * If mat is compressed all coefficients are set to explicit zeros.
+ *
+ * Otherwise, all nonzeros are removed but memory is not freed.
+ */
+template<typename Scalar, int Options>
+void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
+{
+  if (mat.isCompressed()) {
+    mat.coeffs().setZero();
+  } else {
+    mat.setZero();
+  }
+}
+
 }  // namespace smooth::feedback
 
 #endif  // SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_

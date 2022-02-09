@@ -333,21 +333,23 @@ private:
  * @see https://coin-or.github.io/Ipopt/OPTIONS.html for a list of available options
  */
 inline NLPSolution solve_nlp_ipopt(
-  const NLPType auto & nlp,
+  NLPType auto && nlp,
   std::optional<NLPSolution> warmstart                         = {},
   std::vector<std::pair<std::string, int>> opts_integer        = {},
   std::vector<std::pair<std::string, std::string>> opts_string = {},
   std::vector<std::pair<std::string, double>> opts_numeric     = {})
 {
-  using NlpType    = std::decay_t<decltype(nlp)>;
+  using nlp_t      = std::decay_t<decltype(nlp)>;
   bool use_hessian = false;
+  const auto n     = nlp.n();
 
   auto it = std::find_if(opts_string.begin(), opts_string.end(), [](const auto & p) {
     return p.first == "hessian_approximation";
   });
   if (it != opts_string.end() && it->second == "exact") { use_hessian = true; }
 
-  Ipopt::SmartPtr<IpoptNLP<NlpType>> ipopt_nlp = new IpoptNLP<NlpType>(nlp, use_hessian);
+  Ipopt::SmartPtr<IpoptNLP<nlp_t>> ipopt_nlp =
+    new IpoptNLP<nlp_t>(std::forward<decltype(nlp)>(nlp), use_hessian);
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
   // silence welcome message
@@ -360,7 +362,7 @@ inline NLPSolution solve_nlp_ipopt(
   } else {
     // initial guess not given, set to zero
     app->Options()->SetStringValue("warm_start_init_point", "no");
-    ipopt_nlp->sol().x.setZero(nlp.n());
+    ipopt_nlp->sol().x.setZero(n);
   }
 
   // override with user-provided options

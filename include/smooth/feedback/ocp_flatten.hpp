@@ -28,7 +28,12 @@
 
 /**
  * @file
- * @brief Formulate optimal control problem as a nonlinear program
+ * @brief Reformulate an optimal control problem on a Lie group as an optimal control problem in the
+ * tangent space around a reference trajectory.
+ *
+ * Todo's:
+ *  - More efficient implementation of Hessian in FlatDyn.
+ *  - Accept dxl as a template argument to avoid double differentiation.
  */
 
 #include <Eigen/Core>
@@ -36,6 +41,7 @@
 
 #include <smooth/algo/hessian.hpp>
 #include <smooth/diff.hpp>
+#include <smooth/feedback/utils/d2r_exp.hpp>
 #include <smooth/feedback/utils/sparse.hpp>
 
 #include "ocp.hpp"
@@ -74,7 +80,7 @@ inline void d2r_fog(
   assert(Hg.cols() == Nout_i * Nvar_x);
 
   out.resize(Nvar_x, Nvar_x * Nout_o);
-  out.isCompressed() ? (void)out.coeffs().setZero() : assert(out.nonZeros() == 0);
+  set_zero(out);
 
   for (auto no = 0u; no < Nout_o; ++no) {
     block_add(out, 0, no * Nvar_x, Jg.transpose() * Hf.middleCols(no * Nvar_y, Nvar_y) * Jg);
@@ -182,12 +188,13 @@ private:
   // Would ideally like to remove these temporaries...
   Eigen::SparseMatrix<double> ji_, ji_tmp_, hi_, hi_tmp_;
   Eigen::SparseMatrix<double> ad_e, ad_vi;
-  Eigen::SparseMatrix<double> drexp_ext_;
+  Eigen::SparseMatrix<double> dexpinv_e_;
+  Eigen::SparseMatrix<double> d2exp_e_, d2exp_v_, d2expinv_e_;
 
   /// @brief Calculate jacobian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
   void update_joplus(const E & e, const V & v, const E & dxl, const V & dul)
   {
-    Joplus_.isCompressed() ? (void)Joplus_.coeffs().setZero() : assert(Joplus_.nonZeros());
+    set_zero(Joplus_);
     block_add_identity(Joplus_, t_B, t_B, 1);
     block_add(Joplus_, x_B, t_B, Ad<X>(smooth::exp<X>(-e)) * dxl);
     block_add(Joplus_, u_B, t_B, Ad<U>(smooth::exp<U>(-v)) * dul);
@@ -199,8 +206,8 @@ private:
   /// @brief Calculate hessian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
   void update_hoplus(const E & e, const V & v, const E & dxl, const V & dul)
   {
-    const auto & He = d2r_exp<X>(e);  // expensive and non-sparse
-    const auto & Hv = d2r_exp<U>(v);  // expensive and non-sparse
+    d2r_exp_sparse<X>(d2exp_e_, e);
+    d2r_exp_sparse<U>(d2exp_v_, v);
 
     // d (Ad_X b) = -ad_(Ad_X b) * Ad_X
     const TangentMap<X> Adexp_X  = Ad<X>(smooth::exp<X>(-e));
@@ -208,7 +215,7 @@ private:
     const TangentMap<U> Adexp_U  = Ad<U>(smooth::exp<U>(-v));
     const TangentMap<U> dAdexp_U = ad<U>(Adexp_U * dul) * Adexp_U * dr_exp<U>(-v);
 
-    Hoplus_.isCompressed() ? (void)Hoplus_.coeffs().setZero() : assert(Hoplus_.nonZeros());
+    set_zero(Hoplus_);
     for (auto nx = 0u; nx < Nx; ++nx) {
       const auto b0 = Nvars * (x_B + nx);
       block_add(Hoplus_, t_B, b0 + x_B, dAdexp_X.middleRows(nx, 1));
@@ -219,11 +226,11 @@ private:
     }
     for (auto nx = 0u; nx < Nx; ++nx) {
       const auto b0 = Nvars * (x_B + nx);
-      block_add(Hoplus_, x_B, b0 + x_B, He.middleCols(nx * Nx, Nx));
+      block_add(Hoplus_, x_B, b0 + x_B, d2exp_e_.middleCols(nx * Nx, Nx));
     }
     for (auto nu = 0u; nu < Nu; ++nu) {
       const auto b0 = Nvars * (u_B + nu);
-      block_add(Hoplus_, u_B, b0 + u_B, Hv.middleCols(nu * Nu, Nu));
+      block_add(Hoplus_, u_B, b0 + u_B, d2exp_v_.middleCols(nu * Nu, Nu));
     }
     Hoplus_.makeCompressed();
   }
@@ -234,7 +241,8 @@ public:
       : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
         Joplus_(Nvars, Nvars), Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars),
         H_(Nvars, Nouts * Nvars), ji_(Nouts, Nvars), ji_tmp_(Nouts, Nvars),
-        hi_(Nvars, Nouts * Nvars), hi_tmp_(Nvars, Nouts * Nvars), drexp_ext_(Nx, Nx)
+        hi_(Nvars, Nouts * Nvars), hi_tmp_(Nvars, Nouts * Nvars), dexpinv_e_(Nx, Nx),
+        d2exp_e_(Nx, Nx * Nx), d2exp_v_(Nu, Nu * Nu), d2expinv_e_(Nx, Nx * Nx)
   {}
 
   template<typename T>
@@ -260,23 +268,28 @@ public:
     const auto x               = rplus(xlval, e);
     const auto u               = rplus(ulval, v);
 
+    // zero working memory
+    set_zero(dexpinv_e_);
+    set_zero(d2expinv_e_);
+    set_zero(J_);
+
     // left stuff
-    block_add(drexp_ext_, 0, 0, dr_expinv<X>(e));
-    const auto & d2r_exp = d2r_expinv<X>(e);  // expensive and non-sparse
+    block_add(dexpinv_e_, 0, 0, dr_expinv<X>(e));
+
     // value and derivative of f
     const auto fval = f(t, x, u);
     const auto & Jf = f.jacobian(t, x, u);
     // derivatives of +
     update_joplus(e, v, dxlval, dulval);
 
-    J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
-
     // Add drexpinv * d (f \circ +)
-    J_ = drexp_ext_ * Jf * Joplus_;
+    J_ = dexpinv_e_ * Jf * Joplus_;
+
+    d2r_expinv_sparse<X>(d2expinv_e_, e);
 
     // Add d ( drexpinv ) * (f \circ (+) - dxl) + d ( ad ) * dxl
-    for (auto i = 0u; i < d2r_exp.outerSize(); ++i) {
-      for (Eigen::InnerIterator it(d2r_exp, i); it; ++it) {
+    for (auto i = 0u; i < d2expinv_e_.outerSize(); ++i) {
+      for (Eigen::InnerIterator it(d2expinv_e_, i); it; ++it) {
         J_.coeffRef(it.col() / Nx, 1 + (it.col() % Nx)) +=
           (fval(it.row()) - dxlval(it.row())) * it.value();
       }
@@ -287,7 +300,11 @@ public:
       }
     }
 
+    // compress working memory
+    dexpinv_e_.makeCompressed();
+    d2expinv_e_.makeCompressed();
     J_.makeCompressed();
+
     return J_;
   }
 
@@ -315,7 +332,7 @@ public:
     ji_           = Jf * Joplus_;            // dr (vi)_{t, e, v}
     d2r_fog(hi_, Jf, Hf, Joplus_, Hoplus_);  // d2r (vi)_{t, e, v}
 
-    H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
+    set_zero(H_);
     for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
       if (smooth::detail::kBn[iter] != 0) {
         block_add(H_, 0, 0, hi_, smooth::detail::kBn[iter] * coef);
@@ -380,11 +397,12 @@ private:
   static constexpr auto u_B = x_B + Nx;
 
   Eigen::SparseMatrix<double> Joplus_, Hoplus_, J_, H_;
+  Eigen::SparseMatrix<double> d2exp_e_, d2exp_v_;
 
   /// @brief Calculate jacobian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
   void update_joplus(const E & e, const V & v, const E & dxl, const V & dul)
   {
-    Joplus_.isCompressed() ? (void)Joplus_.coeffs().setZero() : assert(Joplus_.nonZeros());
+    set_zero(Joplus_);
     block_add_identity(Joplus_, t_B, t_B, 1);
     block_add(Joplus_, x_B, t_B, Ad<X>(smooth::exp<X>(-e)) * dxl);
     block_add(Joplus_, u_B, t_B, Ad<U>(smooth::exp<U>(-v)) * dul);
@@ -396,8 +414,8 @@ private:
   /// @brief Calculate hessian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
   void update_hoplus(const E & e, const V & v, const E & dxl, const V & dul)
   {
-    const auto & He = d2r_exp<X>(e);  // expensive and non-sparse
-    const auto & Hv = d2r_exp<U>(v);  // expensive and non-sparse
+    d2r_exp_sparse<X>(d2exp_e_, e);
+    d2r_exp_sparse<U>(d2exp_v_, v);
 
     // d (Ad_X b) = -ad_(Ad_X b) * Ad_X
     const TangentMap<X> Adexp_X  = Ad<X>(smooth::exp<X>(-e));
@@ -405,7 +423,7 @@ private:
     const TangentMap<U> Adexp_U  = Ad<U>(smooth::exp<U>(-v));
     const TangentMap<U> dAdexp_U = ad<U>(Adexp_U * dul) * Adexp_U * dr_exp<U>(-v);
 
-    Hoplus_.isCompressed() ? (void)Hoplus_.coeffs().setZero() : assert(Hoplus_.nonZeros());
+    set_zero(Hoplus_);
     for (auto nx = 0u; nx < Nx; ++nx) {
       const auto b0 = Nvars * (x_B + nx);
       block_add(Hoplus_, t_B, b0 + x_B, dAdexp_X.middleRows(nx, 1));
@@ -416,11 +434,11 @@ private:
     }
     for (auto nx = 0u; nx < Nx; ++nx) {
       const auto b0 = Nvars * (x_B + nx);
-      block_add(Hoplus_, x_B, b0 + x_B, He.middleCols(nx * Nx, Nx));
+      block_add(Hoplus_, x_B, b0 + x_B, d2exp_e_.middleCols(nx * Nx, Nx));
     }
     for (auto nu = 0u; nu < Nu; ++nu) {
       const auto b0 = Nvars * (u_B + nu);
-      block_add(Hoplus_, u_B, b0 + u_B, Hv.middleCols(nu * Nu, Nu));
+      block_add(Hoplus_, u_B, b0 + u_B, d2exp_v_.middleCols(nu * Nu, Nu));
     }
     Hoplus_.makeCompressed();
   }
@@ -430,7 +448,7 @@ public:
   FlatInnerFun(A1 && a1, A2 && a2, A3 && a3)
       : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
         Joplus_(Nvars, Nvars), Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars),
-        H_(Nvars, Nouts * Nvars)
+        H_(Nvars, Nouts * Nvars), d2exp_e_(Nx, Nx * Nx), d2exp_v_(Nu, Nu * Nu)
   {}
 
   template<typename T>
@@ -451,7 +469,7 @@ public:
     // derivative of +
     update_joplus(e, v, dxlval, dulval);
     // update result
-    J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
+    set_zero(J_);
     J_ = Jf * Joplus_;
     J_.makeCompressed();
     return J_;
@@ -474,7 +492,7 @@ public:
     update_joplus(e, v, dxlval, dulval);
     update_hoplus(e, v, dxlval, dulval);
     // update result
-    H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
+    set_zero(H_);
     d2r_fog(H_, Jf, Hf, Joplus_, Hoplus_);
     H_.makeCompressed();
     return H_;
@@ -506,10 +524,12 @@ private:
 
   Eigen::SparseMatrix<double> Joplus_, Hoplus_, J_, H_;
 
+  Eigen::SparseMatrix<double> d2exp_e_;
+
   /// @brief Calculate jacobian of (tf, xl(0.)+e0, xl(tf)+ef, q) w.r.t. (tf, e0, ef, q)
   void update_joplus(const E & e0, const E & ef, const E & dxlf)
   {
-    Joplus_.isCompressed() ? (void)Joplus_.coeffs().setZero() : assert(Joplus_.nonZeros());
+    set_zero(Joplus_);
     block_add_identity(Joplus_, tf_B, tf_B, 1);
     block_add(Joplus_, xf_B, tf_B, Ad<X>(smooth::exp<X>(-ef)) * dxlf);
     block_add(Joplus_, x0_B, x0_B, dr_exp<X>(e0));
@@ -521,26 +541,25 @@ private:
   /// @brief Calculate hessian of (tf, xl(0.)+e0, xl(tf)+ef, q) w.r.t. (tf, e0, ef, q)
   void update_hoplus(const E & e0, const E & ef, [[maybe_unused]] const E & dxlf)
   {
-    const auto & He0 = d2r_exp<X>(e0);  // expensive and non-sparse
-    const auto & Hef = d2r_exp<X>(ef);  // expensive and non-sparse
-
     // dr (Ad_X b)_X = -ad_{Ad_X b} Ad_X
     const TangentMap<X> Adexp_f  = Ad<X>(smooth::exp<X>(-ef));
     const TangentMap<X> dAdexp_f = ad<X>(Adexp_f * dxlf) * Adexp_f * dr_exp<X>(-ef);
 
-    Hoplus_.isCompressed() ? (void)Hoplus_.coeffs().setZero() : assert(Hoplus_.nonZeros());
+    set_zero(Hoplus_);
 
     for (auto nx = 0u; nx < Nx; ++nx) {
       const auto b0 = Nvars * (xf_B + nx);
       block_add(Hoplus_, tf_B, b0 + xf_B, dAdexp_f.middleRows(nx, 1));
     }
+    d2r_exp_sparse<X>(d2exp_e_, e0);
     for (auto nx = 0u; nx < Nx; ++nx) {
       const auto b0 = Nvars * (x0_B + nx);
-      block_add(Hoplus_, x0_B, b0 + x0_B, He0.middleCols(nx * Nx, Nx));
+      block_add(Hoplus_, x0_B, b0 + x0_B, d2exp_e_.middleCols(nx * Nx, Nx));
     }
+    d2r_exp_sparse<X>(d2exp_e_, ef);
     for (auto nx = 0u; nx < Nx; ++nx) {
       const auto b0 = Nvars * (xf_B + nx);
-      block_add(Hoplus_, xf_B, b0 + xf_B, Hef.middleCols(nx * Nx, Nx));
+      block_add(Hoplus_, xf_B, b0 + xf_B, d2exp_e_.middleCols(nx * Nx, Nx));
     }
     Hoplus_.makeCompressed();
   }
@@ -549,7 +568,8 @@ public:
   template<typename A1, typename A2>
   FlatEndptFun(A1 && a1, A2 && a2)
       : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), Joplus_(Nvars, Nvars),
-        Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars)
+        Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars), H_(Nvars, Nouts * Nvars),
+        d2exp_e_(Nx, Nx * Nx)
   {}
   template<typename T>
   auto operator()(
@@ -572,7 +592,7 @@ public:
     // derivative of +
     update_joplus(e0, ef, dxlfval);
     // update result
-    J_.isCompressed() ? (void)J_.coeffs().setZero() : assert(J_.nonZeros());
+    set_zero(J_);
     J_ = Jf * Joplus_;
     J_.makeCompressed();
     return J_;
@@ -595,7 +615,7 @@ public:
     update_joplus(e0, ef, dxlfval);
     update_hoplus(e0, ef, dxlfval);
     // update result
-    H_.isCompressed() ? (void)H_.coeffs().setZero() : assert(H_.nonZeros());
+    set_zero(H_);
     d2r_fog(H_, Jf, Hf, Joplus_, Hoplus_);
     H_.makeCompressed();
     return H_;
@@ -624,27 +644,21 @@ auto flatten_ocp(const OCPType auto & ocp, auto && xl, auto && ul)
 
   static constexpr auto Nq = ocp_t::Nq;
 
-  detail::FlatEndptFun<X, U, Nq, 1, decltype(ocp.theta), Xl> flat_theta{ocp.theta, xl};
-  detail::FlatDyn<X, U, decltype(ocp.f), Xl, Ul> flat_f{ocp.f, xl, ul};
-  detail::FlatInnerFun<X, U, Nq, decltype(ocp.g), Xl, Ul> flat_g{ocp.g, xl, ul};
-  detail::FlatInnerFun<X, U, ocp_t::Ncr, decltype(ocp.cr), Xl, Ul> flat_cr{ocp.cr, xl, ul};
-  detail::FlatEndptFun<X, U, Nq, ocp_t::Nce, decltype(ocp.ce), Xl> flat_ce{ocp.ce, xl};
-
   return OCP<
     Tangent<X>,
     Tangent<U>,
-    decltype(flat_theta),
-    decltype(flat_f),
-    decltype(flat_g),
-    decltype(flat_cr),
-    decltype(flat_ce)>{
-    .theta = std::move(flat_theta),
-    .f     = std::move(flat_f),
-    .g     = std::move(flat_g),
-    .cr    = std::move(flat_cr),
+    detail::FlatEndptFun<X, U, Nq, 1, decltype(ocp.theta), Xl>,
+    detail::FlatDyn<X, U, decltype(ocp.f), Xl, Ul>,
+    detail::FlatInnerFun<X, U, Nq, decltype(ocp.g), Xl, Ul>,
+    detail::FlatInnerFun<X, U, ocp_t::Ncr, decltype(ocp.cr), Xl, Ul>,
+    detail::FlatEndptFun<X, U, Nq, ocp_t::Nce, decltype(ocp.ce), Xl>>{
+    .theta = detail::FlatEndptFun<X, U, Nq, 1, decltype(ocp.theta), Xl>{ocp.theta, xl},
+    .f     = detail::FlatDyn<X, U, decltype(ocp.f), Xl, Ul>{ocp.f, xl, ul},
+    .g     = detail::FlatInnerFun<X, U, Nq, decltype(ocp.g), Xl, Ul>{ocp.g, xl, ul},
+    .cr    = detail::FlatInnerFun<X, U, ocp_t::Ncr, decltype(ocp.cr), Xl, Ul>{ocp.cr, xl, ul},
     .crl   = ocp.crl,
     .cru   = ocp.cru,
-    .ce    = std::move(flat_ce),
+    .ce    = detail::FlatEndptFun<X, U, Nq, ocp_t::Nce, decltype(ocp.ce), Xl>{ocp.ce, xl},
     .cel   = ocp.cel,
     .ceu   = ocp.ceu,
   };
