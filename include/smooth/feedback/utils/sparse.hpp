@@ -207,7 +207,7 @@ inline auto kron_identity(const Eigen::MatrixBase<Derived> & X, std::size_t n)
 }
 
 /**
- * @brief Write block into a sparse matrix (sparse source).
+ * @brief Write block into a sparse matrix.
  *
  * After this function the output variable dest is s.t.
  *
@@ -222,13 +222,13 @@ inline auto kron_identity(const Eigen::MatrixBase<Derived> & X, std::size_t n)
  *
  * @note Values are accessed with coeffRef().
  */
-template<typename SpMat, int Options>
-  requires(std::is_base_of_v<Eigen::SparseMatrixBase<SpMat>, SpMat>)
+template<typename Source, int Options>
+  requires(std::is_base_of_v<Eigen::EigenBase<Source>, Source>)
 void block_add(
   Eigen::SparseMatrix<double, Options> & dest,
   Eigen::Index row0,
   Eigen::Index col0,
-  const SpMat & source,
+  const Source & source,
   double scale      = 1,
   double upper_only = false)
 {
@@ -242,44 +242,11 @@ void block_add(
 }
 
 /**
- * @brief Write block into a sparse matrix (dense source).
+ * @brief Write identity matrix block into sparse matrix.
  *
  * After this function the output variable dest is s.t.
  *
- * dest[row0 + r, col0 + c] += scale * source[r, c]
- *
- * @param dest destination
- * @param row0 starting row for block
- * @param col0 starting column for block
- * @param source block values
- * @param scale scaling parameter
- * @param upper_only only add into upper triangular part
- *
- * @note Values are accessed with coeffRef().
- */
-template<typename Derived, int Options>
-void block_add(
-  Eigen::SparseMatrix<double, Options> & dest,
-  Eigen::Index row0,
-  Eigen::Index col0,
-  const Eigen::MatrixBase<Derived> & source,
-  double scale      = 1,
-  double upper_only = false)
-{
-  for (auto c = 0; c < source.cols(); ++c) {
-    for (auto r = 0; r < source.rows(); ++r) {
-      if (upper_only && row0 + r > col0 + c) { break; }
-      dest.coeffRef(row0 + r, col0 + c) += scale * source(r, c);
-    }
-  }
-}
-
-/**
- * @brief Write identity matrix a sparse matrix.
- *
- * After this function the output variable dest is s.t.
- *
- * dest[row0 + k, col0 + k] += scale, k = 0...n
+ * dest[row0 + k, col0 + k] += scale, k = 0...n-1
  *
  * @param dest destination
  * @param row0 starting row for block

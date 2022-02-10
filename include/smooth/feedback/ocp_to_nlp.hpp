@@ -219,7 +219,7 @@ public:
 
     const auto & [fval, dfval] = diff::dr<1, DT>(ocp_.theta, wrt(tf, x0, xf, q));
 
-    if (df_dx_.isCompressed()) { df_dx_.coeffs().setZero(); }
+    set_zero(df_dx_);
 
     block_add(df_dx_, 0, tfvar_B, dfval.middleCols(0, 1));           // df / dtf
     block_add(df_dx_, 0, x0var_B, dfval.middleCols(1, Nx));          // df / dx0
@@ -244,7 +244,7 @@ public:
 
     const auto & [fval, dfval, d2fval] = diff::dr<2, DT>(ocp_.theta, wrt(tf, x0, xf, q));
 
-    if (d2f_dx2_.isCompressed()) { d2f_dx2_.coeffs().setZero(); }
+    set_zero(d2f_dx2_);
 
     // clang-format off
     block_add(d2f_dx2_, tfvar_B, tfvar_B, d2fval.block(         0,          0,  1,  1), 1, true);  // tftf
@@ -316,7 +316,11 @@ public:
     mesh_eval<1, DT>(cr_out1_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise(), true);
     const auto & [ceval, dceval] = diff::dr<1, DT>(ocp_.ce, wrt(tf, x0, xf, q));
 
-    if (dg_dx_.isCompressed()) { dg_dx_.coeffs().setZero(); }
+    dyn_out1_.dF.makeCompressed();
+    int_out1_.dF.makeCompressed();
+    cr_out1_.dF.makeCompressed();
+
+    set_zero(dg_dx_);
 
     // dynamics constraint
     block_add(dg_dx_, dcon_B, tfvar_B, dyn_out1_.dF.middleCols(1, 1));
@@ -370,7 +374,15 @@ public:
     mesh_eval<2, DT>(cr_out2_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise(), true);
     const auto & [ceval, dceval, d2ceval] = diff::dr<2, DT>(ocp_.ce, wrt(tf, x0, xf, q));
 
-    if (d2g_dx2_.isCompressed()) { d2g_dx2_.coeffs().setZero(); }
+    dyn_out2_.dF.makeCompressed();
+    int_out2_.dF.makeCompressed();
+    cr_out2_.dF.makeCompressed();
+
+    dyn_out2_.d2F.makeCompressed();
+    int_out2_.d2F.makeCompressed();
+    cr_out2_.d2F.makeCompressed();
+
+    set_zero(d2g_dx2_);
 
     // clang-format off
     block_add(d2g_dx2_, tfvar_B, tfvar_B, dyn_out2_.d2F.block(1, 1, 1, 1), 1, true);      // tftf

@@ -64,9 +64,7 @@ void d2r_exp_sparse_se2(Eigen::SparseMatrix<Scalar> & out, const Eigen::Vector3<
   const auto [A, B, dA, dB] = [&]() -> std::array<Scalar, 4> {
     if (th2 < Scalar(eps2)) {
       return {
-        // https://www.wolframalpha.com/input/?i=series+%281-cos+x%29+%2F+x%5E2+at+x%3D0
         Scalar(1) / Scalar(2) - th2 / Scalar(24),
-        // https://www.wolframalpha.com/input/?i=series+%28x+-+sin%28x%29%29+%2F+x%5E3+at+x%3D0
         Scalar(1) / Scalar(6) - th2 / Scalar(120),
         -th / Scalar(12),
         -th / Scalar(60),
@@ -93,16 +91,16 @@ void d2r_exp_sparse_se2(Eigen::SparseMatrix<Scalar> & out, const Eigen::Vector3<
   // first row
   out.coeffRef(2, 3 * 0 + 0) = B * th;
   out.coeffRef(2, 3 * 0 + 1) = -A;
-  out.coeffRef(0, 3 * 0 + 2) = -2 * B * th - dB * th2;
+  out.coeffRef(0, 3 * 0 + 2) = -Scalar(2) * B * th - dB * th2;
   out.coeffRef(1, 3 * 0 + 2) = A + dA * th;
   out.coeffRef(2, 3 * 0 + 2) = -dA * vy + B * vx + dB * th * vx;
 
   // second row
   out.coeffRef(2, 3 * 1 + 0) = A;
-  out.coeffRef(2, 3 * 1 + 1) = B * th;
-  out.coeffRef(0, 3 * 1 + 2) = -A - dA * th;
-  out.coeffRef(1, 3 * 1 + 2) = -2 * B * th - dB * th2;
-  out.coeffRef(2, 3 * 1 + 2) = dA * vx + dB * th * vy + B * vy;
+  out.coeffRef(2, 3 * 1 + 1) = out.coeff(2, 0);
+  out.coeffRef(0, 3 * 1 + 2) = -out.coeff(1, 2);
+  out.coeffRef(1, 3 * 1 + 2) = out.coeff(0, 2);
+  out.coeffRef(2, 3 * 1 + 2) = dA * vx + B * vy + dB * th * vy;
 
   out.makeCompressed();
 }
@@ -120,7 +118,6 @@ void d2r_expinv_sparse_se2(Eigen::SparseMatrix<Scalar> & out, const Eigen::Vecto
   const auto [A, dA] = [&]() -> std::array<Scalar, 2> {
     if (th2 < Scalar(eps2)) {
       return {
-        // https://www.wolframalpha.com/input/?i=series+1%2Fx%5E2+-+%281+%2B+cos+x%29+%2F+%282+*+x+*+sin+x%29+at+x%3D0
         Scalar(1) / Scalar(12) + th2 / Scalar(720),
         th / Scalar(360),
       };
@@ -145,16 +142,16 @@ void d2r_expinv_sparse_se2(Eigen::SparseMatrix<Scalar> & out, const Eigen::Vecto
 
   // first row
   out.coeffRef(2, 3 * 0 + 0) = A * th;
-  out.coeffRef(2, 3 * 0 + 1) = 0.5;
-  out.coeffRef(0, 3 * 0 + 2) = -dA * th2 - A * 2 * th;
-  out.coeffRef(1, 3 * 0 + 2) = -0.5;
+  out.coeffRef(2, 3 * 0 + 1) = Scalar(0.5);
+  out.coeffRef(0, 3 * 0 + 2) = -dA * th2 - A * Scalar(2) * th;
+  out.coeffRef(1, 3 * 0 + 2) = -Scalar(0.5);
   out.coeffRef(2, 3 * 0 + 2) = dA * th * vx + A * vx;
 
   // second row
-  out.coeffRef(2, 3 * 1 + 0) = -0.5;
-  out.coeffRef(2, 3 * 1 + 1) = A * th;
-  out.coeffRef(0, 3 * 1 + 2) = 0.5;
-  out.coeffRef(1, 3 * 1 + 2) = -2 * A * th - dA * th2;
+  out.coeffRef(2, 3 * 1 + 0) = -Scalar(0.5);
+  out.coeffRef(2, 3 * 1 + 1) = out.coeff(2, 0);
+  out.coeffRef(0, 3 * 1 + 2) = Scalar(0.5);
+  out.coeffRef(1, 3 * 1 + 2) = out.coeff(0, 2);
   out.coeffRef(2, 3 * 1 + 2) = dA * th * vy + A * vy;
 
   out.makeCompressed();

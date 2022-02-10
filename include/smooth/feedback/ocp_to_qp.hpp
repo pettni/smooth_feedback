@@ -131,7 +131,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// OBJECTIVE LINEARIZATION ////
   /////////////////////////////////
 
-  const auto [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
+  const auto & [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
   const Eigen::Vector<double, Nx> qo_x0 = dth.middleCols(1, Nx).transpose();
   const Eigen::Vector<double, Nx> qo_xf = dth.middleCols(1 + Nx, Nx).transpose();
@@ -155,12 +155,12 @@ QuadraticProgramSparse<double> ocp_to_qp(
     // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = alpha * X Dus
 
     for (const auto & [i, tau_i] : zip(iota(0u, Ki), mesh.interval_nodes(ival))) {
-      const auto t_i           = tf * tau_i;                     // unscaled time
-      const auto [xl_i, dxl_i] = diff::dr<1>(xl_fun, wrt(t_i));  // linearization trajectory
-      const auto ul_i          = ul_fun(t_i);                    // linearization input
+      const auto t_i             = tf * tau_i;                     // unscaled time
+      const auto & [xl_i, dxl_i] = diff::dr<1>(xl_fun, wrt(t_i));  // linearization trajectory
+      const auto ul_i            = ul_fun(t_i);                    // linearization input
 
       // LINEARIZE DYNAMICS
-      const auto [f_i, df_i] = diff::dr<1, DT>(ocp.f, wrt(t_i, xl_i, ul_i));
+      const auto & [f_i, df_i] = diff::dr<1, DT>(ocp.f, wrt(t_i, xl_i, ul_i));
 
       const Eigen::Matrix<double, Nx, Nx> A =
         tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.template middleCols<Nx>(1));
@@ -208,7 +208,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// END CONSTRAINTS ////
   /////////////////////////
 
-  const auto [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, xl0, xlf, qlin));
+  const auto & [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, xl0, xlf, qlin));
 
   // integral constraints not supported
   // assert(dceval.middleCols(1 + 2 * Nx, Nq).cwiseAbs().maxCoeff() < 1e-9);
