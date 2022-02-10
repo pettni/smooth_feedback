@@ -97,6 +97,9 @@ private:
   std::size_t dcon_B, qcon_B, crcon_B, cecon_B, m_;  // constraint start indices
   std::size_t dcon_L, qcon_L, crcon_L, cecon_L;      // constraint lengths
 
+  // scaling
+  double w_scaling_{1};
+
   // variable and constraint bounds
   Eigen::VectorXd xl_, xu_, gl_, gu_;
 
@@ -139,6 +142,11 @@ public:
     crcon_L = con_len[2];
     cecon_L = con_len[3];
 
+    // Mesh weight
+    double max_weight = 1e-6;
+    for (auto w : mesh_.all_weights()) { max_weight = std::max(max_weight, w); }
+    w_scaling_ = 1. / max_weight;
+
     // VARIABLE BOUNDS
 
     xl_.setConstant(n_, -std::numeric_limits<double>::infinity());
@@ -162,8 +170,8 @@ public:
     gl_.segment(crcon_B, crcon_L) = ocp.crl.replicate(N_, 1);
     gu_.segment(crcon_B, crcon_L) = ocp.cru.replicate(N_, 1);
     for (const auto & [i, w] : utils::zip(std::views::iota(0u, N_), mesh_.all_weights())) {
-      gl_.segment(crcon_B + i * ocp_.Ncr, ocp_.Ncr) *= w;
-      gu_.segment(crcon_B + i * ocp_.Ncr, ocp_.Ncr) *= w;
+      gl_.segment(crcon_B + i * ocp_.Ncr, ocp_.Ncr) *= w_scaling_ * w;
+      gu_.segment(crcon_B + i * ocp_.Ncr, ocp_.Ncr) *= w_scaling_ * w;
     }
 
     // end constraints
@@ -284,9 +292,9 @@ public:
     mesh_integrate<0>(int_out0_, mesh_, ocp_.g, t0, tf, X.colwise(), U.colwise());
     mesh_eval<0>(cr_out0_, mesh_, ocp_.cr, t0, tf, X.colwise(), U.colwise(), true);
 
-    g_.segment(dcon_B, dcon_L)   = dyn_out0_.F;
-    g_.segment(qcon_B, qcon_L)   = int_out0_.F - q;
-    g_.segment(crcon_B, crcon_L) = cr_out0_.F;
+    g_.segment(dcon_B, dcon_L)   = w_scaling_ * dyn_out0_.F;
+    g_.segment(qcon_B, qcon_L)   = w_scaling_ * (int_out0_.F - q);
+    g_.segment(crcon_B, crcon_L) = w_scaling_ * cr_out0_.F;
     g_.segment(cecon_B, cecon_L) = ocp_.ce(tf, x0, xf, q);
 
     return g_;
@@ -321,20 +329,20 @@ public:
     set_zero(dg_dx_);
 
     // dynamics constraint
-    block_add(dg_dx_, dcon_B, tfvar_B, dyn_out1_.dF.middleCols(1, 1));
-    block_add(dg_dx_, dcon_B, xvar_B, dyn_out1_.dF.middleCols(2, xvar_L));
-    block_add(dg_dx_, dcon_B, uvar_B, dyn_out1_.dF.middleCols(2 + xvar_L, uvar_L));
+    block_add(dg_dx_, dcon_B, tfvar_B, dyn_out1_.dF.middleCols(1, 1), w_scaling_);
+    block_add(dg_dx_, dcon_B, xvar_B, dyn_out1_.dF.middleCols(2, xvar_L), w_scaling_);
+    block_add(dg_dx_, dcon_B, uvar_B, dyn_out1_.dF.middleCols(2 + xvar_L, uvar_L), w_scaling_);
 
     // integral constraint
-    block_add(dg_dx_, qcon_B, tfvar_B, int_out1_.dF.middleCols(1, 1));
-    block_add_identity(dg_dx_, qcon_B, qvar_B, qvar_L, -1);
-    block_add(dg_dx_, qcon_B, xvar_B, int_out1_.dF.middleCols(2, xvar_L));
-    block_add(dg_dx_, qcon_B, uvar_B, int_out1_.dF.middleCols(2 + xvar_L, uvar_L));
+    block_add(dg_dx_, qcon_B, tfvar_B, int_out1_.dF.middleCols(1, 1), w_scaling_);
+    block_add(dg_dx_, qcon_B, xvar_B, int_out1_.dF.middleCols(2, xvar_L), w_scaling_);
+    block_add(dg_dx_, qcon_B, uvar_B, int_out1_.dF.middleCols(2 + xvar_L, uvar_L), w_scaling_);
+    block_add_identity(dg_dx_, qcon_B, qvar_B, qvar_L, -w_scaling_);
 
     // running constraint
-    block_add(dg_dx_, crcon_B, tfvar_B, cr_out1_.dF.middleCols(1, 1));
-    block_add(dg_dx_, crcon_B, xvar_B, cr_out1_.dF.middleCols(2, xvar_L));
-    block_add(dg_dx_, crcon_B, uvar_B, cr_out1_.dF.middleCols(2 + xvar_L, uvar_L));
+    block_add(dg_dx_, crcon_B, tfvar_B, cr_out1_.dF.middleCols(1, 1), w_scaling_);
+    block_add(dg_dx_, crcon_B, xvar_B, cr_out1_.dF.middleCols(2, xvar_L), w_scaling_);
+    block_add(dg_dx_, crcon_B, uvar_B, cr_out1_.dF.middleCols(2 + xvar_L, uvar_L), w_scaling_);
 
     // end constraint
     block_add(dg_dx_, cecon_B, tfvar_B, dceval.middleCols(0, 1));
@@ -383,29 +391,29 @@ public:
     set_zero(d2g_dx2_);
 
     // clang-format off
-    block_add(d2g_dx2_, tfvar_B, tfvar_B, dyn_out2_.d2F.block(1, 1, 1, 1), 1, true);      // tftf
-    block_add(d2g_dx2_, tfvar_B, tfvar_B, int_out2_.d2F.block(1, 1, 1, 1), 1, true);      // tftf
-    block_add(d2g_dx2_, tfvar_B, tfvar_B,  cr_out2_.d2F.block(1, 1, 1, 1), 1, true);      // tftf
+    block_add(d2g_dx2_, tfvar_B, tfvar_B, dyn_out2_.d2F.block(1, 1, 1, 1), w_scaling_, true);      // tftf
+    block_add(d2g_dx2_, tfvar_B, tfvar_B, int_out2_.d2F.block(1, 1, 1, 1), w_scaling_, true);      // tftf
+    block_add(d2g_dx2_, tfvar_B, tfvar_B,  cr_out2_.d2F.block(1, 1, 1, 1), w_scaling_, true);      // tftf
 
-    block_add(d2g_dx2_, tfvar_B, xvar_B, dyn_out2_.d2F.block(1, 2, 1, xvar_L), 1, true);  // tfx
-    block_add(d2g_dx2_, tfvar_B, xvar_B, int_out2_.d2F.block(1, 2, 1, xvar_L), 1, true);  // tfx
-    block_add(d2g_dx2_, tfvar_B, xvar_B,  cr_out2_.d2F.block(1, 2, 1, xvar_L), 1, true);  // tfx
+    block_add(d2g_dx2_, tfvar_B, xvar_B, dyn_out2_.d2F.block(1, 2, 1, xvar_L), w_scaling_, true);  // tfx
+    block_add(d2g_dx2_, tfvar_B, xvar_B, int_out2_.d2F.block(1, 2, 1, xvar_L), w_scaling_, true);  // tfx
+    block_add(d2g_dx2_, tfvar_B, xvar_B,  cr_out2_.d2F.block(1, 2, 1, xvar_L), w_scaling_, true);  // tfx
 
-    block_add(d2g_dx2_, tfvar_B, uvar_B, dyn_out2_.d2F.block(1, 2 + xvar_L, 1, uvar_L), 1, true);  // tfu
-    block_add(d2g_dx2_, tfvar_B, uvar_B, int_out2_.d2F.block(1, 2 + xvar_L, 1, uvar_L), 1, true);  // tfu
-    block_add(d2g_dx2_, tfvar_B, uvar_B,  cr_out2_.d2F.block(1, 2 + xvar_L, 1, uvar_L), 1, true);  // tfu
+    block_add(d2g_dx2_, tfvar_B, uvar_B, dyn_out2_.d2F.block(1, 2 + xvar_L, 1, uvar_L), w_scaling_, true);  // tfu
+    block_add(d2g_dx2_, tfvar_B, uvar_B, int_out2_.d2F.block(1, 2 + xvar_L, 1, uvar_L), w_scaling_, true);  // tfu
+    block_add(d2g_dx2_, tfvar_B, uvar_B,  cr_out2_.d2F.block(1, 2 + xvar_L, 1, uvar_L), w_scaling_, true);  // tfu
 
-    block_add(d2g_dx2_, xvar_B, xvar_B, dyn_out2_.d2F.block(2,          2, xvar_L, xvar_L), 1, true);  // xx
-    block_add(d2g_dx2_, xvar_B, xvar_B, int_out2_.d2F.block(2,          2, xvar_L, xvar_L), 1, true);  // xx
-    block_add(d2g_dx2_, xvar_B, xvar_B,  cr_out2_.d2F.block(2,          2, xvar_L, xvar_L), 1, true);  // xx
+    block_add(d2g_dx2_, xvar_B, xvar_B, dyn_out2_.d2F.block(2,          2, xvar_L, xvar_L), w_scaling_, true);  // xx
+    block_add(d2g_dx2_, xvar_B, xvar_B, int_out2_.d2F.block(2,          2, xvar_L, xvar_L), w_scaling_, true);  // xx
+    block_add(d2g_dx2_, xvar_B, xvar_B,  cr_out2_.d2F.block(2,          2, xvar_L, xvar_L), w_scaling_, true);  // xx
 
-    block_add(d2g_dx2_, xvar_B, uvar_B, dyn_out2_.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), 1, true);  // xu
-    block_add(d2g_dx2_, xvar_B, uvar_B, int_out2_.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), 1, true);  // xu
-    block_add(d2g_dx2_, xvar_B, uvar_B,  cr_out2_.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), 1, true);  // xu
+    block_add(d2g_dx2_, xvar_B, uvar_B, dyn_out2_.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), w_scaling_, true);  // xu
+    block_add(d2g_dx2_, xvar_B, uvar_B, int_out2_.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), w_scaling_, true);  // xu
+    block_add(d2g_dx2_, xvar_B, uvar_B,  cr_out2_.d2F.block(2, 2 + xvar_L, xvar_L, uvar_L), w_scaling_, true);  // xu
 
-    block_add(d2g_dx2_, uvar_B, uvar_B, dyn_out2_.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), 1, true);  // uu
-    block_add(d2g_dx2_, uvar_B, uvar_B, int_out2_.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), 1, true);  // uu
-    block_add(d2g_dx2_, uvar_B, uvar_B,  cr_out2_.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), 1, true);  // uu
+    block_add(d2g_dx2_, uvar_B, uvar_B, dyn_out2_.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), w_scaling_, true);  // uu
+    block_add(d2g_dx2_, uvar_B, uvar_B, int_out2_.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), w_scaling_, true);  // uu
+    block_add(d2g_dx2_, uvar_B, uvar_B,  cr_out2_.d2F.block(2 + xvar_L, 2 + xvar_L, uvar_L, uvar_L), w_scaling_, true);  // uu
     // clang-format on
 
     for (auto j = 0u; j < ocp_.Nce; ++j) {
