@@ -71,12 +71,12 @@ int main()
               << " collocation pts" << std::endl;
 
     // transcribe optimal control problem to nonlinear programming problem
-    const auto nlp = smooth::feedback::ocp_to_nlp<smooth::diff::Type::Analytic>(flatocp, mesh);
+    auto nlp = smooth::feedback::ocp_to_nlp<smooth::diff::Type::Analytic>(flatocp, mesh);
 
     // solve nonlinear programming problem
     std::cout << "solving..." << std::endl;
     nlpsol = smooth::feedback::solve_nlp_ipopt(
-      nlp,
+      std::move(nlp),
       nlpsol,
       {
         {"print_level", 5},

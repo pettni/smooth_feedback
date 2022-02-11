@@ -24,7 +24,7 @@
 // SOFTWARE.
 
 /**
- * @file Optimal control problem on SE2
+ * @file Optimal control problem on SE2.
  */
 
 #ifndef OCP_SE2_HPP_
@@ -35,6 +35,7 @@
 #include <smooth/algo/hessian.hpp>
 #include <smooth/bundle.hpp>
 #include <smooth/feedback/ocp.hpp>
+#include <smooth/feedback/utils/dr_exp_sparse.hpp>
 #include <smooth/feedback/utils/sparse.hpp>
 #include <smooth/se2.hpp>
 
@@ -132,9 +133,9 @@ struct SE2Integral
     Eigen::SparseMatrix<double> ret(1, 8);
     ret.coeffRef(0, 0) = -(a.transpose() * smooth::dl_expinv<X<double>>(a))
                             .dot(Eigen::Vector<double, 5>{1., 0., 0.5, 0, 0});
-    ret.middleCols(1, 5) = (a.transpose() * smooth::dr_expinv<X<double>>(a)).sparseView();
-    ret.coeffRef(0, 6)   = u.x();
-    ret.coeffRef(0, 7)   = u.y();
+    smooth::feedback::block_add(ret, 0, 1, a.transpose() * smooth::dr_expinv<X<double>>(a));
+    ret.coeffRef(0, 6) = u.x();
+    ret.coeffRef(0, 7) = u.y();
     return ret;
   }
 
@@ -191,7 +192,7 @@ struct SE2Ce
   {
     Eigen::SparseMatrix<double> ret(6, 12);
     ret.coeffRef(0, 0) = 1;
-    smooth::feedback::block_add(ret, 1, 1, smooth::dr_expinv<X<double>>(x0.log()));
+    smooth::feedback::dr_expinv_sparse<X<double>>(ret, x0.log(), 1, 1);
     return ret;
   }
 

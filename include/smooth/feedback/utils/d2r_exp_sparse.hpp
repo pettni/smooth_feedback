@@ -23,16 +23,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SMOOTH__FEEDBACK__UTILS__D2R_EXP_HPP_
-#define SMOOTH__FEEDBACK__UTILS__D2R_EXP_HPP_
+#ifndef SMOOTH__FEEDBACK__UTILS__D2R_EXP_SPARSE_HPP_
+#define SMOOTH__FEEDBACK__UTILS__D2R_EXP_SPARSE_HPP_
 
 /**
  * @file
- * @brief Second derivatives of the exponential maps.
+ * @brief Sparse second derivatives of the exponential maps.
  *
- * Todo's:
- *  - No allocation in Bundle version
- *  - Implement for all standard Lie groups
+ * \todo Prevent allocation in Bundle version
+ * \todo Implement for all standard Lie groups
  */
 
 #include <Eigen/Sparse>
@@ -244,4 +243,4 @@ void d2r_expinv_sparse(Eigen::SparseMatrix<Scalar<G>> & out, const Tangent<G> & 
 
 }  // namespace smooth::feedback
 
-#endif  // SMOOTH__FEEDBACK__UTILS__D2R_EXP_HPP_
+#endif  // SMOOTH__FEEDBACK__UTILS__D2R_EXP_SPARSE_HPP_

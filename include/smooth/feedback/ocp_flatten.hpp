@@ -41,7 +41,8 @@
 
 #include <smooth/algo/hessian.hpp>
 #include <smooth/diff.hpp>
-#include <smooth/feedback/utils/d2r_exp.hpp>
+#include <smooth/feedback/utils/d2r_exp_sparse.hpp>
+#include <smooth/feedback/utils/dr_exp_sparse.hpp>
 #include <smooth/feedback/utils/sparse.hpp>
 
 #include "ocp.hpp"
@@ -198,8 +199,8 @@ private:
     block_add_identity(Joplus_, t_B, t_B, 1);
     block_add(Joplus_, x_B, t_B, Ad<X>(smooth::exp<X>(-e)) * dxl);
     block_add(Joplus_, u_B, t_B, Ad<U>(smooth::exp<U>(-v)) * dul);
-    block_add(Joplus_, x_B, x_B, dr_exp<X>(e));
-    block_add(Joplus_, u_B, u_B, dr_exp<U>(v));
+    dr_exp_sparse<X>(Joplus_, e, x_B, x_B);
+    dr_exp_sparse<U>(Joplus_, v, u_B, u_B);
     Joplus_.makeCompressed();
   }
 
@@ -274,7 +275,7 @@ public:
     set_zero(J_);
 
     // left stuff
-    block_add(dexpinv_e_, 0, 0, dr_expinv<X>(e));
+    dr_expinv_sparse<X>(dexpinv_e_, e);
 
     // value and derivative of f
     const auto fval = f(t, x, u);
@@ -406,8 +407,8 @@ private:
     block_add_identity(Joplus_, t_B, t_B, 1);
     block_add(Joplus_, x_B, t_B, Ad<X>(smooth::exp<X>(-e)) * dxl);
     block_add(Joplus_, u_B, t_B, Ad<U>(smooth::exp<U>(-v)) * dul);
-    block_add(Joplus_, x_B, x_B, dr_exp<X>(e));
-    block_add(Joplus_, u_B, u_B, dr_exp<U>(v));
+    dr_exp_sparse<X>(Joplus_, e, x_B, x_B);
+    dr_exp_sparse<U>(Joplus_, v, u_B, u_B);
     Joplus_.makeCompressed();
   }
 
@@ -532,8 +533,8 @@ private:
     set_zero(Joplus_);
     block_add_identity(Joplus_, tf_B, tf_B, 1);
     block_add(Joplus_, xf_B, tf_B, Ad<X>(smooth::exp<X>(-ef)) * dxlf);
-    block_add(Joplus_, x0_B, x0_B, dr_exp<X>(e0));
-    block_add(Joplus_, xf_B, xf_B, dr_exp<X>(ef));
+    dr_exp_sparse<X>(Joplus_, e0, x0_B, x0_B);
+    dr_exp_sparse<X>(Joplus_, ef, xf_B, xf_B);
     block_add_identity(Joplus_, q_B, q_B, Nq);
     Joplus_.makeCompressed();
   }

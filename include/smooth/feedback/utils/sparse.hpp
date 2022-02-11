@@ -284,6 +284,48 @@ void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
   }
 }
 
+/**
+ * @brief Count number of explicit zeros
+ */
+template<typename Mat>
+  requires(std::is_base_of_v<Eigen::EigenBase<Mat>, Mat>)
+uint64_t count_explicit_zeros(const Mat & mat)
+{
+  uint64_t ret = 0;
+  for (auto c = 0; c < mat.outerSize(); ++c) {
+    for (Eigen::InnerIterator it(mat, c); it; ++it) {
+      if (it.value() == 0) { ++ret; }
+    }
+  }
+  return ret;
+}
+
+/**
+ * @brief Mark explicit zeros.
+ *
+ * Returns a matrix that has values as follows:
+ *  - 0 for implicit zeros
+ *  - 1 for implicit non-zeros
+ *  - 9 for explicit zeros
+ */
+template<typename Mat>
+  requires(std::is_base_of_v<Eigen::EigenBase<Mat>, Mat>)
+Eigen::MatrixX<typename Mat::Scalar> mark_explicit_zeros(const Mat & mat)
+{
+  Eigen::MatrixX<typename Mat::Scalar> ret;
+  ret.setConstant(mat.rows(), mat.cols(), 0);
+  for (auto c = 0; c < mat.outerSize(); ++c) {
+    for (Eigen::InnerIterator it(mat, c); it; ++it) {
+      if (it.value() == 0) {
+        ret(it.row(), it.col()) = 9;
+      } else {
+        ret(it.row(), it.col()) = 1;
+      }
+    }
+  }
+  return ret;
+}
+
 }  // namespace smooth::feedback
 
 #endif  // SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_

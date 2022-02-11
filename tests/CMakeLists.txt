@@ -59,9 +59,13 @@ add_executable(test_utils_sparse test_utils_sparse.cpp)
 target_link_libraries(test_utils_sparse PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_utils_sparse)
 
-add_executable(test_utils_d2rexp test_utils_d2rexp.cpp)
-target_link_libraries(test_utils_d2rexp PRIVATE feedback GTest::Main)
-gtest_discover_tests(test_utils_d2rexp)
+add_executable(test_utils_drexp_sparse test_utils_drexp_sparse.cpp)
+target_link_libraries(test_utils_drexp_sparse PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_utils_drexp_sparse)
+
+add_executable(test_utils_d2rexp_sparse test_utils_d2rexp_sparse.cpp)
+target_link_libraries(test_utils_d2rexp_sparse PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_utils_d2rexp_sparse)
 
 add_executable(test_ocp_to_nlp test_ocp_to_nlp.cpp)
 target_link_libraries(test_ocp_to_nlp PRIVATE feedback GTest::Main)
