@@ -87,7 +87,7 @@ struct MeshValue<1> : public MeshValue<0>
 template<>
 struct MeshValue<2> : public MeshValue<1>
 {
-  // Multipliers (must be set before)
+  /// @brief Multipliers (must be set before)
   Eigen::VectorXd lambda;
 
   /// @brief Size numVar x numVar
@@ -303,7 +303,7 @@ void mesh_eval(
  * \f]
  * by computing the quadrature
  * \f[
- *    (t_f - t_0) * \sum_{i = 0}^N w_i f(t_0 + (t_f - t_0) \tau_i, x_i, u_i).
+ *    (t_f - t_0) \sum_{i = 0}^N w_i f(t_0 + (t_f - t_0) \tau_i, x_i, u_i).
  * \f]
  *
  * If DT > 0 derivatives w.r.t. t0, tf, {xi} and {ui} are returned.

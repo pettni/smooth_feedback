@@ -49,10 +49,11 @@
 
 namespace smooth::feedback {
 
+// \cond
 namespace detail {
 
 /**
- * @brief (Right) Hessian of composed function (f \circ g)(x).
+ * @brief (Right) Hessian of composed function \f$ (f \circ g)(x) \f$.
  *
  * @param[out] out result                           [No x No*Nx]
  * @param[in] Jf (Right) Jacobian of f at y = g(x)  [No x Ny   ]
@@ -624,6 +625,7 @@ public:
 };
 
 }  // namespace detail
+// \endcond
 
 /**
  * @brief Flatten a LieGroup OCP by defining it in the tangent space around a trajectory.
@@ -631,6 +633,10 @@ public:
  * @param ocp OCPType defined on a LieGroup
  * @param xl nominal state trajectory
  * @param ul nominal state trajectory
+ *
+ * @note The flattened problem defines analytical jacobians and hessians if \p ocp does.
+ *
+ * @warn The Hessian of the flattened dynamics is not implemented in an efficient manner.
  *
  * @return FlatOCPType in variables (xe, ue) obtained via variables change x = xl ⊕ xe, u = ul ⊕
  * ue,

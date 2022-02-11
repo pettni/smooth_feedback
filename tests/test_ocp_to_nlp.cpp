@@ -91,7 +91,7 @@ TEST(OcpToNlp, Derivatives2)
   auto nlp = ocp_to_nlp(ocp, mesh);
 
   using nlp_t = std::decay_t<decltype(nlp)>;
-  static_assert(smooth::feedback::HessianNLPType<nlp_t>);
+  static_assert(smooth::feedback::HessianNLP<nlp_t>);
 
   srand(5);
   const Eigen::VectorXd x      = Eigen::VectorXd::Random(nlp.n());

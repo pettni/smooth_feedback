@@ -41,7 +41,12 @@
 
 namespace smooth::feedback {
 
-template<NLPType Problem>
+/**
+ * @brief Ipopt interface to solve NLPs
+ *
+ * @see NLP
+ */
+template<NLP Problem>
 class IpoptNLP : public Ipopt::TNLP
 {
 public:
@@ -81,7 +86,7 @@ public:
     nnz_jac_g    = J.nonZeros();
 
     nnz_h_lag = 0;  // default
-    if constexpr (HessianNLPType<Problem>) {
+    if constexpr (HessianNLP<Problem>) {
       if (use_hessian_) {
         H_ = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
         H_ += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
@@ -234,7 +239,7 @@ public:
     Ipopt::Number * values) override
   {
     assert(use_hessian_);
-    assert(HessianNLPType<Problem>);
+    assert(HessianNLP<Problem>);
     assert(H_.isCompressed());
     assert(H_.nonZeros() == nele_hess);
 
@@ -333,7 +338,7 @@ private:
  * @see https://coin-or.github.io/Ipopt/OPTIONS.html for a list of available options
  */
 inline NLPSolution solve_nlp_ipopt(
-  NLPType auto && nlp,
+  NLP auto && nlp,
   std::optional<NLPSolution> warmstart                         = {},
   std::vector<std::pair<std::string, int>> opts_integer        = {},
   std::vector<std::pair<std::string, std::string>> opts_string = {},

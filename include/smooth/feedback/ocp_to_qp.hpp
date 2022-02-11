@@ -102,7 +102,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   const auto Nvar = xvar_L + uvar_L;
   const auto Ncon = dcon_L + crcon_L + cecon_L;
 
-  // TODO move all allocation to a separate function...
+  /// @todo move all allocation to a separate function...
 
   MeshValue<1> cr_out;
   MeshValue<2> int_out;
@@ -233,7 +233,7 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// ENDPOINT COST ////
   ///////////////////////
 
-  // weights from x0 and xf (TODO double-check)
+  /// @todo weights from x0 and xf (double-check)
   for (auto row = 0u; row < Nx; ++row) {
     for (auto col = 0u; col < Nx; ++col) {
       ret.P.coeffRef(row, col) += Qo_x0(row, col);
@@ -254,6 +254,21 @@ QuadraticProgramSparse<double> ocp_to_qp(
   return ret;
 }
 
+/**
+ * @brief Convert QP solution to OCP solution
+ *
+ * If qp_sol solves a QP obtained via ocp_to_qp(), then qpsol_to_ocpsol(qp_sol)
+ * is the corrensponding OCP solution.
+ *
+ * @param ocp optimal control problem
+ * @param mesh discretization mesh
+ * @param qpsol solution to quadratic program obtained via ocp_to_qp()
+ * @param tf final time used in ocp_to_qp()
+ * @param xl_fun state linearization trajectory used in ocp_to_qp()
+ * @param ul_fun input linearization trajectory used in ocp_to_qp()
+ *
+ * @see ocp_to_qp()
+ */
 auto qpsol_to_ocpsol(
   const OCPType auto & ocp,
   const MeshType auto & mesh,

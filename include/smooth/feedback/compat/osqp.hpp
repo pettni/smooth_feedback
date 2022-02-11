@@ -43,6 +43,7 @@ namespace smooth::feedback {
  *
  * @param pbm QuadraticProgram to solve
  * @param prm solver paramters
+ * @param warmstart initial point to start iterating from
  *
  * @return solution
  *

@@ -28,7 +28,7 @@
 #include <smooth/feedback/qp.hpp>
 
 static constexpr auto inf   = std::numeric_limits<double>::infinity();
-static constexpr double tol = 1e-4;  // TODO decrease this as solver improves
+static constexpr double tol = 1e-4;
 static constexpr smooth::feedback::QPSolverParams prm{};
 
 TEST(QP, BasicStatic)

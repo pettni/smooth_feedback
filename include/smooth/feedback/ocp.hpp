@@ -41,41 +41,11 @@
 
 namespace smooth::feedback {
 
-/**
- * @brief Solution to OCP problem.
- */
+// \cond
+// Forward declaration
 template<LieGroup _X, Manifold _U, int _Nq, int _Ncr, int _Nce>
-struct OCPSolution
-{
-  using X = _X;
-  using U = _U;
-
-  static constexpr int Nq  = _Nq;
-  static constexpr int Ncr = _Ncr;
-  static constexpr int Nce = _Nce;
-
-  double t0;
-  double tf;
-
-  /// @brief Integral values
-  Eigen::Vector<double, Nq> Q{};
-
-  /// @brief Callable functions for state and input
-  std::function<U(double)> u;
-  std::function<X(double)> x;
-
-  /// @brief Multipliers for integral constraints
-  Eigen::Vector<double, Nq> lambda_q{};
-
-  /// @brief Multipliers for endpoint constraints
-  Eigen::Vector<double, Nce> lambda_ce{};
-
-  /// @brief Multipliers for dynamics equality constraint
-  std::function<Eigen::Vector<double, Dof<X>>(double)> lambda_dyn{};
-
-  /// @brief Multipliers for active running constraints
-  std::function<Eigen::Vector<double, Ncr>(double)> lambda_cr{};
-};
+struct OCPSolution;
+// \endcond
 
 /**
  * @brief Optimal control problem definition
@@ -104,7 +74,9 @@ struct OCPSolution
 template<LieGroup _X, Manifold _U, typename Theta, typename F, typename G, typename CR, typename CE>
 struct OCP
 {
+  /// @brief State space
   using X = _X;
+  /// @brief Input space
   using U = _U;
 
   /// @brief State space dimension
@@ -161,9 +133,59 @@ concept FlatOCPType = OCPType<T> &&(smooth::traits::RnType<typename std::decay_t
                                       smooth::traits::RnType<typename std::decay_t<T>::U>);
 
 /**
+ * @brief Solution to OCP.
+ */
+template<LieGroup _X, Manifold _U, int _Nq, int _Ncr, int _Nce>
+struct OCPSolution
+{
+  /// @brief State space
+  using X = _X;
+  /// @brief Input space
+  using U = _U;
+
+  /// @brief Number of integrals
+  static constexpr int Nq = _Nq;
+  /// @brief Number of running constraints
+  static constexpr int Ncr = _Ncr;
+  /// @brief Number of end constraints
+  static constexpr int Nce = _Nce;
+
+  ///@{
+  /// @brief Initial and final time
+  double t0, tf;
+  //}@
+
+  /// @brief Integral values
+  Eigen::Vector<double, Nq> Q{};
+
+  ///@{
+  /// @brief Callable functions for state and input
+  std::function<U(double)> u;
+  std::function<X(double)> x;
+  //}@
+
+  /// @brief Multipliers for integral constraints
+  Eigen::Vector<double, Nq> lambda_q{};
+
+  /// @brief Multipliers for endpoint constraints
+  Eigen::Vector<double, Nce> lambda_ce{};
+
+  /// @brief Multipliers for dynamics equality constraint
+  std::function<Eigen::Vector<double, Dof<X>>(double)> lambda_dyn{};
+
+  /// @brief Multipliers for active running constraints
+  std::function<Eigen::Vector<double, Ncr>(double)> lambda_cr{};
+};
+
+/**
  * @brief Test analytic derivatives for an OCP problem.
  *
  * @tparam DT differentiation method to compare against.
+ *
+ * @param ocp problem to test derivatives for
+ * @param num_trials number of random points to test
+ *
+ * @todo Make it possible to test a subset of derivatives
  */
 template<diff::Type DT = diff::Type::Numerical>
 bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1)

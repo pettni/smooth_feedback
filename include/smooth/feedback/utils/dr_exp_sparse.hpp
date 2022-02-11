@@ -46,6 +46,7 @@
 
 namespace smooth::feedback {
 
+// \cond
 namespace detail {
 
 template<typename Scalar>
@@ -144,19 +145,20 @@ void dr_exp_impl(
 }
 
 }  // namespace detail
+// \endcond
 
 /**
- * @brief Second derivative of the exponential map.
+ * @brief Derivative of the exponential map.
  *
- * @param[out] out result
+ * @param[out] out output matrix
  * @param[in] a tangent element
+ * @param[in] r0 row to insert result
+ * @param[in] c0 column to insert result
  *
- * On return out contains the derivative
+ * On return out.block(r0, c0, Dof, Dof) contains the derivative
  * \f[
- *   \mathrm{d}^{2r} \left( \exp(a) \right)_{aa}
- *   = \mathrm{d}^{r} \left( \mathrm{d}^r \exp_a^{T} \right)_{a},
+ *   \mathrm{d}^{r} \exp_{a}.
  * \f]
- * on horizontal-block Hessian form.
  */
 template<LieGroup G>
 void dr_exp_sparse(
@@ -169,13 +171,17 @@ void dr_exp_sparse(
 }
 
 /**
- * @brief Second derivative of the inverse of the exponential map.
+ * @brief Derivative of the inverse of the exponential map.
  *
- * On return out contains the derivative
+ * @param[out] out output matrix
+ * @param[in] a tangent element
+ * @param[in] r0 row to insert result
+ * @param[in] c0 column to insert result
+ *
+ * On return out.block(r0, c0, Dof, Dof) contains the derivative
  * \f[
- *   \mathrm{d}^{r} \left( \mathrm{d}^r \exp_a^{-T} \right)_{a},
+ *   \mathrm{d}^r \exp_a^{-1}.
  * \f]
- * on horizontal-block Hessian form.
  */
 template<LieGroup G>
 void dr_expinv_sparse(

@@ -44,8 +44,8 @@ namespace smooth::feedback {
  * @param m Mesh
  * @param t0 initial time variable
  * @param tf final time variable
- * @param x state trajectory
- * @param u input trajectory
+ * @param xfun state trajectory
+ * @param ufun input trajectory
  *
  * @return vector with relative errors for every interval in m
  */

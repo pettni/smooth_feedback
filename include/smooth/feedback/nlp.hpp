@@ -52,7 +52,7 @@ namespace smooth::feedback {
  * \f$ g : \mathbb{R}^n \rightarrow \mathbb{R}^m \f$.
  */
 template<typename T>
-concept NLPType = requires(
+concept NLP = requires(
   std::decay_t<T> & nlp,
   const Eigen::Ref<const Eigen::VectorXd> x,
   const Eigen::Ref<const Eigen::VectorXd> lambda)
@@ -81,8 +81,8 @@ concept NLPType = requires(
  * @brief Nonlinear Programming Problem with Hessian information
  */
 template<typename T>
-concept HessianNLPType =
-  NLPType<T> && requires(std::decay_t<T> & nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)
+concept HessianNLP =
+  NLP<T> && requires(std::decay_t<T> & nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)
 {
   // clang-format off
   {nlp.d2f_dx2(x)}         -> std::convertible_to<Eigen::SparseMatrix<double>>;
@@ -103,7 +103,10 @@ struct NLPSolution
     MaxIterations,
     MaxTime,
     Unknown,
-  } status;
+  };
+
+  /// @brief Solver status
+  Status status;
 
   /// @brief Number of iterations
   std::size_t iter{0};
@@ -111,8 +114,10 @@ struct NLPSolution
   /// @brief Variable values
   Eigen::VectorXd x;
 
+  ///@{
   /// @brief Inequality multipliers
   Eigen::VectorXd zl, zu;
+  ///@}
 
   /// @brief Constraint multipliers
   Eigen::VectorXd lambda;

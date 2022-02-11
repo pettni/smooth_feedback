@@ -47,6 +47,7 @@
 
 namespace smooth::feedback {
 
+// \cond
 namespace detail {
 
 template<typename Scalar>
@@ -206,6 +207,7 @@ void d2r_exp_impl(Eigen::SparseMatrix<Scalar<G>> & out, const Tangent<G> & a)
 }
 
 }  // namespace detail
+// \endcond
 
 /**
  * @brief Second derivative of the exponential map.
@@ -213,7 +215,7 @@ void d2r_exp_impl(Eigen::SparseMatrix<Scalar<G>> & out, const Tangent<G> & a)
  * @param[out] out result
  * @param[in] a tangent element
  *
- * On return out contains the derivative
+ * On return \p out contains the derivative
  * \f[
  *   \mathrm{d}^{2r} \left( \exp(a) \right)_{aa}
  *   = \mathrm{d}^{r} \left( \mathrm{d}^r \exp_a^{T} \right)_{a},
@@ -229,7 +231,10 @@ void d2r_exp_sparse(Eigen::SparseMatrix<Scalar<G>> & out, const Tangent<G> & a)
 /**
  * @brief Second derivative of the inverse of the exponential map.
  *
- * On return out contains the derivative
+ * @param[out] out result
+ * @param[in] a tangent element
+ *
+ * On return \p out contains the derivative
  * \f[
  *   \mathrm{d}^{r} \left( \mathrm{d}^r \exp_a^{-T} \right)_{a},
  * \f]

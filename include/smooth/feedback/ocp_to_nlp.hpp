@@ -41,6 +41,7 @@
 
 namespace smooth::feedback {
 
+// \cond
 namespace detail {
 
 /// @brief Variable and constraint structure of an OCP NLP
@@ -176,13 +177,10 @@ public:
     df_dx_.reserve(Eigen::VectorXi::Constant(n_, 1));
 
     d2f_dx2_.resize(n_, n_);
-    // TODO allocate nnzs
-
     dg_dx_.resize(m_, n_);
-    // TODO allocate nnzs
-
     d2g_dx2_.resize(n_, n_);
-    // TODO allocate nnzs
+
+    /// @todo Allocate nnz's to speed up first call?
   }
 
   std::size_t n() const { return n_; }
@@ -435,6 +433,7 @@ public:
 };
 
 }  // namespace detail
+// \endcond
 
 /**
  * @brief Formulate an OCP as a NLP using collocation on a Mesh.

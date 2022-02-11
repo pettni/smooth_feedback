@@ -285,7 +285,9 @@ void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
 }
 
 /**
- * @brief Count number of explicit zeros
+ * @brief Count number of explicit zeros in sparse matrix.
+ *
+ * @param mat sparse matrix
  */
 template<typename Mat>
   requires(std::is_base_of_v<Eigen::EigenBase<Mat>, Mat>)
@@ -301,11 +303,13 @@ uint64_t count_explicit_zeros(const Mat & mat)
 }
 
 /**
- * @brief Mark explicit zeros.
+ * @brief Mark explicit zeros in sparse matrix.
+ *
+ * @param mat sparse matrix
  *
  * Returns a matrix that has values as follows:
  *  - 0 for implicit zeros
- *  - 1 for implicit non-zeros
+ *  - 1 for non-zeros
  *  - 9 for explicit zeros
  */
 template<typename Mat>

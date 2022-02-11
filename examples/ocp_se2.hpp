@@ -144,7 +144,7 @@ struct SE2Integral
     const auto H = smooth::hessian_rminus_norm(x, xdes(t));
 
     Eigen::SparseMatrix<double> ret(8, 8);
-    // TODO: don't have derivatives w.r.t. t
+    /// @todo don't have derivatives w.r.t. t
     smooth::feedback::block_add(ret, 1, 1, H);
     ret.coeffRef(6, 6) = 1;
     ret.coeffRef(7, 7) = 1;
