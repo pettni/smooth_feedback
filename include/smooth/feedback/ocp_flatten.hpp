@@ -31,9 +31,8 @@
  * @brief Reformulate an optimal control problem on a Lie group as an optimal control problem in the
  * tangent space around a reference trajectory.
  *
- * Todo's:
- *  - More efficient implementation of Hessian in FlatDyn.
- *  - Accept dxl as a template argument to avoid double differentiation.
+ * @todo More efficient implementation of Hessian in FlatDyn.
+ * @todo Accept dxl as a template argument to avoid double differentiation.
  */
 
 #include <Eigen/Core>
@@ -41,11 +40,11 @@
 
 #include <smooth/algo/hessian.hpp>
 #include <smooth/diff.hpp>
-#include <smooth/feedback/utils/d2r_exp_sparse.hpp>
-#include <smooth/feedback/utils/dr_exp_sparse.hpp>
-#include <smooth/feedback/utils/sparse.hpp>
 
 #include "ocp.hpp"
+#include "utils/d2r_exp_sparse.hpp"
+#include "utils/dr_exp_sparse.hpp"
+#include "utils/sparse.hpp"
 
 namespace smooth::feedback {
 

@@ -43,15 +43,15 @@
 
 int main()
 {
-  std::cout << "TESTING LIE DERIVATIVES\n";
-  smooth::feedback::test_ocp_derivatives(ocp_se2);
+  // std::cout << "TESTING LIE DERIVATIVES\n";
+  // smooth::feedback::test_ocp_derivatives(ocp_se2);
 
   const auto xl = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
   const auto ul = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Constant(0.01); };
 
   auto flatocp = smooth::feedback::flatten_ocp(ocp_se2, xl, ul);
-  std::cout << "TESTING FLAT DERIVATIVES\n";
-  smooth::feedback::test_ocp_derivatives(flatocp);
+  // std::cout << "TESTING FLAT DERIVATIVES\n";
+  // smooth::feedback::test_ocp_derivatives(flatocp);
 
   // target optimality
   const double target_err = 1e-6;
