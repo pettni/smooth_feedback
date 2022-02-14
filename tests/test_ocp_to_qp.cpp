@@ -27,8 +27,6 @@
 
 #include <Eigen/Core>
 
-#include <smooth/compat/autodiff.hpp>
-
 #include "smooth/feedback/ocp.hpp"
 #include "smooth/feedback/ocp_to_qp.hpp"
 

@@ -188,7 +188,7 @@ struct OCPSolution
  * @todo Make it possible to test a subset of derivatives
  */
 template<diff::Type DT = diff::Type::Numerical>
-bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1)
+bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double eps = 1e-4)
 {
   using OCP = std::decay_t<decltype(ocp)>;
 
@@ -211,14 +211,14 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1)
   static_assert(diff::detail::diffable_order1<decltype(ocp.theta), std::tuple<double, X, X, Q>>);
   static_assert(diff::detail::diffable_order2<decltype(ocp.theta), std::tuple<double, X, X, Q>>);
 
-  const auto cmp = [](const auto & m1, const auto & m2) {
+  const auto cmp = [&eps](const auto & m1, const auto & m2) {
     return (
       // clang-format off
       (m1.cols() == m2.cols())
       && (m1.rows() == m2.rows())
       && (
           m1.isApprox(m2, 1e-4) ||
-          Eigen::MatrixXd(m1 - m2).cwiseAbs().maxCoeff() < 1e-4
+          Eigen::MatrixXd(m1 - m2).cwiseAbs().maxCoeff() < eps
       )
       // clang-format on
     );
