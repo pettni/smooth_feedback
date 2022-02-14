@@ -1,4 +1,4 @@
-<map id="smooth::feedback::IpoptNLP" name="smooth::feedback::IpoptNLP">
-<area shape="rect" id="node1" title=" " alt="" coords="5,80,192,107"/>
+<map id="smooth::feedback::IpoptNLP&lt; Problem &gt;" name="smooth::feedback::IpoptNLP&lt; Problem &gt;">
+<area shape="rect" id="node1" title="Ipopt interface to solve NLPs." alt="" coords="5,80,192,121"/>
 <area shape="rect" id="node2" title=" " alt="" coords="53,5,145,32"/>
 </map>

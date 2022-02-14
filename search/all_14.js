@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['x_154',['x',['../structsmooth_1_1feedback_1_1NLPSolution.html#a8e8b36ed467f641772231a7c5de5a7a6',1,'smooth::feedback::NLPSolution']]],
-  ['x0_155',['x0',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac4af927a70f4a218546ce290c5093e8d',1,'smooth::feedback::OptimalControlProblem']]],
-  ['xl_156',['xl',['../structsmooth_1_1feedback_1_1NLP.html#a0ae3906b282fb6f751b67b83f7629680',1,'smooth::feedback::NLP']]]
+  ['w_5fu_0',['W_u',['../structsmooth_1_1feedback_1_1ASIFProblem.html#ab533825b3922a43911c70417593b3978',1,'smooth::feedback::ASIFProblem']]],
+  ['warmstart_1',['warmstart',['../structsmooth_1_1feedback_1_1MPCParams.html#a4ac576ea95a6bfd64f6a87df2ff1eaa1',1,'smooth::feedback::MPCParams']]],
+  ['weights_2',['Weights',['../structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html',1,'smooth::feedback::OptimalControlProblem']]],
+  ['weights_3',['weights',['../structsmooth_1_1feedback_1_1MPCParams.html#a06d3c4d750af3de2f32b11503238e4fd',1,'smooth::feedback::MPCParams::weights()'],['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a967816d83eaf00a11964fd7216721ef4',1,'smooth::feedback::OptimalControlProblem::weights()']]],
+  ['windup_5flimit_4',['windup_limit',['../structsmooth_1_1feedback_1_1PIDParams.html#a3b120cee267e78595ade8a784b3562a1',1,'smooth::feedback::PIDParams']]]
 ];

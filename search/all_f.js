@@ -1,13 +1,14 @@
 var searchData=
 [
-  ['scale_5fqp_125',['scale_qp',['../qp_8hpp.html#aa790bef4513b4ac1815d67c8dbf9c026',1,'smooth::feedback::detail']]],
-  ['scaling_126',['scaling',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a376640aa39c3016d33ad922653236649',1,'smooth::feedback::QPSolverParams']]],
-  ['set_5fudes_127',['set_udes',['../classsmooth_1_1feedback_1_1MPC.html#ad06de7436df1739680bb0afa044e5b37',1,'smooth::feedback::MPC::set_udes(std::function&lt; U(T)&gt; &amp;&amp;u_des)'],['../classsmooth_1_1feedback_1_1MPC.html#aa30e1ae3b19a44796c1060a619666283',1,'smooth::feedback::MPC::set_udes(const std::function&lt; U(T)&gt; &amp;u_des)'],['../classsmooth_1_1feedback_1_1MPC.html#a017d9ea68c64f68eefe3d2100a375f3d',1,'smooth::feedback::MPC::set_udes(Fun &amp;&amp;f, T t0=T(0))']]],
-  ['set_5fxdes_128',['set_xdes',['../classsmooth_1_1feedback_1_1MPC.html#ab02ecd1033d001a3d0acc5c6eea69123',1,'smooth::feedback::MPC::set_xdes(std::function&lt; std::pair&lt; G, Tangent&lt; G &gt;&gt;(T)&gt; &amp;&amp;x_des)'],['../classsmooth_1_1feedback_1_1MPC.html#a702a9503c4e5c7fdb411f9246e2d4953',1,'smooth::feedback::MPC::set_xdes(const std::function&lt; std::pair&lt; G, Tangent&lt; G &gt;&gt;(T)&gt; &amp;x_des)'],['../classsmooth_1_1feedback_1_1MPC.html#afc7a27cbc1ffb5a9958c2d131046c039',1,'smooth::feedback::MPC::set_xdes(Fun &amp;&amp;f, T t0=T(0))']]],
-  ['sigma_129',['sigma',['../structsmooth_1_1feedback_1_1QPSolverParams.html#af1bf675148e3597d0c7530a26a2e59c5',1,'smooth::feedback::QPSolverParams']]],
-  ['smooth_5ffeedback_3a_20control_20and_20estimation_20on_20lie_20groups_130',['smooth_feedback: Control and estimation on Lie groups',['../index.html',1,'']]],
-  ['sol_131',['sol',['../classsmooth_1_1feedback_1_1IpoptNLP.html#a79b7f609f675f6a3a384f1aac4f681b4',1,'smooth::feedback::IpoptNLP']]],
-  ['solve_5fqp_132',['solve_qp',['../qp_8hpp.html#a2151e5a179ada80d491aaaa0e0e88479',1,'smooth::feedback']]],
-  ['status_133',['Status',['../structsmooth_1_1feedback_1_1NLPSolution.html#a0eef2fdf38dd3ea8e2473360fbd34fe8',1,'smooth::feedback::NLPSolution']]],
-  ['stop_5fcheck_5fiter_134',['stop_check_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a19bc1cf5805ff6505ca8b855650d1592',1,'smooth::feedback::QPSolverParams']]]
+  ['r_0',['R',['../structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#a6aaab93e0a35b8987a97de9b6f678e6e',1,'smooth::feedback::OptimalControlProblem::Weights']]],
+  ['refine_5ferrors_1',['refine_errors',['../classsmooth_1_1feedback_1_1Mesh.html#aea6f3e7ff1f0aa93a2a1a1c142ec6667',1,'smooth::feedback::Mesh']]],
+  ['refine_5fph_2',['refine_ph',['../classsmooth_1_1feedback_1_1Mesh.html#ab00cae1af33f3fe1dda4075fce59eef8',1,'smooth::feedback::Mesh']]],
+  ['relax_5fcost_3',['relax_cost',['../structsmooth_1_1feedback_1_1ASIFtoQPParams.html#a1ac57c1aaa7b3e8e77e7eabf8287a5aa',1,'smooth::feedback::ASIFtoQPParams']]],
+  ['relinearize_5faround_5fsol_4',['relinearize_around_sol',['../classsmooth_1_1feedback_1_1MPC.html#a2e6592bd4d4a1ae44c555521ef471d3b',1,'smooth::feedback::MPC']]],
+  ['relinearize_5faround_5fsolution_5',['relinearize_around_solution',['../structsmooth_1_1feedback_1_1MPCParams.html#a54992672883c01640e8393a906d37b0c',1,'smooth::feedback::MPCParams']]],
+  ['reset_6',['reset',['../classsmooth_1_1feedback_1_1EKF.html#a2fdbc3ac62b4e9cb8c5b0fee204b350c',1,'smooth::feedback::EKF']]],
+  ['reset_5fintegral_7',['reset_integral',['../classsmooth_1_1feedback_1_1PID.html#a7be08a39f7cda290bcb58622eafbc9f3',1,'smooth::feedback::PID']]],
+  ['reset_5fwarmstart_8',['reset_warmstart',['../classsmooth_1_1feedback_1_1MPC.html#aeeaed739d2e0724b9e78d688fdfd20e4',1,'smooth::feedback::MPC']]],
+  ['rho_9',['rho',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a12313e82b48be1c090051beefd1f2af7',1,'smooth::feedback::QPSolverParams']]],
+  ['ros_2ehpp_10',['ros.hpp',['../ros_8hpp.html',1,'']]]
 ];

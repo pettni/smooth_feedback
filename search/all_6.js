@@ -1,10 +1,10 @@
 var searchData=
 [
-  ['ipoptnlp_47',['IpoptNLP',['../classsmooth_1_1feedback_1_1IpoptNLP.html#abe286e4d1625887b4ee582a33a2e5173',1,'smooth::feedback::IpoptNLP::IpoptNLP(NLP &amp;&amp;nlp)'],['../classsmooth_1_1feedback_1_1IpoptNLP.html#adb152a9110fc708f07f42cbdf2140df2',1,'smooth::feedback::IpoptNLP::IpoptNLP(const NLP &amp;nlp)'],['../classsmooth_1_1feedback_1_1IpoptNLP.html',1,'smooth::feedback::IpoptNLP']]],
-  ['is_5fspecialization_5fof_48',['is_specialization_of',['../structsmooth_1_1feedback_1_1traits_1_1is__specialization__of.html',1,'smooth::feedback::traits']]],
-  ['is_5fspecialization_5fof_3c_20z_3c_20args_2e_2e_2e_20_3e_2c_20z_20_3e_49',['is_specialization_of&lt; Z&lt; Args... &gt;, Z &gt;',['../structsmooth_1_1feedback_1_1traits_1_1is__specialization__of_3_01Z_3_01Args_8_8_8_01_4_00_01Z_01_4.html',1,'smooth::feedback::traits']]],
-  ['is_5fspecialization_5fof_5fsizet_50',['is_specialization_of_sizet',['../structsmooth_1_1feedback_1_1traits_1_1is__specialization__of__sizet.html',1,'smooth::feedback::traits']]],
-  ['is_5fspecialization_5fof_5fsizet_3c_20z_3c_20args_2e_2e_2e_20_3e_2c_20z_20_3e_51',['is_specialization_of_sizet&lt; Z&lt; Args... &gt;, Z &gt;',['../structsmooth_1_1feedback_1_1traits_1_1is__specialization__of__sizet_3_01Z_3_01Args_8_8_8_01_4_00_01Z_01_4.html',1,'smooth::feedback::traits']]],
-  ['iter_52',['iter',['../structsmooth_1_1feedback_1_1NLPSolution.html#ad19a13f1ab94211f2d53797342ed358f',1,'smooth::feedback::NLPSolution::iter()'],['../structsmooth_1_1feedback_1_1QPSolution.html#a43ac2d7756736ee34ac86e129a285808',1,'smooth::feedback::QPSolution::iter()']]],
-  ['iterative_5frelinearization_53',['iterative_relinearization',['../structsmooth_1_1feedback_1_1MPCParams.html#abeec8bd844d0f6fecbd9367ec9813441',1,'smooth::feedback::MPCParams']]]
+  ['g_0',['g',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ac3dc7149004e6e0cb773889639fadfe1',1,'smooth::feedback::LinearizationInfo::g()'],['../structsmooth_1_1feedback_1_1OCP.html#abdb104690f474052c40aa4ba3f437b4e',1,'smooth::feedback::OCP::g()']]],
+  ['g_5fdomain_1',['g_domain',['../structsmooth_1_1feedback_1_1LinearizationInfo.html#ac267b0228db56b5e353446d34e4e1135',1,'smooth::feedback::LinearizationInfo']]],
+  ['gdes_2',['gdes',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae0ada3eab3ed9642a05d28cc902fa13e',1,'smooth::feedback::OptimalControlProblem']]],
+  ['get_5fbounds_5finfo_3',['get_bounds_info',['../classsmooth_1_1feedback_1_1IpoptNLP.html#ab24d8876df8d80e22754ccaec4ff5613',1,'smooth::feedback::IpoptNLP']]],
+  ['get_5fnlp_5finfo_4',['get_nlp_info',['../classsmooth_1_1feedback_1_1IpoptNLP.html#a2520826076f0f1a2c24d0e49ad117da7',1,'smooth::feedback::IpoptNLP']]],
+  ['get_5fstarting_5fpoint_5',['get_starting_point',['../classsmooth_1_1feedback_1_1IpoptNLP.html#a8dfeb027e2b88e4a21dd59aedb17df8b',1,'smooth::feedback::IpoptNLP']]],
+  ['glim_6',['glim',['../structsmooth_1_1feedback_1_1MPCParams.html#a529dcc02320655f14e6210efbc82a6ad',1,'smooth::feedback::MPCParams::glim()'],['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a290a5e94b25491d733ec6f18def8f584',1,'smooth::feedback::OptimalControlProblem::glim()']]]
 ];

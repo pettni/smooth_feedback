@@ -1,10 +1,7 @@
 var searchData=
 [
-  ['l_55',['l',['../structsmooth_1_1feedback_1_1ManifoldBounds.html#a90ac2651e3f1dcbb614137fc7f3bef73',1,'smooth::feedback::ManifoldBounds::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgram.html#abb1555f458de94ff6c13ff522fa1ad58',1,'smooth::feedback::QuadraticProgram::l()'],['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a59fa967c2807534e8f749993b4c82d9d',1,'smooth::feedback::QuadraticProgramSparse::l()']]],
-  ['lambda_56',['lambda',['../structsmooth_1_1feedback_1_1NLPSolution.html#a71bc6ea4c8baf88fea1251e56037c3bb',1,'smooth::feedback::NLPSolution']]],
-  ['lambda_5fce_57',['lambda_ce',['../structsmooth_1_1feedback_1_1OCPSolution.html#ab25c2c688c6caa7ccefe8a1fd026f18d',1,'smooth::feedback::OCPSolution']]],
-  ['lambda_5fcr_58',['lambda_cr',['../structsmooth_1_1feedback_1_1OCPSolution.html#abbf21e23f171f407ef51b4653fa58f4c',1,'smooth::feedback::OCPSolution']]],
-  ['lambda_5fdyn_59',['lambda_dyn',['../structsmooth_1_1feedback_1_1OCPSolution.html#afbf147b7eb657711869b5e588734a1df',1,'smooth::feedback::OCPSolution']]],
-  ['lambda_5fq_60',['lambda_q',['../structsmooth_1_1feedback_1_1OCPSolution.html#ad50561b8f4d71a5bfe988d1d9b288be2',1,'smooth::feedback::OCPSolution']]],
-  ['linearizationinfo_61',['LinearizationInfo',['../structsmooth_1_1feedback_1_1LinearizationInfo.html',1,'smooth::feedback']]]
+  ['k_0',['K',['../structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aab99219680cef706f4858f4d548df1a1',1,'smooth::feedback::ASIFtoQPParams::K()'],['../structsmooth_1_1feedback_1_1MPCParams.html#aa325af0fd92edda7c9e2eee514fac947',1,'smooth::feedback::MPCParams::K()']]],
+  ['kmax_1',['Kmax',['../classsmooth_1_1feedback_1_1Mesh.html#ad1c516d32e91b3abb4c5568108a8198d',1,'smooth::feedback::Mesh']]],
+  ['kmin_2',['Kmin',['../classsmooth_1_1feedback_1_1Mesh.html#afacb5395b1cf0020a9dce5c2801ce824',1,'smooth::feedback::Mesh']]],
+  ['kron_5fidentity_3',['kron_identity',['../sparse_8hpp.html#aacbbe92799e6475e38652bca4eb0997f',1,'smooth::feedback::kron_identity(const Mat &amp;X, std::size_t n)'],['../sparse_8hpp.html#aa319e786b38415b1d8d7a459bd6e7325',1,'smooth::feedback::kron_identity(const Eigen::MatrixBase&lt; Derived &gt; &amp;X, std::size_t n)']]]
 ];

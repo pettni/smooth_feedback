@@ -1,0 +1,12 @@
+<map id="include/smooth/feedback/ocp_flatten.hpp" name="include/smooth/feedback/ocp_flatten.hpp">
+<area shape="rect" id="node1" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="158,5,325,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,169,91,196"/>
+<area shape="rect" id="node3" title=" " alt="" coords="299,95,397,121"/>
+<area shape="rect" id="node4" title=" " alt="" coords="422,95,589,121"/>
+<area shape="rect" id="node5" title=" " alt="" coords="115,169,226,196"/>
+<area shape="rect" id="node6" href="$ocp_8hpp.html" title="Optimal control problem definition." alt="" coords="208,95,275,121"/>
+<area shape="rect" id="node7" title=" " alt="" coords="250,169,395,196"/>
+<area shape="rect" id="node8" title=" " alt="" coords="420,169,492,196"/>
+<area shape="rect" id="node9" href="$traits_8hpp_source.html" title=" " alt="" coords="516,169,591,196"/>
+<area shape="rect" id="node10" title=" " alt="" coords="512,244,595,271"/>
+</map>

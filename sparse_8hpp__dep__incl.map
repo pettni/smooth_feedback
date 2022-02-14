@@ -1,0 +1,10 @@
+<map id="include/smooth/feedback/utils/sparse.hpp" name="include/smooth/feedback/utils/sparse.hpp">
+<area shape="rect" id="node1" title="Sparse matrix utilities." alt="" coords="391,5,557,47"/>
+<area shape="rect" id="node2" href="$mesh_8hpp.html" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="199,95,365,136"/>
+<area shape="rect" id="node7" href="$d2r__exp__sparse_8hpp.html" title="Sparse second derivatives of the exponential maps." alt="" coords="389,95,559,136"/>
+<area shape="rect" id="node8" href="$dr__exp__sparse_8hpp.html" title="Sparse derivatives of the exponential maps." alt="" coords="583,95,749,136"/>
+<area shape="rect" id="node3" href="$dyn__error_8hpp.html" title="Collocation dynamics constraints." alt="" coords="5,184,175,225"/>
+<area shape="rect" id="node4" href="$mesh__function_8hpp.html" title="Evaluate transform&#45;like functions and derivatives on collocation points." alt="" coords="251,184,452,225"/>
+<area shape="rect" id="node5" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="172,273,339,315"/>
+<area shape="rect" id="node6" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="384,273,551,315"/>
+</map>

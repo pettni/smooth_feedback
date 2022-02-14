@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['relinearize_5faround_5fsol_218',['relinearize_around_sol',['../classsmooth_1_1feedback_1_1MPC.html#a2e6592bd4d4a1ae44c555521ef471d3b',1,'smooth::feedback::MPC']]],
-  ['requires_219',['requires',['../asif__func_8hpp.html#a66b3122dce6e63b93eb4354b6e7a4171',1,'smooth::feedback::requires(Dof&lt; G &gt; &gt; 0 &amp;&amp;Dof&lt; U &gt; &gt; 0) struct ASIFProblem'],['../asif__func_8hpp.html#a55d35804c579e9ad9bd3d317d8515140',1,'smooth::feedback::requires(Dof&lt; G &gt; &gt; 0 &amp;&amp;Dof&lt; U &gt; &gt; 0) void asif_to_qp_fill(const ASIFProblem&lt; G']]],
-  ['reset_5fwarmstart_220',['reset_warmstart',['../classsmooth_1_1feedback_1_1MPC.html#aeeaed739d2e0724b9e78d688fdfd20e4',1,'smooth::feedback::MPC']]]
+  ['n_5fcolloc_0',['N_colloc',['../classsmooth_1_1feedback_1_1Mesh.html#a02223372c9415b11e93b56b0accc9874',1,'smooth::feedback::Mesh']]],
+  ['n_5fcolloc_5fival_1',['N_colloc_ival',['../classsmooth_1_1feedback_1_1Mesh.html#a66cecd6e36b30c6bd4ec84cb96de8873',1,'smooth::feedback::Mesh']]],
+  ['n_5fivals_2',['N_ivals',['../classsmooth_1_1feedback_1_1Mesh.html#a54c87f6f877d8bb3d1646a82713fbd36',1,'smooth::feedback::Mesh']]],
+  ['nlpsol_5fto_5focpsol_3',['nlpsol_to_ocpsol',['../ocp__to__nlp_8hpp.html#a66902c0c4064ecd9073bc04ab00cc57e',1,'smooth::feedback']]]
 ];
