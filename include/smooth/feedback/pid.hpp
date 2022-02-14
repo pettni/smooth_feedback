@@ -187,7 +187,7 @@ public:
    *
    * The trajectory is a function from time to (position, velocity, acceleration). To track a
    * time-dependent trajectory consider using \p smooth::Spline and \ref set_xdes(T, const
-   * smooth::Spline<G> &) to set the desired trajectory.
+   * smooth::Spline<K, G> &) to set the desired trajectory.
    *
    * For a constant reference target the velocity and acceleration should be constantly zero.
    *

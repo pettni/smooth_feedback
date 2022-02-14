@@ -48,32 +48,35 @@ struct time_trait;
 template<typename T>
 concept Time = requires(T t1, T t2, double t_dbl)
 {
-  // add double to time
+  /// @brief Add double to time
   {time_trait<T>::plus(t1, t_dbl)}->std::convertible_to<T>;
 
-  // subtract times and get double
+  /// @brief Subtract times and get double
   {time_trait<T>::minus(t2, t1)}->std::convertible_to<double>;
 };
 
 // clang-format on
 
 /**
- * @brief Time definition for floating-point types
+ * @brief Specilization of time trait for floating point types.
  */
 template<std::floating_point T>
 struct time_trait<T>
 {
+  // \cond
   static constexpr T plus(T t, double t_dbl) { return t + static_cast<T>(t_dbl); }
 
   static constexpr double minus(T t2, T t1) { return static_cast<double>(t2 - t1); }
+  // \endcond
 };
 
 /**
- * @brief Time definition for std::chrono::time_point types
+ * @brief Specilization of time trait for std::chrono::time_point types.
  */
 template<typename Clock, typename Duration>
 struct time_trait<std::chrono::time_point<Clock, Duration>>
 {
+  // \cond
   using T = std::chrono::time_point<Clock, Duration>;
 
   static constexpr T plus(T t, double t_dbl)
@@ -85,14 +88,16 @@ struct time_trait<std::chrono::time_point<Clock, Duration>>
   {
     return std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
   }
+  // \endcond
 };
 
 /**
- * @brief Time definition for std::chrono::duration types
+ * @brief Specilization of time trait for std::chrono::duration types.
  */
 template<typename Rep, typename Ratio>
 struct time_trait<std::chrono::duration<Rep, Ratio>>
 {
+  // \cond
   using T = std::chrono::duration<Rep, Ratio>;
 
   static constexpr T plus(T t, double t_dbl)
@@ -104,6 +109,7 @@ struct time_trait<std::chrono::duration<Rep, Ratio>>
   {
     return std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
   }
+  // \endcond
 };
 
 }  // namespace smooth::feedback

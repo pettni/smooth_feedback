@@ -1,6 +1,35 @@
+// smooth_feedback: Control theory on Lie groups
+// https://github.com/pettni/smooth_feedback
+//
+// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+//
+// Copyright (c) 2021 Petter Nilsson
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #ifndef SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_
 #define SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_
+
+/**
+ * @file
+ * @brief Sparse matrix utilities.
+ */
 
 #include <Eigen/Sparse>
 
@@ -8,6 +37,9 @@
 #include <optional>
 
 namespace smooth::feedback {
+
+template<typename T>
+concept SparseMat = (std::is_base_of_v<Eigen::SparseMatrixBase<T>, T>);
 
 /**
  * @brief Block sparse matrix construction.
@@ -22,16 +54,16 @@ namespace smooth::feedback {
  */
 inline Eigen::SparseMatrix<double> sparse_block_matrix(
   const std::initializer_list<std::initializer_list<std::optional<Eigen::SparseMatrix<double>>>> &
-    l)
+    blocks)
 {
-  const auto n_rows = l.size();
-  const auto n_cols = std::begin(l)->size();
+  const auto n_rows = blocks.size();
+  const auto n_cols = std::begin(blocks)->size();
 
   Eigen::VectorXi dims_rows = Eigen::VectorXi::Constant(n_rows, -1);
   Eigen::VectorXi dims_cols = Eigen::VectorXi::Constant(n_cols, -1);
 
   // figure block row and col dimensions
-  for (auto krow = 0u; const auto & row : l) {
+  for (auto krow = 0u; const auto & row : blocks) {
     for (auto kcol = 0u; const auto & item : row) {
       if (item.has_value()) {
         if (dims_cols(kcol) == -1) {
@@ -63,7 +95,7 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   // allocate pattern
   Eigen::Matrix<decltype(ret)::StorageIndex, -1, 1> pattern(n_col);
   pattern.setZero();
-  for (const auto & row : l) {
+  for (const auto & row : blocks) {
     for (auto kcol = 0u, col0 = 0u; const auto &item : row) {
       if (item.has_value()) {
         for (auto col = 0; col < dims_cols(kcol); ++col) {
@@ -77,11 +109,11 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
   ret.reserve(pattern);
 
   // insert values
-  for (auto krow = 0u, row0 = 0u; const auto &row : l) {
+  for (auto krow = 0u, row0 = 0u; const auto &row : blocks) {
     for (auto kcol = 0u, col0 = 0u; const auto &item : row) {
       if (item.has_value()) {
         for (auto col = 0; col < dims_cols(kcol); ++col) {
-          for (typename std::decay_t<decltype(*item)>::InnerIterator it(*item, col); it; ++it) {
+          for (Eigen::InnerIterator it(*item, col); it; ++it) {
             ret.insert(row0 + it.index(), col0 + col) = it.value();
           }
         }
@@ -104,7 +136,7 @@ inline Eigen::SparseMatrix<double> sparse_block_matrix(
 inline Eigen::SparseMatrix<double> sparse_identity(std::size_t n)
 {
   Eigen::SparseMatrix<double> ret(n, n);
-  ret.reserve(Eigen::Matrix<int, -1, 1>::Ones(n));
+  ret.reserve(Eigen::VectorXi::Ones(n));
   for (auto i = 0u; i < n; ++i) { ret.insert(i, i) = 1; }
   return ret;
 }
@@ -117,12 +149,11 @@ inline Eigen::SparseMatrix<double> sparse_identity(std::size_t n)
  *
  * The result has the same storage order as X.
  */
-template<typename Derived>
-inline auto kron_identity(const Eigen::SparseCompressedBase<Derived> & X, std::size_t n)
+template<SparseMat Mat>
+inline auto kron_identity(const Mat & X, std::size_t n)
 {
-  Eigen::
-    SparseMatrix<typename Derived::Scalar, Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor>
-      ret(X.rows() * n, X.cols() * n);
+  Eigen::SparseMatrix<typename Mat::Scalar, Mat::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor>
+    ret(X.rows() * n, X.cols() * n);
 
   Eigen::Matrix<int, -1, 1> pattern(X.outerSize() * n);
 
@@ -135,7 +166,7 @@ inline auto kron_identity(const Eigen::SparseCompressedBase<Derived> & X, std::s
   ret.reserve(pattern);
 
   for (auto i0 = 0u; i0 < X.outerSize(); ++i0) {
-    for (typename std::decay_t<decltype(X)>::InnerIterator it(X, i0); it; ++it) {
+    for (Eigen::InnerIterator it(X, i0); it; ++it) {
       for (auto diag = 0u; diag < n; ++diag) {
         ret.insert(n * it.row() + diag, n * it.col() + diag) = it.value();
       }
@@ -172,6 +203,130 @@ inline auto kron_identity(const Eigen::MatrixBase<Derived> & X, std::size_t n)
 
   ret.makeCompressed();
 
+  return ret;
+}
+
+/**
+ * @brief Write block into a sparse matrix.
+ *
+ * After this function the output variable dest is s.t.
+ *
+ * dest[row0 + r, col0 + c] += scale * source[r, c]
+ *
+ * @param dest destination
+ * @param row0 starting row for block
+ * @param col0 starting column for block
+ * @param source block values
+ * @param scale scaling parameter
+ * @param upper_only only add into upper triangular part
+ *
+ * @note Values are accessed with coeffRef().
+ */
+template<typename Source, int Options>
+  requires(std::is_base_of_v<Eigen::EigenBase<Source>, Source>)
+void block_add(
+  Eigen::SparseMatrix<double, Options> & dest,
+  Eigen::Index row0,
+  Eigen::Index col0,
+  const Source & source,
+  double scale      = 1,
+  double upper_only = false)
+{
+  for (auto c = 0; c < source.outerSize(); ++c) {
+    for (Eigen::InnerIterator it(source, c); it; ++it) {
+      if (!upper_only || row0 + it.row() <= col0 + it.col()) {
+        dest.coeffRef(row0 + it.row(), col0 + it.col()) += scale * it.value();
+      }
+    }
+  }
+}
+
+/**
+ * @brief Write identity matrix block into sparse matrix.
+ *
+ * After this function the output variable dest is s.t.
+ *
+ * dest[row0 + k, col0 + k] += scale, k = 0...n-1
+ *
+ * @param dest destination
+ * @param row0 starting row for block
+ * @param col0 starting column for block
+ * @param n size of identity matrix
+ * @param scale scaling parameter
+ *
+ * @note Values are accessed with coeffRef().
+ */
+template<int Options>
+void block_add_identity(
+  Eigen::SparseMatrix<double, Options> & dest,
+  Eigen::Index row0,
+  Eigen::Index col0,
+  Eigen::Index n,
+  double scale = 1)
+{
+  for (auto k = 0u; k < n; ++k) { dest.coeffRef(row0 + k, col0 + k) += scale; }
+}
+
+/**
+ * @brief Zero a sparse matrix without changing allocation.
+ *
+ * If mat is compressed all coefficients are set to explicit zeros.
+ *
+ * Otherwise, all nonzeros are removed but memory is not freed.
+ */
+template<typename Scalar, int Options>
+void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
+{
+  if (mat.isCompressed()) {
+    mat.coeffs().setZero();
+  } else {
+    mat.setZero();
+  }
+}
+
+/**
+ * @brief Count number of explicit zeros in sparse matrix.
+ *
+ * @param mat sparse matrix
+ */
+template<typename Mat>
+  requires(std::is_base_of_v<Eigen::EigenBase<Mat>, Mat>)
+uint64_t count_explicit_zeros(const Mat & mat)
+{
+  uint64_t ret = 0;
+  for (auto c = 0; c < mat.outerSize(); ++c) {
+    for (Eigen::InnerIterator it(mat, c); it; ++it) {
+      if (it.value() == 0) { ++ret; }
+    }
+  }
+  return ret;
+}
+
+/**
+ * @brief Mark explicit zeros in sparse matrix.
+ *
+ * @param mat sparse matrix
+ *
+ * Returns a matrix that has values as follows:
+ *  - 0 for implicit zeros
+ *  - 1 for non-zeros
+ *  - 9 for explicit zeros
+ */
+template<typename Mat>
+  requires(std::is_base_of_v<Eigen::EigenBase<Mat>, Mat>)
+Eigen::MatrixX<typename Mat::Scalar> mark_explicit_zeros(const Mat & mat)
+{
+  Eigen::MatrixX<typename Mat::Scalar> ret;
+  ret.setConstant(mat.rows(), mat.cols(), 0);
+  for (auto c = 0; c < mat.outerSize(); ++c) {
+    for (Eigen::InnerIterator it(mat, c); it; ++it) {
+      if (it.value() == 0) {
+        ret(it.row(), it.col()) = 9;
+      } else {
+        ret(it.row(), it.col()) = 1;
+      }
+    }
+  }
   return ret;
 }
 

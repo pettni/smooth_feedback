@@ -3,7 +3,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2021 Petter Nilsson, John B. Mains
+// Copyright (c) 2021 Petter Nilsson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,11 @@
 #ifndef SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
 #define SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
 
+/**
+ * @file
+ * @brief Solve nonlinear programs with Ipopt.
+ */
+
 #define HAVE_CSTDDEF
 #include <IpIpoptApplication.hpp>
 #include <IpIpoptData.hpp>
@@ -36,18 +41,28 @@
 
 namespace smooth::feedback {
 
+/**
+ * @brief Ipopt interface to solve NLPs
+ *
+ * @see NLP
+ */
+template<NLP Problem>
 class IpoptNLP : public Ipopt::TNLP
 {
 public:
   /**
    * @brief Ipopt wrapper for NLP (rvlaue version).
    */
-  inline IpoptNLP(NLP && nlp) : nlp_(std::move(nlp)) {}
+  inline IpoptNLP(Problem && nlp, bool use_hessian = false)
+      : nlp_(std::move(nlp)), use_hessian_(use_hessian)
+  {}
 
   /**
    * @brief Ipopt wrapper for NLP (lvalue version).
    */
-  inline IpoptNLP(const NLP & nlp) : nlp_(nlp) {}
+  inline IpoptNLP(const Problem & nlp, bool use_hessian = false)
+      : nlp_(nlp), use_hessian_(use_hessian)
+  {}
 
   /**
    * @brief Access solution.
@@ -64,13 +79,24 @@ public:
     Ipopt::Index & nnz_h_lag,
     IndexStyleEnum & index_style) override
   {
-    n = nlp_.n;
-    m = nlp_.m;
+    n = nlp_.n();
+    m = nlp_.m();
 
     const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
+    nnz_jac_g    = J.nonZeros();
 
-    nnz_jac_g   = J.nonZeros();
-    nnz_h_lag   = 0;              // not used
+    nnz_h_lag = 0;  // default
+    if constexpr (HessianNLP<Problem>) {
+      if (use_hessian_) {
+        H_ = nlp_.d2f_dx2(Eigen::VectorXd::Zero(n));
+        H_ += nlp_.d2g_dx2(Eigen::VectorXd::Zero(n), Eigen::VectorXd::Zero(m));
+        H_.makeCompressed();
+        nnz_h_lag = H_.nonZeros();
+      }
+    } else {
+      assert(use_hessian_ == false);
+    }
+
     index_style = TNLP::C_STYLE;  // zero-based
 
     return true;
@@ -87,10 +113,10 @@ public:
     Ipopt::Number * g_l,
     Ipopt::Number * g_u) override
   {
-    Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl.cwiseMax(Eigen::VectorXd::Constant(n, -2e19));
-    Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu.cwiseMin(Eigen::VectorXd::Constant(n, 2e19));
-    Eigen::Map<Eigen::VectorXd>(g_l, m) = nlp_.gl.cwiseMax(Eigen::VectorXd::Constant(m, -2e19));
-    Eigen::Map<Eigen::VectorXd>(g_u, m) = nlp_.gu.cwiseMin(Eigen::VectorXd::Constant(m, 2e19));
+    Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl().cwiseMax(Eigen::VectorXd::Constant(n, -2e19));
+    Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu().cwiseMin(Eigen::VectorXd::Constant(n, 2e19));
+    Eigen::Map<Eigen::VectorXd>(g_l, m) = nlp_.gl().cwiseMax(Eigen::VectorXd::Constant(m, -2e19));
+    Eigen::Map<Eigen::VectorXd>(g_u, m) = nlp_.gu().cwiseMin(Eigen::VectorXd::Constant(m, 2e19));
 
     return true;
   }
@@ -122,7 +148,7 @@ public:
   }
 
   /**
-   * @brief IPOPT objective overload
+   * @brief IPOPT method to define objective
    */
   inline bool eval_f(
     Ipopt::Index n,
@@ -135,7 +161,7 @@ public:
   }
 
   /**
-   * @brief IPOPT method to define initial guess
+   * @brief IPOPT method to define gradient of objective
    */
   inline bool eval_grad_f(
     Ipopt::Index n,
@@ -143,13 +169,13 @@ public:
     [[maybe_unused]] bool new_x,
     Ipopt::Number * grad_f) override
   {
-    Eigen::Map<Eigen::RowVectorXd>(grad_f, n) =
-      Eigen::MatrixXd(nlp_.df_dx(Eigen::Map<const Eigen::VectorXd>(x, n)));
+    const auto & df_dx = nlp_.df_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
+    for (auto i = 0; i < n; ++i) { grad_f[i] = df_dx.coeff(0, i); }
     return true;
   }
 
   /**
-   * @brief IPOPT method to define initial guess
+   * @brief IPOPT method to define constraint function
    */
   inline bool eval_g(
     Ipopt::Index n,
@@ -163,7 +189,7 @@ public:
   }
 
   /**
-   * @brief IPOPT method to define initial guess
+   * @brief IPOPT method to define jacobian of constraint function
    */
   inline bool eval_jac_g(
     Ipopt::Index n,
@@ -176,25 +202,70 @@ public:
     Ipopt::Number * values) override
   {
     if (values == NULL) {
-      const auto J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
+      const auto & J = nlp_.dg_dx(Eigen::VectorXd::Zero(n));
       assert(nele_jac == J.nonZeros());
 
-      for (auto cntr = 0u, col = 0u; col < J.cols(); ++col) {
-        for (typename decltype(J)::InnerIterator it(J, col); it; ++it) {
-          iRow[cntr]   = it.index();
-          jCol[cntr++] = col;
+      for (auto cntr = 0u, od = 0u; od < J.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(J, od); it; ++it) {
+          iRow[cntr]   = it.row();
+          jCol[cntr++] = it.col();
         }
       }
     } else {
-      const auto J = nlp_.dg_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
+      const auto & J = nlp_.dg_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
       assert(nele_jac == J.nonZeros());
 
-      for (auto cntr = 0u, col = 0u; col < J.cols(); ++col) {
-        for (typename decltype(J)::InnerIterator it(J, col); it; ++it) {
-          values[cntr++] = it.value();
-        }
+      for (auto cntr = 0u, od = 0u; od < J.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(J, od); it; ++it) { values[cntr++] = it.value(); }
       }
     }
+    return true;
+  }
+
+  /**
+   * @brief IPOPT method to define problem Hessian
+   */
+  inline bool eval_h(
+    Ipopt::Index n,
+    const Ipopt::Number * x,
+    [[maybe_unused]] bool new_x,
+    Ipopt::Number sigma,
+    Ipopt::Index m,
+    const Ipopt::Number * lambda,
+    [[maybe_unused]] bool new_lambda,
+    [[maybe_unused]] Ipopt::Index nele_hess,
+    Ipopt::Index * iRow,
+    Ipopt::Index * jCol,
+    Ipopt::Number * values) override
+  {
+    assert(use_hessian_);
+    assert(HessianNLP<Problem>);
+    assert(H_.isCompressed());
+    assert(H_.nonZeros() == nele_hess);
+
+    H_.coeffs().setZero();
+
+    if (values == NULL) {
+      for (auto cntr = 0u, od = 0u; od < H_.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(H_, od); it; ++it) {
+          // transpose: H upper triangular but ipopt expects lower-triangular
+          iRow[cntr]   = it.col();
+          jCol[cntr++] = it.row();
+        }
+      }
+    } else {
+      Eigen::Map<const Eigen::VectorXd> xvar(x, n);
+      Eigen::Map<const Eigen::VectorXd> lvar(lambda, m);
+
+      H_ += nlp_.d2f_dx2(xvar);
+      H_ *= sigma;
+      H_ += nlp_.d2g_dx2(xvar, lvar);
+
+      for (auto cntr = 0u, od = 0u; od < H_.outerSize(); ++od) {
+        for (Eigen::InnerIterator it(H_, od); it; ++it) { values[cntr++] = it.value(); }
+      }
+    }
+
     return true;
   }
 
@@ -249,8 +320,10 @@ public:
   }
 
 private:
-  NLP nlp_;
+  Problem nlp_;
+  bool use_hessian_;
   NLPSolution sol_;
+  Eigen::SparseMatrix<double> H_;
 };
 
 /**
@@ -265,18 +338,24 @@ private:
  * @see https://coin-or.github.io/Ipopt/OPTIONS.html for a list of available options
  */
 inline NLPSolution solve_nlp_ipopt(
-  const NLP & nlp,
+  NLP auto && nlp,
   std::optional<NLPSolution> warmstart                         = {},
   std::vector<std::pair<std::string, int>> opts_integer        = {},
   std::vector<std::pair<std::string, std::string>> opts_string = {},
   std::vector<std::pair<std::string, double>> opts_numeric     = {})
 {
-  Ipopt::SmartPtr<IpoptNLP> ipopt_nlp          = new IpoptNLP(nlp);
-  Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
+  using nlp_t      = std::decay_t<decltype(nlp)>;
+  bool use_hessian = false;
+  const auto n     = nlp.n();
 
-  for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
-  for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }
-  for (auto [opt, val] : opts_numeric) { app->Options()->SetNumericValue(opt, val); }
+  auto it = std::find_if(opts_string.begin(), opts_string.end(), [](const auto & p) {
+    return p.first == "hessian_approximation";
+  });
+  if (it != opts_string.end() && it->second == "exact") { use_hessian = true; }
+
+  Ipopt::SmartPtr<IpoptNLP<nlp_t>> ipopt_nlp =
+    new IpoptNLP<nlp_t>(std::forward<decltype(nlp)>(nlp), use_hessian);
+  Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
   // silence welcome message
   app->Options()->SetStringValue("sb", "yes");
@@ -288,8 +367,13 @@ inline NLPSolution solve_nlp_ipopt(
   } else {
     // initial guess not given, set to zero
     app->Options()->SetStringValue("warm_start_init_point", "no");
-    ipopt_nlp->sol().x.setZero(nlp.n);
+    ipopt_nlp->sol().x.setZero(n);
   }
+
+  // override with user-provided options
+  for (auto [opt, val] : opts_integer) { app->Options()->SetIntegerValue(opt, val); }
+  for (auto [opt, val] : opts_string) { app->Options()->SetStringValue(opt, val); }
+  for (auto [opt, val] : opts_numeric) { app->Options()->SetNumericValue(opt, val); }
 
   app->Initialize();
   app->OptimizeTNLP(ipopt_nlp);

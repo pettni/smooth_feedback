@@ -1,9 +1,9 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
+// smooth: Lie Theory for Robotics
+// https://github.com/pettni/smooth
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2021 Petter Nilsson, John B. Mains
+// Copyright (c) 2021 Petter Nilsson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,39 +23,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BENCHMARK__OSQP_BENCH_HPP_
-#define BENCHMARK__OSQP_BENCH_HPP_
+#ifndef COMMON_HPP_
+#define COMMON_HPP_
 
-#include <osqp/osqp.h>
-#include <smooth/feedback/compat/osqp.hpp>
+#include <ranges>
+#include <vector>
 
-#include "bench_types.hpp"
-
-template<typename Problem>
-struct OsqpWrapper
-{
-  OsqpWrapper(const Problem & pbm, const smooth::feedback::QPSolverParams & prm)
-      : qp_(pbm), prm_(prm)
-  {}
-
-  BenchResult operator()() const
-  {
-    auto t0  = std::chrono::high_resolution_clock::now();
-    auto sol = smooth::feedback::solve_qp_osqp(qp_, prm_);
-    auto t1  = std::chrono::high_resolution_clock::now();
-
-    return {
-      .status    = sol.code,
-      .dt        = t1 - t0,
-      .iter      = sol.iter,
-      .solution  = sol.primal,
-      .objective = (qp_.P.template selfadjointView<Eigen::Upper>() * (0.5 * sol.primal) + qp_.q)
-                     .dot(sol.primal),
-    };
-  }
-
-  Problem qp_;
-  smooth::feedback::QPSolverParams prm_;
+/// @brief Range to std::vector
+const auto r2v = [](std::ranges::range auto && r) {
+  std::vector<std::ranges::range_value_t<decltype(r)>> ret;
+  for (auto x : r) { ret.push_back(x); }
+  return ret;
 };
 
-#endif  // BENCHMARK__OSQP_BENCH_HPP_
+#endif  //  COMMON_HPP_

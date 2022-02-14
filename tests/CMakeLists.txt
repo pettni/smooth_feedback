@@ -7,6 +7,11 @@ configure_file(
 )
 
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+add_executable(test_ocp_to_qp test_ocp_to_qp.cpp)
+target_link_libraries(test_ocp_to_qp PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_ocp_to_qp)
+
+add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 add_executable(test_static test_static.cpp)
 target_link_libraries(test_static PRIVATE feedback GTest::Main)
@@ -38,17 +43,40 @@ add_executable(test_pid test_pid.cpp)
 target_link_libraries(test_pid PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_pid)
 
-add_executable(test_collocation test_collocation.cpp)
-target_link_libraries(test_collocation PRIVATE feedback GTest::Main)
-gtest_discover_tests(test_collocation)
+add_executable(test_collocation_mesh test_collocation_mesh.cpp)
+target_link_libraries(test_collocation_mesh PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_collocation_mesh)
+
+add_executable(test_collocation_mesh_function test_collocation_mesh_function.cpp)
+target_link_libraries(test_collocation_mesh_function PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_collocation_mesh_function)
+
+add_executable(test_collocation_dyn_error test_collocation_dyn_error.cpp)
+target_link_libraries(test_collocation_dyn_error PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_collocation_dyn_error)
 
 add_executable(test_utils_sparse test_utils_sparse.cpp)
 target_link_libraries(test_utils_sparse PRIVATE feedback GTest::Main)
 gtest_discover_tests(test_utils_sparse)
 
-add_executable(test_ocp test_ocp.cpp)
-target_link_libraries(test_ocp PRIVATE feedback GTest::Main)
-gtest_discover_tests(test_ocp)
+add_executable(test_utils_drexp_sparse test_utils_drexp_sparse.cpp)
+target_link_libraries(test_utils_drexp_sparse PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_utils_drexp_sparse)
+
+add_executable(test_utils_d2rexp_sparse test_utils_d2rexp_sparse.cpp)
+target_link_libraries(test_utils_d2rexp_sparse PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_utils_d2rexp_sparse)
+
+add_executable(test_ocp_to_nlp test_ocp_to_nlp.cpp)
+target_link_libraries(test_ocp_to_nlp PRIVATE feedback GTest::Main)
+gtest_discover_tests(test_ocp_to_nlp)
+
+find_package(autodiff 0.6 QUIET)
+if (autodiff_FOUND)
+  add_executable(test_ocp_flatten test_ocp_flatten.cpp)
+  target_link_libraries(test_ocp_flatten PRIVATE feedback GTest::Main autodiff::autodiff)
+  gtest_discover_tests(test_ocp_flatten)
+endif()
 
 pkg_check_modules(IPOPT ipopt QUIET)
 if (${IPOPT_FOUND})

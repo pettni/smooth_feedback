@@ -243,7 +243,7 @@ void asif_to_qp_fill(
  * This function encodes the problem as a QuadraticProgram that solves
  * \f[
  *  \begin{cases}
- *   \min_{\mu}  & \left\| u - u_{des} \right\|^2 \\
+ *   \min_{\mu}  & \left\| \mu \right\|^2 \\
  *   \text{s.t.} & \text{constraint above holds for } u = u_{des} + \mu
  *   \end{cases}
  * \f]

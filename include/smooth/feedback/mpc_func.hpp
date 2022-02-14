@@ -32,11 +32,11 @@
  */
 
 #include <Eigen/Core>
+#include <smooth/diff.hpp>
+#include <smooth/lie_group.hpp>
 
 #include <cassert>
 #include <chrono>
-#include <smooth/diff.hpp>
-#include <smooth/lie_group.hpp>
 
 #include "common.hpp"
 #include "qp.hpp"

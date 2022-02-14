@@ -141,3 +141,25 @@ TEST(Utils, KronRowmajor)
   auto res2 = smooth::feedback::kron_identity(s.transpose(), 3);
   ASSERT_TRUE(res2.isApprox(res1.transpose()));
 }
+
+TEST(Utils, BlockCopy)
+{
+  const Eigen::MatrixXd source1 = Eigen::MatrixXd::Random(5, 10);
+
+  Eigen::MatrixXd source2(5, 10);
+  source2.setRandom();
+  const Eigen::SparseMatrix<double> source2_sp = source2.sparseView();
+
+  Eigen::SparseMatrix<double> dest(10, 10);
+
+  smooth::feedback::block_add(dest, 0, 0, source1.leftCols(5));
+  smooth::feedback::block_add(dest, 5, 5, source2_sp.rightCols(5));
+  smooth::feedback::block_add(dest, 0, 5, source2_sp.rightCols(5).transpose());
+
+  Eigen::MatrixXd dest_d(dest);
+
+  ASSERT_TRUE(dest_d.topLeftCorner(5, 5).isApprox(source1.leftCols(5)));
+  ASSERT_TRUE(dest_d.topRightCorner(5, 5).isApprox(source2.rightCols(5).transpose()));
+  ASSERT_TRUE(dest_d.bottomRightCorner(5, 5).isApprox(source2.rightCols(5)));
+  ASSERT_TRUE(dest_d.bottomLeftCorner(5, 5).isApprox(Eigen::MatrixXd::Zero(5, 5)));
+}

@@ -7,10 +7,9 @@
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// in the Software without restriction, including without limitation the rights to use, copy,
+// modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the following conditions:
 //
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
@@ -23,94 +22,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <Eigen/Core>
-#include <smooth/bundle.hpp>
+/**
+ * @file Solve optimal control problem on SE(2) as a nonlinear program.
+ */
+
+#include <smooth/feedback/collocation/dyn_error.hpp>
 #include <smooth/feedback/compat/ipopt.hpp>
-#include <smooth/feedback/ocp.hpp>
-#include <smooth/se2.hpp>
+#include <smooth/feedback/ocp_flatten.hpp>
+#include <smooth/feedback/ocp_to_nlp.hpp>
 
 #include <chrono>
 #include <iostream>
 
+#include "ocp_se2.hpp"
+
 #ifdef ENABLE_PLOTTING
+#include "common.hpp"
 #include <matplot/matplot.h>
 #endif
 
-template<typename T>
-using X = smooth::Bundle<smooth::SE2<T>, Eigen::Vector3<T>>;
-
-template<typename T>
-using U = Eigen::Vector2<T>;
-
-template<typename T>
-using Vec = Eigen::VectorX<T>;
-
-/// @brief Objective function
-const auto obj = []<typename T>(T tf, const X<T> &, const X<T> &, const Vec<T> & q) -> T {
-  return tf + q.x();
-};
-
-/// @brief Dynamics
-const auto f = []<typename T>(T, const X<T> & x, const U<T> & u) -> smooth::Tangent<X<T>> {
-  smooth::Tangent<X<T>> ret;
-  ret.segment(0, 3) = x.template part<1>();
-  ret(3)            = u.x();
-  ret(4)            = T(0);
-  ret(5)            = u.y();
-  return ret;
-};
-
-/// @brief Integrals
-const auto g = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T> {
-  return Vec<T>{{u.squaredNorm()}};
-};
-
-/// @brief Running constraints
-const auto cr = []<typename T>(T, const X<T> &, const U<T> & u) -> Vec<T> { return u; };
-
-/// @brief End constraints
-const auto ce = []<typename T>(T tf, const X<T> & x0, const X<T> & xf, const Vec<T> &) -> Vec<T> {
-  const smooth::SE2<T> target(smooth::SO2<T>(-0.5), Eigen::Vector2<T>{2, 0.5});
-  Vec<T> ret(10);
-  ret << tf, x0.template part<0>().log(), x0.template part<1>(), xf.template part<0>() - target;
-  return ret;
-};
-
-/// @brief Range to std::vector
-const auto r2v = []<std::ranges::range R>(const R & r) {
-  return std::vector(std::ranges::begin(r), std::ranges::end(r));
-};
-
 int main()
 {
-  // define optimal control problem
-  smooth::feedback::
-    OCP<X<double>, U<double>, decltype(obj), decltype(f), decltype(g), decltype(cr), decltype(ce)>
-      ocp{
-        .nx    = smooth::Dof<X<double>>,
-        .nu    = smooth::Dof<U<double>>,
-        .nq    = 1,
-        .ncr   = 2,
-        .nce   = 10,
-        .theta = obj,
-        .f     = f,
-        .g     = g,
-        .cr    = cr,
-        .crl   = Vec<double>{{-1, -1}},
-        .cru   = Vec<double>{{1, 1}},
-        .ce    = ce,
-        .cel   = Vec<double>{{3, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-        .ceu   = Vec<double>{{15, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-      };
+  // std::cout << "TESTING LIE DERIVATIVES\n";
+  // smooth::feedback::test_ocp_derivatives(ocp_se2);
 
   const auto xl = []<typename T>(T) -> X<T> { return X<T>::Identity(); };
   const auto ul = []<typename T>(T) -> U<T> { return Eigen::Vector2<T>::Constant(0.01); };
 
-  assert(smooth::feedback::check_ocp(ocp));
-
-  const auto flatocp = smooth::feedback::flatten_ocp(ocp, xl, ul);
-
-  assert(smooth::feedback::check_ocp(flatocp));
+  auto flatocp = smooth::feedback::flatten_ocp(ocp_se2, xl, ul);
+  // std::cout << "TESTING FLAT DERIVATIVES\n";
+  // smooth::feedback::test_ocp_derivatives(flatocp);
 
   // target optimality
   const double target_err = 1e-6;
@@ -119,7 +60,7 @@ int main()
   smooth::feedback::Mesh<5, 10> mesh;
 
   // declare solution variable
-  std::vector<smooth::feedback::OCPSolution<X<double>, U<double>>> sols;
+  std::vector<typename decltype(ocp_se2)::Solution> sols;
   std::optional<smooth::feedback::NLPSolution> nlpsol;
 
   const auto t0 = std::chrono::high_resolution_clock::now();
@@ -130,39 +71,42 @@ int main()
               << " collocation pts" << std::endl;
 
     // transcribe optimal control problem to nonlinear programming problem
-    const auto nlp = smooth::feedback::ocp_to_nlp(flatocp, mesh);
+    auto nlp = smooth::feedback::ocp_to_nlp<smooth::diff::Type::Analytic>(flatocp, mesh);
 
     // solve nonlinear programming problem
     std::cout << "solving..." << std::endl;
     nlpsol = smooth::feedback::solve_nlp_ipopt(
-      nlp,
+      std::move(nlp),
       nlpsol,
       {
         {"print_level", 5},
       },
       {
-        {"linear_solver", "mumps"}, {"hessian_approximation", "limited-memory"},
+        {"linear_solver", "mumps"},
+        {"hessian_approximation", "limited-memory"},
         // {"derivative_test", "first-order"},
-        // {"print_timing_statistics", "yes"},
+        {"print_timing_statistics", "yes"},
       },
       {
         {"tol", 1e-6},
       });
 
-    // convert solution of nlp insto solution of ocp
+    // convert solution of nlp insto solution of ocp_se2
     auto flatsol = smooth::feedback::nlpsol_to_ocpsol(flatocp, mesh, nlpsol.value());
 
     // store unflattened solution
     sols.push_back(smooth::feedback::unflatten_ocpsol<X<double>, U<double>>(flatsol, xl, ul));
 
     // calculate errors
+    mesh.increase_degrees();
     auto errs = smooth::feedback::mesh_dyn_error(
-      flatocp.nx, flatocp.f, mesh, flatsol.t0, flatsol.tf, flatsol.x, flatsol.u);
+      flatocp.f, mesh, flatsol.t0, flatsol.tf, flatsol.x, flatsol.u);
+    mesh.decrease_degrees();
 
     std::cout << "interval errors " << errs.transpose() << std::endl;
 
     if (errs.maxCoeff() > target_err) {
-      smooth::feedback::mesh_refine(mesh, errs, 0.1 * target_err);
+      mesh.refine_errors(errs, 0.1 * target_err);
       nlpsol = smooth::feedback::ocpsol_to_nlpsol(flatocp, mesh, flatsol);
     } else {
       break;
@@ -177,10 +121,9 @@ int main()
 #ifdef ENABLE_PLOTTING
   using namespace matplot;
 
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
-
-  const auto tt       = linspace(0., sols.back().tf, 500);
-  const auto tt_nodes = r2v(sols.back().tf * nodes);
+  const auto tt = linspace(0., sols.back().tf, 500);
+  const auto tt_nodes =
+    r2v(mesh.all_nodes() | std::views::transform([&](double d) { return d * sols.back().tf; }));
 
   figure();
   hold(on);
@@ -192,27 +135,26 @@ int main()
       "-r")
       ->line_width(lw);
   }
-  legend(std::vector<std::string>{"path"});
-
-  figure();
-  hold(on);
-  for (auto it = 0u; const auto & sol : sols) {
-    int lw = it++ + 1 < sols.size() ? 1 : 2;
-    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().x(); }), "-r")->line_width(lw);
-    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().y(); }), "-g")->line_width(lw);
-    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().z(); }), "-b")->line_width(lw);
-  }
-  legend({"vx", "vy", "wz"});
+  matplot::legend(std::vector<std::string>{"path"});
 
   figure();
   hold(on);
   plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
   for (auto it = 0u; const auto & sol : sols) {
     int lw = it++ + 1 < sols.size() ? 1 : 2;
+    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().x(); }), "-r")->line_width(lw);
+    plot(tt, transform(tt, [&](double t) { return sol.x(t).part<1>().y(); }), "-b")->line_width(lw);
+  }
+  matplot::legend({"nodes", "vx", "wz"});
+
+  figure();
+  hold(on);
+  for (auto it = 0u; const auto & sol : sols) {
+    int lw = it++ + 1 < sols.size() ? 1 : 2;
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(lw);
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(lw);
   }
-  legend({"nodes", "lambda_x", "lambda_y"});
+  matplot::legend({"lambda_x", "lambda_y"});
 
   figure();
   hold(on);
@@ -220,7 +162,7 @@ int main()
     int lw = it++ + 1 < sols.size() ? 1 : 2;
     plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(lw);
   }
-  legend(std::vector<std::string>{"lambda_{cr}"});
+  matplot::legend(std::vector<std::string>{"lambda_{cr}"});
 
   figure();
   hold(on);
@@ -229,7 +171,7 @@ int main()
     plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-r")->line_width(lw);
     plot(tt, transform(tt, [&sol](double t) { return sol.u(t).y(); }), "-b")->line_width(lw);
   }
-  legend({"throttle", "steering"});
+  matplot::legend({"throttle", "steering"});
 
   show();
 #endif

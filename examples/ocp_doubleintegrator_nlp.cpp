@@ -23,73 +23,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/**
+ * @file Solve a double integrator optimal control problem as a nonlinear program.
+ */
+
 #include <Eigen/Core>
+#include <smooth/feedback/collocation/dyn_error.hpp>
 #include <smooth/feedback/compat/ipopt.hpp>
-#include <smooth/feedback/ocp.hpp>
+#include <smooth/feedback/ocp_to_nlp.hpp>
 
 #include <chrono>
 #include <iostream>
 
+#include "ocp_doubleintegrator.hpp"
+
 #ifdef ENABLE_PLOTTING
+#include "common.hpp"
 #include <matplot/matplot.h>
 #endif
 
-template<typename T>
-using Vec = Eigen::VectorX<T>;
-
-/// @brief Objective function
-const auto obj = []<typename T>(T tf, const Vec<T> &, const Vec<T> &, const Vec<T> & q) -> T {
-  return tf + q.x();
-};
-
-/// @brief Dynamics
-const auto f = []<typename T>(T, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
-  return Vec<T>{{x.y(), u.x()}};
-};
-
-/// @brief Integrals
-const auto g = []<typename T>(T, const Vec<T> & x, const Vec<T> & u) -> Vec<T> {
-  return Vec<T>{{x.squaredNorm() + u.squaredNorm()}};
-};
-
-/// @brief Running constraints
-const auto cr = []<typename T>(T, const Vec<T> &, const Vec<T> & u) -> Vec<T> {
-  return Vec<T>{{u.x()}};
-};
-
-/// @brief End constraints
-const auto ce =
-  []<typename T>(T tf, const Vec<T> & x0, const Vec<T> & xf, const Vec<T> &) -> Vec<T> {
-  Vec<T> ret(5);
-  ret << tf, x0, xf;
-  return ret;
-};
-
-/// @brief Range to std::vector
-const auto r2v = []<std::ranges::range R>(const R & r) {
-  return std::vector(std::ranges::begin(r), std::ranges::end(r));
-};
-
 int main()
 {
-  // define optimal control problem
-  smooth::feedback::FlatOCP<decltype(obj), decltype(f), decltype(g), decltype(cr), decltype(ce)>
-    ocp{
-      .nx    = 2,
-      .nu    = 1,
-      .nq    = 1,
-      .ncr   = 1,
-      .nce   = 5,
-      .theta = obj,
-      .f     = f,
-      .g     = g,
-      .cr    = cr,
-      .crl   = Vec<double>{{-1}},
-      .cru   = Vec<double>{{1}},
-      .ce    = ce,
-      .cel   = Vec<double>{{3, 1, 1, 0.1, 0}},
-      .ceu   = Vec<double>{{15, 1, 1, 0.1, 0}},
-    };
+  smooth::feedback::test_ocp_derivatives(ocp_di);
 
   // target optimality
   double target_err = 1e-6;
@@ -98,7 +53,7 @@ int main()
   smooth::feedback::Mesh<5, 10> mesh;
 
   // declare solution variable
-  std::vector<smooth::feedback::FlatOCPSolution> sols;
+  std::vector<decltype(ocp_di)::Solution> sols;
   std::optional<smooth::feedback::NLPSolution> nlpsol;
 
   const auto t0 = std::chrono::high_resolution_clock::now();
@@ -109,7 +64,7 @@ int main()
               << " collocation pts" << std::endl;
 
     // transcribe optimal control problem to nonlinear programming problem
-    const auto nlp = smooth::feedback::ocp_to_nlp(ocp, mesh);
+    const auto nlp = smooth::feedback::ocp_to_nlp<smooth::diff::Type::Analytic>(ocp_di, mesh);
 
     // solve nonlinear programming problem
     std::cout << "solving..." << std::endl;
@@ -120,26 +75,30 @@ int main()
         {"print_level", 5},
       },
       {
-        {"linear_solver", "mumps"}, {"hessian_approximation", "limited-memory"},
+        {"linear_solver", "mumps"},
+        {"hessian_approximation", "exact"},
         // {"derivative_test", "first-order"},
-        // {"print_timing_statistics", "yes"},
+        // {"derivative_test_print_all", "yes"},
+        {"print_timing_statistics", "yes"},
       },
       {
         {"tol", 1e-6},
       });
 
-    // convert solution of nlp insto solution of ocp
-    auto sol = smooth::feedback::nlpsol_to_ocpsol(ocp, mesh, nlpsol.value());
+    // convert solution of nlp insto solution of ocp_di
+    auto sol = smooth::feedback::nlpsol_to_ocpsol(ocp_di, mesh, nlpsol.value());
     sols.push_back(sol);
 
     // calculate errors
-    auto errs = smooth::feedback::mesh_dyn_error(ocp.nx, f, mesh, sol.t0, sol.tf, sol.x, sol.u);
+    mesh.increase_degrees();
+    auto errs = smooth::feedback::mesh_dyn_error(ocp_di.f, mesh, sol.t0, sol.tf, sol.x, sol.u);
+    mesh.decrease_degrees();
 
     std::cout << "interval errors " << errs.transpose() << std::endl;
 
     if (errs.maxCoeff() > target_err) {
-      smooth::feedback::mesh_refine(mesh, errs, 0.1 * target_err);
-      nlpsol = smooth::feedback::ocpsol_to_nlpsol(ocp, mesh, sol);
+      mesh.refine_errors(errs, 0.1 * target_err);
+      nlpsol = smooth::feedback::ocpsol_to_nlpsol(ocp_di, mesh, sol);
     } else {
       break;
     }
@@ -153,20 +112,21 @@ int main()
 #ifdef ENABLE_PLOTTING
   using namespace matplot;
 
-  const auto [nodes, weights] = mesh.all_nodes_and_weights();
-
-  const auto tt       = linspace(0., sols.back().tf, 500);
-  const auto tt_nodes = r2v(sols.back().tf * nodes);
+  const auto tt = linspace(0., sols.back().tf, 500);
+  const auto tt_nodes =
+    r2v(mesh.all_nodes() | std::views::transform([&](double d) { return d * sols.back().tf; }));
+  const auto tt_weights = r2v(mesh.all_weights());
 
   figure();
   hold(on);
   plot(tt_nodes, transform(tt_nodes, [](auto) { return 0; }), "xk")->marker_size(10);
+  plot(tt_nodes, tt_weights, "or")->marker_size(5);
   for (auto it = 0u; const auto & sol : sols) {
     int lw = it++ + 1 < sols.size() ? 1 : 2;
     plot(tt, transform(tt, [&](double t) { return sol.x(t).x(); }), "-r")->line_width(lw);
     plot(tt, transform(tt, [&](double t) { return sol.x(t).y(); }), "-b")->line_width(lw);
   }
-  legend({"nodes", "pos", "vel"});
+  matplot::legend({"nodes", "weights", "pos", "vel"});
 
   figure();
   hold(on);
@@ -175,7 +135,7 @@ int main()
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).x(); }), "-r")->line_width(lw);
     plot(tt, transform(tt, [&](double t) { return sol.lambda_dyn(t).y(); }), "-b")->line_width(lw);
   }
-  legend({"lambda_x", "lambda_y"});
+  matplot::legend({"lambda_x", "lambda_y"});
 
   figure();
   hold(on);
@@ -183,7 +143,7 @@ int main()
     int lw = it++ + 1 < sols.size() ? 1 : 2;
     plot(tt, transform(tt, [&](double t) { return sol.lambda_cr(t).x(); }), "-r")->line_width(lw);
   }
-  legend(std::vector<std::string>{"lambda_{cr}"});
+  matplot::legend(std::vector<std::string>{"lambda_{cr}"});
 
   figure();
   hold(on);
@@ -191,7 +151,7 @@ int main()
     int lw = it++ + 1 < sols.size() ? 1 : 2;
     plot(tt, transform(tt, [&sol](double t) { return sol.u(t).x(); }), "-r")->line_width(lw);
   }
-  legend(std::vector<std::string>{"input"});
+  matplot::legend(std::vector<std::string>{"input"});
 
   show();
 #endif

@@ -3,7 +3,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2021 Petter Nilsson, John B. Mains
+// Copyright (c) 2021 Petter Nilsson
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,11 +33,9 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include <smooth/diff.hpp>
 
 #include <limits>
-
-#include "collocation.hpp"
+#include <optional>
 
 namespace smooth::feedback {
 
@@ -53,48 +51,48 @@ namespace smooth::feedback {
  * for \f$ f : \mathbb{R}^n \rightarrow \mathbb{R} \f$ and
  * \f$ g : \mathbb{R}^n \rightarrow \mathbb{R}^m \f$.
  */
-struct NLP
+template<typename T>
+concept NLP = requires(
+  std::decay_t<T> & nlp,
+  const Eigen::Ref<const Eigen::VectorXd> x,
+  const Eigen::Ref<const Eigen::VectorXd> lambda)
 {
-  /// @brief Number of variables
-  std::size_t n;
+  // clang-format off
+  {nlp.n()} -> std::convertible_to<std::size_t>;
+  {nlp.m()} -> std::convertible_to<std::size_t>;
 
-  /// @brief Number of constraints
-  std::size_t m;
+  // variable bounds
+  {nlp.xl()} -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.xu()} -> std::convertible_to<Eigen::VectorXd>;
 
-  /// @brief Objective function (R^n -> R)
-  std::function<double(Eigen::VectorXd)> f;
+  // objective and its derivatives
+  {nlp.f(x)}     -> std::convertible_to<double>;
+  {nlp.df_dx(x)} -> std::convertible_to<Eigen::SparseMatrix<double>>;
 
-  /// @brief Variable bounds (R^n)
-  Eigen::VectorXd xl, xu;
-
-  /// @brief Constraint function (R^n -> R^m)
-  std::function<Eigen::VectorXd(Eigen::VectorXd)> g;
-
-  /// @brief Constaint bounds (R^m)
-  Eigen::VectorXd gl, gu;
-
-  /// @brief Jacobian of objective function (R^n -> R^{n x n})
-  std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)> df_dx;
-
-  /// @brief Jacobian of constraint function (R^n -> R^{m x n})
-  std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd)> dg_dx;
-
-  /// @brief Hessian of objective function (R^n -> R^{n x n}) [optional]
-  std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd, Eigen::VectorXd)>>
-    d2f_dx2 = std::nullopt;
-
-  /**
-   * @brief Projected Hessian of constraint function (R^m, R^n -> R^{n x n}) [optional]
-   *
-   * Should return the derivative
-   * \f[
-   *  H_g(\lambda, x) = \nabla^2_x \lambda^T g(x), \quad \lambda \in \mathbb{R}^m, x \in
-   * \mathbb{R}^n \f]
-   */
-  std::optional<std::function<Eigen::SparseMatrix<double>(Eigen::VectorXd, Eigen::VectorXd)>>
-    d2g_dx2 = std::nullopt;
+  // constraint, its bounds, and its derivatives
+  {nlp.g(x)}     -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.gl()}     -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.gu()}     -> std::convertible_to<Eigen::VectorXd>;
+  {nlp.dg_dx(x)} -> std::convertible_to<Eigen::SparseMatrix<double>>;
+  // clang-format on
 };
 
+/**
+ * @brief Nonlinear Programming Problem with Hessian information
+ */
+template<typename T>
+concept HessianNLP =
+  NLP<T> && requires(std::decay_t<T> & nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)
+{
+  // clang-format off
+  {nlp.d2f_dx2(x)}         -> std::convertible_to<Eigen::SparseMatrix<double>>;
+  {nlp.d2g_dx2(x, lambda)} -> std::convertible_to<Eigen::SparseMatrix<double>>;
+  // clang-format on
+};
+
+/**
+ * @brief Solution to a Nonlinear Programming Problem
+ */
 struct NLPSolution
 {
   /// @brief Solver status
@@ -105,7 +103,10 @@ struct NLPSolution
     MaxIterations,
     MaxTime,
     Unknown,
-  } status;
+  };
+
+  /// @brief Solver status
+  Status status;
 
   /// @brief Number of iterations
   std::size_t iter{0};
@@ -113,8 +114,10 @@ struct NLPSolution
   /// @brief Variable values
   Eigen::VectorXd x;
 
+  ///@{
   /// @brief Inequality multipliers
   Eigen::VectorXd zl, zu;
+  ///@}
 
   /// @brief Constraint multipliers
   Eigen::VectorXd lambda;
