@@ -103,7 +103,27 @@ public:
    *
    * @note Allocates heap memory.
    */
-  inline Mesh() : intervals_(1, Interval{.K = Kmin, .tau0 = 0}) {}
+  inline Mesh() : intervals_(1, Interval{.K = Kmin, .tau0 = 0.}) {}
+
+  /**
+   * @brief Create a mesh consisting of a n intervals of equal size over [0, 1].
+   *
+   * @param n number of intervals. If n==0, only a single interval is created.
+   *
+   * @note Allocates heap memory.
+   */
+  inline Mesh(const std::size_t n)
+  {
+    if (n < 2) {
+      intervals_.emplace_back(Kmin, 0.);
+    } else {
+      const double dx = 1. / static_cast<double>(n);
+      intervals_.reserve(n);
+      for (std::size_t i = 0; i < n; ++i) {
+        intervals_.emplace_back(Kmin, static_cast<double>(i) * dx);
+      }
+    }
+  }
 
   /**
    * @brief Number of intervals in mesh.
