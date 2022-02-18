@@ -109,18 +109,21 @@ public:
    * @brief Create a mesh consisting of a n intervals of equal size over [0, 1].
    *
    * @param n number of intervals. If n==0, only a single interval is created.
+   * @param k polynomial degree for all intervals
    *
    * @note Allocates heap memory.
    */
-  inline Mesh(const std::size_t n)
+  inline Mesh(const std::size_t n, const std::size_t k = Kmin)
   {
+    assert(Kmin <= k && k <= Kmax + 1);
+
     if (n < 2) {
-      intervals_.emplace_back(Kmin, 0.);
+      intervals_.emplace_back(k, 0.);
     } else {
       const double dx = 1. / static_cast<double>(n);
       intervals_.reserve(n);
       for (std::size_t i = 0; i < n; ++i) {
-        intervals_.emplace_back(Kmin, static_cast<double>(i) * dx);
+        intervals_.emplace_back(k, static_cast<double>(i) * dx);
       }
     }
   }

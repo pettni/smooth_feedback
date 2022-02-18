@@ -77,6 +77,21 @@ TEST(CollocationMesh, Basic)
   for (auto [d1, d2] : smooth::utils::zip(alln, alln | std::views::drop(1))) { ASSERT_LE(d1, d2); }
 }
 
+TEST(CollocationMesh, Constructor)
+{
+  for (std::size_t i = 0; i < 100; ++i) {
+    const auto Nexpected = std::max(i, 1UL);
+    smooth::feedback::Mesh<5, 10> m(i);
+    ASSERT_EQ(m.N_ivals(), Nexpected);
+    for (std::size_t j = 0; j < Nexpected; ++j) { ASSERT_EQ(m.N_colloc_ival(j), 5LU); }
+  }
+
+  for (std::size_t i = 5; i <= 10; ++i) {
+    smooth::feedback::Mesh<5, 10> m(10, i);
+    for (std::size_t j = 0; j < 10; ++j) { ASSERT_EQ(m.N_colloc_ival(j), i); }
+  }
+}
+
 TEST(CollocationMesh, DifferentiationIntegration)
 {
   smooth::feedback::Mesh<8, 8> m;
