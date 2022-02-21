@@ -377,17 +377,17 @@ $(function() {
 <div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span> </div>
 <div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>    <span class="keyword">const</span> <span class="keyword">auto</span> fvals = diff::dr&lt;Deriv, DT&gt;(f, wrt(ti, xi, ui));</div>
 <div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span> </div>
-<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>    <span class="keyword">const</span> <span class="keyword">auto</span> &amp; f = std::get&lt;0&gt;(fvals);</div>
-<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>    out.F.noalias() += w * (tf - t0) * f;</div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>    <span class="keyword">const</span> <span class="keyword">auto</span> &amp; fval = std::get&lt;0&gt;(fvals);</div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>    out.F.noalias() += w * (tf - t0) * fval;</div>
 <div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span> </div>
 <div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (Deriv &gt;= 1u) {</div>
 <div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>      <span class="keyword">const</span> <span class="keyword">auto</span> &amp; df = std::get&lt;1&gt;(fvals);</div>
 <div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>      <span class="comment">// t0</span></div>
 <div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out.dF, 0, 0, df.middleCols(0, 1), w * (tf - t0) * mtau);</div>
-<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out.dF, 0, 0, f, -w);</div>
+<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out.dF, 0, 0, fval, -w);</div>
 <div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>      <span class="comment">// tf</span></div>
 <div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out.dF, 0, 1, df.middleCols(0, 1), w * (tf - t0) * tau);</div>
-<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out.dF, 0, 1, f, w);</div>
+<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out.dF, 0, 1, fval, w);</div>
 <div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>      <span class="comment">// x</span></div>
 <div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out.dF, 0, 2 + i * nx, df.middleCols(1, nx), w * (tf - t0));</div>
 <div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>      <span class="comment">// u</span></div>
