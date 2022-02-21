@@ -215,8 +215,8 @@ public:
 
     std::span<const double> sp;
 
-    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
-      static constexpr auto K = Kmin + i;
+    utils::static_for<Kmax + 2 - Kmin>([&](auto ivar) {
+      static constexpr auto K = Kmin + ivar;
       if (K == k) {
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
 
@@ -263,8 +263,8 @@ public:
 
     std::span<const double> sp;
 
-    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
-      static constexpr auto K = Kmin + i;
+    utils::static_for<Kmax + 2 - Kmin>([&](auto ivar) {
+      static constexpr auto K = Kmin + ivar;
       if (K == k) {
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
 
@@ -320,8 +320,8 @@ public:
 
     Eigen::MatrixXd ret(k + 1, k);
 
-    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
-      static constexpr auto K = Kmin + i;
+    utils::static_for<Kmax + 2 - Kmin>([&](auto ivar) {
+      static constexpr auto K = Kmin + ivar;
       if (K == k) {
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
         static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
@@ -352,8 +352,8 @@ public:
 
     MatMap ret(nullptr, 0, 0);
 
-    utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
-      static constexpr auto K = Kmin + i;
+    utils::static_for<Kmax + 2 - Kmin>([&](auto ivar) {
+      static constexpr auto K = Kmin + ivar;
       if (K == k) {
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
         static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);

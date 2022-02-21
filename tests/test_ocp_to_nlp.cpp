@@ -105,10 +105,10 @@ TEST(OcpToNlp, Derivatives2)
 
   // Numerical derivatives (of base function)
   const auto [fval, df_dx_num, d2f_dx2_num] =
-    smooth::diff::dr<2>([&](const auto & x) { return nlp.f(x); }, smooth::wrt(x));
+    smooth::diff::dr<2>([&](const auto & xvar) { return nlp.f(xvar); }, smooth::wrt(x));
   const auto [gval, dg_dx_num] =
-    smooth::diff::dr<1>([&](const auto & x) { return nlp.g(x); }, smooth::wrt(x));
-  const auto g_l_fun = [&](Eigen::VectorXd x) -> double { return lambda.dot(nlp.g(x)); };
+    smooth::diff::dr<1>([&](const auto & xvar) { return nlp.g(xvar); }, smooth::wrt(x));
+  const auto g_l_fun = [&](Eigen::VectorXd xvar) -> double { return lambda.dot(nlp.g(xvar)); };
   const auto [u1_, u2_, d2g_dx2_num] = smooth::diff::dr<2>(g_l_fun, smooth::wrt(x));
 
   ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-4));

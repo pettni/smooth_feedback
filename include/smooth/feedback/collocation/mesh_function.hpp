@@ -390,17 +390,17 @@ void mesh_integrate(
 
     const auto fvals = diff::dr<Deriv, DT>(f, wrt(ti, xi, ui));
 
-    const auto & f = std::get<0>(fvals);
-    out.F.noalias() += w * (tf - t0) * f;
+    const auto & fval = std::get<0>(fvals);
+    out.F.noalias() += w * (tf - t0) * fval;
 
     if constexpr (Deriv >= 1u) {
       const auto & df = std::get<1>(fvals);
       // t0
       block_add(out.dF, 0, 0, df.middleCols(0, 1), w * (tf - t0) * mtau);
-      block_add(out.dF, 0, 0, f, -w);
+      block_add(out.dF, 0, 0, fval, -w);
       // tf
       block_add(out.dF, 0, 1, df.middleCols(0, 1), w * (tf - t0) * tau);
-      block_add(out.dF, 0, 1, f, w);
+      block_add(out.dF, 0, 1, fval, w);
       // x
       block_add(out.dF, 0, 2 + i * nx, df.middleCols(1, nx), w * (tf - t0));
       // u

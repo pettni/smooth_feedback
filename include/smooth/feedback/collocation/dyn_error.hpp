@@ -53,7 +53,7 @@ Eigen::VectorXd mesh_dyn_error(
   auto && f, const MeshType auto & m, const double t0, const double tf, auto && xfun, auto && ufun)
 {
   using smooth::utils::zip;
-  constexpr auto Nx = Dof<std::invoke_result_t<decltype(xfun), double>>;
+  static constexpr auto Nx = Dof<std::invoke_result_t<decltype(xfun), double>>;
 
   static_assert(Nx > 0, "Static size required");
 
