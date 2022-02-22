@@ -93,6 +93,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adddac765aea6873c662d7a7a9f5ebc37"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#adddac765aea6873c662d7a7a9f5ebc37">Mesh</a> ()</td></tr>
 <tr class="memdesc:adddac765aea6873c662d7a7a9f5ebc37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a mesh consisting of a single interval [0, 1].  <a href="classsmooth_1_1feedback_1_1Mesh.html#adddac765aea6873c662d7a7a9f5ebc37">More...</a><br /></td></tr>
 <tr class="separator:adddac765aea6873c662d7a7a9f5ebc37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1f16f27f80de2e5b6301fa683f19e3e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#ae1f16f27f80de2e5b6301fa683f19e3e">Mesh</a> (const std::size_t n, const std::size_t k=<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#afacb5395b1cf0020a9dce5c2801ce824">Kmin</a>)</td></tr>
+<tr class="memdesc:ae1f16f27f80de2e5b6301fa683f19e3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a mesh consisting of a n intervals of equal size over [0, 1].  <a href="classsmooth_1_1feedback_1_1Mesh.html#ae1f16f27f80de2e5b6301fa683f19e3e">More...</a><br /></td></tr>
+<tr class="separator:ae1f16f27f80de2e5b6301fa683f19e3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54c87f6f877d8bb3d1646a82713fbd36"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a54c87f6f877d8bb3d1646a82713fbd36">N_ivals</a> () const</td></tr>
 <tr class="memdesc:a54c87f6f877d8bb3d1646a82713fbd36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of intervals in mesh.  <a href="classsmooth_1_1feedback_1_1Mesh.html#a54c87f6f877d8bb3d1646a82713fbd36">More...</a><br /></td></tr>
 <tr class="separator:a54c87f6f877d8bb3d1646a82713fbd36"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -171,7 +174,7 @@ class smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</div><p >Collocation mesh of 
 <p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00085">85</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="adddac765aea6873c662d7a7a9f5ebc37" name="adddac765aea6873c662d7a7a9f5ebc37"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adddac765aea6873c662d7a7a9f5ebc37">&#9670;&nbsp;</a></span>Mesh()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adddac765aea6873c662d7a7a9f5ebc37">&#9670;&nbsp;</a></span>Mesh() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -211,6 +214,56 @@ Allocates heap memory. </dd></dl>
 
 </div>
 </div>
+<a id="ae1f16f27f80de2e5b6301fa683f19e3e" name="ae1f16f27f80de2e5b6301fa683f19e3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1f16f27f80de2e5b6301fa683f19e3e">&#9670;&nbsp;</a></span>Mesh() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classsmooth_1_1feedback_1_1Mesh.html">smooth::feedback::Mesh</a>&lt; _Kmin, _Kmax &gt;::Mesh </td>
+          <td>(</td>
+          <td class="paramtype">const std::size_t&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::size_t&#160;</td>
+          <td class="paramname"><em>k</em> = <code><a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#afacb5395b1cf0020a9dce5c2801ce824">Kmin</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a mesh consisting of a n intervals of equal size over [0, 1]. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">n</td><td>number of intervals. If n==0, only a single interval is created. </td></tr>
+    <tr><td class="paramname">k</td><td>polynomial degree for all intervals</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>Allocates heap memory. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00116">116</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a44a62bce9836389b543508b0fd776b2f" name="a44a62bce9836389b543508b0fd776b2f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a44a62bce9836389b543508b0fd776b2f">&#9670;&nbsp;</a></span>all_nodes()</h2>
@@ -242,7 +295,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <dd>
 The result is an input range </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00241">241</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00264">264</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -276,7 +329,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <dd>
 The result is an input range </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00289">289</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00312">312</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -307,7 +360,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 
 <p>Decrease the degree of all intervals by one (down to minimal degree Kmin) </p>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00421">421</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00444">444</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -378,7 +431,7 @@ template&lt;smooth::traits::RnType RetT&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00437">437</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00460">460</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -409,7 +462,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 
 <p>Increase the degree of all intervals by one (up to maximal degree Kmax + 1) </p>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00413">413</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00436">436</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -446,7 +499,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <p>, where \( y(\cdot) \in \mathbb{R}^{d \times 1} \) is a Lagrange polynomial in interval i.</p>
 <dl class="section note"><dt>Note</dt><dd>Allocates heap memory for return value. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00314">314</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00337">337</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -480,7 +533,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <p >Returns a Map D_us and a scalar alpha s.t. D = alpha * D_us</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a58c7b27261f7e9d8fb7fb498cff0dcc7" title="Interval differentiation matrix w.r.t. [0, 1] timescale.">interval_diffmat</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00346">346</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00369">369</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -512,7 +565,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 
 <p>Find interval index that contains t. </p>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00400">400</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00423">423</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -551,7 +604,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <dd>
 Performs a matrix inverse. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00391">391</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00414">414</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -584,7 +637,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <p>Interval nodes (as range of doubles). </p>
 <dl class="section note"><dt>Note</dt><dd>Includes extra point at 1, i.e. size of returned range is equal to <a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a66cecd6e36b30c6bd4ec84cb96de8873" title="Number of collocation points in interval i.">N_colloc_ival()</a>+1 </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00210">210</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00233">233</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -617,7 +670,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <p>Interval weights (as range of doubles) </p>
 <dl class="section note"><dt>Note</dt><dd>Includes zero weight at 1, i.e. size of returned range is equal to <a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a66cecd6e36b30c6bd4ec84cb96de8873" title="Number of collocation points in interval i.">N_colloc_ival()</a>+1 </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00258">258</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00281">281</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -648,7 +701,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 
 <p>Number of collocation points in mesh. </p>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00116">116</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00139">139</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -681,7 +734,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <p>Number of collocation points in interval i. </p>
 <dl class="section note"><dt>Note</dt><dd>This is also equal to the polynomial degree inside interval i, since the polynomial is fitted with an "extra" point belonging to the subsequent interval. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00130">130</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00153">153</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -712,7 +765,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 
 <p>Number of intervals in mesh. </p>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00111">111</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00134">134</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -767,7 +820,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00176">176</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00199">199</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -818,7 +871,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
 <p>If D &gt; Kmax, or current degree &gt; Kmax then the interval is divided into n = max(2, ceil(D / Kmin)) intervals with deg Kmin If D &lt; current degree, then nothing is done. If D &lt;= Kmax, then the polynomial degree is increased to D.</p>
 <dl class="section note"><dt>Note</dt><dd>May allocate heap memory due to vector resizing if the number of intervals is increased. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00149">149</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00172">172</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -867,7 +920,7 @@ template&lt;std::size_t _Kmin = 5, std::size_t _Kmax = 10&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00198">198</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh_8hpp_source.html#l00221">221</a> of file <a class="el" href="mesh_8hpp_source.html">mesh.hpp</a>.</p>
 
 </div>
 </div>
