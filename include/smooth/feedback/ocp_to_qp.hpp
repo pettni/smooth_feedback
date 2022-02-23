@@ -41,22 +41,125 @@
 
 namespace smooth::feedback {
 
+namespace detail {
+
+/**
+ * @brief Working memory for ocp_to_qp
+ */
+struct OcpToQpWorkmemory
+{
+  MeshValue<1> cr_out;   /// @brief output of mesh_eval
+  MeshValue<2> int_out;  /// @brief output of mesh_integrate
+};
+
+/**
+ * @brief Allocate a qp for ocp_to_qp_update()
+ *
+ * @param[out] qp quadratic program to allocate
+ * @param[out] work working memory to allocate
+ * @param[in] ocp input problem
+ * @param[in] mesh time discretization
+ */
+template<diff::Type DT = diff::Type::Default>
+void ocp_to_qp_allocate(
+  QuadraticProgramSparse<double> & qp,
+  OcpToQpWorkmemory & work,
+  const OCPType auto & ocp,
+  const MeshType auto & mesh)
+{
+  using ocp_t = typename std::decay_t<decltype(ocp)>;
+
+  using X = typename ocp_t::X;
+  using U = typename ocp_t::U;
+
+  static constexpr auto Nx = ocp_t::Nx;
+  static constexpr auto Nu = ocp_t::Nu;
+
+  /////////////////////////
+  //// VARIABLE LAYOUT ////
+  /////////////////////////
+
+  // [x0 x1 ... xN u0 u1 ... uN-1]
+
+  const auto N = mesh.N_colloc();
+
+  const auto xvar_L = Nx * (N + 1);
+  const auto uvar_L = Nu * N;
+
+  const auto dcon_L  = Nx * N;
+  const auto crcon_L = ocp_t::Ncr * N;
+  const auto cecon_L = ocp_t::Nce;
+
+  const auto dcon_B  = 0u;
+  const auto crcon_B = dcon_L;
+  const auto cecon_B = crcon_B + crcon_L;
+
+  const auto Nvar = xvar_L + uvar_L;
+  const auto Ncon = dcon_L + crcon_L + cecon_L;
+
+  // resize qp
+  qp.P.resize(Nvar, Nvar);
+  qp.q.resize(Nvar);
+  qp.A.resize(Ncon, Nvar);
+  qp.l.resize(Ncon);
+  qp.u.resize(Ncon);
+
+  // sparsity pattern of A
+  Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
+  for (auto ival = 0u, I0 = 0u; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
+    const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
+    A_pattern.segment(dcon_B + I0 * Nx, Ki * Nx) +=
+      Eigen::VectorXi::Constant(Ki * Nx, Nx + Ki + Nu);
+  }
+  A_pattern.segment(crcon_B, crcon_L).setConstant(Nx + Nu);
+  A_pattern.segment(cecon_B, cecon_L).setConstant(2 * Nx);
+  qp.A.reserve(A_pattern);
+
+  // sparsity pattern of P
+  Eigen::VectorXi P_pattern = Eigen::VectorXi::Zero(Nvar);
+  for (auto i = 0u; i < N; ++i) {
+    for (auto j = 0u; j < Nx; ++j) { P_pattern(Nx * i + j) = j + 1; }
+  }
+  for (auto j = 0u; j < Nx; ++j) { P_pattern(Nx * N + j) = Nx + j + 1; }
+  for (auto i = 0u; i < N; ++i) {
+    for (auto j = 0u; j < Nu; ++j) { P_pattern(Nx * (N + 1) + Nu * i + j) = Nx + (j + 1); }
+  }
+  qp.P.reserve(P_pattern);
+
+  // compute work stuff once to allocate pattern
+  const double tf = 1.;
+  auto xslin      = mesh.all_nodes() | transform([&](double) { return Identity<X>(); });
+  auto uslin      = mesh.all_nodes() | transform([&](double) { return Identity<U>(); });
+
+  work.int_out.lambda.setConstant(1, 1);
+  mesh_eval<1, DT>(work.cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);       // allocates work.cr_out
+  mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);  // allocates work.int_out
+}
+
 /**
  * @brief Formulate an optimal control problem as a quadratic program via linearization.
  *
- * @param ocp input problem
- * @param mesh time discretization
- * @param tf time horizon
- * @param xl_fun state linearization (must be differentiable w.r.t. time)
- * @param ul_fun input linearization
+ * @param[in, out] qp pre-allocated quadratic program
+ * @param[in, out] work workin memory
+ * @param[in] ocp input problem
+ * @param[in] mesh time discretization
+ * @param[in] tf time horizon
+ * @param[in] xl_fun state linearization (must be differentiable w.r.t. time)
+ * @param[in] ul_fun input linearization
  *
  * @return sparse quadratic program for a flattened formulation of ocp.
  *
- * @see qpsol_to_ocpsol()
+ * @see ocp_to_qp_allocate() qpsol_to_ocpsol()
  */
 template<diff::Type DT = diff::Type::Default>
-QuadraticProgramSparse<double> ocp_to_qp(
-  const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
+void ocp_to_qp_update(
+  QuadraticProgramSparse<double> & qp,
+  OcpToQpWorkmemory & work,
+  const OCPType auto & ocp,
+  const MeshType auto & mesh,
+  double tf,
+  auto && xl_fun,
+  auto && ul_fun)
 {
   using utils::zip;
   using namespace std::views;
@@ -98,34 +201,6 @@ QuadraticProgramSparse<double> ocp_to_qp(
   const auto dcon_B  = 0u;
   const auto crcon_B = dcon_L;
   const auto cecon_B = crcon_B + crcon_L;
-
-  const auto Nvar = xvar_L + uvar_L;
-  const auto Ncon = dcon_L + crcon_L + cecon_L;
-
-  /// @todo move all allocation to a separate function...
-
-  MeshValue<1> cr_out;
-  MeshValue<2> int_out;
-  int_out.lambda.setConstant(1, 1);
-
-  // output of this function
-  QuadraticProgramSparse<double> ret;
-  ret.P.resize(Nvar, Nvar);
-  ret.q.resize(Nvar);
-  ret.A.resize(Ncon, Nvar);
-  ret.l.resize(Ncon);
-  ret.u.resize(Ncon);
-
-  // sparsity pattern of A
-  Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
-  for (auto ival = 0u, I0 = 0u; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
-    const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
-    A_pattern.segment(dcon_B + I0 * Nx, Ki * Nx) +=
-      Eigen::VectorXi::Constant(Ki * Nx, Nx + Ki + Nu);
-  }
-  A_pattern.segment(crcon_B, crcon_L).setConstant(Nx + Nu);
-  A_pattern.segment(cecon_B, cecon_L).setConstant(2 * Nx);
-  ret.A.reserve(A_pattern);
 
   /////////////////////////////////
   //// OBJECTIVE LINEARIZATION ////
@@ -171,21 +246,21 @@ QuadraticProgramSparse<double> ocp_to_qp(
 
       for (auto j = 0u; j < Ki + 1; ++j) {
         for (auto diag = 0u; diag < Nx; ++diag) {
-          ret.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
+          qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
         }
       }
 
       for (auto row = 0u; row < Nx; ++row) {
         for (auto col = 0u; col < Nx; ++col) {
-          ret.A.coeffRef(dcon_B + (M + i) * Nx + row, (M + i) * Nx + col) += A(row, col);
+          qp.A.coeffRef(dcon_B + (M + i) * Nx + row, (M + i) * Nx + col) += A(row, col);
         }
         for (auto col = 0u; col < Nu; ++col) {
-          ret.A.coeffRef(dcon_B + (M + i) * Nx + row, uvar_B + (M + i) * Nu + col) = B(row, col);
+          qp.A.coeffRef(dcon_B + (M + i) * Nx + row, uvar_B + (M + i) * Nu + col) = B(row, col);
         }
       }
 
-      ret.l.segment(dcon_B + (M + i) * Nx, Nx) = -E;
-      ret.u.segment(dcon_B + (M + i) * Nx, Nx) = -E;
+      qp.l.segment(dcon_B + (M + i) * Nx, Nx) = -E;
+      qp.u.segment(dcon_B + (M + i) * Nx, Nx) = -E;
     }
   }
 
@@ -198,11 +273,11 @@ QuadraticProgramSparse<double> ocp_to_qp(
   //// RUNNING CONSTRAINTS ////
   /////////////////////////////
 
-  mesh_eval<1, DT>(cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
+  mesh_eval<1, DT>(work.cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
 
-  block_add(ret.A, crcon_B, 0, cr_out.dF.middleCols(2, xvar_L + uvar_L));
-  ret.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - cr_out.F;
-  ret.u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - cr_out.F;
+  block_add(qp.A, crcon_B, 0, work.cr_out.dF.middleCols(2, xvar_L + uvar_L));
+  qp.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - work.cr_out.F;
+  qp.u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - work.cr_out.F;
 
   /////////////////////////
   //// END CONSTRAINTS ////
@@ -213,45 +288,67 @@ QuadraticProgramSparse<double> ocp_to_qp(
   // integral constraints not supported
   // assert(dceval.middleCols(1 + 2 * Nx, Nq).cwiseAbs().maxCoeff() < 1e-9);
 
-  block_add(ret.A, cecon_B, xvar_B, dceval.middleCols(1, Nx));                     // dce / dx0
-  block_add(ret.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce / dxf
+  block_add(qp.A, cecon_B, xvar_B, dceval.middleCols(1, Nx));                     // dce / dx0
+  block_add(qp.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce / dxf
 
-  ret.l.segment(cecon_B, cecon_L) = ocp.cel - ceval;
-  ret.u.segment(cecon_B, cecon_L) = ocp.ceu - ceval;
+  qp.l.segment(cecon_B, cecon_L) = ocp.cel - ceval;
+  qp.u.segment(cecon_B, cecon_L) = ocp.ceu - ceval;
 
   ///////////////////////
   //// INTEGRAL COST ////
   ///////////////////////
 
-  mesh_integrate<2, DT>(int_out, mesh, ocp.g, 0, tf, xslin, uslin);
+  mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);
 
-  ret.P = qo_q.x() * int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L);
-  ret.q.segment(xvar_B, xvar_L) = qo_q.x() * int_out.dF.middleCols(2, xvar_L).transpose();
-  ret.q.segment(uvar_B, uvar_L) = qo_q.x() * int_out.dF.middleCols(2 + xvar_L, uvar_L).transpose();
+  block_add(
+    qp.P, 0, 0, work.int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L), qo_q.x(), true);
+  qp.q.segment(xvar_B, xvar_L) = qo_q.x() * work.int_out.dF.middleCols(2, xvar_L).transpose();
+  qp.q.segment(uvar_B, uvar_L) =
+    qo_q.x() * work.int_out.dF.middleCols(2 + xvar_L, uvar_L).transpose();
 
   ///////////////////////
   //// ENDPOINT COST ////
   ///////////////////////
 
-  /// @todo weights from x0 and xf (double-check)
-  for (auto row = 0u; row < Nx; ++row) {
-    for (auto col = 0u; col < Nx; ++col) {
-      ret.P.coeffRef(row, col) += Qo_x0(row, col);
-      ret.P.coeffRef(row, Nx * N + col) += Qo_x0f(row, col);  // upper-triangular
-      ret.P.coeffRef(Nx * N + row, Nx * N + col) += Qo_xf(row, col);
-    }
-  }
+  block_add(qp.P, 0, 0, Qo_x0, 1., true);            // d2q / dx0x0
+  block_add(qp.P, 0, Nx * N, Qo_x0f, 1., true);      // d2q / dx0xf
+  block_add(qp.P, Nx * N, Nx * N, Qo_xf, 1., true);  // d2q / dxfxf
+  qp.q.segment(0, Nx) += qo_x0;                      // dq / dx0
+  qp.q.segment(Nx * N, Nx) += qo_xf;                 // dq / dxf
+}
 
-  ret.q.segment(0, Nx) += qo_x0;
-  ret.q.segment(Nx * N, Nx) += qo_xf;
+}  // namespace detail
 
-  ////////////////////////////////
-  ////////////////////////////////
+/**
+ * @brief Formulate an optimal control problem as a quadratic program via linearization.
+ *
+ * @param ocp input problem
+ * @param mesh time discretization
+ * @param tf time horizon
+ * @param xl_fun state linearization (must be differentiable w.r.t. time)
+ * @param ul_fun input linearization
+ *
+ * @return sparse quadratic program for a flattened formulation of ocp.
+ *
+ * @note allocates memory for each call. To reduce memory allocation for repeated calls, see
+ * ocp_to_qp_allocate() and ocp_to_qp_update().
+ *
+ * @see qpsol_to_ocpsol()
+ */
+template<diff::Type DT = diff::Type::Default>
+QuadraticProgramSparse<double> ocp_to_qp(
+  const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
+{
+  QuadraticProgramSparse<double> qp;
+  detail::OcpToQpWorkmemory work;
 
-  ret.A.makeCompressed();
-  ret.P.makeCompressed();
+  detail::ocp_to_qp_allocate<DT>(qp, work, ocp, mesh);
+  detail::ocp_to_qp_update<DT>(qp, work, ocp, mesh, tf, xl_fun, ul_fun);
 
-  return ret;
+  qp.A.makeCompressed();
+  qp.P.makeCompressed();
+
+  return qp;
 }
 
 /**
