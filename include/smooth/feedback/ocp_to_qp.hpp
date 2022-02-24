@@ -139,6 +139,9 @@ void ocp_to_qp_allocate(
 /**
  * @brief Formulate an optimal control problem as a quadratic program via linearization.
  *
+ * @tparam DT differentiation method to use for derivatives of the ocp
+ * @tparam DT_xl differentiation method to use for derivatives of xl_fun
+ *
  * @param[in, out] qp pre-allocated quadratic program
  * @param[in, out] work workin memory
  * @param[in] ocp input problem
@@ -151,7 +154,7 @@ void ocp_to_qp_allocate(
  *
  * @see ocp_to_qp_allocate() qpsol_to_ocpsol()
  */
-template<diff::Type DT = diff::Type::Default>
+template<diff::Type DT = diff::Type::Default, diff::Type DT_xl = DT>
 void ocp_to_qp_update(
   QuadraticProgramSparse<double> & qp,
   OcpToQpWorkmemory & work,
@@ -179,6 +182,17 @@ void ocp_to_qp_update(
   const Eigen::Matrix<double, 1, 1> ql(0);
 
   static_assert(ocp_t::Nq == 1, "exactly one integral supported in ocp_to_qp");
+
+  /////////////////////////
+  //// ZERO VARS ////
+  /////////////////////////
+
+  set_zero(qp.A);
+  set_zero(qp.P);
+
+  qp.l.setConstant(-std::numeric_limits<double>::infinity());
+  qp.u.setConstant(std::numeric_limits<double>::infinity());
+  qp.q.setZero();
 
   /////////////////////////
   //// VARIABLE LAYOUT ////
@@ -230,9 +244,9 @@ void ocp_to_qp_update(
     // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = alpha * X Dus
 
     for (const auto & [i, tau_i] : zip(iota(0u, Ki), mesh.interval_nodes(ival))) {
-      const auto t_i             = tf * tau_i;                     // unscaled time
-      const auto & [xl_i, dxl_i] = diff::dr<1>(xl_fun, wrt(t_i));  // linearization trajectory
-      const auto ul_i            = ul_fun(t_i);                    // linearization input
+      const auto t_i             = tf * tau_i;                            // unscaled time
+      const auto & [xl_i, dxl_i] = diff::dr<1, DT_xl>(xl_fun, wrt(t_i));  // x-lin
+      const auto ul_i            = ul_fun(t_i);                           // u-lin
 
       // LINEARIZE DYNAMICS
       const auto & [f_i, df_i] = diff::dr<1, DT>(ocp.f, wrt(t_i, xl_i, ul_i));

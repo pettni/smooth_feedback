@@ -26,75 +26,138 @@
 #ifndef SMOOTH__FEEDBACK__MPC_HPP_
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
-#include <smooth/spline/fit.hpp>
+#include <smooth/lie_group.hpp>
 
-#include "mpc_func.hpp"
+#include <memory>
+
+#include "ocp_to_qp.hpp"
 #include "time.hpp"
 
 namespace smooth::feedback {
 
+template<LieGroup X, Manifold U>
+struct TrackingWeights
+{
+  static constexpr auto Nx = Dof<X>;
+  static constexpr auto Nu = Dof<U>;
+
+  /// Running state cost
+  Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
+  /// Final state cost
+  Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
+  /// Running input cost
+  Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
+};
+
+namespace detail {
+
+template<Time T, LieGroup X>
+struct XDes
+{
+  T t0;
+  std::function<X(T)> xdes           = [](T) -> X { return Default<X>(); };
+  std::function<Tangent<X>(T)> dxdes = [](T) -> Tangent<X> { return Tangent<X>::Zero(); };
+
+  X operator()(const double t_rel) const
+  {
+    const T t_abs = time_trait<T>::plus(t0, t_rel);
+    return xdes(t_abs);
+  };
+
+  Tangent<X> jacobian(const double t_rel) const
+  {
+    const T t_abs = time_trait<T>::plus(t0, t_rel);
+    return dxdes(t_abs);
+  }
+};
+
+template<Time T, Manifold U>
+struct UDes
+{
+  T t0;
+  std::function<U(T)> udes = [](T) -> U { return Default<U>(); };
+
+  U operator()(const double t_rel) const
+  {
+    const T t_abs = time_trait<T>::plus(t0, t_rel);
+    return udes(t_abs);
+  };
+};
+
+template<LieGroup X>
+struct TrackingCost
+{
+  static constexpr auto Nx = Dof<X>;
+
+  X xf_des;
+  Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
+
+  template<typename S>
+  S operator()(
+    const S &, const CastT<S, X> &, const CastT<S, X> & xf, const Eigen::Vector<S, 1> & q) const
+  {
+    const Tangent<CastT<S, X>> xf_err = rminus(xf, xf_des.template cast<S>());
+    return q.sum() + S(0.5) * (QT * xf_err).dot(xf_err);
+  }
+};
+
+template<Time T, LieGroup X, Manifold U>
+struct TrackingIntegral
+{
+  static constexpr auto Nx = Dof<X>;
+  static constexpr auto Nu = Dof<U>;
+
+  T t0{0};
+  std::shared_ptr<XDes<T, X>> xdes;
+  std::shared_ptr<UDes<T, U>> udes;
+
+  Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
+  Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
+
+  template<typename S>
+  Eigen::Vector<S, 1>
+  operator()(const S & t_loc, const CastT<S, X> & x, const CastT<S, U> & u) const
+  {
+    const T t_abs = time_trait<T>::plus(t0, static_cast<double>(t_loc));
+
+    const Tangent<CastT<S, X>> x_err = rminus(x, (*xdes)(t_abs));
+    const Tangent<CastT<S, U>> u_err = rminus(u, (*udes)(t_abs));
+
+    return Eigen::Vector<S, 1>{
+      S(0.5) * (Q * x_err).dot(x_err) + S(0.5) * (R * u_err).dot(u_err),
+    };
+  }
+};
+
+template<LieGroup X>
+struct TrackingCE
+{
+  X x0val;
+
+  template<typename S>
+  Tangent<CastT<S, X>> operator()(
+    const S &, const CastT<S, X> & x0, const CastT<S, X> &, const Eigen::Vector<S, 1> &) const
+  {
+    return rminus(x0, x0val.template cast<S>());
+  }
+};
+
+}  // namespace detail
+
 /**
  * @brief Parameters for MPC
  */
-template<LieGroup G, Manifold U>
 struct MPCParams
 {
   /**
    * @brief MPC time horizon (seconds)
    */
-  double T{1};
-
-  /**
-   * @brief Number of discretization steps
-   */
-  std::size_t K{10};
-
-  /**
-   * @brief MPC state and input weights
-   */
-  typename OptimalControlProblem<G, U>::Weights weights{};
-
-  /**
-   * @brief State bounds
-   */
-  ManifoldBounds<G> glim{};
-
-  /**
-   * @brief Input bounds
-   */
-  ManifoldBounds<U> ulim{};
+  double tf{1};
 
   /**
    * @brief Enable warmstarting
    */
   bool warmstart{true};
-
-  /**
-   * @brief Relinearize the problem around solution after each solve.
-   *
-   * If this parameter is false
-   *  - Problem is relinearized around the desired trajectory at each iteration
-   *
-   * If this is set to true:
-   *  - Problem is relinearized once around a new desired trajectory
-   *  - Problem is relinearized after each solve
-   */
-  bool relinearize_around_solution{false};
-
-  /**
-   * @brief Iterative relinearization.
-   *
-   * If this is set to a positive number an iterative procedure is used:
-   *
-   *  1. Solve problem at current linearization
-   *  2. If solution does not touch linearization bounds g_bound, stop
-   *  3. Else relinearize around solution and go to 1
-   *
-   * This process is repeated at most MPCParams::iterative_relinearization times.
-   *
-   * @note Requires LinearizationInfo::g_domain to be set to an appropriate value.
-   */
-  uint32_t iterative_relinearization{0};
 
   /**
    * @brief QP solvers parameters.
@@ -106,10 +169,12 @@ struct MPCParams
  * @brief Model-Predictive Control (MPC) on Lie groups.
  *
  * @tparam T time type, must be a std::chrono::duration-like
- * @tparam G state space LieGroup type
+ * @tparam X state space LieGroup type
  * @tparam U input space Manifold type
- * @tparam Dyn callable type that represents dynamics
- * @tparam DiffT differentiation method
+ * @tparam F callable type that represents dynamics
+ * @tparam CR callable type that represents running constraints
+ * @tparam CE callable type that represents end constraints
+ * @tparam DT differentiation method
  *
  * This MPC class keeps and repeatedly solves an internal OptimalControlProblem that is updated to
  * track a time-dependent trajectory defined through set_xudes().
@@ -118,36 +183,74 @@ struct MPCParams
  * performance. See MPCParams for details. MPC likely performs better on models that
  * are control-affine.
  */
-template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DiffT = diff::Type::Default>
+template<
+  std::size_t K,
+  Time T,
+  LieGroup X,
+  Manifold U,
+  typename F,
+  typename CR,
+  diff::Type DT = diff::Type::Default>
 class MPC
 {
+  static constexpr auto Ncr = std::invoke_result_t<CR, double, X, U>::SizeAtCompileTime;
+
 public:
   /**
    * @brief Create an MPC instance.
    *
    * @param f callable object that represents dynamics \f$ \mathrm{d}^r x_t = f(f, x, u) \f$ as a
-   * function \f$ f : T \times G \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
+   * function \f$ f : T \times X \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
    * @param prm MPC parameters
    *
    * @note \f$ f \f$ is copied/moved into the class. In order to modify the dynamics from the
-   * outside the type Dyn can be created to contain references to outside objects that are
+   * outside the type F can be created to contain references to outside objects that are
    * updated by the user.
    */
-  inline MPC(Dyn && f, MPCParams<G, U> && prm = MPCParams<G, U>{})
-      : prm_(std::move(prm)), dyn_(std::move(f))
+  inline MPC(
+    F && f,
+    CR && cr,
+    Eigen::Vector<double, Ncr> && crl,
+    Eigen::Vector<double, Ncr> && cru,
+    MPCParams && prm = MPCParams{})
+      : xdes_(std::make_shared<detail::XDes<T, X>>()),
+        udes_(std::make_shared<detail::UDes<T, U>>()),
+        ocp_{
+          .theta = detail::TrackingCost<X>{},
+          .f     = std::forward<F>(f),
+          .g =
+            detail::TrackingIntegral<T, X, U>{
+              .t0   = 0,
+              .xdes = xdes_,
+              .udes = udes_,
+            },
+          .cr  = std::forward<CR>(cr),
+          .crl = std::move(crl),
+          .cru = std::move(cru),
+          .ce  = detail::TrackingCE<X>{},
+          .cel = Eigen::Vector<double, Dof<X>>::Zero(),
+          .ceu = Eigen::Vector<double, Dof<X>>::Zero(),
+        },
+        prm_(std::move(prm))
   {
-    ocp_.T       = prm_.T;
-    ocp_.glim    = prm_.glim;
-    ocp_.ulim    = prm_.ulim;
-    ocp_.weights = prm_.weights;
-    ocp_to_qp_allocate<G, U>(ocp_, prm_.K, qp_);
+    detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
   }
   /// Same as above but for lvalues
-  inline MPC(const Dyn & f, const MPCParams<G, U> & prm = MPCParams<G, U>{})
-      : MPC(Dyn(f), MPCParams<G, U>(prm))
+  inline MPC(
+    const F & f,
+    const CR & cr,
+    const Eigen::Vector<double, Ncr> & crl,
+    const Eigen::Vector<double, Ncr> & cru,
+    const MPCParams & prm = MPCParams{})
+      : MPC(
+        F(f),
+        CR(cr),
+        Eigen::Vector<double, Ncr>(crl),
+        Eigen::Vector<double, Ncr>(cru),
+        MPCParams(prm))
   {}
   /// Default constructor
-  inline MPC() : MPC(Dyn(), MPCParams<G, U>()) {}
+  inline MPC() = default;
   /// Default copy constructor
   inline MPC(const MPC &) = default;
   /// Default move constructor
@@ -172,95 +275,60 @@ public:
    */
   inline std::pair<U, QPSolutionStatus> operator()(
     const T & t,
-    const G & g,
+    const X & g,
     std::optional<std::reference_wrapper<std::vector<U>>> u_traj = std::nullopt,
-    std::optional<std::reference_wrapper<std::vector<G>>> x_traj = std::nullopt)
+    std::optional<std::reference_wrapper<std::vector<X>>> x_traj = std::nullopt)
   {
-    using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
+    static constexpr auto Nx = Dof<X>;
+    static constexpr auto Nu = Dof<U>;
+    const auto N             = mesh_.N_colloc();
 
-    static constexpr int Nx = Dof<G>;
-    static constexpr int Nu = Dof<U>;
-    const int NU            = prm_.K * Nu;
+    const auto xvar_L = Nx * (N + 1);
 
-    // update problem with functions defined in "MPC time"
-    ocp_.x0   = g;
-    ocp_.gdes = [this, &t](double t_loc) -> G {
-      return x_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc))).first;
-    };
-    ocp_.udes = [this, &t](double t_loc) -> U {
-      return u_des_(t + duration_cast<nanoseconds>(duration<double>(t_loc)));
-    };
+    const auto xvar_B = 0u;
+    const auto uvar_B = xvar_L;
 
-    // define linearization if not already updated around previous solution
-    if (!prm_.relinearize_around_solution || new_desired_) {
-      lin_.u = [this, &t](double t_loc) -> U { return u_des_(time_trait<T>::plus(t, t_loc)); };
-      lin_.g = [this, &t](double t_loc) -> std::pair<G, Tangent<G>> {
-        return x_des_(time_trait<T>::plus(t, t_loc));
-      };
-      new_desired_ = false;
-    }
+    // update problem
+    xdes_->t0     = t;
+    udes_->t0     = t;
+    ocp_.ce.x0val = g;
+    ocp_.g.t0     = t;
 
-    const double dt = ocp_.T / static_cast<double>(prm_.K);
+    // transcribe to QP
+    ocp_to_qp_update<DT, smooth::diff::Type::Analytic>(
+      qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
 
-    // define dynamics in "MPC time"
-    const auto dyn =
-      [this, &t]<typename S>(double t_loc, const CastT<S, G> & vx, const CastT<S, U> & vu) {
-        return dyn_(t + duration_cast<nanoseconds>(duration<double>(t_loc)), vx, vu);
-      };
-
-    ocp_to_qp_fill<G, U, decltype(dyn), DiffT>(ocp_, prm_.K, dyn, lin_, qp_);
+    // solve QP
     auto sol = solve_qp(qp_, prm_.qp, warmstart_);
-
-    for (auto i = 0u; i < prm_.iterative_relinearization; ++i) {
-      // check if solution touches linearization domain
-      bool touches = false;
-      for (auto k = 0u; !touches && k < prm_.K; ++k) {
-        // clang-format off
-        if (((1. - 1e-6) * lin_.g_domain - sol.primal.template segment<Nx>(NU + k * Nx).cwiseAbs()).minCoeff() < 0) { touches = true; }
-        // clang-format on
-      }
-      if (touches) {
-        // relinearize around solution and solve again
-        relinearize_around_sol(sol);
-        ocp_to_qp_fill<G, U, decltype(dyn), DiffT>(ocp_, prm_.K, dyn, lin_, qp_);
-        sol = solve_qp(qp_, prm_.qp, warmstart_);
-      } else {
-        // solution seems fine
-        break;
-      }
-    }
 
     // output solution trajectories
     if (u_traj.has_value()) {
-      u_traj.value().get().resize(prm_.K);
-      for (auto i = 0u; i < prm_.K; ++i) {
-        u_traj.value().get()[i] = lin_.u(i * dt) + sol.primal.template segment<Nu>(i * Nu);
+      u_traj.value().get().resize(N);
+      for (const auto & [i, trel] : zip(std::views::iota(0u, N), mesh_.all_nodes())) {
+        u_traj.value().get()[i] = (*udes_)(trel) + sol.primal.template segment<Nu>(uvar_B + i * Nu);
       }
     }
     if (x_traj.has_value()) {
-      x_traj.value().get().resize(prm_.K + 1);
-      x_traj.value().get()[0] = ocp_.x0;
-      for (auto i = 1u; i < prm_.K + 1; ++i) {
-        x_traj.value().get()[i] =
-          lin_.g(i * dt).first + sol.primal.template segment<Nx>(NU + (i - 1) * Nx);
+      x_traj.value().get().resize(N + 1);
+      for (const auto & [i, trel] : zip(std::views::iota(0u, N + 1), mesh_.all_nodes())) {
+        x_traj.value().get()[i] = (*xdes_)(trel) + sol.primal.template segment<Nx>(xvar_B + i * Nx);
       }
-    }
-
-    // update linearization for next iteration
-    if (sol.code == QPSolutionStatus::Optimal) {
-      if (prm_.relinearize_around_solution) relinearize_around_sol(sol);
     }
 
     // save solution for warmstart
     if (prm_.warmstart) {
-      // clang-format off
-      if (sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime || sol.code == QPSolutionStatus::MaxIterations) {
+      if (
+        // clang-format off
+        sol.code == QPSolutionStatus::Optimal
+        || sol.code == QPSolutionStatus::MaxTime
+        || sol.code == QPSolutionStatus::MaxIterations
+        // clang-format n
+      ) {
         warmstart_ = sol;
       }
-      // clang-format on
     }
 
-    return {rplus(lin_.u(0), sol.primal.template head<Nu>()), sol.code};
+    return {rplus((*udes_)(0), sol.primal.template segment<Nu>(Nx * (N + 1))), sol.code};
   }
 
   /**
@@ -268,8 +336,7 @@ public:
    */
   inline void set_udes(std::function<U(T)> && u_des)
   {
-    u_des_       = std::move(u_des);
-    new_desired_ = true;
+    udes_->udes = std::move(u_des);
   }
 
   /**
@@ -280,39 +347,36 @@ public:
   /**
    * @brief Set the desired input trajectory (relative time).
    *
-   * @note This function triggers a relinearization around the desired input and trajectory at the
-   * next call to operator()().
-   *
    * @param f function double -> U<double> s.t. u_des(t) = f(t - t0)
    * @param t0 absolute zero time for the desired trajectory
    */
   template<typename Fun>
-    // \cond
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<U>>, U>)
-  // \endcond
-  inline void set_udes(Fun && f, T t0 = T(0))
+  inline void set_udes_rel(Fun && f, T t0 = T(0))
   {
     set_udes([t0 = t0, f = std::forward<Fun>(f)](T t) -> U {
-      return std::invoke(
-        f, std::chrono::duration_cast<std::chrono::duration<double>>(t - t0).count());
+      const double t_rel = time_trait<T>::minus(t, t0);
+      return std::invoke(f, t_rel);
     });
   }
 
   /**
    * @brief Set the desired state trajectory and velocity (absolute time)
    */
-  inline void set_xdes(std::function<std::pair<G, Tangent<G>>(T)> && x_des)
+  inline void set_xdes(std::function<X(T)> && x_des, std::function<Tangent<X>(T)> && dx_des)
   {
-    x_des_       = std::move(x_des);
-    new_desired_ = true;
+    ocp_.theta.xf_des = std::invoke(x_des, prm_.tf);
+
+    xdes_->xdes = std::move(x_des);
+    xdes_->dxdes = std::move(dx_des);
   }
 
   /**
    * @brief Set the desired state trajectory (absolute time, rvalue version)
    */
-  inline void set_xdes(const std::function<std::pair<G, Tangent<G>>(T)> & x_des)
+  inline void set_xdes(const std::function<X(T)> & x_des, const std::function<Tangent<X>(T)> & dx_des)
   {
-    set_xdes(std::function<std::pair<G, Tangent<G>>(T)>(x_des));
+    set_xdes(std::function<X(T)>(x_des), std::function<Tangent<X>(T)>(dx_des));
   }
 
   /**
@@ -323,28 +387,32 @@ public:
    *
    * @param f function s.t. desired trajectory is x(t) = f(t - t0)
    * @param t0 absolute zero time for the desired trajectory
-   *
-   * @note This function triggers a relinearization around the desired input and trajectory at the
-   * next call to operator()().
    */
   template<typename Fun>
-    // \cond
-    requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<G>>, G>)
-  // \endcond
-  inline void set_xdes(Fun && f, T t0 = T(0))
+    requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<X>>, X>)
+  inline void set_xdes_rel(Fun && f, T t0 = T(0))
   {
-    set_xdes([t0 = t0, f = std::forward<Fun>(f)](T t) -> std::pair<G, Tangent<G>> {
+    std::function<X(T)> x_des = [t0 = t0, f = f](T t) -> X {
       const double t_rel = time_trait<T>::minus(t, t0);
-      return diff::dr<1, DiffT>(f, wrt(t_rel));
-    });
+      return std::invoke(f, t_rel);
+    };
+
+    std::function<Tangent<X>(T)> dx_des = [t0 = t0, f = f](T t) -> Tangent<X> {
+      const double t_rel = time_trait<T>::minus(t, t0);
+      return std::get<1>(diff::dr<1, DT>(f, wrt(t_rel)));
+    };
+
+    set_xdes(std::move(x_des), std::move(dx_des));
   }
 
   /**
    * @brief Update MPC weights
    */
-  inline void update_weights(const typename OptimalControlProblem<G, U>::Weights & weights)
+  inline void set_weights(const TrackingWeights<X, U> & weights)
   {
-    ocp_.weights = weights;
+    ocp_.g.R      = weights.R;
+    ocp_.g.Q      = weights.Q;
+    ocp_.theta.QT = weights.QT;
   }
 
   /**
@@ -352,52 +420,27 @@ public:
    */
   inline void reset_warmstart() { warmstart_ = {}; }
 
-  /**
-   * @brief Relinearize state around a solution.
-   */
-  inline void relinearize_around_sol(const QPSolution<-1, -1, double> & sol)
-  {
-    const double dt = ocp_.T / static_cast<double>(prm_.K);
-
-    // clang-format off
-    auto g_spline = smooth::fit_spline_cubic(
-        std::views::iota(0u, prm_.K + 1) | std::views::transform([&](auto k) -> double { return dt * k; }),
-        std::views::iota(0u, prm_.K + 1) | std::views::transform([&](auto k) -> G {
-          if (k == 0) {
-            return ocp_.x0;
-          } else {
-            return rplus(lin_.g(dt * k).first, sol.primal.template segment<Dof<G>>(prm_.K * Dof<U> + (k - 1) * Dof<G>));
-          }
-        })
-      );
-    // clang-format on
-
-    lin_.g = [g_spline = std::move(g_spline)](double t) -> std::pair<G, Tangent<G>> {
-      Tangent<G> dg;
-      auto g = g_spline(t, dg);
-      return std::make_pair(g, dg);
-    };
-  }
-
 private:
-  // parameters
-  MPCParams<G, U> prm_{};
-  // dynamics description
-  Dyn dyn_{};
+  // linearization
+  std::shared_ptr<detail::XDes<T, X>> xdes_;
+  std::shared_ptr<detail::UDes<T, U>> udes_;
+
   // problem description
-  OptimalControlProblem<G, U> ocp_;
-  // flag to keep track of linearization point, and current linearization
-  bool new_desired_{false};
-  LinearizationInfo<G, U> lin_{};
+  using ocp_t = OCP< X, U, detail::TrackingCost<X>, F, detail::TrackingIntegral<T, X, U>, CR, detail::TrackingCE<X>>;
+  ocp_t ocp_;
+
+  // parameters
+  MPCParams prm_{};
+
+  // collocation mesh
+  Mesh<K, K> mesh_{};
+
   // pre-allocated QP matrices
+  detail::OcpToQpWorkmemory work_;
   QuadraticProgramSparse<double> qp_;
+
   // store last solution for warmstarting
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
-  // desired state (pos + vel) and input trajectories
-  std::function<std::pair<G, Tangent<G>>(T)> x_des_ = [](T) -> std::pair<G, Tangent<G>> {
-    return {Default<G>(), Tangent<G>::Zero()};
-  };
-  std::function<U(T)> u_des_ = [](T) -> U { return Default<U>(); };
 };
 
 }  // namespace smooth::feedback

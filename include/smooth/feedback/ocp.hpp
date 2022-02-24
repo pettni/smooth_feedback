@@ -111,16 +111,16 @@ struct OCP
   /// @brief Running constraint \f$ c_r : R \times X \times U \rightarrow R^{n_{cr}} \f$
   CR cr;
   /// @brief Running constraint lower bound \f$ c_{rl} \in R^{n_{cr}} \f$
-  Eigen::Vector<double, Ncr> crl;
+  Eigen::Vector<double, Ncr> crl = Eigen::Vector<double, Ncr>::Zero();
   /// @brief Running constraint upper bound \f$ c_{ru} \in R^{n_{cr}} \f$
-  Eigen::Vector<double, Ncr> cru;
+  Eigen::Vector<double, Ncr> cru = Eigen::Vector<double, Ncr>::Zero();
 
   /// @brief End constraint \f$ c_e : R \times X \times X \times R^{n_q} \rightarrow R^{n_{ce}} \f$
   CE ce;
   /// @brief End constraint lower bound \f$ c_{el} \in R^{n_{ce}} \f$
-  Eigen::Vector<double, Nce> cel;
+  Eigen::Vector<double, Nce> cel = Eigen::Vector<double, Nce>::Zero();
   /// @brief End constraint upper bound \f$ c_{eu} \in R^{n_{ce}} \f$
-  Eigen::Vector<double, Nce> ceu;
+  Eigen::Vector<double, Nce> ceu = Eigen::Vector<double, Nce>::Zero();
 };
 
 /// @brief Concept that is true for OCP specializations
