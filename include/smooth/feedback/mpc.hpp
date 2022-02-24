@@ -118,10 +118,8 @@ struct TrackingIntegral
   Eigen::Vector<S, 1>
   operator()(const S & t_loc, const CastT<S, X> & x, const CastT<S, U> & u) const
   {
-    const T t_abs = time_trait<T>::plus(t0, static_cast<double>(t_loc));
-
-    const Tangent<CastT<S, X>> x_err = rminus(x, (*xdes)(t_abs));
-    const Tangent<CastT<S, U>> u_err = rminus(u, (*udes)(t_abs));
+    const Tangent<CastT<S, X>> x_err = rminus(x, (*xdes)(t_loc));
+    const Tangent<CastT<S, U>> u_err = rminus(u, (*udes)(t_loc));
 
     return Eigen::Vector<S, 1>{
       S(0.5) * (Q * x_err).dot(x_err) + S(0.5) * (R * u_err).dot(u_err),
@@ -220,7 +218,7 @@ public:
           .f     = std::forward<F>(f),
           .g =
             detail::TrackingIntegral<T, X, U>{
-              .t0   = 0,
+              .t0   = T(0),
               .xdes = xdes_,
               .udes = udes_,
             },
@@ -289,10 +287,11 @@ public:
     const auto uvar_B = xvar_L;
 
     // update problem
-    xdes_->t0     = t;
-    udes_->t0     = t;
-    ocp_.ce.x0val = g;
-    ocp_.g.t0     = t;
+    xdes_->t0         = t;
+    udes_->t0         = t;
+    ocp_.g.t0         = t;
+    ocp_.ce.x0val     = g;
+    ocp_.theta.xf_des = (*xdes_)(prm_.tf);
 
     // transcribe to QP
     ocp_to_qp_update<DT, smooth::diff::Type::Analytic>(
@@ -365,8 +364,6 @@ public:
    */
   inline void set_xdes(std::function<X(T)> && x_des, std::function<Tangent<X>(T)> && dx_des)
   {
-    ocp_.theta.xf_des = std::invoke(x_des, prm_.tf);
-
     xdes_->xdes = std::move(x_des);
     xdes_->dxdes = std::move(dx_des);
   }
