@@ -74,3 +74,9 @@ TEST(Mpc, Api)
 
   ASSERT_TRUE(u1.isApprox(u2));
 }
+
+TEST(Mpc, Derivatives)
+{
+  // TODO: verify analytical derivatives
+  ASSERT_TRUE(true);
+}

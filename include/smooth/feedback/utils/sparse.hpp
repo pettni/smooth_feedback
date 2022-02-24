@@ -330,6 +330,51 @@ Eigen::MatrixX<typename Mat::Scalar> mark_explicit_zeros(const Mat & mat)
   return ret;
 }
 
+/**
+ * @brief (Right) Hessian of composed function \f$ (f \circ g)(x) \f$.
+ *
+ * @param[out] out result                           [No x No*Nx]
+ * @param[in] Jf (Right) Jacobian of f at y = g(x)  [No x Ny   ]
+ * @param[in] Hf (Right) Hessian of f at y = g(x)   [Ny x No*Ny]
+ * @param[in] Jg (Right) Jacobian of g at x         [Ni x Nx   ]
+ * @param[in] Hg (Right) Hessian of g at x          [Nx x Ni*Nx]
+ */
+template<typename S1, typename S2, typename S3, typename S4>
+  requires(
+    std::is_base_of_v<Eigen::EigenBase<S1>, S1> && std::is_base_of_v<Eigen::EigenBase<S2>, S2> &&
+      std::is_base_of_v<Eigen::EigenBase<S3>, S3> && std::is_base_of_v<Eigen::EigenBase<S4>, S4>)
+inline void d2r_fog(
+  Eigen::SparseMatrix<double> & out, const S1 & Jf, const S2 & Hf, const S3 & Jg, const S4 & Hg)
+{
+  const auto Nout_o = Jf.rows();
+  const auto Nvar_y = Jf.cols();
+
+  [[maybe_unused]] const auto Nout_i = Jg.rows();
+  const auto Nvar_x                  = Jg.cols();
+
+  // check some dimensions
+  assert(Nvar_y == Nout_i);
+  assert(Hf.rows() == Nvar_y);
+  assert(Hf.cols() == Nout_o * Nvar_y);
+  assert(Hg.rows() == Nvar_x);
+  assert(Hg.cols() == Nout_i * Nvar_x);
+
+  out.resize(Nvar_x, Nvar_x * Nout_o);
+  set_zero(out);
+
+  for (auto no = 0u; no < Nout_o; ++no) {
+    block_add(out, 0, no * Nvar_x, Jg.transpose() * Hf.middleCols(no * Nvar_y, Nvar_y) * Jg);
+  }
+
+  for (auto i = 0u; i < Jf.outerSize(); ++i) {
+    for (Eigen::InnerIterator it(Jf, i); it; ++it) {
+      block_add(out, 0, it.row() * Nvar_x, Hg.middleCols(it.col() * Nvar_x, Nvar_x), it.value());
+    }
+  }
+
+  out.makeCompressed();
+}
+
 }  // namespace smooth::feedback
 
 #endif  // SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_

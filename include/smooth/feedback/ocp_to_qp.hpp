@@ -64,7 +64,7 @@ template<diff::Type DT = diff::Type::Default>
 void ocp_to_qp_allocate(
   QuadraticProgramSparse<double> & qp,
   OcpToQpWorkmemory & work,
-  const OCPType auto & ocp,
+  OCPType auto & ocp,
   const MeshType auto & mesh)
 {
   using ocp_t = typename std::decay_t<decltype(ocp)>;
@@ -158,7 +158,7 @@ template<diff::Type DT = diff::Type::Default, diff::Type DT_xl = DT>
 void ocp_to_qp_update(
   QuadraticProgramSparse<double> & qp,
   OcpToQpWorkmemory & work,
-  const OCPType auto & ocp,
+  OCPType auto & ocp,
   const MeshType auto & mesh,
   double tf,
   auto && xl_fun,

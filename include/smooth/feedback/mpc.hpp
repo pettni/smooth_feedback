@@ -26,12 +26,14 @@
 #ifndef SMOOTH__FEEDBACK__MPC_HPP_
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
+#include <smooth/algo/hessian.hpp>
 #include <smooth/lie_group.hpp>
 
 #include <memory>
 
 #include "ocp_to_qp.hpp"
 #include "time.hpp"
+#include "utils/sparse.hpp"
 
 namespace smooth::feedback {
 
@@ -89,15 +91,29 @@ struct TrackingCost
 {
   static constexpr auto Nx = Dof<X>;
 
-  X xf_des;
+  X xf_des                         = Default<X>();
   Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
 
-  template<typename S>
-  S operator()(
-    const S &, const CastT<S, X> &, const CastT<S, X> & xf, const Eigen::Vector<S, 1> & q) const
+  double operator()(const double, const X &, const X & xf, const Eigen::Vector<double, 1> & q) const
   {
-    const Tangent<CastT<S, X>> xf_err = rminus(xf, xf_des.template cast<S>());
-    return q.sum() + S(0.5) * (QT * xf_err).dot(xf_err);
+    const Tangent<X> xf_err = rminus(xf, xf_des);
+    return q.sum() + 0.5 * (QT * xf_err).dot(xf_err);
+  }
+
+  Eigen::RowVector<double, 1 + 2 * Dof<X> + 1>
+  jacobian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
+  {
+    Eigen::RowVector<double, 1 + 2 * Dof<X> + 1> ret;
+    ret.setZero();
+
+    // dtheta / dq
+    ret(1 + 2 * Dof<X>) = 1;
+
+    // dtheta / dxf
+    const Tangent<X> xf_err                  = rminus(xf, xf_des);
+    ret.template segment<Dof<X>>(1 + Dof<X>) = xf_err.transpose() * QT * dr_expinv<X>(xf_err);
+
+    return ret;
   }
 };
 
@@ -107,36 +123,94 @@ struct TrackingIntegral
   static constexpr auto Nx = Dof<X>;
   static constexpr auto Nu = Dof<U>;
 
-  T t0{0};
   std::shared_ptr<XDes<T, X>> xdes;
   std::shared_ptr<UDes<T, U>> udes;
 
   Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
   Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
 
-  template<typename S>
-  Eigen::Vector<S, 1>
-  operator()(const S & t_loc, const CastT<S, X> & x, const CastT<S, U> & u) const
+  Eigen::Vector<double, 1> operator()(const double t_loc, const X & x, const U & u) const
   {
-    const Tangent<CastT<S, X>> x_err = rminus(x, (*xdes)(t_loc));
-    const Tangent<CastT<S, U>> u_err = rminus(u, (*udes)(t_loc));
+    const Tangent<X> x_err = rminus(x, (*xdes)(t_loc));
+    const Tangent<U> u_err = rminus(u, (*udes)(t_loc));
 
-    return Eigen::Vector<S, 1>{
-      S(0.5) * (Q * x_err).dot(x_err) + S(0.5) * (R * u_err).dot(u_err),
+    return Eigen::Vector<double, 1>{
+      0.5 * (Q * x_err).dot(x_err) + 0.5 * (R * u_err).dot(u_err),
     };
+  }
+
+  Eigen::RowVector<double, 1 + Dof<X> + Dof<U>>
+  jacobian(const double t_loc, const X & x, const U & u)
+  {
+    Eigen::RowVector<double, 1 + Dof<X> + Dof<U>> ret;
+    ret.setZero();
+
+    // dg / dx
+    const Tangent<X> x_err          = rminus(x, (*xdes)(t_loc));
+    ret.template segment<Dof<X>>(1) = x_err.transpose() * Q * dr_expinv<X>(x_err);
+
+    // dg / du
+    const Tangent<U> u_err                   = rminus(u, (*udes)(t_loc));
+    ret.template segment<Dof<U>>(1 + Dof<X>) = u_err.transpose() * R * dr_expinv<U>(u_err);
+
+    return ret;
+  }
+
+  Eigen::SparseMatrix<double> hessian(const double t_loc, const X & x, const U & u)
+  {
+    Eigen::SparseMatrix<double> ret(1 + Dof<X> + Dof<U>, 1 + Dof<X> + Dof<U>);
+
+    {
+      // d2g / dx2
+      const Tangent<X> y                        = rminus(x, (*xdes)(t_loc));
+      const auto Jg                             = dr_expinv<X>(y);
+      const auto Hg                             = hessian_rminus(x, (*xdes)(t_loc));
+      const Eigen::RowVector<double, Dof<X>> Jf = y.transpose() * Q;
+
+      Eigen::SparseMatrix<double> d2f_dx2(Dof<X>, Dof<X>);
+      d2r_fog(d2f_dx2, Jf, Q, Jg, Hg);
+
+      block_add(ret, 1, 1, d2f_dx2);
+    }
+
+    {
+      // d2g / du2
+      const Tangent<U> y = rminus(u, (*udes)(t_loc));
+      const auto Jg      = dr_expinv<U>(y);                    // n x n
+      const auto Hg      = hessian_rminus(u, (*udes)(t_loc));  // n x (n x n)
+
+      const Eigen::RowVector<double, Dof<U>> Jf = y.transpose() * R;  // 1 x n
+
+      Eigen::SparseMatrix<double> d2f_du2(Dof<U>, Dof<U>);
+      d2r_fog(d2f_du2, Jf, R, Jg, Hg);
+
+      block_add(ret, 1 + Dof<X>, 1 + Dof<X>, d2f_du2);
+    }
+
+    return ret;
   }
 };
 
 template<LieGroup X>
 struct TrackingCE
 {
-  X x0val;
+  X x0val = Default<X>();
 
-  template<typename S>
-  Tangent<CastT<S, X>> operator()(
-    const S &, const CastT<S, X> & x0, const CastT<S, X> &, const Eigen::Vector<S, 1> &) const
+  Tangent<X>
+  operator()(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &) const
   {
-    return rminus(x0, x0val.template cast<S>());
+    return rminus(x0, x0val);
+  }
+
+  Eigen::Matrix<double, Dof<X>, 1 + 2 * Dof<X> + 1>
+  jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
+  {
+    Eigen::Matrix<double, Dof<X>, 1 + 2 * Dof<X> + 1> ret;
+    ret.setZero();
+
+    ret.template block<Dof<X>, Dof<X>>(0, 1) = dr_expinv<X>(rminus(x0, x0val));
+
+    return ret;
   }
 };
 
@@ -218,7 +292,6 @@ public:
           .f     = std::forward<F>(f),
           .g =
             detail::TrackingIntegral<T, X, U>{
-              .t0   = T(0),
               .xdes = xdes_,
               .udes = udes_,
             },
@@ -232,6 +305,8 @@ public:
         prm_(std::move(prm))
   {
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
+
+    // test_ocp_derivatives(ocp_);
   }
   /// Same as above but for lvalues
   inline MPC(
@@ -264,7 +339,7 @@ public:
    * @brief Solve MPC problem and return input.
    *
    * @param[in] t current time
-   * @param[in] g current state
+   * @param[in] x current state
    * @param[out] u_traj (optional) return MPC input solution \f$ [\mu_0, \mu_1, \ldots, \mu_{K - 1}]
    * \f$
    * @param[out] x_traj (optional) return MPC state solution \f$ [x_0, x_1, \ldots, x_K] \f$
@@ -273,7 +348,7 @@ public:
    */
   inline std::pair<U, QPSolutionStatus> operator()(
     const T & t,
-    const X & g,
+    const X & x,
     std::optional<std::reference_wrapper<std::vector<U>>> u_traj = std::nullopt,
     std::optional<std::reference_wrapper<std::vector<X>>> x_traj = std::nullopt)
   {
@@ -289,8 +364,7 @@ public:
     // update problem
     xdes_->t0         = t;
     udes_->t0         = t;
-    ocp_.g.t0         = t;
-    ocp_.ce.x0val     = g;
+    ocp_.ce.x0val     = x;
     ocp_.theta.xf_des = (*xdes_)(prm_.tf);
 
     // transcribe to QP

@@ -47,22 +47,22 @@
 using namespace std::chrono_literals;
 using namespace boost::numeric::odeint;
 
-using T = std::chrono::duration<double>;
+using Time = std::chrono::duration<double>;
 
 template<typename S>
-using G = smooth::Bundle<smooth::SE2<S>, Eigen::Matrix<S, 3, 1>>;
+using X = smooth::Bundle<smooth::SE2<S>, Eigen::Matrix<S, 3, 1>>;
 template<typename S>
 using U = Eigen::Matrix<S, 2, 1>;
 
-using Gd = G<double>;
+using Xd = X<double>;
 using Ud = U<double>;
 
-using Tangentd = typename Gd::Tangent;
+using Tangentd = smooth::Tangent<Xd>;
 
 int main()
 {
   // dynamics
-  auto f = []<typename S>(T, const G<S> & x, const U<S> & u) -> smooth::Tangent<G<S>> {
+  auto f = []<typename S>(Time, const X<S> & x, const U<S> & u) -> smooth::Tangent<X<S>> {
     return {
       x.template part<1>().x(),
       x.template part<1>().y(),
@@ -73,13 +73,9 @@ int main()
     };
   };
 
-  // input bounds
-  const smooth::feedback::ManifoldBounds<Ud> ulim{
-    .A = Eigen::Matrix2d{{1, 0}, {0, 1}},
-    .c = Ud::Zero(),
-    .l = Eigen::Vector2d(-0.2, -0.5),
-    .u = Eigen::Vector2d(0.5, 0.5),
-  };
+  auto cr = []<typename S>(Time, const X<S> &, const U<S> & u) -> Eigen::Vector<S, 2> { return u; };
+  Eigen::Vector2d crl{-0.2, -0.5};
+  Eigen::Vector2d cru{0.2, 0.5};
 
   // simulation time step
   const auto dt = 25ms;
@@ -88,47 +84,48 @@ int main()
   //// SET UP MPC ////
   ////////////////////
 
-  smooth::feedback::MPCParams<Gd, Ud> mpc_prm{
-    .T = 5,
-    .K = 50,
-    .weights =
-      {
-        .QT = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
-      },
-    .ulim                        = ulim,
-    .warmstart                   = true,
-    .relinearize_around_solution = true,
+  smooth::feedback::MPC<30, Time, Xd, Ud, decltype(f), decltype(cr)> mpc{
+    f,
+    cr,
+    crl,
+    cru,
+    {.tf = 5},
   };
 
-  smooth::feedback::MPC<T, Gd, Ud, decltype(f)> mpc(f, mpc_prm);
-
   // define desired trajectory
-  auto xdes = []<typename S>(S t) -> G<S> {
+  auto xdes = []<typename S>(S t) -> X<S> {
     const Eigen::Vector3d vdes{1, 0, 0.4};
-    return G<S>{
+    return X<S>{
       smooth::SE2<S>(smooth::SO2<S>(M_PI_2), Eigen::Vector2<S>(2.5, 0)) + (t * vdes),
       vdes,
     };
   };
 
   // set desired trajectory in MPC
-  mpc.set_xdes(xdes);
-  mpc.set_udes([]<typename S>(S) -> U<S> { return U<S>::Zero(); });
+  mpc.set_xdes_rel(xdes);
+  mpc.set_udes_rel([]<typename S>(S) -> U<S> { return U<S>::Zero(); });
 
   /////////////////////
   //// SET UP ASIF ////
   /////////////////////
 
   // safe set
-  auto h = []<typename S>(S, const G<S> & g) -> Eigen::Matrix<S, 1, 1> {
-    const Eigen::Vector2<S> dir = g.template part<0>().r2() - Eigen::Vector2<S>{0, -2.3};
+  auto h = []<typename S>(S, const X<S> & x) -> Eigen::Matrix<S, 1, 1> {
+    const Eigen::Vector2<S> dir = x.template part<0>().r2() - Eigen::Vector2<S>{0, -2.3};
     const Eigen::Vector2d e_dir = dir.template cast<double>().normalized();
     return Eigen::Matrix<S, 1, 1>(dir.dot(e_dir) - 0.7);
   };
 
   // backup controller
-  auto bu = []<typename S>(S, const G<S> & g) -> U<S> {
-    return {0.2 * g.template part<1>().x(), -0.5};
+  auto bu = []<typename S>(S, const X<S> & x) -> U<S> {
+    return {0.2 * x.template part<1>().x(), -0.5};
+  };
+
+  const smooth::feedback::ManifoldBounds<Ud> ulim{
+    .A = Eigen::Matrix2d{{1, 0}, {0, 1}},
+    .c = Ud::Zero(),
+    .l = Eigen::Vector2d(-0.2, -0.5),
+    .u = Eigen::Vector2d(0.5, 0.5),
   };
 
   // parameters
@@ -150,7 +147,7 @@ int main()
       },
   };
 
-  smooth::feedback::ASIFilter<T, Gd, Ud, decltype(f)> asif(f, asif_prm);
+  smooth::feedback::ASIFilter<T, Xd, Ud, decltype(f)> asif(f, asif_prm);
 
   /////////////////////////
   //// CREATE ROS NODE ////
@@ -173,24 +170,24 @@ int main()
   /////////////////////////////////////
 
   // system variables
-  Gd g = Gd::Identity();
+  Xd x = Xd::Identity();
   Ud u;
 
   // prepare for integrating the closed-loop system
-  runge_kutta4<Gd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, Tangentd & d, double t) { d = f(T(t), x, u); };
+  runge_kutta4<Xd, double, Tangentd, double, vector_space_algebra> stepper{};
+  const auto ode = [&f, &u](const Xd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
   std::vector<double> tvec, xvec, yvec, u1vec, u2vec, u1mpcvec, u2mpcvec;
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 30s; t += dt) {
     // compute MPC input
-    const auto [u_mpc, mpc_code] = mpc(t, g);
+    const auto [u_mpc, mpc_code] = mpc(t, x);
     if (mpc_code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "MPC failed with mpc_code " << static_cast<int>(mpc_code) << std::endl;
     }
 
     // filter input with ASIF
-    const auto [u_asif, asif_code] = asif(t, g, u_mpc, h, bu);
+    const auto [u_asif, asif_code] = asif(t, x, u_mpc, h, bu);
     if (asif_code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "ASIF solver failed with asif_code " << static_cast<int>(asif_code) << std::endl;
     }
@@ -199,9 +196,9 @@ int main()
     u = u_asif;
 
     // store data
-    tvec.push_back(duration_cast<T>(t).count());
-    xvec.push_back(g.template part<0>().r2().x());
-    yvec.push_back(g.template part<0>().r2().y());
+    tvec.push_back(duration_cast<Time>(t).count());
+    xvec.push_back(x.template part<0>().r2().x());
+    yvec.push_back(x.template part<0>().r2().y());
 
     u1mpcvec.push_back(u_mpc(0));
     u2mpcvec.push_back(u_mpc(1));
@@ -211,7 +208,7 @@ int main()
 #ifdef ENABLE_ROS
     auto req        = std::make_shared<gazebo_msgs::srv::SetEntityState::Request>();
     req->state.name = "bus::link";
-    smooth::Map<geometry_msgs::msg::Pose>(req->state.pose) = g.template part<0>().lift_se3();
+    smooth::Map<geometry_msgs::msg::Pose>(req->state.pose) = x.template part<0>().lift_se3();
     req->state.pose.position.x                             = 8 * req->state.pose.position.x;
     req->state.pose.position.y                             = 8 * req->state.pose.position.y;
     ses_client->async_send_request(req);
@@ -230,7 +227,7 @@ int main()
 #endif
     // step dynamics
     stepper.do_step(
-      ode, g, 0, std::chrono::duration_cast<std::chrono::duration<double>>(dt).count());
+      ode, x, 0, std::chrono::duration_cast<std::chrono::duration<double>>(dt).count());
   }
 
 #ifdef ENABLE_PLOTTING
