@@ -82,7 +82,7 @@ public:
       : f_(std::move(f)), prm_(std::move(prm))
   {
     const int nu_ineq = prm_.ulim.A.rows();
-    asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, prm_.nh, qp_);
+    asif_to_qp_allocate<G, U>(qp_, prm_.asif.K, nu_ineq, prm_.nh);
   }
 
   /**
@@ -102,8 +102,7 @@ public:
    *
    * @returns {u, code}: safe control input and QP solver code
    */
-  template<typename SS, typename BU>
-  std::pair<U, QPSolutionStatus> operator()(const G & g, const U & u_des, SS && h, BU && bu)
+  std::pair<U, QPSolutionStatus> operator()(const G & g, const U & u_des, auto && h, auto && bu)
   {
     using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
@@ -117,8 +116,8 @@ public:
       .ulim  = prm_.ulim,
     };
 
-    asif_to_qp_fill<G, U, decltype(f_), decltype(h), decltype(bu), DT>(
-      pbm, prm_.asif, f_, std::forward<SS>(h), std::forward<BU>(bu), qp_);
+    asif_to_qp_update<G, U, DT>(
+      qp_, pbm, prm_.asif, f_, std::forward<decltype(h)>(h), std::forward<decltype(bu)>(bu));
     auto sol = feedback::solve_qp(qp_, prm_.qp, warmstart_);
 
     if (sol.code == QPSolutionStatus::Optimal) { warmstart_ = sol; }

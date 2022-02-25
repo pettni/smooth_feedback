@@ -74,8 +74,8 @@ int main()
   };
 
   auto cr = []<typename S>(const X<S> &, const U<S> & u) -> Eigen::Vector<S, 2> { return u; };
-  Eigen::Vector2d crl{-0.2, -0.5};
-  Eigen::Vector2d cru{0.2, 0.5};
+  Eigen::Vector2d crl{-0.5, -0.5};
+  Eigen::Vector2d cru{0.5, 0.5};
 
   // simulation time step
   const auto dt = 25ms;
@@ -100,6 +100,12 @@ int main()
       vdes,
     };
   };
+
+  mpc.set_weights({
+    .Q  = Eigen::Matrix<double, 6, 6>::Identity(),
+    .QT = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
+    .R  = Eigen::Matrix2d::Identity(),
+  });
 
   // set desired trajectory in MPC
   mpc.set_xdes_rel(xdes);

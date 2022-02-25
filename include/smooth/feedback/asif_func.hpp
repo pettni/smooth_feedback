@@ -56,14 +56,14 @@ namespace smooth::feedback {
  * \f]
  * for a system \f$ \mathrm{d}^r x_t = f(x(t), u(t)) \f$.
  */
-template<LieGroup G, Manifold U>
-  requires(Dof<G> > 0 && Dof<U> > 0)
+template<LieGroup X, Manifold U>
+  requires(Dof<X> > 0 && Dof<U> > 0)
 struct ASIFProblem
 {
   /// time horizon
   double T{1};
   /// initial state
-  G x0{Default<G>()};
+  X x0{Default<X>()};
   /// desired input
   U u_des{Default<U>()};
   /// weights on desired input
@@ -90,17 +90,17 @@ struct ASIFtoQPParams
 /**
  * @brief Allocate QP matrices (part 1 of asif_to_qp())
  *
+ * @param[out] qp allocated QP with zero matrices
  * @param[in] K number of constraint instances
  * @param[in] nu_ineq number in inequalities in input constraint
  * @param[in] nh number of barrier constraints
- * @param[out] qp allocated QP with zero matrices
  */
-template<LieGroup G, Manifold U>
-  requires(Dof<G> > 0 && Dof<U> > 0)
+template<LieGroup X, Manifold U>
+  requires(Dof<X> > 0 && Dof<U> > 0)
 void asif_to_qp_allocate(
-  std::size_t K, std::size_t nu_ineq, std::size_t nh, QuadraticProgram<-1, -1, double> & qp)
+  QuadraticProgram<-1, -1, double> & qp, std::size_t K, std::size_t nu_ineq, std::size_t nh)
 {
-  static constexpr int nx = Dof<G>;
+  static constexpr int nx = Dof<X>;
   static constexpr int nu = Dof<U>;
 
   static_assert(nx > 0, "State space dimension must be static");
@@ -122,31 +122,25 @@ void asif_to_qp_allocate(
  *
  * Note that the (dense) QP matrices must be pre-allocated and filled with zeros.
  */
-template<
-  LieGroup G,
-  Manifold U,
-  typename Dyn,
-  typename SafeSet,
-  typename BackupU,
-  diff::Type DT = diff::Type::Default>
-  requires(Dof<G> > 0 && Dof<U> > 0)
-void asif_to_qp_fill(
-  const ASIFProblem<G, U> & pbm,
+template<LieGroup X, Manifold U, diff::Type DT = diff::Type::Default>
+  requires(Dof<X> > 0 && Dof<U> > 0)
+void asif_to_qp_update(
+  QuadraticProgram<-1, -1, double> & qp,
+  const ASIFProblem<X, U> & pbm,
   const ASIFtoQPParams & prm,
-  Dyn && f,
-  SafeSet && h,
-  BackupU && bu,
-  QuadraticProgram<-1, -1, double> & qp)
+  auto && f,
+  auto && h,
+  auto && bu)
 {
   using boost::numeric::odeint::euler, boost::numeric::odeint::vector_space_algebra;
   using std::placeholders::_1;
 
-  static constexpr int nx = Dof<G>;
+  static constexpr int nx = Dof<X>;
   static constexpr int nu = Dof<U>;
-  static constexpr int nh = std::invoke_result_t<SafeSet, double, G>::SizeAtCompileTime;
+  static constexpr int nh = std::invoke_result_t<decltype(h), double, X>::SizeAtCompileTime;
 
-  euler<G, double, Tangent<G>, double, vector_space_algebra> state_stepper{};
-  euler<TangentMap<G>, double, TangentMap<G>, double, vector_space_algebra> sensi_stepper{};
+  euler<X, double, Tangent<X>, double, vector_space_algebra> state_stepper{};
+  euler<TangentMap<X>, double, TangentMap<X>, double, vector_space_algebra> sensi_stepper{};
 
   const int nu_ineq = pbm.ulim.A.rows();
 
@@ -166,18 +160,18 @@ void asif_to_qp_fill(
   const double tau     = pbm.T / static_cast<double>(prm.K);
   const double dt      = std::min<double>(prm.dt, tau);
   double t             = 0;
-  G x                  = pbm.x0;
-  TangentMap<G> dx_dx0 = TangentMap<G>::Identity();
+  X x                  = pbm.x0;
+  TangentMap<X> dx_dx0 = TangentMap<X>::Identity();
 
   // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](const G & xx, Tangent<G> & dd, double tt) {
+  const auto x_ode = [&f, &bu](const X & xx, Tangent<X> & dd, double tt) {
     dd = f(xx, bu(tt, xx));
   };
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
-    auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(vx, bu(T(tt), vx)); };
+    auto f_cl = [&]<typename T>(const CastT<T, X> & vx) { return f(vx, bu(T(tt), vx)); };
     const auto [fcl, dr_fcl_dx] = diff::dr<1, DT>(std::move(f_cl), wrt(x));
-    dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
+    dS_dt_v                     = (-ad<X>(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
@@ -188,7 +182,7 @@ void asif_to_qp_fill(
   for (auto k = 0u; k != prm.K; ++k) {
     // differentiate barrier function w.r.t. x
     const auto [hval, dh_dtx] = diff::dr<1, DT>(
-      [&h]<typename T>(const T & vt, const CastT<T, G> & vx) { return h(vt, vx); }, wrt(t, x));
+      [&h]<typename T>(const T & vt, const CastT<T, X> & vx) { return h(vt, vx); }, wrt(t, x));
 
     const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
     const Eigen::Matrix<double, nh, nx> dh_dx = dh_dtx.template rightCols<nx>();
@@ -250,16 +244,16 @@ void asif_to_qp_fill(
  * A solution \f$ \mu^* \f$ to the QuadraticProgram corresponds to an input \f$ u_{des} \oplus \mu^*
  * \f$ applied to the system.
  *
- * @tparam G state LieGroup type \f$\mathbb{G}\f$
- * @tparam U input Manifold type \f$\mathbb{G}\f$
+ * @tparam X state LieGroup type \f$\mathbb{X}\f$
+ * @tparam U input Manifold type \f$\mathbb{X}\f$
  *
  * @param pbm problem definition
  * @param prm algorithm parameters
- * @param f system model \f$f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow
+ * @param f system model \f$f : \mathbb{R} \times \mathbb{X} \times \mathbb{U} \rightarrow
  * \mathbb{R}^{\dim \mathfrak g}\f$ s.t. \f$ \mathrm{d}^r x_t = f(t, x, u) \f$
- * @param h safe set \f$h : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{n_h}\f$ s.t. \f$
+ * @param h safe set \f$h : \mathbb{R} \times \mathbb{X} \rightarrow \mathbb{R}^{n_h}\f$ s.t. \f$
  * S(t) = \{ h(t, x) \geq 0 \} \f$ denotes the safe set at time \f$ t \f$
- * @param bu backup controller \f$ub : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U} \f$
+ * @param bu backup controller \f$ub : \mathbb{R} \times \mathbb{X} \rightarrow \mathbb{U} \f$
  *
  * \note The algorithm relies on automatic differentiation. The following supplied functions must be
  * differentiable (i.e. be templated on the scalar type if an automatic differentiation method is
@@ -270,27 +264,26 @@ void asif_to_qp_fill(
  *
  * @return QuadraticProgram modeling the ASIF filtering problem
  */
-template<
-  LieGroup G,
-  Manifold U,
-  typename Dyn,
-  typename SS,
-  typename BackupU,
-  diff::Type DT = diff::Type::Default>
+template<LieGroup X, Manifold U, diff::Type DT = diff::Type::Default>
 QuadraticProgram<-1, -1, double> asif_to_qp(
-  const ASIFProblem<G, U> & pbm, const ASIFtoQPParams & prm, Dyn && f, SS && h, BackupU && bu)
+  const ASIFProblem<X, U> & pbm, const ASIFtoQPParams & prm, auto && f, auto && h, auto && bu)
 {
-  static constexpr int nh = std::invoke_result_t<SS, double, G>::SizeAtCompileTime;
+  static constexpr int nh = std::invoke_result_t<decltype(h), double, X>::SizeAtCompileTime;
 
-  static_assert(Dof<G> > 0, "State space dimension must be static");
+  static_assert(Dof<X> > 0, "State space dimension must be static");
   static_assert(Dof<U> > 0, "Input space dimension must be static");
   static_assert(nh > 0, "Safe set dimension must be static");
 
   const int nu_ineq = pbm.ulim.A.rows();
   QuadraticProgram<-1, -1, double> qp;
-  asif_to_qp_allocate<G, U>(prm.K, nu_ineq, nh, qp);
-  asif_to_qp_fill(
-    pbm, prm, std::forward<Dyn>(f), std::forward<SS>(h), std::forward<BackupU>(bu), qp);
+  asif_to_qp_allocate<X, U>(qp, prm.K, nu_ineq, nh);
+  asif_to_qp_update(
+    qp,
+    pbm,
+    prm,
+    std::forward<decltype(f)>(f),
+    std::forward<decltype(h)>(h),
+    std::forward<decltype(bu)>(bu));
   return qp;
 }
 

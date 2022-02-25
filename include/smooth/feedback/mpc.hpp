@@ -103,6 +103,7 @@ struct MPCObj
   Eigen::RowVector<double, 1 + 2 * Dof<X> + 1>
   jacobian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
   {
+    // TODO sparse
     Eigen::RowVector<double, 1 + 2 * Dof<X> + 1> ret;
     ret.setZero();
 
@@ -119,6 +120,7 @@ struct MPCObj
   Eigen::SparseMatrix<double>
   hessian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
   {
+    // TODO sparse
     Eigen::SparseMatrix<double> ret(1 + 2 * Dof<X> + 1, 1 + 2 * Dof<X> + 1);
 
     // d2theta / dxf2
@@ -146,6 +148,7 @@ struct MPCDyn
   Eigen::Matrix<double, Dof<X>, 1 + Dof<X> + Dof<U>>
   jacobian(const double, const X & x, const U & u)
   {
+    // TODO sparse
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
 
     Eigen::Matrix<double, Dof<X>, 1 + Dof<X> + Dof<U>> ret;
@@ -180,6 +183,7 @@ struct MPCIntegrand
   Eigen::RowVector<double, 1 + Dof<X> + Dof<U>>
   jacobian(const double t_loc, const X & x, const U & u)
   {
+    // TODO sparse
     Eigen::RowVector<double, 1 + Dof<X> + Dof<U>> ret;
     ret.setZero();
 
@@ -196,6 +200,7 @@ struct MPCIntegrand
 
   Eigen::SparseMatrix<double> hessian(const double t_loc, const X & x, const U & u)
   {
+    // TODO sparse
     Eigen::SparseMatrix<double> ret(1 + Dof<X> + Dof<U>, 1 + Dof<X> + Dof<U>);
 
     {
@@ -243,6 +248,7 @@ struct MPCCR
 
   Eigen::Matrix<double, Ncr, 1 + Dof<X> + Dof<U>> jacobian(const double, const X & x, const U & u)
   {
+    // TODO sparse
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
 
     Eigen::Matrix<double, Ncr, 1 + Dof<X> + Dof<U>> ret;
@@ -266,6 +272,7 @@ struct MPCCE
   Eigen::Matrix<double, Dof<X>, 1 + 2 * Dof<X> + 1>
   jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
+    // TODO sparse
     Eigen::Matrix<double, Dof<X>, 1 + 2 * Dof<X> + 1> ret;
     ret.setZero();
 

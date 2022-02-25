@@ -107,7 +107,7 @@ int main()
     stepper.do_step(ode, g, 0, 0.05);
   }
 
-#if 0
+#if ENABLE_PLOTTING
   matplot::figure();
   matplot::hold(matplot::on);
 
