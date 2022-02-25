@@ -50,7 +50,7 @@ const Eigen::Matrix<double, 3, 2> B{
   {0, 1},
 };
 
-auto Sigma = []<typename S>(T, const X<S> & x, const U<S> & u) -> smooth::Tangent<X<S>> {
+auto Sigma = []<typename S>(const X<S> & x, const U<S> & u) -> smooth::Tangent<X<S>> {
   smooth::Tangent<X<S>> dx_dt;
   dx_dt.head(3) = x.template part<1>();
   dx_dt.tail(3) = A * x.template part<1>() + B * u;
@@ -61,9 +61,9 @@ void ekf_snippet()
 {
   // variable that holds current input
   U<double> u = U<double>::Random();
-  // closed-loop dynamics (time type must be Scalar<X>)
-  auto SigmaCL = [&u]<typename S>(double t, const X<S> & x) -> smooth::Tangent<X<S>> {
-    return Sigma(T(t), x, u.template cast<S>());
+  // closed-loop dynamics
+  auto SigmaCL = [&u]<typename S>(double, const X<S> & x) -> smooth::Tangent<X<S>> {
+    return Sigma(x, u.template cast<S>());
   };
 
   // create filter
@@ -116,7 +116,7 @@ void pid_snippet()
 
 void asif_snippet()
 {
-  smooth::feedback::ASIFilter<T, X<double>, U<double>, decltype(Sigma)> asif(Sigma);
+  smooth::feedback::ASIFilter<X<double>, U<double>, decltype(Sigma)> asif(Sigma);
 
   // safety set S(t) = { x : h(t, x) >= 0 }
   auto h = []<typename S>(S, const X<S> & x) -> Eigen::Matrix<S, 1, 1> {
@@ -131,16 +131,25 @@ void asif_snippet()
   U<double> u_des = U<double>::Zero();
 
   // get control input for time t, state x, and reference input u_des
-  auto [u_asif, code] = asif(t, x, u_des, h, bu);
+  auto [u_asif, code] = asif(x, u_des, h, bu);
 }
 
 void mpc_snippet()
 {
-  smooth::feedback::MPC<T, X<double>, U<double>, decltype(Sigma)> mpc(Sigma, {.T = 5, .K = 50});
+  auto cr = []<typename S>(const X<S> &, const U<S> & u) -> Eigen::Vector<S, 2> { return u; };
+  Eigen::Vector2d crl{-1, -0.5}, cru{1, 0.5};
+
+  smooth::feedback::MPC<20, T, X<double>, U<double>, decltype(Sigma), decltype(cr)> mpc{
+    Sigma,
+    cr,
+    crl,
+    cru,
+    {.tf = 5},
+  };
 
   // set desired input and state trajectories
-  mpc.set_udes([]<typename S>(S t) -> U<S> { return U<S>::Zero(); });
-  mpc.set_xdes([]<typename S>(S t) -> X<S> { return X<S>::Identity(); });
+  mpc.set_udes_rel([]<typename S>(S t) -> U<S> { return U<S>::Zero(); });
+  mpc.set_xdes_rel([]<typename S>(S t) -> X<S> { return X<S>::Identity(); });
 
   T t(0);
   X<double> x = X<double>::Identity();

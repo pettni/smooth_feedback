@@ -62,7 +62,7 @@ using Tangentd = smooth::Tangent<Xd>;
 int main()
 {
   // dynamics
-  auto f = []<typename S>(Time, const X<S> & x, const U<S> & u) -> smooth::Tangent<X<S>> {
+  auto f = []<typename S>(const X<S> & x, const U<S> & u) -> smooth::Tangent<X<S>> {
     return {
       x.template part<1>().x(),
       x.template part<1>().y(),
@@ -73,7 +73,7 @@ int main()
     };
   };
 
-  auto cr = []<typename S>(Time, const X<S> &, const U<S> & u) -> Eigen::Vector<S, 2> { return u; };
+  auto cr = []<typename S>(const X<S> &, const U<S> & u) -> Eigen::Vector<S, 2> { return u; };
   Eigen::Vector2d crl{-0.2, -0.5};
   Eigen::Vector2d cru{0.2, 0.5};
 
@@ -147,7 +147,7 @@ int main()
       },
   };
 
-  smooth::feedback::ASIFilter<T, Xd, Ud, decltype(f)> asif(f, asif_prm);
+  smooth::feedback::ASIFilter<Xd, Ud, decltype(f)> asif(f, asif_prm);
 
   /////////////////////////
   //// CREATE ROS NODE ////
@@ -175,7 +175,7 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Xd, double, Tangentd, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Xd & x, Tangentd & d, double t) { d = f(Time(t), x, u); };
+  const auto ode = [&f, &u](const Xd & x, Tangentd & d, double) { d = f(x, u); };
   std::vector<double> tvec, xvec, yvec, u1vec, u2vec, u1mpcvec, u2mpcvec;
 
   // integrate closed-loop system
@@ -187,7 +187,7 @@ int main()
     }
 
     // filter input with ASIF
-    const auto [u_asif, asif_code] = asif(t, x, u_mpc, h, bu);
+    const auto [u_asif, asif_code] = asif(x, u_mpc, h, bu);
     if (asif_code != smooth::feedback::QPSolutionStatus::Optimal) {
       std::cerr << "ASIF solver failed with asif_code " << static_cast<int>(asif_code) << std::endl;
     }

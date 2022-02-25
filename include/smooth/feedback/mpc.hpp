@@ -363,6 +363,7 @@ public:
         },
         prm_(std::move(prm))
   {
+    assert(test_ocp_derivatives(ocp_, 5, 1e-2));
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
   }
   /// Same as above but for lvalues

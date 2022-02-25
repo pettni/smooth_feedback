@@ -171,18 +171,18 @@ void asif_to_qp_fill(
 
   // define ODEs for closed-loop dynamics and its sensitivity
   const auto x_ode = [&f, &bu](const G & xx, Tangent<G> & dd, double tt) {
-    dd = f(tt, xx, bu(tt, xx));
+    dd = f(xx, bu(tt, xx));
   };
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
-    auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(T(tt), vx, bu(T(tt), vx)); };
+    auto f_cl = [&]<typename T>(const CastT<T, G> & vx) { return f(vx, bu(T(tt), vx)); };
     const auto [fcl, dr_fcl_dx] = diff::dr<1, DT>(std::move(f_cl), wrt(x));
     dS_dt_v                     = (-ad<G>(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
   const auto [f0, d_f0_du] = diff::dr<1, DT>(
-    [&]<typename T>(const CastT<T, U> & vu) { return f(T(t), cast<T>(x), vu); }, wrt(pbm.u_des));
+    [&]<typename T>(const CastT<T, U> & vu) { return f(cast<T>(x), vu); }, wrt(pbm.u_des));
 
   // loop over constraint number
   for (auto k = 0u; k != prm.K; ++k) {
@@ -289,7 +289,8 @@ QuadraticProgram<-1, -1, double> asif_to_qp(
   const int nu_ineq = pbm.ulim.A.rows();
   QuadraticProgram<-1, -1, double> qp;
   asif_to_qp_allocate<G, U>(prm.K, nu_ineq, nh, qp);
-  asif_to_qp_fill(pbm, prm, f, h, bu, qp);
+  asif_to_qp_fill(
+    pbm, prm, std::forward<Dyn>(f), std::forward<SS>(h), std::forward<BackupU>(bu), qp);
   return qp;
 }
 
