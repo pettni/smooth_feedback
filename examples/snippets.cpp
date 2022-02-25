@@ -136,15 +136,16 @@ void asif_snippet()
 
 void mpc_snippet()
 {
+  // state/input constraint: -crl \leq cr(x, u) \leq crl
   auto cr = []<typename S>(const X<S> &, const U<S> & u) -> Eigen::Vector<S, 2> { return u; };
-  Eigen::Vector2d crl{-1, -0.5}, cru{1, 0.5};
+  Eigen::Vector2d crl{1, 0.5};
 
-  smooth::feedback::MPC<20, T, X<double>, U<double>, decltype(Sigma), decltype(cr)> mpc{
+  smooth::feedback::MPC<T, X<double>, U<double>, decltype(Sigma), decltype(cr)> mpc{
     Sigma,
     cr,
+    -crl,
     crl,
-    cru,
-    {.tf = 5},
+    {.K = 5, .tf = 5},
   };
 
   // set desired input and state trajectories

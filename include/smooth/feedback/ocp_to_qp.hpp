@@ -104,7 +104,7 @@ void ocp_to_qp_allocate(
   qp.l.resize(Ncon);
   qp.u.resize(Ncon);
 
-  // sparsity pattern of A
+  // sparsity pattern of A (row-major)
   Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
   for (auto ival = 0u, I0 = 0u; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval

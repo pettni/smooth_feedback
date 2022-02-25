@@ -291,6 +291,13 @@ struct MPCCE
 struct MPCParams
 {
   /**
+   * @brief Minimum number of collocation points
+   *
+   * @note The actual number of points is ceil(K / Kmesh)
+   */
+  std::size_t K{10};
+
+  /**
    * @brief MPC time horizon (seconds)
    */
   double tf{1};
@@ -314,8 +321,8 @@ struct MPCParams
  * @tparam U input space Manifold type
  * @tparam F callable type that represents dynamics
  * @tparam CR callable type that represents running constraints
- * @tparam CE callable type that represents end constraints
  * @tparam DT differentiation method
+ * @tparam Kmesh number of collocation points per mesh interval
  *
  * This MPC class keeps and repeatedly solves an internal OptimalControlProblem that is updated to
  * track a time-dependent trajectory defined through set_xudes().
@@ -325,13 +332,13 @@ struct MPCParams
  * are control-affine.
  */
 template<
-  std::size_t K,
   Time T,
   LieGroup X,
   Manifold U,
   typename F,
   typename CR,
-  diff::Type DT = diff::Type::Default>
+  diff::Type DT     = diff::Type::Default,
+  std::size_t Kmesh = 4>
 class MPC
 {
   static constexpr auto Ncr = std::invoke_result_t<CR, X, U>::SizeAtCompileTime;
@@ -356,8 +363,11 @@ public:
     Eigen::Vector<double, Ncr> && crl,
     Eigen::Vector<double, Ncr> && cru,
     MPCParams && prm = MPCParams{})
-      : xdes_(std::make_shared<detail::XDes<T, X>>()),
-        udes_(std::make_shared<detail::UDes<T, U>>()),
+      : xdes_{std::make_shared<detail::XDes<T, X>>()},
+        udes_{std::make_shared<detail::UDes<T, U>>()},
+        mesh_{
+          (prm.K + Kmesh - 1) / Kmesh,
+        },
         ocp_{
           .theta = {},
           .f     = {.f = std::forward<F>(f)},
@@ -369,10 +379,10 @@ public:
           .cel   = Eigen::Vector<double, Dof<X>>::Zero(),
           .ceu   = Eigen::Vector<double, Dof<X>>::Zero(),
         },
-        prm_(std::move(prm))
+        prm_{std::move(prm)}
   {
-    assert(test_ocp_derivatives(ocp_, 5, 1e-2));
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
+    assert(test_ocp_derivatives(ocp_, 5, 1e-2));
   }
   /// Same as above but for lvalues
   inline MPC(
@@ -563,15 +573,15 @@ private:
   std::shared_ptr<detail::XDes<T, X>> xdes_;
   std::shared_ptr<detail::UDes<T, U>> udes_;
 
+  // collocation mesh
+  Mesh<Kmesh, Kmesh> mesh_{};
+
   // problem description
   using ocp_t = OCP<X, U, detail::MPCObj<X>, detail::MPCDyn<X, U, F, DT>, detail::MPCIntegrand<T, X, U>, detail::MPCCR<X, U, CR, DT>, detail::MPCCE<X>>;
   ocp_t ocp_;
 
   // parameters
   MPCParams prm_{};
-
-  // collocation mesh
-  Mesh<K, K> mesh_{};
 
   // pre-allocated QP matrices
   detail::OcpToQpWorkmemory work_;

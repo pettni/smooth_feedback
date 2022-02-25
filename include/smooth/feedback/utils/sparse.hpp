@@ -271,8 +271,6 @@ void block_add_identity(
  * @brief Zero a sparse matrix without changing allocation.
  *
  * If mat is compressed all coefficients are set to explicit zeros.
- *
- * Otherwise, all nonzeros are removed but memory is not freed.
  */
 template<typename Scalar, int Options>
 void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
@@ -280,7 +278,9 @@ void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
   if (mat.isCompressed()) {
     mat.coeffs().setZero();
   } else {
-    mat.setZero();
+    for (auto i = 0; i < mat.outerSize(); ++i) {
+      for (Eigen::InnerIterator it(mat, i); it; ++it) { mat.coeffRef(it.row(), it.col()) = 0; }
+    }
   }
 }
 

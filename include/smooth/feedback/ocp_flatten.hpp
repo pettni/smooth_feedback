@@ -286,6 +286,7 @@ public:
     double coef   = 1;                       // hold (-1)^i / i!
     Tangent<X> vi = f(t, x, u) - dxlval;     // (ad_a)^i * (f - dxl)
     ji_           = Jf * Joplus_;            // dr (vi)_{t, e, v}
+    set_zero(hi_);
     d2r_fog(hi_, Jf, Hf, Joplus_, Hoplus_);  // d2r (vi)_{t, e, v}
 
     set_zero(H_);

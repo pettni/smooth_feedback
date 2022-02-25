@@ -84,12 +84,12 @@ int main()
   //// SET UP MPC ////
   ////////////////////
 
-  smooth::feedback::MPC<30, Time, Xd, Ud, decltype(f), decltype(cr)> mpc{
+  smooth::feedback::MPC<Time, Xd, Ud, decltype(f), decltype(cr)> mpc{
     f,
     cr,
     crl,
     cru,
-    {.tf = 5},
+    {.K = 30, .tf = 5},
   };
 
   // define desired trajectory

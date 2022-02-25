@@ -65,12 +65,13 @@ int main()
   Eigen::Vector<double, 1> crl{-0.5}, cru{0.5};
 
   // create MPC object and set input bounds, and desired trajectories
-  smooth::feedback::MPC<20, Time, Gd, Ud, decltype(f), decltype(cr)> mpc{
+  smooth::feedback::MPC<Time, Gd, Ud, decltype(f), decltype(cr)> mpc{
     f,
     cr,
     crl,
     cru,
-    smooth::feedback::MPCParams{
+    {
+      .K  = 20,
       .tf = 5,
     },
   };

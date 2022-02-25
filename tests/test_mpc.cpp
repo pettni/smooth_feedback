@@ -41,13 +41,9 @@ TEST(Mpc, Api)
   auto cr = []<typename S>(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
     return u;
   };
+  Eigen::Vector2d crl = Eigen::Vector2d::Ones();
 
-  smooth::feedback::MPC<25, T, X, U, decltype(f), decltype(cr)> mpc{
-    f,
-    cr,
-    -Eigen::Vector2d::Ones(),
-    Eigen::Vector2d::Ones(),
-  };
+  smooth::feedback::MPC<T, X, U, decltype(f), decltype(cr)> mpc{f, cr, -crl, crl};
 
   mpc.reset_warmstart();
 
