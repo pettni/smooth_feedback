@@ -55,7 +55,16 @@ struct MPCWeights
 
 namespace detail {
 
-// compute Hessian of f(x) = (x - xbar)' Q (x - xbar)
+/**
+ * @brief Compute hessian of function \f$ x \mapsto (x - xbar)^T * Q * (x - xbar)\f$.
+ *
+ * @param[out] hess output variable
+ * @param[in] x point to calculate hessian at
+ * @param[in] xbar
+ * @param[in] Q quadratic weight coefficients
+ * @param[in] r0 row in hess to insert result
+ * @param[in] c0 col in hess to insert result
+ */
 template<LieGroup X, typename Qt>
   requires std::is_base_of_v<Eigen::EigenBase<Qt>, Qt>
 void hessian_quad(
@@ -67,24 +76,26 @@ void hessian_quad(
   Eigen::Index c0 = 0)
 {
   // TODO prevent allocation ...
-  const Tangent<X> e                          = rminus(x, xbar);
-  const Eigen::RowVector<Scalar<X>, Dof<X>> J = e.transpose() * Q;
+  const Tangent<X> e                           = rminus(x, xbar);
+  const Eigen::RowVector<Scalar<X>, Dof<X>> Jq = e.transpose() * Q;
 
-  Eigen::SparseMatrix<double> drexpinv(Dof<X>, Dof<X>);
-  Eigen::SparseMatrix<double> d2rexpinv(Dof<X>, Dof<X> * Dof<X>);
-  Eigen::SparseMatrix<double> hessian_rmin(Dof<X>, Dof<X> * Dof<X>);
+  Eigen::SparseMatrix<double> Jrmin(Dof<X>, Dof<X>);
+  Eigen::SparseMatrix<double> d2rexpi(Dof<X>, Dof<X> * Dof<X>);
+  Eigen::SparseMatrix<double> Hrmin(Dof<X>, Dof<X> * Dof<X>);
 
-  dr_expinv_sparse<X>(drexpinv, e);
-  d2r_expinv_sparse<X>(d2rexpinv, e);
+  dr_expinv_sparse<X>(Jrmin, e);
+  d2r_expinv_sparse<X>(d2rexpi, e);
 
   for (auto j = 0u; j < Dof<X>; ++j) {
-    hessian_rmin.middleCols(j * Dof<X>, Dof<X>) =
-      d2rexpinv.middleCols(j * Dof<X>, Dof<X>) * drexpinv;
+    Hrmin.middleCols(j * Dof<X>, Dof<X>) = d2rexpi.middleCols(j * Dof<X>, Dof<X>) * Jrmin;
   }
 
-  d2r_fog(out, J, Q, drexpinv, hessian_rmin, r0, c0);
+  d2r_fog(out, Jq, Q, Jrmin, Hrmin, r0, c0);
 }
 
+/**
+ * @brief Wrapper for desired trajectory and its derivative.
+ */
 template<Time T, LieGroup X>
 struct XDes
 {
@@ -105,6 +116,9 @@ struct XDes
   }
 };
 
+/**
+ * @brief Wrapper for desired input and its derivative.
+ */
 template<Time T, Manifold U>
 struct UDes
 {
@@ -118,32 +132,39 @@ struct UDes
   };
 };
 
+/**
+ * @brief MPC cost function.
+ */
 template<LieGroup X>
 struct MPCObj
 {
   static constexpr auto Nx = Dof<X>;
 
+  // public members
   X xf_des                         = Default<X>();
   Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
-  Eigen::SparseMatrix<double> hess{1 + 2 * Dof<X> + 1, 1 + 2 * Dof<X> + 1};
 
+  // private members
+  Eigen::SparseMatrix<double> hess{1 + 2 * Nx + 1, 1 + 2 * Nx + 1};
+
+  // functor members
   double operator()(const double, const X &, const X & xf, const Eigen::Vector<double, 1> & q) const
   {
     const Tangent<X> xf_err = rminus(xf, xf_des);
     return q.sum() + 0.5 * (QT * xf_err).dot(xf_err);
   }
 
-  Eigen::RowVector<double, 1 + 2 * Dof<X> + 1>
+  Eigen::RowVector<double, 1 + 2 * Nx + 1>
   jacobian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
   {
-    Eigen::RowVector<double, 1 + 2 * Dof<X> + 1> ret;
+    Eigen::RowVector<double, 1 + 2 * Nx + 1> ret;
     ret.setZero();
 
     const Tangent<X> xf_err      = rminus(xf, xf_des);
     const TangentMap<X> drexpinv = dr_expinv<X>(xf_err);
 
-    ret(1 + 2 * Dof<X>)                      = 1;                                   // dtheta / dq
-    ret.template segment<Dof<X>>(1 + Dof<X>) = xf_err.transpose() * QT * drexpinv;  // dtheta / dxf
+    ret(1 + 2 * Nx)                  = 1;                                   // dtheta / dq
+    ret.template segment<Nx>(1 + Nx) = xf_err.transpose() * QT * drexpinv;  // dtheta / dxf
 
     return ret;
   }
@@ -153,21 +174,29 @@ struct MPCObj
   {
     set_zero(hess);
 
-    hessian_quad(hess, xf, xf_des, QT, 1 + Dof<X>, 1 + Dof<X>);
+    hessian_quad(hess, xf, xf_des, QT, 1 + Nx, 1 + Nx);
 
     hess.makeCompressed();
     return hess;
   }
 };
 
+/**
+ * @brief MPC dynamics (derivatives obtained via autodiff).
+ */
 template<LieGroup X, Manifold U, typename F, diff::Type DT>
 struct MPCDyn
 {
+  static constexpr auto Nx = Dof<X>;
+  static constexpr auto Nu = Dof<U>;
+
+  // public members
   F f;
 
+  // functor members
   Tangent<X> operator()(const double, const X & x, const U & u) const { return f(x, u); }
 
-  Eigen::SparseMatrix<double> jac{Dof<X>, 1 + Dof<X> + Dof<U>};
+  Eigen::SparseMatrix<double> jac{Nx, 1 + Nx + Nu};
 
   const Eigen::SparseMatrix<double> & jacobian(const double, const X & x, const U & u)
   {
@@ -181,20 +210,26 @@ struct MPCDyn
   }
 };
 
+/**
+ * @brief MPC integrand.
+ */
 template<Time T, LieGroup X, Manifold U>
 struct MPCIntegrand
 {
   static constexpr auto Nx = Dof<X>;
   static constexpr auto Nu = Dof<U>;
 
+  // public members
   std::shared_ptr<XDes<T, X>> xdes;
   std::shared_ptr<UDes<T, U>> udes;
 
   Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
   Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
 
-  Eigen::SparseMatrix<double> hess{1 + Dof<X> + Dof<U>, 1 + Dof<X> + Dof<U>};
+  // private members
+  Eigen::SparseMatrix<double> hess{1 + Nx + Nu, 1 + Nx + Nu};
 
+  // functor members
   Eigen::Vector<double, 1> operator()(const double t_loc, const X & x, const U & u) const
   {
     const Tangent<X> x_err = rminus(x, (*xdes)(t_loc));
@@ -203,19 +238,18 @@ struct MPCIntegrand
     return 0.5 * Eigen::Vector<double, 1>{(Q * x_err).dot(x_err) + (R * u_err).dot(u_err)};
   }
 
-  Eigen::RowVector<double, 1 + Dof<X> + Dof<U>>
-  jacobian(const double t_loc, const X & x, const U & u)
+  Eigen::RowVector<double, 1 + Nx + Nu> jacobian(const double t_loc, const X & x, const U & u)
   {
-    Eigen::RowVector<double, 1 + Dof<X> + Dof<U>> ret;
+    Eigen::RowVector<double, 1 + Nx + Nu> ret;
     ret.setZero();
 
     // dg / dx
-    const Tangent<X> x_err          = rminus(x, (*xdes)(t_loc));
-    ret.template segment<Dof<X>>(1) = x_err.transpose() * Q * dr_expinv<X>(x_err);
+    const Tangent<X> x_err      = rminus(x, (*xdes)(t_loc));
+    ret.template segment<Nx>(1) = x_err.transpose() * Q * dr_expinv<X>(x_err);
 
     // dg / du
-    const Tangent<U> u_err                   = rminus(u, (*udes)(t_loc));
-    ret.template segment<Dof<U>>(1 + Dof<X>) = u_err.transpose() * R * dr_expinv<U>(u_err);
+    const Tangent<U> u_err               = rminus(u, (*udes)(t_loc));
+    ret.template segment<Dof<U>>(1 + Nx) = u_err.transpose() * R * dr_expinv<U>(u_err);
 
     return ret;
   }
@@ -232,15 +266,23 @@ struct MPCIntegrand
   }
 };
 
+/**
+ * @brief MPC running constraints (jacobian obtained via automatic differentiation).
+ */
 template<LieGroup X, Manifold U, typename F, diff::Type DT>
 struct MPCCR
 {
-  F f;
-
-  Eigen::SparseMatrix<double> jac{Ncr, 1 + Dof<X> + Dof<U>};
-
+  static constexpr auto Nx  = Dof<X>;
+  static constexpr auto Nu  = Dof<U>;
   static constexpr auto Ncr = std::invoke_result_t<F, X, U>::SizeAtCompileTime;
 
+  // public members
+  F f;
+
+  // private members
+  Eigen::SparseMatrix<double> jac{Ncr, 1 + Nx + Nu};
+
+  // functor members
   Eigen::Vector<double, Ncr> operator()(const double, const X & x, const U & u) const
   {
     return f(x, u);
@@ -258,13 +300,21 @@ struct MPCCR
   }
 };
 
+/**
+ * @brief MPC end constraints.
+ */
 template<LieGroup X>
 struct MPCCE
 {
+  static constexpr auto Nx = Dof<X>;
+
+  // public members
   X x0val = Default<X>();
 
-  Eigen::SparseMatrix<double> jac{Dof<X>, 1 + 2 * Dof<X> + 1};
+  // private members
+  Eigen::SparseMatrix<double> jac{Nx, 1 + 2 * Nx + 1};
 
+  // functor members
   Tangent<X>
   operator()(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &) const
   {
@@ -324,12 +374,10 @@ struct MPCParams
  * @tparam DT differentiation method
  * @tparam Kmesh number of collocation points per mesh interval
  *
- * This MPC class keeps and repeatedly solves an internal OptimalControlProblem that is updated to
- * track a time-dependent trajectory defined through set_xudes().
+ * This MPC class keeps and repeatedly solves an internal OCP that is updated to track a
+ * time-dependent trajectory defined through set_xudes().
  *
- * @note If the MPC problem is nonlinear a good (re-)linearization policy is required for good
- * performance. See MPCParams for details. MPC likely performs better on models that
- * are control-affine.
+ * The dynamics F are linearized around the desired trajectory.
  */
 template<
   Time T,
@@ -347,15 +395,14 @@ public:
   /**
    * @brief Create an MPC instance.
    *
-   * @param f callable object that represents dynamics \f$ \mathrm{d}^r x_t = f(f, x, u) \f$ as a
-   * function \f$ f : T \times X \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
+   * @param f callable object that represents dynamics \f$ \mathrm{d}^r x_t = f(x, u) \f$ as a
+   * function \f$ f : X \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
+   * @param cr callable object that represents running constraints \f$ c_{rl} \leq c_r(x, u) \leq
+   * c_{ru} \f$ as a function \f$ c_r : X \times U \rightarrow \mathbb{R}^{n_{c_r}} \f$.
+   * @param crl, cru running constraints bounds
    * @param prm MPC parameters
    *
    * @note Allocates dynamic memory for work matrices and a sparse QP.
-   *
-   * @note \f$ f \f$ is copied/moved into the class. In order to modify the dynamics from the
-   * outside the type F can be created to contain references to outside objects that are
-   * updated by the user.
    */
   inline MPC(
     F && f,
