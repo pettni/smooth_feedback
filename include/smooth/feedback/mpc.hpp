@@ -38,7 +38,7 @@
 namespace smooth::feedback {
 
 template<LieGroup X, Manifold U>
-struct TrackingWeights
+struct MPCWeights
 {
   static constexpr auto Nx = Dof<X>;
   static constexpr auto Nu = Dof<U>;
@@ -87,7 +87,7 @@ struct UDes
 };
 
 template<LieGroup X>
-struct TrackingCost
+struct MPCObj
 {
   static constexpr auto Nx = Dof<X>;
 
@@ -115,10 +115,48 @@ struct TrackingCost
 
     return ret;
   }
+
+  Eigen::SparseMatrix<double>
+  hessian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
+  {
+    Eigen::SparseMatrix<double> ret(1 + 2 * Dof<X> + 1, 1 + 2 * Dof<X> + 1);
+
+    // d2theta / dxf2
+    const Tangent<X> y                        = rminus(xf, xf_des);
+    const auto Jg                             = dr_expinv<X>(y);
+    const auto Hg                             = hessian_rminus(xf, xf_des);
+    const Eigen::RowVector<double, Dof<X>> Jf = y.transpose() * QT;
+
+    Eigen::SparseMatrix<double> d2f_dx2(Dof<X>, Dof<X>);
+    d2r_fog(d2f_dx2, Jf, QT, Jg, Hg);
+
+    block_add(ret, 1 + Dof<X>, 1 + Dof<X>, d2f_dx2);
+
+    return ret;
+  }
+};
+
+template<LieGroup X, Manifold U, typename F, diff::Type DT>
+struct MPCDyn
+{
+  F f;
+
+  Tangent<X> operator()(const double, const X & x, const U & u) const { return f(x, u); }
+
+  Eigen::Matrix<double, Dof<X>, 1 + Dof<X> + Dof<U>>
+  jacobian(const double, const X & x, const U & u)
+  {
+    const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
+
+    Eigen::Matrix<double, Dof<X>, 1 + Dof<X> + Dof<U>> ret;
+    ret.leftCols(0).setZero();
+    ret.rightCols(Dof<X> + Dof<U>) = df;
+    return ret;
+  }
 };
 
 template<Time T, LieGroup X, Manifold U>
-struct TrackingIntegral
+struct MPCIntegrand
 {
   static constexpr auto Nx = Dof<X>;
   static constexpr auto Nu = Dof<U>;
@@ -191,8 +229,31 @@ struct TrackingIntegral
   }
 };
 
+template<LieGroup X, Manifold U, typename F, diff::Type DT>
+struct MPCCR
+{
+  F f;
+
+  static constexpr auto Ncr = std::invoke_result_t<F, X, U>::SizeAtCompileTime;
+
+  Eigen::Vector<double, Ncr> operator()(const double, const X & x, const U & u) const
+  {
+    return f(x, u);
+  }
+
+  Eigen::Matrix<double, Ncr, 1 + Dof<X> + Dof<U>> jacobian(const double, const X & x, const U & u)
+  {
+    const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
+
+    Eigen::Matrix<double, Ncr, 1 + Dof<X> + Dof<U>> ret;
+    ret.leftCols(1).setZero();
+    ret.rightCols(Dof<X> + Dof<U>) = df;
+    return ret;
+  }
+};
+
 template<LieGroup X>
-struct TrackingCE
+struct MPCCE
 {
   X x0val = Default<X>();
 
@@ -265,7 +326,7 @@ template<
   diff::Type DT = diff::Type::Default>
 class MPC
 {
-  static constexpr auto Ncr = std::invoke_result_t<CR, double, X, U>::SizeAtCompileTime;
+  static constexpr auto Ncr = std::invoke_result_t<CR, X, U>::SizeAtCompileTime;
 
 public:
   /**
@@ -274,6 +335,8 @@ public:
    * @param f callable object that represents dynamics \f$ \mathrm{d}^r x_t = f(f, x, u) \f$ as a
    * function \f$ f : T \times X \times U \rightarrow \mathbb{R}^{\dim \mathfrak{g}} \f$.
    * @param prm MPC parameters
+   *
+   * @note Allocates dynamic memory for work matrices and a sparse QP.
    *
    * @note \f$ f \f$ is copied/moved into the class. In order to modify the dynamics from the
    * outside the type F can be created to contain references to outside objects that are
@@ -288,25 +351,19 @@ public:
       : xdes_(std::make_shared<detail::XDes<T, X>>()),
         udes_(std::make_shared<detail::UDes<T, U>>()),
         ocp_{
-          .theta = detail::TrackingCost<X>{},
-          .f     = std::forward<F>(f),
-          .g =
-            detail::TrackingIntegral<T, X, U>{
-              .xdes = xdes_,
-              .udes = udes_,
-            },
-          .cr  = std::forward<CR>(cr),
-          .crl = std::move(crl),
-          .cru = std::move(cru),
-          .ce  = detail::TrackingCE<X>{},
-          .cel = Eigen::Vector<double, Dof<X>>::Zero(),
-          .ceu = Eigen::Vector<double, Dof<X>>::Zero(),
+          .theta = {},
+          .f     = {.f = std::forward<F>(f)},
+          .g     = {.xdes = xdes_, .udes = udes_},
+          .cr    = {.f = std::forward<CR>(cr)},
+          .crl   = std::move(crl),
+          .cru   = std::move(cru),
+          .ce    = {},
+          .cel   = Eigen::Vector<double, Dof<X>>::Zero(),
+          .ceu   = Eigen::Vector<double, Dof<X>>::Zero(),
         },
         prm_(std::move(prm))
   {
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
-
-    // test_ocp_derivatives(ocp_);
   }
   /// Same as above but for lvalues
   inline MPC(
@@ -368,8 +425,9 @@ public:
     ocp_.theta.xf_des = (*xdes_)(prm_.tf);
 
     // transcribe to QP
-    ocp_to_qp_update<DT, smooth::diff::Type::Analytic>(
-      qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    ocp_to_qp_update<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    qp_.A.makeCompressed();
+    qp_.P.makeCompressed();
 
     // solve QP
     auto sol = solve_qp(qp_, prm_.qp, warmstart_);
@@ -479,7 +537,7 @@ public:
   /**
    * @brief Update MPC weights
    */
-  inline void set_weights(const TrackingWeights<X, U> & weights)
+  inline void set_weights(const MPCWeights<X, U> & weights)
   {
     ocp_.g.R      = weights.R;
     ocp_.g.Q      = weights.Q;
@@ -497,7 +555,7 @@ private:
   std::shared_ptr<detail::UDes<T, U>> udes_;
 
   // problem description
-  using ocp_t = OCP< X, U, detail::TrackingCost<X>, F, detail::TrackingIntegral<T, X, U>, CR, detail::TrackingCE<X>>;
+  using ocp_t = OCP<X, U, detail::MPCObj<X>, detail::MPCDyn<X, U, F, DT>, detail::MPCIntegrand<T, X, U>, detail::MPCCR<X, U, CR, DT>, detail::MPCCE<X>>;
   ocp_t ocp_;
 
   // parameters

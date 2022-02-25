@@ -154,7 +154,7 @@ void ocp_to_qp_allocate(
  *
  * @see ocp_to_qp_allocate() qpsol_to_ocpsol()
  */
-template<diff::Type DT = diff::Type::Default, diff::Type DT_xl = DT>
+template<diff::Type DT = diff::Type::Default>
 void ocp_to_qp_update(
   QuadraticProgramSparse<double> & qp,
   OcpToQpWorkmemory & work,
@@ -183,9 +183,9 @@ void ocp_to_qp_update(
 
   static_assert(ocp_t::Nq == 1, "exactly one integral supported in ocp_to_qp");
 
-  /////////////////////////
-  //// ZERO VARS ////
-  /////////////////////////
+  ////////////////////////
+  //// ZERO VARIABLES ////
+  ////////////////////////
 
   set_zero(qp.A);
   set_zero(qp.P);
@@ -244,9 +244,9 @@ void ocp_to_qp_update(
     // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = alpha * X Dus
 
     for (const auto & [i, tau_i] : zip(iota(0u, Ki), mesh.interval_nodes(ival))) {
-      const auto t_i             = tf * tau_i;                            // unscaled time
-      const auto & [xl_i, dxl_i] = diff::dr<1, DT_xl>(xl_fun, wrt(t_i));  // x-lin
-      const auto ul_i            = ul_fun(t_i);                           // u-lin
+      const auto t_i             = tf * tau_i;                         // unscaled time
+      const auto & [xl_i, dxl_i] = diff::dr<1, DT>(xl_fun, wrt(t_i));  // x-lin
+      const auto ul_i            = ul_fun(t_i);                        // u-lin
 
       // LINEARIZE DYNAMICS
       const auto & [f_i, df_i] = diff::dr<1, DT>(ocp.f, wrt(t_i, xl_i, ul_i));

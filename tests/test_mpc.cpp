@@ -34,11 +34,11 @@ TEST(Mpc, Api)
   using X = smooth::SE2d;
   using U = Eigen::Vector2d;
 
-  auto f = []<typename S>(T, const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
+  auto f = []<typename S>(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
     return smooth::Tangent<smooth::CastT<S, X>>(u(0), S(0), u(1));
   };
 
-  auto cr = []<typename S>(T, const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
+  auto cr = []<typename S>(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
     return u;
   };
 
@@ -73,10 +73,4 @@ TEST(Mpc, Api)
   ASSERT_EQ(code2, smooth::feedback::QPSolutionStatus::Optimal);
 
   ASSERT_TRUE(u1.isApprox(u2));
-}
-
-TEST(Mpc, Derivatives)
-{
-  // TODO: verify analytical derivatives
-  ASSERT_TRUE(true);
 }

@@ -56,12 +56,12 @@ int main()
   Ud u;
 
   // dynamics
-  auto f = []<typename T>(T, const X<T> & x, const U<T> u) -> smooth::Tangent<X<T>> {
+  auto f = []<typename T>(const X<T> & x, const U<T> u) -> smooth::Tangent<X<T>> {
     return {x(1), u(0)};
   };
 
   // running constraints
-  auto cr = []<typename T>(T, const X<T> &, const U<T> & u) -> Eigen::Vector<T, 1> { return u; };
+  auto cr = []<typename T>(const X<T> &, const U<T> & u) -> Eigen::Vector<T, 1> { return u; };
   Eigen::Vector<double, 1> crl{-0.5}, cru{0.5};
 
   // create MPC object and set input bounds, and desired trajectories
@@ -85,9 +85,7 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) -> void {
-    d = f(t, x, u);
-  };
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double) { d = f(x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
