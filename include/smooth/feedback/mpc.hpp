@@ -33,6 +33,8 @@
 
 #include "ocp_to_qp.hpp"
 #include "time.hpp"
+#include "utils/d2r_exp_sparse.hpp"
+#include "utils/dr_exp_sparse.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
@@ -52,6 +54,36 @@ struct MPCWeights
 };
 
 namespace detail {
+
+// compute Hessian of f(x) = (x - xbar)' Q (x - xbar)
+template<LieGroup X, typename Qt>
+  requires std::is_base_of_v<Eigen::EigenBase<Qt>, Qt>
+void hessian_quad(
+  Eigen::SparseMatrix<double> & out,
+  const X & x,
+  const X & xbar,
+  const Qt & Q,
+  Eigen::Index r0 = 0,
+  Eigen::Index c0 = 0)
+{
+  // TODO prevent allocation ...
+  const Tangent<X> e                          = rminus(x, xbar);
+  const Eigen::RowVector<Scalar<X>, Dof<X>> J = e.transpose() * Q;
+
+  Eigen::SparseMatrix<double> drexpinv(Dof<X>, Dof<X>);
+  Eigen::SparseMatrix<double> d2rexpinv(Dof<X>, Dof<X> * Dof<X>);
+  Eigen::SparseMatrix<double> hessian_rmin(Dof<X>, Dof<X> * Dof<X>);
+
+  dr_expinv_sparse<X>(drexpinv, e);
+  d2r_expinv_sparse<X>(d2rexpinv, e);
+
+  for (auto j = 0u; j < Dof<X>; ++j) {
+    hessian_rmin.middleCols(j * Dof<X>, Dof<X>) =
+      d2rexpinv.middleCols(j * Dof<X>, Dof<X>) * drexpinv;
+  }
+
+  d2r_fog(out, J, Q, drexpinv, hessian_rmin, r0, c0);
+}
 
 template<Time T, LieGroup X>
 struct XDes
@@ -93,6 +125,7 @@ struct MPCObj
 
   X xf_des                         = Default<X>();
   Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
+  Eigen::SparseMatrix<double> hess{1 + 2 * Dof<X> + 1, 1 + 2 * Dof<X> + 1};
 
   double operator()(const double, const X &, const X & xf, const Eigen::Vector<double, 1> & q) const
   {
@@ -103,38 +136,27 @@ struct MPCObj
   Eigen::RowVector<double, 1 + 2 * Dof<X> + 1>
   jacobian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
   {
-    // TODO sparse
     Eigen::RowVector<double, 1 + 2 * Dof<X> + 1> ret;
     ret.setZero();
 
-    // dtheta / dq
-    ret(1 + 2 * Dof<X>) = 1;
+    const Tangent<X> xf_err      = rminus(xf, xf_des);
+    const TangentMap<X> drexpinv = dr_expinv<X>(xf_err);
 
-    // dtheta / dxf
-    const Tangent<X> xf_err                  = rminus(xf, xf_des);
-    ret.template segment<Dof<X>>(1 + Dof<X>) = xf_err.transpose() * QT * dr_expinv<X>(xf_err);
+    ret(1 + 2 * Dof<X>)                      = 1;                                   // dtheta / dq
+    ret.template segment<Dof<X>>(1 + Dof<X>) = xf_err.transpose() * QT * drexpinv;  // dtheta / dxf
 
     return ret;
   }
 
-  Eigen::SparseMatrix<double>
+  const Eigen::SparseMatrix<double> &
   hessian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
   {
-    // TODO sparse
-    Eigen::SparseMatrix<double> ret(1 + 2 * Dof<X> + 1, 1 + 2 * Dof<X> + 1);
+    set_zero(hess);
 
-    // d2theta / dxf2
-    const Tangent<X> y                        = rminus(xf, xf_des);
-    const auto Jg                             = dr_expinv<X>(y);
-    const auto Hg                             = hessian_rminus(xf, xf_des);
-    const Eigen::RowVector<double, Dof<X>> Jf = y.transpose() * QT;
+    hessian_quad(hess, xf, xf_des, QT, 1 + Dof<X>, 1 + Dof<X>);
 
-    Eigen::SparseMatrix<double> d2f_dx2(Dof<X>, Dof<X>);
-    d2r_fog(d2f_dx2, Jf, QT, Jg, Hg);
-
-    block_add(ret, 1 + Dof<X>, 1 + Dof<X>, d2f_dx2);
-
-    return ret;
+    hess.makeCompressed();
+    return hess;
   }
 };
 
@@ -145,16 +167,17 @@ struct MPCDyn
 
   Tangent<X> operator()(const double, const X & x, const U & u) const { return f(x, u); }
 
-  Eigen::Matrix<double, Dof<X>, 1 + Dof<X> + Dof<U>>
-  jacobian(const double, const X & x, const U & u)
-  {
-    // TODO sparse
-    const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
+  Eigen::SparseMatrix<double> jac{Dof<X>, 1 + Dof<X> + Dof<U>};
 
-    Eigen::Matrix<double, Dof<X>, 1 + Dof<X> + Dof<U>> ret;
-    ret.leftCols(0).setZero();
-    ret.rightCols(Dof<X> + Dof<U>) = df;
-    return ret;
+  const Eigen::SparseMatrix<double> & jacobian(const double, const X & x, const U & u)
+  {
+    set_zero(jac);
+
+    const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
+    block_add(jac, 0, 1, df);
+
+    jac.makeCompressed();
+    return jac;
   }
 };
 
@@ -170,20 +193,19 @@ struct MPCIntegrand
   Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
   Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
 
+  Eigen::SparseMatrix<double> hess{1 + Dof<X> + Dof<U>, 1 + Dof<X> + Dof<U>};
+
   Eigen::Vector<double, 1> operator()(const double t_loc, const X & x, const U & u) const
   {
     const Tangent<X> x_err = rminus(x, (*xdes)(t_loc));
     const Tangent<U> u_err = rminus(u, (*udes)(t_loc));
 
-    return Eigen::Vector<double, 1>{
-      0.5 * (Q * x_err).dot(x_err) + 0.5 * (R * u_err).dot(u_err),
-    };
+    return 0.5 * Eigen::Vector<double, 1>{(Q * x_err).dot(x_err) + (R * u_err).dot(u_err)};
   }
 
   Eigen::RowVector<double, 1 + Dof<X> + Dof<U>>
   jacobian(const double t_loc, const X & x, const U & u)
   {
-    // TODO sparse
     Eigen::RowVector<double, 1 + Dof<X> + Dof<U>> ret;
     ret.setZero();
 
@@ -198,39 +220,15 @@ struct MPCIntegrand
     return ret;
   }
 
-  Eigen::SparseMatrix<double> hessian(const double t_loc, const X & x, const U & u)
+  const Eigen::SparseMatrix<double> & hessian(const double t_loc, const X & x, const U & u)
   {
-    // TODO sparse
-    Eigen::SparseMatrix<double> ret(1 + Dof<X> + Dof<U>, 1 + Dof<X> + Dof<U>);
+    set_zero(hess);
 
-    {
-      // d2g / dx2
-      const Tangent<X> y                        = rminus(x, (*xdes)(t_loc));
-      const auto Jg                             = dr_expinv<X>(y);
-      const auto Hg                             = hessian_rminus(x, (*xdes)(t_loc));
-      const Eigen::RowVector<double, Dof<X>> Jf = y.transpose() * Q;
+    hessian_quad(hess, x, (*xdes)(t_loc), Q, 1, 1);
+    hessian_quad(hess, u, (*udes)(t_loc), R, 1 + Dof<X>, 1 + Dof<X>);
 
-      Eigen::SparseMatrix<double> d2f_dx2(Dof<X>, Dof<X>);
-      d2r_fog(d2f_dx2, Jf, Q, Jg, Hg);
-
-      block_add(ret, 1, 1, d2f_dx2);
-    }
-
-    {
-      // d2g / du2
-      const Tangent<U> y = rminus(u, (*udes)(t_loc));
-      const auto Jg      = dr_expinv<U>(y);                    // n x n
-      const auto Hg      = hessian_rminus(u, (*udes)(t_loc));  // n x (n x n)
-
-      const Eigen::RowVector<double, Dof<U>> Jf = y.transpose() * R;  // 1 x n
-
-      Eigen::SparseMatrix<double> d2f_du2(Dof<U>, Dof<U>);
-      d2r_fog(d2f_du2, Jf, R, Jg, Hg);
-
-      block_add(ret, 1 + Dof<X>, 1 + Dof<X>, d2f_du2);
-    }
-
-    return ret;
+    hess.makeCompressed();
+    return hess;
   }
 };
 
@@ -239,6 +237,8 @@ struct MPCCR
 {
   F f;
 
+  Eigen::SparseMatrix<double> jac{Ncr, 1 + Dof<X> + Dof<U>};
+
   static constexpr auto Ncr = std::invoke_result_t<F, X, U>::SizeAtCompileTime;
 
   Eigen::Vector<double, Ncr> operator()(const double, const X & x, const U & u) const
@@ -246,15 +246,15 @@ struct MPCCR
     return f(x, u);
   }
 
-  Eigen::Matrix<double, Ncr, 1 + Dof<X> + Dof<U>> jacobian(const double, const X & x, const U & u)
+  const Eigen::SparseMatrix<double> & jacobian(const double, const X & x, const U & u)
   {
-    // TODO sparse
-    const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
+    set_zero(jac);
 
-    Eigen::Matrix<double, Ncr, 1 + Dof<X> + Dof<U>> ret;
-    ret.leftCols(1).setZero();
-    ret.rightCols(Dof<X> + Dof<U>) = df;
-    return ret;
+    const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
+    block_add(jac, 0, 1, df);
+
+    jac.makeCompressed();
+    return jac;
   }
 };
 
@@ -263,22 +263,23 @@ struct MPCCE
 {
   X x0val = Default<X>();
 
+  Eigen::SparseMatrix<double> jac{Dof<X>, 1 + 2 * Dof<X> + 1};
+
   Tangent<X>
   operator()(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &) const
   {
     return rminus(x0, x0val);
   }
 
-  Eigen::Matrix<double, Dof<X>, 1 + 2 * Dof<X> + 1>
+  const Eigen::SparseMatrix<double> &
   jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
-    // TODO sparse
-    Eigen::Matrix<double, Dof<X>, 1 + 2 * Dof<X> + 1> ret;
-    ret.setZero();
+    set_zero(jac);
 
-    ret.template block<Dof<X>, Dof<X>>(0, 1) = dr_expinv<X>(rminus(x0, x0val));
+    dr_exp_sparse<X>(jac, rminus(x0, x0val), 0, 1);
 
-    return ret;
+    jac.makeCompressed();
+    return jac;
   }
 };
 

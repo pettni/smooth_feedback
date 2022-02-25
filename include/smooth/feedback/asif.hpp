@@ -106,7 +106,7 @@ public:
   {
     using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
-    assert((prm_.nh == std::invoke_result_t<SS, Scalar<G>, G>::RowsAtCompileTime));
+    assert((prm_.nh == std::invoke_result_t<decltype(h), Scalar<G>, G>::RowsAtCompileTime));
 
     ASIFProblem<G, U> pbm{
       .T     = prm_.T,

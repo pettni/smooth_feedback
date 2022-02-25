@@ -270,9 +270,9 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
       const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.theta, wrt(tf, x0, xf, q));
 
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 1st derivative of theta: got\n"
-                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
-                  << Eigen::MatrixXd(df_num) << '\n';
+        std::cout << "Error in 2nd derivative of theta: got\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
       };
     }
@@ -295,9 +295,9 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
       const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.theta, wrt(tf, x0, xf, q));
 
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 1st derivative of ce: got\n"
-                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
-                  << Eigen::MatrixXd(df_num) << '\n';
+        std::cout << "Error in 2nd derivative of ce: got\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
       };
     }
@@ -317,9 +317,9 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
       const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.f, wrt(t, x, u));
       const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.f, wrt(t, x, u));
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2st derivative of f: got\n"
-                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
-                  << Eigen::MatrixXd(df_num) << '\n';
+        std::cout << "Error in 2nd derivative of f: got\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
       };
     }
@@ -339,9 +339,9 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
       const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.g, wrt(t, x, u));
       const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.g, wrt(t, x, u));
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2st derivative of g: got\n"
-                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
-                  << Eigen::MatrixXd(df_num) << '\n';
+        std::cout << "Error in 2nd derivative of g: got\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
       };
     }
@@ -361,9 +361,9 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
       const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.cr, wrt(t, x, u));
       const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.cr, wrt(t, x, u));
       if (!cmp(d2f_def, d2f_num)) {
-        std::cout << "Error in 2st derivative of cr: got\n"
-                  << Eigen::MatrixXd(df_def) << "\nbut expected\n"
-                  << Eigen::MatrixXd(df_num) << '\n';
+        std::cout << "Error in 2nd derivative of cr: got\n"
+                  << Eigen::MatrixXd(d2f_def) << "\nbut expected\n"
+                  << Eigen::MatrixXd(d2f_num) << '\n';
         success = false;
       };
     }

@@ -89,6 +89,8 @@ int main()
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
+  const auto t0 = std::chrono::high_resolution_clock::now();
+
   for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
     auto [u_mpc, code] = mpc(t, g);
@@ -106,6 +108,11 @@ int main()
     // step dynamics
     stepper.do_step(ode, g, 0, 0.05);
   }
+
+  const auto tf = std::chrono::high_resolution_clock::now();
+
+  std::cout << "MPC loop time: "
+            << std::chrono::duration_cast<std::chrono::microseconds>(tf - t0).count() << "us\n";
 
 #if ENABLE_PLOTTING
   matplot::figure();
