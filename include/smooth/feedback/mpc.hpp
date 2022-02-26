@@ -75,10 +75,10 @@ void hessian_quad(
   Eigen::Index r0 = 0,
   Eigen::Index c0 = 0)
 {
-  // TODO prevent allocation ...
   const Tangent<X> e                           = rminus(x, xbar);
   const Eigen::RowVector<Scalar<X>, Dof<X>> Jq = e.transpose() * Q;
 
+  // TODO avoid allocation here
   Eigen::SparseMatrix<double> Jrmin(Dof<X>, Dof<X>);
   Eigen::SparseMatrix<double> d2rexpi(Dof<X>, Dof<X> * Dof<X>);
   Eigen::SparseMatrix<double> Hrmin(Dof<X>, Dof<X> * Dof<X>);
@@ -87,6 +87,7 @@ void hessian_quad(
   d2r_expinv_sparse<X>(d2rexpi, e);
 
   for (auto j = 0u; j < Dof<X>; ++j) {
+    // TODO sparse-sparse product is expensive and allocates temporary
     Hrmin.middleCols(j * Dof<X>, Dof<X>) = d2rexpi.middleCols(j * Dof<X>, Dof<X>) * Jrmin;
   }
 
