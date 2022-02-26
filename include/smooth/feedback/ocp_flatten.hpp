@@ -215,7 +215,8 @@ public:
   }
 
   // First derivative
-  const Eigen::SparseMatrix<double> & jacobian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const double tdbl          = static_cast<double>(t);
@@ -259,14 +260,15 @@ public:
     // compress working memory
     dexpinv_e_.makeCompressed();
     d2expinv_e_.makeCompressed();
-    J_.makeCompressed();
 
+    J_.makeCompressed();
     return J_;
   }
 
   // Second derivative
   //    \sum Bn (-1)^n / n! d2r (ad_a^n f)_aa - \sum Bn / n! d2r(ad_a^n dxl)_aa
-  const Eigen::SparseMatrix<double> & hessian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  hessian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
@@ -415,7 +417,8 @@ public:
     return f.template operator()<T>(t, rplus(xl(t), e), rplus(ul(t), v));
   }
 
-  const Eigen::SparseMatrix<double> & jacobian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const auto & [xlval, dxlval] = diff::dr(xl, wrt(t));
@@ -432,7 +435,8 @@ public:
     return J_;
   }
 
-  const Eigen::SparseMatrix<double> & hessian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  hessian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
@@ -535,7 +539,7 @@ public:
     return f.template operator()<T>(tf, rplus(xl(T(0.)), e0), rplus(xl(tf), ef), q);
   }
 
-  const Eigen::SparseMatrix<double> &
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
@@ -555,7 +559,7 @@ public:
     return J_;
   }
 
-  const Eigen::SparseMatrix<double> &
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
   hessian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, X, Q>>)

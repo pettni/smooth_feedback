@@ -67,7 +67,7 @@ namespace detail {
  */
 template<LieGroup X, typename Qt>
   requires std::is_base_of_v<Eigen::EigenBase<Qt>, Qt>
-void hessian_quad(
+inline void hessian_quad(
   Eigen::SparseMatrix<double> & out,
   const X & x,
   const X & xbar,
@@ -78,16 +78,14 @@ void hessian_quad(
   const Tangent<X> e                           = rminus(x, xbar);
   const Eigen::RowVector<Scalar<X>, Dof<X>> Jq = e.transpose() * Q;
 
-  // TODO avoid allocation here
-  Eigen::SparseMatrix<double> Jrmin(Dof<X>, Dof<X>);
-  Eigen::SparseMatrix<double> d2rexpi(Dof<X>, Dof<X> * Dof<X>);
-  Eigen::SparseMatrix<double> Hrmin(Dof<X>, Dof<X> * Dof<X>);
+  const TangentMap<X> Jrmin = dr_expinv<X>(e);
+  Eigen::Matrix<Scalar<X>, Dof<X>, Dof<X> * Dof<X>> Hrmin;
 
-  dr_expinv_sparse<X>(Jrmin, e);
+  static Eigen::SparseMatrix<double> d2rexpi(Dof<X>, Dof<X> * Dof<X>);
   d2r_expinv_sparse<X>(d2rexpi, e);
+  d2rexpi.makeCompressed();
 
   for (auto j = 0u; j < Dof<X>; ++j) {
-    // TODO sparse-sparse product is expensive and allocates temporary
     Hrmin.middleCols(j * Dof<X>, Dof<X>) = d2rexpi.middleCols(j * Dof<X>, Dof<X>) * Jrmin;
   }
 
@@ -170,7 +168,7 @@ struct MPCObj
     return ret;
   }
 
-  const Eigen::SparseMatrix<double> &
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
   hessian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
   {
     set_zero(hess);
@@ -199,7 +197,8 @@ struct MPCDyn
 
   Eigen::SparseMatrix<double> jac{Nx, 1 + Nx + Nu};
 
-  const Eigen::SparseMatrix<double> & jacobian(const double, const X & x, const U & u)
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  jacobian(const double, const X & x, const U & u)
   {
     set_zero(jac);
 
@@ -255,7 +254,8 @@ struct MPCIntegrand
     return ret;
   }
 
-  const Eigen::SparseMatrix<double> & hessian(const double t_loc, const X & x, const U & u)
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  hessian(const double t_loc, const X & x, const U & u)
   {
     set_zero(hess);
 
@@ -289,7 +289,8 @@ struct MPCCR
     return f(x, u);
   }
 
-  const Eigen::SparseMatrix<double> & jacobian(const double, const X & x, const U & u)
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  jacobian(const double, const X & x, const U & u)
   {
     set_zero(jac);
 
@@ -322,7 +323,7 @@ struct MPCCE
     return rminus(x0, x0val);
   }
 
-  const Eigen::SparseMatrix<double> &
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
     set_zero(jac);
@@ -386,8 +387,8 @@ template<
   Manifold U,
   typename F,
   typename CR,
-  diff::Type DT     = diff::Type::Default,
-  std::size_t Kmesh = 4>
+  std::size_t Kmesh = 4,
+  diff::Type DT     = diff::Type::Default>
 class MPC
 {
   static constexpr auto Ncr = std::invoke_result_t<CR, X, U>::SizeAtCompileTime;
@@ -414,7 +415,7 @@ public:
       : xdes_{std::make_shared<detail::XDes<T, X>>()},
         udes_{std::make_shared<detail::UDes<T, U>>()},
         mesh_{
-          (prm.K + Kmesh - 1) / Kmesh,
+          (prm.K + Kmesh - 1) / Kmesh
         },
         ocp_{
           .theta = {},

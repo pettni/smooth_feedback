@@ -56,12 +56,12 @@ int main()
   Ud u;
 
   // dynamics
-  auto f = []<typename T>(const X<T> & x, const U<T> u) -> smooth::Tangent<X<T>> {
+  auto f = []<typename S>(const X<S> & x, const U<S> u) -> smooth::Tangent<X<S>> {
     return {x(1), u(0)};
   };
 
   // running constraints
-  auto cr = []<typename T>(const X<T> &, const U<T> & u) -> Eigen::Vector<T, 1> { return u; };
+  auto cr = []<typename S>(const X<S> &, const U<S> & u) -> Eigen::Vector<S, 1> { return u; };
   Eigen::Vector<double, 1> crl{-0.5}, cru{0.5};
 
   // create MPC object and set input bounds, and desired trajectories
