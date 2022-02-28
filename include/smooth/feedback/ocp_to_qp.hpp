@@ -278,6 +278,10 @@ void ocp_to_qp_update(
     }
   }
 
+  //////////////////////////////
+  //// LINEARIZATION POINTS ////
+  //////////////////////////////
+
   auto xslin = mesh.all_nodes() | transform([&](double t) { return xl_fun(t0 + (tf - t0) * t); });
   auto uslin = mesh.all_nodes() | transform([&](double t) { return ul_fun(t0 + (tf - t0) * t); });
 

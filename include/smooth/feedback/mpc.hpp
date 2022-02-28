@@ -56,43 +56,6 @@ struct MPCWeights
 namespace detail {
 
 /**
- * @brief Compute hessian of function \f$ x \mapsto (x - xbar)^T * Q * (x - xbar)\f$.
- *
- * @param[out] hess output variable
- * @param[in] x point to calculate hessian at
- * @param[in] xbar
- * @param[in] Q quadratic weight coefficients
- * @param[in] r0 row in hess to insert result
- * @param[in] c0 col in hess to insert result
- */
-template<LieGroup X, typename Qt>
-  requires std::is_base_of_v<Eigen::EigenBase<Qt>, Qt>
-inline void hessian_quad(
-  Eigen::SparseMatrix<double> & out,
-  const X & x,
-  const X & xbar,
-  const Qt & Q,
-  Eigen::Index r0 = 0,
-  Eigen::Index c0 = 0)
-{
-  const Tangent<X> e                           = rminus(x, xbar);
-  const Eigen::RowVector<Scalar<X>, Dof<X>> Jq = e.transpose() * Q;
-
-  const TangentMap<X> Jrmin = dr_expinv<X>(e);
-  Eigen::Matrix<Scalar<X>, Dof<X>, Dof<X> * Dof<X>> Hrmin;
-
-  static Eigen::SparseMatrix<double> d2rexpi(Dof<X>, Dof<X> * Dof<X>);
-  d2r_expinv_sparse<X>(d2rexpi, e);
-  d2rexpi.makeCompressed();
-
-  for (auto j = 0u; j < Dof<X>; ++j) {
-    Hrmin.middleCols(j * Dof<X>, Dof<X>) = d2rexpi.middleCols(j * Dof<X>, Dof<X>) * Jrmin;
-  }
-
-  d2r_fog(out, Jq, Q, Jrmin, Hrmin, r0, c0);
-}
-
-/**
  * @brief Wrapper for desired trajectory and its derivative.
  */
 template<Time T, LieGroup X>
@@ -133,6 +96,13 @@ struct UDes
 
 /**
  * @brief MPC cost function.
+ *
+ * The cost is
+ * \f[
+ *    \theta(t_f, x_0, x_f, q) = q + (x_f - x_{f, des})^T Q_T (x_f - x_{f, des}).
+ * \f]
+ *
+ * @warn The functor members are only valid at the linearization point \f$ x_f = x_{f_des} \f$.
  */
 template<LieGroup X>
 struct MPCObj
@@ -144,38 +114,35 @@ struct MPCObj
   Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
 
   // private members
-  Eigen::SparseMatrix<double> hess{1 + 2 * Nx + 1, 1 + 2 * Nx + 1};
+  Eigen::SparseMatrix<double> hess = [this]() {
+    Eigen ::SparseMatrix<double> ret(1 + 2 * Nx + 1, 1 + 2 * Nx + 1);
+    block_add(ret, 1 + Nx, 1 + Nx, QT);
+    ret.makeCompressed();
+    return ret;
+  }();
 
   // functor members
-  double operator()(const double, const X &, const X & xf, const Eigen::Vector<double, 1> & q) const
+  double operator()(
+    const double,
+    const X &,
+    [[maybe_unused]] const X & xf,
+    const Eigen::Vector<double, 1> & q) const
   {
-    const Tangent<X> xf_err = rminus(xf, xf_des);
-    return q.sum() + 0.5 * (QT * xf_err).dot(xf_err);
+    assert(xf_des.isApprox(xf, 1e-4));
+    return q.sum();
   }
 
   Eigen::RowVector<double, 1 + 2 * Nx + 1>
-  jacobian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
+  jacobian(const double, const X &, [[maybe_unused]] const X & xf, const Eigen::Vector<double, 1> &)
   {
-    Eigen::RowVector<double, 1 + 2 * Nx + 1> ret;
-    ret.setZero();
-
-    const Tangent<X> xf_err      = rminus(xf, xf_des);
-    const TangentMap<X> drexpinv = dr_expinv<X>(xf_err);
-
-    ret(1 + 2 * Nx)                  = 1;                                   // dtheta / dq
-    ret.template segment<Nx>(1 + Nx) = xf_err.transpose() * QT * drexpinv;  // dtheta / dxf
-
-    return ret;
+    assert(xf_des.isApprox(xf, 1e-4));
+    return Eigen::RowVector<double, 1 + 2 * Nx + 1>::Unit(1 + 2 * Nx);
   }
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  hessian(const double, const X &, const X & xf, const Eigen::Vector<double, 1> &)
+  hessian(const double, const X &, [[maybe_unused]] const X & xf, const Eigen::Vector<double, 1> &)
   {
-    set_zero(hess);
-
-    hessian_quad(hess, xf, xf_des, QT, 1 + Nx, 1 + Nx);
-
-    hess.makeCompressed();
+    assert(xf_des.isApprox(xf, 1e-4));
     return hess;
   }
 };
@@ -212,6 +179,14 @@ struct MPCDyn
 
 /**
  * @brief MPC integrand.
+ *
+ * The integrand is
+ * \f[
+ *   c_e(t, x, u) = (x - x_{des}(t))^T Q (x - x_{des}(t)) + (u - u_{des}(t))^T R (u - u_{des}(t)).
+ * \f]
+ *
+ * @warn The functor members are only valid at the linearization point \f$ x = x_{des}(t), u =
+ * u_{des}(t) \f$.
  */
 template<Time T, LieGroup X, Manifold U>
 struct MPCIntegrand
@@ -227,42 +202,38 @@ struct MPCIntegrand
   Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
 
   // private members
-  Eigen::SparseMatrix<double> hess{1 + Nx + Nu, 1 + Nx + Nu};
+  Eigen::SparseMatrix<double> hess = [this]() {
+    Eigen ::SparseMatrix<double> ret(1 + Nx + Nu, 1 + Nx + Nu);
+    block_add(ret, 1, 1, Q);
+    block_add(ret, 1 + Nx, 1 + Nx, R);
+    ret.makeCompressed();
+    return ret;
+  }();
 
   // functor members
-  Eigen::Vector<double, 1> operator()(const double t_loc, const X & x, const U & u) const
+  Eigen::Vector<double, 1> operator()(
+    [[maybe_unused]] const double t_loc,
+    [[maybe_unused]] const X & x,
+    [[maybe_unused]] const U & u) const
   {
-    const Tangent<X> x_err = rminus(x, (*xdes)(t_loc));
-    const Tangent<U> u_err = rminus(u, (*udes)(t_loc));
-
-    return 0.5 * Eigen::Vector<double, 1>{(Q * x_err).dot(x_err) + (R * u_err).dot(u_err)};
+    assert((*xdes)(t_loc).isApprox(x, 1e-4));
+    assert((*udes)(t_loc).isApprox(u, 1e-4));
+    return Eigen::Vector<double, 1>{0.};
   }
 
-  Eigen::RowVector<double, 1 + Nx + Nu> jacobian(const double t_loc, const X & x, const U & u)
+  Eigen::RowVector<double, 1 + Nx + Nu> jacobian(
+    [[maybe_unused]] const double t_loc, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
   {
-    Eigen::RowVector<double, 1 + Nx + Nu> ret;
-    ret.setZero();
-
-    // dg / dx
-    const Tangent<X> x_err      = rminus(x, (*xdes)(t_loc));
-    ret.template segment<Nx>(1) = x_err.transpose() * Q * dr_expinv<X>(x_err);
-
-    // dg / du
-    const Tangent<U> u_err               = rminus(u, (*udes)(t_loc));
-    ret.template segment<Dof<U>>(1 + Nx) = u_err.transpose() * R * dr_expinv<U>(u_err);
-
-    return ret;
+    assert((*xdes)(t_loc).isApprox(x, 1e-4));
+    assert((*udes)(t_loc).isApprox(u, 1e-4));
+    return Eigen::RowVector<double, 1 + Nx + Nu>::Zero();
   }
 
-  std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  hessian(const double t_loc, const X & x, const U & u)
+  std::reference_wrapper<const Eigen::SparseMatrix<double>> hessian(
+    [[maybe_unused]] const double t_loc, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
   {
-    set_zero(hess);
-
-    hessian_quad(hess, x, (*xdes)(t_loc), Q, 1, 1);
-    hessian_quad(hess, u, (*udes)(t_loc), R, 1 + Dof<X>, 1 + Dof<X>);
-
-    hess.makeCompressed();
+    assert((*xdes)(t_loc).isApprox(x, 1e-4));
+    assert((*udes)(t_loc).isApprox(u, 1e-4));
     return hess;
   }
 };
@@ -303,7 +274,12 @@ struct MPCCR
 };
 
 /**
- * @brief MPC end constraints.
+ * @brief MPC end constraint function.
+ *
+ * The end constraint function is
+ * \f[
+ *   c_e(t_f, x_0, x_f, q) = x_0 \ominus x_{0, fix}.
+ * \f]
  */
 template<LieGroup X>
 struct MPCCE
@@ -311,24 +287,24 @@ struct MPCCE
   static constexpr auto Nx = Dof<X>;
 
   // public members
-  X x0val = Default<X>();
+  X x0_fix = Default<X>();
 
   // private members
   Eigen::SparseMatrix<double> jac{Nx, 1 + 2 * Nx + 1};
 
   // functor members
-  Tangent<X>
-  operator()(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &) const
+  Tangent<X> operator()(
+    const double, [[maybe_unused]] const X & x0, const X &, const Eigen::Vector<double, 1> &) const
   {
-    return rminus(x0, x0val);
+    return rminus(x0, x0_fix);
   }
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
+  jacobian(const double, [[maybe_unused]] const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
     set_zero(jac);
 
-    dr_exp_sparse<X>(jac, rminus(x0, x0val), 0, 1);
+    dr_exp_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
 
     jac.makeCompressed();
     return jac;
@@ -413,10 +389,7 @@ public:
     Eigen::Vector<double, Ncr> && cru,
     MPCParams && prm = MPCParams{})
       : xdes_{std::make_shared<detail::XDes<T, X>>()},
-        udes_{std::make_shared<detail::UDes<T, U>>()},
-        mesh_{
-          (prm.K + Kmesh - 1) / Kmesh
-        },
+        udes_{std::make_shared<detail::UDes<T, U>>()}, mesh_{(prm.K + Kmesh - 1) / Kmesh},
         ocp_{
           .theta = {},
           .f     = {.f = std::forward<F>(f)},
@@ -431,7 +404,7 @@ public:
         prm_{std::move(prm)}
   {
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
-    assert(test_ocp_derivatives(ocp_, 5, 1e-2));
+    // assert(test_ocp_derivatives(ocp_, 5, 1e-2));
   }
   /// Same as above but for lvalues
   inline MPC(
@@ -489,7 +462,7 @@ public:
     // update problem
     xdes_->t0         = t;
     udes_->t0         = t;
-    ocp_.ce.x0val     = x;
+    ocp_.ce.x0_fix    = x;
     ocp_.theta.xf_des = (*xdes_)(prm_.tf);
 
     // transcribe to QP
