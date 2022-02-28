@@ -126,10 +126,11 @@ struct MPCObj
     const double,
     const X &,
     [[maybe_unused]] const X & xf,
-    const Eigen::Vector<double, 1> & q) const
+    [[maybe_unused]] const Eigen::Vector<double, 1> & q) const
   {
+    assert(q(0) == 1.);
     assert(xf_des.isApprox(xf, 1e-4));
-    return q.sum();
+    return 0.;
   }
 
   Eigen::RowVector<double, 1 + 2 * Nx + 1>
@@ -381,6 +382,9 @@ public:
    * @param prm MPC parameters
    *
    * @note Allocates dynamic memory for work matrices and a sparse QP.
+   *
+   * @todo Optimization: Only time-dependent parts of QP are dynamics and end constraints, so
+   * only those need to be updated.
    */
   inline MPC(
     F && f,
@@ -404,7 +408,6 @@ public:
         prm_{std::move(prm)}
   {
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
-    // assert(test_ocp_derivatives(ocp_, 5, 1e-2));
   }
   /// Same as above but for lvalues
   inline MPC(

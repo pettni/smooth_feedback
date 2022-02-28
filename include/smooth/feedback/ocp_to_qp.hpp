@@ -177,22 +177,7 @@ void ocp_to_qp_update(
 
   const double t0 = 0.;
 
-  const X xl0 = xl_fun(0.);
-  const X xlf = xl_fun(tf);
-  const Eigen::Matrix<double, 1, 1> ql(0);
-
   static_assert(ocp_t::Nq == 1, "exactly one integral supported in ocp_to_qp");
-
-  ////////////////////////
-  //// ZERO VARIABLES ////
-  ////////////////////////
-
-  set_zero(qp.A);
-  set_zero(qp.P);
-
-  qp.l.setConstant(-std::numeric_limits<double>::infinity());
-  qp.u.setConstant(std::numeric_limits<double>::infinity());
-  qp.q.setZero();
 
   /////////////////////////
   //// VARIABLE LAYOUT ////
@@ -216,9 +201,32 @@ void ocp_to_qp_update(
   const auto crcon_B = dcon_L;
   const auto cecon_B = crcon_B + crcon_L;
 
-  /////////////////////////////////
-  //// OBJECTIVE LINEARIZATION ////
-  /////////////////////////////////
+  ////////////////////////
+  //// ZERO VARIABLES ////
+  ////////////////////////
+
+  set_zero(qp.A);
+  set_zero(qp.P);
+
+  qp.l.setConstant(-std::numeric_limits<double>::infinity());
+  qp.u.setConstant(std::numeric_limits<double>::infinity());
+  qp.q.setZero();
+
+  //////////////////////////////
+  //// LINEARIZATION POINTS ////
+  //////////////////////////////
+
+  const X xl0 = xl_fun(0.);
+  const X xlf = xl_fun(tf);
+
+  auto xslin = mesh.all_nodes() | transform([&](double t) { return xl_fun(t0 + (tf - t0) * t); });
+  auto uslin = mesh.all_nodes() | transform([&](double t) { return ul_fun(t0 + (tf - t0) * t); });
+
+  const Eigen::Vector<double, 1> ql{1.};
+
+  ///////////////////////
+  //// ENDPOINT COST ////
+  ///////////////////////
 
   const auto & [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
 
@@ -230,6 +238,26 @@ void ocp_to_qp_update(
   const Eigen::Matrix<double, Nx, Nx> Qo_x0f = d2th.block(1, 1 + Nx, Nx, Nx) / 2;
   const Eigen::Matrix<double, Nx, Nx> Qo_xf  = d2th.block(1 + Nx, 1 + Nx, Nx, Nx) / 2;
 
+  block_add(qp.P, 0, 0, Qo_x0, 1., true);            // d2q / dx0x0
+  block_add(qp.P, 0, Nx * N, Qo_x0f, 1., true);      // d2q / dx0xf
+  block_add(qp.P, Nx * N, Nx * N, Qo_xf, 1., true);  // d2q / dxfxf
+
+  qp.q.segment(0, Nx) += qo_x0;       // dq / dx0
+  qp.q.segment(Nx * N, Nx) += qo_xf;  // dq / dxf
+
+  ///////////////////////
+  //// INTEGRAL COST ////
+  ///////////////////////
+
+  mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);
+
+  // clang-format off
+  block_add(qp.P, 0, 0, work.int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L), qo_q.x(), true);
+
+  qp.q.segment(xvar_B, xvar_L) = qo_q.x() * work.int_out.dF.middleCols(2, xvar_L).transpose();
+  qp.q.segment(uvar_B, uvar_L) = qo_q.x() * work.int_out.dF.middleCols(2 + xvar_L, uvar_L).transpose();
+  // clang-format on
+
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////
   /////////////////////////////////
@@ -240,7 +268,6 @@ void ocp_to_qp_update(
     const auto [alpha, Dus] = mesh.interval_diffmat_unscaled(ival);
 
     // in each interval the collocation constraint is
-    //
     // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = alpha * X Dus
 
     for (const auto & [i, tau_i] : zip(iota(0u, Ki), mesh.interval_nodes(ival))) {
@@ -258,18 +285,12 @@ void ocp_to_qp_update(
 
       // insert new constraint A xi + B ui + E = [x0 ... XNi] di
 
+      block_add(qp.A, dcon_B + (M + i) * Nx, xvar_B + (M + i) * Nx, A);
+      block_add(qp.A, dcon_B + (M + i) * Nx, uvar_B + (M + i) * Nu, B);
+
       for (auto j = 0u; j < Ki + 1; ++j) {
         for (auto diag = 0u; diag < Nx; ++diag) {
           qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
-        }
-      }
-
-      for (auto row = 0u; row < Nx; ++row) {
-        for (auto col = 0u; col < Nx; ++col) {
-          qp.A.coeffRef(dcon_B + (M + i) * Nx + row, (M + i) * Nx + col) += A(row, col);
-        }
-        for (auto col = 0u; col < Nu; ++col) {
-          qp.A.coeffRef(dcon_B + (M + i) * Nx + row, uvar_B + (M + i) * Nu + col) = B(row, col);
         }
       }
 
@@ -277,15 +298,6 @@ void ocp_to_qp_update(
       qp.u.segment(dcon_B + (M + i) * Nx, Nx) = -E;
     }
   }
-
-  //////////////////////////////
-  //// LINEARIZATION POINTS ////
-  //////////////////////////////
-
-  auto xslin = mesh.all_nodes() | transform([&](double t) { return xl_fun(t0 + (tf - t0) * t); });
-  auto uslin = mesh.all_nodes() | transform([&](double t) { return ul_fun(t0 + (tf - t0) * t); });
-
-  const Eigen::Vector<double, 1> qlin{1.};
 
   /////////////////////////////
   //// RUNNING CONSTRAINTS ////
@@ -297,42 +309,17 @@ void ocp_to_qp_update(
   qp.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - work.cr_out.F;
   qp.u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - work.cr_out.F;
 
-  /////////////////////////
-  //// END CONSTRAINTS ////
-  /////////////////////////
+  //////////////////////////////
+  //// ENDPOINT CONSTRAINTS ////
+  //////////////////////////////
 
-  const auto & [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, xl0, xlf, qlin));
-
-  // integral constraints not supported
-  // assert(dceval.middleCols(1 + 2 * Nx, Nq).cwiseAbs().maxCoeff() < 1e-9);
+  const auto & [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, xl0, xlf, ql));
 
   block_add(qp.A, cecon_B, xvar_B, dceval.middleCols(1, Nx));                     // dce / dx0
   block_add(qp.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce / dxf
 
   qp.l.segment(cecon_B, cecon_L) = ocp.cel - ceval;
   qp.u.segment(cecon_B, cecon_L) = ocp.ceu - ceval;
-
-  ///////////////////////
-  //// INTEGRAL COST ////
-  ///////////////////////
-
-  mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);
-
-  block_add(
-    qp.P, 0, 0, work.int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L), qo_q.x(), true);
-  qp.q.segment(xvar_B, xvar_L) = qo_q.x() * work.int_out.dF.middleCols(2, xvar_L).transpose();
-  qp.q.segment(uvar_B, uvar_L) =
-    qo_q.x() * work.int_out.dF.middleCols(2 + xvar_L, uvar_L).transpose();
-
-  ///////////////////////
-  //// ENDPOINT COST ////
-  ///////////////////////
-
-  block_add(qp.P, 0, 0, Qo_x0, 1., true);            // d2q / dx0x0
-  block_add(qp.P, 0, Nx * N, Qo_x0f, 1., true);      // d2q / dx0xf
-  block_add(qp.P, Nx * N, Nx * N, Qo_xf, 1., true);  // d2q / dxfxf
-  qp.q.segment(0, Nx) += qo_x0;                      // dq / dx0
-  qp.q.segment(Nx * N, Nx) += qo_xf;                 // dq / dxf
 }
 
 }  // namespace detail
