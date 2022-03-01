@@ -154,7 +154,7 @@ Model-Predictive Control</h2>
 <div class="line"><a class="code hl_class" href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC&lt;T, X&lt;double&gt;</a>, U&lt;double&gt;, <span class="keyword">decltype</span>(Sigma)&gt; mpc(Sigma, {.T = 5, .K = 50});</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// set desired input and state trajectories</span></div>
-<div class="line">mpc.<a class="code hl_function" href="classsmooth_1_1feedback_1_1MPC.html#ad06de7436df1739680bb0afa044e5b37">set_udes</a>([]&lt;<span class="keyword">typename</span> S&gt;(S t) -&gt; U&lt;S&gt; { <span class="keywordflow">return</span> U&lt;S&gt;::Zero(); });</div>
+<div class="line">mpc.<a class="code hl_function" href="classsmooth_1_1feedback_1_1MPC.html#ab3b7acfe0de48b39dafc7c9a6486b7c7">set_udes</a>([]&lt;<span class="keyword">typename</span> S&gt;(S t) -&gt; U&lt;S&gt; { <span class="keywordflow">return</span> U&lt;S&gt;::Zero(); });</div>
 <div class="line">mpc.set_xdes([]&lt;<span class="keyword">typename</span> S&gt;(S t) -&gt; X&lt;S&gt; { <span class="keywordflow">return</span> X&lt;S&gt;::Identity(); });</div>
 <div class="line"> </div>
 <div class="line">T t(0);</div>
@@ -162,8 +162,8 @@ Model-Predictive Control</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">// get control input for time t and state x</span></div>
 <div class="line"><span class="keyword">auto</span> [u, code] = mpc(t, x);</div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00122">mpc.hpp:123</a></div></div>
-<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ad06de7436df1739680bb0afa044e5b37"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ad06de7436df1739680bb0afa044e5b37">smooth::feedback::MPC::set_udes</a></div><div class="ttdeci">void set_udes(std::function&lt; U(T)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired input trajectory (absolute time)</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00269">mpc.hpp:269</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html">smooth::feedback::MPC</a></div><div class="ttdoc">Model-Predictive Control (MPC) on Lie groups.</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00369">mpc.hpp:370</a></div></div>
+<div class="ttc" id="aclasssmooth_1_1feedback_1_1MPC_html_ab3b7acfe0de48b39dafc7c9a6486b7c7"><div class="ttname"><a href="classsmooth_1_1feedback_1_1MPC.html#ab3b7acfe0de48b39dafc7c9a6486b7c7">smooth::feedback::MPC::set_udes</a></div><div class="ttdeci">void set_udes(std::function&lt; U(T)&gt; &amp;&amp;u_des)</div><div class="ttdoc">Set the desired input trajectory (absolute time)</div><div class="ttdef"><b>Definition:</b> <a href="mpc_8hpp_source.html#l00501">mpc.hpp:501</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md4"></a>
 Active Set Invariance Filtering (ASIF)</h2>
 <ul>

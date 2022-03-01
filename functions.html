@@ -79,7 +79,7 @@ $(function() {
 <li>allocated&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MeshValue_3_010_01_4.html#a073d58dcc576a37535052cb25f50d223">smooth::feedback::MeshValue&lt; 0 &gt;</a></li>
 <li>alpha&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aaf53c744cc05a6d12edd3b51ebe50ecf">smooth::feedback::ASIFtoQPParams</a>, <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#a525be1e53ed8916edae9016a48cd15a6">smooth::feedback::QPSolverParams</a></li>
 <li>asif&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a13eb4a170b28855853aea36e030f57fc">smooth::feedback::ASIFilterParams&lt; U &gt;</a></li>
-<li>ASIFilter()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html#ae66ad515990b397d16500cb54261a137">smooth::feedback::ASIFilter&lt; T, G, U, Dyn, DT &gt;</a></li>
+<li>ASIFilter()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html#a26c643c2fa2cf692c5ee35b1711ebceb">smooth::feedback::ASIFilter&lt; G, U, Dyn, DT &gt;</a></li>
 </ul>
 
 
@@ -130,18 +130,16 @@ $(function() {
 
 
 <h3><a id="index_g" name="index_g"></a>- g -</h3><ul>
-<li>g&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac3dc7149004e6e0cb773889639fadfe1">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#abdb104690f474052c40aa4ba3f437b4e">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
-<li>g_domain&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ac267b0228db56b5e353446d34e4e1135">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a></li>
-<li>gdes&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae0ada3eab3ed9642a05d28cc902fa13e">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
+<li>g&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#abdb104690f474052c40aa4ba3f437b4e">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
 <li>get_bounds_info()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1IpoptNLP.html#ab24d8876df8d80e22754ccaec4ff5613">smooth::feedback::IpoptNLP&lt; Problem &gt;</a></li>
 <li>get_nlp_info()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1IpoptNLP.html#a2520826076f0f1a2c24d0e49ad117da7">smooth::feedback::IpoptNLP&lt; Problem &gt;</a></li>
 <li>get_starting_point()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1IpoptNLP.html#a8dfeb027e2b88e4a21dd59aedb17df8b">smooth::feedback::IpoptNLP&lt; Problem &gt;</a></li>
-<li>glim&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a529dcc02320655f14e6210efbc82a6ad">smooth::feedback::MPCParams&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a290a5e94b25491d733ec6f18def8f584">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
 </ul>
 
 
 <h3><a id="index_i" name="index_i"></a>- i -</h3><ul>
 <li>increase_degrees()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a8073e7e63790091677135d46a592c267">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
+<li>int_out&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1detail_1_1OcpToQpWorkmemory.html#a93af3c0433c6956ad9db6bb1fc6d98f2">smooth::feedback::detail::OcpToQpWorkmemory</a></li>
 <li>interval_diffmat()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a58c7b27261f7e9d8fb7fb498cff0dcc7">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 <li>interval_diffmat_unscaled()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a298c18f0538c25ff661210923c180640">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 <li>interval_find()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#af631b7a7d8e6058f0a14e8d80aa86087">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
@@ -150,12 +148,11 @@ $(function() {
 <li>interval_weights()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#aaaa23455dfec95a5a570954139017034">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 <li>IpoptNLP()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1IpoptNLP.html#a02068cd65c3724ce8e0db73ed04c1767">smooth::feedback::IpoptNLP&lt; Problem &gt;</a></li>
 <li>iter&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1NLPSolution.html#ad19a13f1ab94211f2d53797342ed358f">smooth::feedback::NLPSolution</a>, <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html#a43ac2d7756736ee34ac86e129a285808">smooth::feedback::QPSolution&lt; M, N, Scalar &gt;</a></li>
-<li>iterative_relinearization&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#abeec8bd844d0f6fecbd9367ec9813441">smooth::feedback::MPCParams&lt; G, U &gt;</a></li>
 </ul>
 
 
 <h3><a id="index_k" name="index_k"></a>- k -</h3><ul>
-<li>K&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aab99219680cef706f4858f4d548df1a1">smooth::feedback::ASIFtoQPParams</a>, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aa325af0fd92edda7c9e2eee514fac947">smooth::feedback::MPCParams&lt; G, U &gt;</a></li>
+<li>K&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#aab99219680cef706f4858f4d548df1a1">smooth::feedback::ASIFtoQPParams</a>, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a135327651ddd4ee588b260f993f47b5b">smooth::feedback::MPCParams</a></li>
 <li>Kmax&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#ad1c516d32e91b3abb4c5568108a8198d">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 <li>Kmin&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#afacb5395b1cf0020a9dce5c2801ce824">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 </ul>
@@ -176,7 +173,7 @@ $(function() {
 <li>max_time&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#a5c2cccec6a21d902a8fa12bc85cf92a2">smooth::feedback::QPSolverParams</a></li>
 <li>Mesh()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#adddac765aea6873c662d7a7a9f5ebc37">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 <li>minus()&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1time__trait_3_01rclcpp_1_1Time_01_4.html#a53362be5fcf5c4b4129555449b88b4c6">smooth::feedback::time_trait&lt; rclcpp::Time &gt;</a></li>
-<li>MPC()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ac2cdb95529d87e2dc65c07b48e42e0bd">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a></li>
+<li>MPC()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a8173f5e425512e4d0b9afab37a2bc840">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a></li>
 </ul>
 
 
@@ -188,15 +185,15 @@ $(function() {
 <li>Ncr&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a1c5ccaf2321beacbd829d6c432e3dc57">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a449fc208702e601f63f2ab81a22494b0">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
 <li>nh&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a28a2152d6885392a15036babae5fe899">smooth::feedback::ASIFilterParams&lt; U &gt;</a></li>
 <li>Nq&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a18d9285dfd21d45dfa624c9535daaa5a">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a3bcd0f5627540924cd74755349e21e7a">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
-<li>Nu&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a11a0c39bc05816b78e451b924e02fedb">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac5510c00ed2a9a2fcb61e28ab2bff47e">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
-<li>Nx&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a139425bc473b8cb3636c49e60c023942">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a0d29993d746c52b35bb3d1f3e565aed4">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
+<li>Nu&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a11a0c39bc05816b78e451b924e02fedb">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
+<li>Nx&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a139425bc473b8cb3636c49e60c023942">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
 </ul>
 
 
 <h3><a id="index_o" name="index_o"></a>- o -</h3><ul>
 <li>objective&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1NLPSolution.html#a6e3ad2dccb1c676cdf3cd374392ffb43">smooth::feedback::NLPSolution</a>, <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html#a4cce04b3d7e7a0a066769b6193235bd7">smooth::feedback::QPSolution&lt; M, N, Scalar &gt;</a></li>
-<li>operator()()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html#ab20f1f1bf140d70d9207b71acc117bbd">smooth::feedback::ASIFilter&lt; T, G, U, Dyn, DT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a18bc5a39d8e4d530489853cf4b117e28">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1PID.html#abeedb8556936080f09130c2c3b628bb7">smooth::feedback::PID&lt; T, G &gt;</a></li>
-<li>operator=()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ad62f2de999dd8953a214ce8190c1e9a3">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a369e981b2aae283299dcbfba5e972cac">smooth::feedback::PID&lt; T, G &gt;</a></li>
+<li>operator()()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html#ac9deece970ad511fb286cd0ccc54ee38">smooth::feedback::ASIFilter&lt; G, U, Dyn, DT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#abd984e556a5a4e1a92cfe575241af4bb">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1PID.html#abeedb8556936080f09130c2c3b628bb7">smooth::feedback::PID&lt; T, G &gt;</a></li>
+<li>operator=()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a38679c0e7c4e5d4d219e0a1632e87cab">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a369e981b2aae283299dcbfba5e972cac">smooth::feedback::PID&lt; T, G &gt;</a></li>
 </ul>
 
 
@@ -212,23 +209,21 @@ $(function() {
 
 
 <h3><a id="index_q" name="index_q"></a>- q -</h3><ul>
-<li>Q&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#ad3a63df7969b69b35d84a5da7fac171a">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#a184365bf0fc53330cf460906b31a3f57">smooth::feedback::OptimalControlProblem&lt; G, U &gt;::Weights</a></li>
+<li>Q&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCWeights.html#a724e25e4cddff95d00df5c4b15d330b1">smooth::feedback::MPCWeights&lt; X, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#ad3a63df7969b69b35d84a5da7fac171a">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
 <li>q&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#af9cfac2013f678eb683f2bf5fa8e5aee">smooth::feedback::QuadraticProgram&lt; M, N, Scalar &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a7cff5c59c37d778e10785d29e7715989">smooth::feedback::QuadraticProgramSparse&lt; Scalar &gt;</a></li>
-<li>qp&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a3307bb4c2dbd8faefaa35c6b4c0dab9d">smooth::feedback::ASIFilterParams&lt; U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a21e521ca84b5fa08de1d8b394d671810">smooth::feedback::MPCParams&lt; G, U &gt;</a></li>
-<li>QT&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#af4849942b2c886a5187e81d170d72a58">smooth::feedback::OptimalControlProblem&lt; G, U &gt;::Weights</a></li>
+<li>qp&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a3307bb4c2dbd8faefaa35c6b4c0dab9d">smooth::feedback::ASIFilterParams&lt; U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a5fca7a42cfa6f39d314a0d3a6d207c99">smooth::feedback::MPCParams</a></li>
+<li>QT&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCWeights.html#a7030e3c4a4f3c27eb796cc141f1d256b">smooth::feedback::MPCWeights&lt; X, U &gt;</a></li>
 </ul>
 
 
 <h3><a id="index_r" name="index_r"></a>- r -</h3><ul>
-<li>R&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem_1_1Weights.html#a6aaab93e0a35b8987a97de9b6f678e6e">smooth::feedback::OptimalControlProblem&lt; G, U &gt;::Weights</a></li>
+<li>R&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCWeights.html#af518ed5d68d0f784b089018ff8369267">smooth::feedback::MPCWeights&lt; X, U &gt;</a></li>
 <li>refine_errors()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#aea6f3e7ff1f0aa93a2a1a1c142ec6667">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 <li>refine_ph()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#ab00cae1af33f3fe1dda4075fce59eef8">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
 <li>relax_cost&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html#a1ac57c1aaa7b3e8e77e7eabf8287a5aa">smooth::feedback::ASIFtoQPParams</a></li>
-<li>relinearize_around_sol()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a2e6592bd4d4a1ae44c555521ef471d3b">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a></li>
-<li>relinearize_around_solution&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a54992672883c01640e8393a906d37b0c">smooth::feedback::MPCParams&lt; G, U &gt;</a></li>
 <li>reset()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a2fdbc3ac62b4e9cb8c5b0fee204b350c">smooth::feedback::EKF&lt; G, DiffType, Stpr &gt;</a></li>
 <li>reset_integral()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1PID.html#a7be08a39f7cda290bcb58622eafbc9f3">smooth::feedback::PID&lt; T, G &gt;</a></li>
-<li>reset_warmstart()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#aeeaed739d2e0724b9e78d688fdfd20e4">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a></li>
+<li>reset_warmstart()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a67e103099e50664d3adc2935000d9c7c">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a></li>
 <li>rho&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#a12313e82b48be1c090051beefd1f2af7">smooth::feedback::QPSolverParams</a></li>
 </ul>
 
@@ -239,8 +234,11 @@ $(function() {
 <li>set_ki()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1PID.html#a843d255f93fac8bce487eecfe949abff">smooth::feedback::PID&lt; T, G &gt;</a></li>
 <li>set_kp()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1PID.html#ae86c73bb3f865d84499c9919ebcd3f23">smooth::feedback::PID&lt; T, G &gt;</a></li>
 <li>set_N_colloc_ival()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1Mesh.html#a31257a21ffef078ff44ea3269e236edf">smooth::feedback::Mesh&lt; _Kmin, _Kmax &gt;</a></li>
-<li>set_udes()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ad06de7436df1739680bb0afa044e5b37">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a></li>
-<li>set_xdes()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a26262fde914217a594eecab4cddd60f9">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a196b15d5fda83a2287f8a4937172e64c">smooth::feedback::PID&lt; T, G &gt;</a></li>
+<li>set_udes()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ab3b7acfe0de48b39dafc7c9a6486b7c7">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a></li>
+<li>set_udes_rel()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#adda0fea83db575a88becffd22ae6685c">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a></li>
+<li>set_weights()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a9b98cbda48825bb04a609f2899c34d48">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a></li>
+<li>set_xdes()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a72b73fbab5097d92622c7ccd8071232e">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a>, <a class="el" href="classsmooth_1_1feedback_1_1PID.html#a196b15d5fda83a2287f8a4937172e64c">smooth::feedback::PID&lt; T, G &gt;</a></li>
+<li>set_xdes_rel()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a94f6cc083d43dd6b77f82f4eca3451cb">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a></li>
 <li>sigma&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#af1bf675148e3597d0c7530a26a2e59c5">smooth::feedback::QPSolverParams</a></li>
 <li>sol()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1IpoptNLP.html#adc04640e1b08dcdcefde18a65840fe92">smooth::feedback::IpoptNLP&lt; Problem &gt;</a></li>
 <li>Solution&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#ae1bea88bf72b7fdc826982499d264b3b">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
@@ -251,26 +249,22 @@ $(function() {
 
 
 <h3><a id="index_t" name="index_t"></a>- t -</h3><ul>
-<li>T&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#af2b8a4c5d58093b6293c51286c895dff">smooth::feedback::ASIFilterParams&lt; U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a0fbb8db21298fb8513681ab8e2a06fab">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#af5f181b92332704866601ee61e5174fa">smooth::feedback::MPCParams&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ae31650695082bde65ca6c11eb7681e0c">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
+<li>T&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#af2b8a4c5d58093b6293c51286c895dff">smooth::feedback::ASIFilterParams&lt; U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#ac0cb570cac3d5e8c5c993f0da432972a">smooth::feedback::ASIFProblem&lt; X, U &gt;</a></li>
 <li>t0&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a7d54f0b7a076ef5074b55aa689486971">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
-<li>tf&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a6ed75e65081573e292e618c630f66011">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
+<li>tf&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a0821ab91502939532f45a14295b37a6e">smooth::feedback::MPCParams</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a6ed75e65081573e292e618c630f66011">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
 <li>theta&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5bfd4ce7b7f2929684382a5220925c21">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
 <li>TrajectoryReturnT&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1PID.html#a6fd580b582e48f4ff658f59bde9c010d">smooth::feedback::PID&lt; T, G &gt;</a></li>
 </ul>
 
 
 <h3><a id="index_u" name="index_u"></a>- u -</h3><ul>
-<li>u&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1LinearizationInfo.html#ad084e1f47c64feee186769e3bd834dcc">smooth::feedback::LinearizationInfo&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a1855edf64431d8de01d5374d44d8f293">smooth::feedback::ManifoldBounds&lt; M &gt;</a></li>
-<li>U&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#abd1281bdd34552c63d9764295c3f0ee9">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
-<li>u&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#aa9ed61c329dd74e9a8281af903c8b3d6">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
-<li>U&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a516c32cdfd424cc1e25e865d827d0e22">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
-<li>u&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#a6308cf45596d755de52b198990530fd9">smooth::feedback::QuadraticProgram&lt; M, N, Scalar &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a590786eb3c3230068cffb62700276c6c">smooth::feedback::QuadraticProgramSparse&lt; Scalar &gt;</a></li>
-<li>u_des&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a0adfcff75d0b12743fa9e6b445e39fb5">smooth::feedback::ASIFProblem&lt; G, U &gt;</a></li>
+<li>u&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ManifoldBounds.html#a1855edf64431d8de01d5374d44d8f293">smooth::feedback::ManifoldBounds&lt; M &gt;</a></li>
+<li>U&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#abd1281bdd34552c63d9764295c3f0ee9">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a516c32cdfd424cc1e25e865d827d0e22">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
+<li>u&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#aa9ed61c329dd74e9a8281af903c8b3d6">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html#a6308cf45596d755de52b198990530fd9">smooth::feedback::QuadraticProgram&lt; M, N, Scalar &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html#a590786eb3c3230068cffb62700276c6c">smooth::feedback::QuadraticProgramSparse&lt; Scalar &gt;</a></li>
+<li>u_des&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a4c76baabcce86cd2c15fb4ac4450d0d5">smooth::feedback::ASIFProblem&lt; X, U &gt;</a></li>
 <li>u_weight&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a824b02c8d5ea99358a61012ab48ee640">smooth::feedback::ASIFilterParams&lt; U &gt;</a></li>
-<li>udes&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ad9562f86d56471566009f1cd9679740f">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
-<li>ulim&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a15bac77c7c99c5dd3a46ba4065cb9130">smooth::feedback::ASIFilterParams&lt; U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#ac872355a608a29ff0c280a9e10548b4f">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a359040f044d8dd3603e7a46844111b38">smooth::feedback::MPCParams&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#aed735251f2a513ab99716e1d9479b966">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
+<li>ulim&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html#a15bac77c7c99c5dd3a46ba4065cb9130">smooth::feedback::ASIFilterParams&lt; U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a5368244e26e4225c3a6c28219b47c5d1">smooth::feedback::ASIFProblem&lt; X, U &gt;</a></li>
 <li>update()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e">smooth::feedback::EKF&lt; G, DiffType, Stpr &gt;</a></li>
-<li>update_weights()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a669381793e1de5cc51864b082d12a7dc">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a></li>
 </ul>
 
 
@@ -280,19 +274,17 @@ $(function() {
 
 
 <h3><a id="index_w" name="index_w"></a>- w -</h3><ul>
-<li>W_u&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#ab533825b3922a43911c70417593b3978">smooth::feedback::ASIFProblem&lt; G, U &gt;</a></li>
-<li>warmstart&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a4ac576ea95a6bfd64f6a87df2ff1eaa1">smooth::feedback::MPCParams&lt; G, U &gt;</a></li>
-<li>weights&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#a06d3c4d750af3de2f32b11503238e4fd">smooth::feedback::MPCParams&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#a967816d83eaf00a11964fd7216721ef4">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
+<li>W_u&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a8367b5ba016be886a54e8628c0409cac">smooth::feedback::ASIFProblem&lt; X, U &gt;</a></li>
+<li>warmstart&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html#aac24fea108871e87d6789429fcfcb5cf">smooth::feedback::MPCParams</a></li>
 <li>windup_limit&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1PIDParams.html#a3b120cee267e78595ade8a784b3562a1">smooth::feedback::PIDParams</a></li>
 </ul>
 
 
 <h3><a id="index_x" name="index_x"></a>- x -</h3><ul>
 <li>x&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1NLPSolution.html#a8e8b36ed467f641772231a7c5de5a7a6">smooth::feedback::NLPSolution</a></li>
-<li>X&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5a4bf845d86467394071fd7094802c42">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a></li>
+<li>X&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5a4bf845d86467394071fd7094802c42">smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a303ed745d326ccace518e91dca4990fd">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
 <li>x&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#aa517d896cd7dcd4655387d7369ebe642">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
-<li>X&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1OCPSolution.html#a303ed745d326ccace518e91dca4990fd">smooth::feedback::OCPSolution&lt; _X, _U, _Nq, _Ncr, _Nce &gt;</a></li>
-<li>x0&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#a6cb14136725bbbc70222698dd205c720">smooth::feedback::ASIFProblem&lt; G, U &gt;</a>, <a class="el" href="structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac4af927a70f4a218546ce290c5093e8d">smooth::feedback::OptimalControlProblem&lt; G, U &gt;</a></li>
+<li>x0&#160;:&#160;<a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html#af02d7359596aa9460c552d702a789a27">smooth::feedback::ASIFProblem&lt; X, U &gt;</a></li>
 </ul>
 
 
@@ -303,7 +295,7 @@ $(function() {
 
 
 <h3><a id="index__7E" name="index__7E"></a>- ~ -</h3><ul>
-<li>~MPC()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a65dd3a9cf052cbb122e5e3b766b7f292">smooth::feedback::MPC&lt; T, G, U, Dyn, DiffT &gt;</a></li>
+<li>~MPC()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a28d8c2d7111795cc0fe9de527753af97">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</a></li>
 <li>~PID()&#160;:&#160;<a class="el" href="classsmooth_1_1feedback_1_1PID.html#af4c37464a7349a495eccfab1c964dd8c">smooth::feedback::PID&lt; T, G &gt;</a></li>
 </ul>
 </div><!-- contents -->

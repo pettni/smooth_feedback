@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['kron_5fidentity_0',['kron_identity',['../sparse_8hpp.html#aacbbe92799e6475e38652bca4eb0997f',1,'smooth::feedback::kron_identity(const Mat &amp;X, std::size_t n)'],['../sparse_8hpp.html#aa319e786b38415b1d8d7a459bd6e7325',1,'smooth::feedback::kron_identity(const Eigen::MatrixBase&lt; Derived &gt; &amp;X, std::size_t n)']]]
+  ['lgr_5fplus_5fone_0',['lgr_plus_one',['../mesh_8hpp.html#a7564ac413995f980db242faa46af2311',1,'smooth::feedback::detail']]]
 ];

@@ -1,10 +1,7 @@
 var searchData=
 [
-  ['ocp_5fto_5fnlp_0',['ocp_to_nlp',['../ocp__to__nlp_8hpp.html#a3307de8967eaf439cd151259aba49fc4',1,'smooth::feedback']]],
-  ['ocp_5fto_5fqp_1',['ocp_to_qp',['../mpc__func_8hpp.html#a2c5de007f145a6ce97f9fa580b7b3b70',1,'smooth::feedback::ocp_to_qp(const OptimalControlProblem&lt; G, U &gt; &amp;pbm, std::size_t K, const Dyn &amp;f, const LinearizationInfo&lt; G, U &gt; &amp;lin)'],['../ocp__to__qp_8hpp.html#a2a35a7c13f2ca6ecdcfab3c85a3a823f',1,'smooth::feedback::ocp_to_qp(const OCPType auto &amp;ocp, const MeshType auto &amp;mesh, double tf, auto &amp;&amp;xl_fun, auto &amp;&amp;ul_fun)']]],
-  ['ocp_5fto_5fqp_5fallocate_2',['ocp_to_qp_allocate',['../mpc__func_8hpp.html#a41168f7c923be9ac2dc07f90f9f9c18f',1,'smooth::feedback']]],
-  ['ocp_5fto_5fqp_5ffill_3',['ocp_to_qp_fill',['../mpc__func_8hpp.html#aa03c6f777397d91b61b7f5b8d2d9ce8d',1,'smooth::feedback']]],
-  ['ocpsol_5fto_5fnlpsol_4',['ocpsol_to_nlpsol',['../ocp__to__nlp_8hpp.html#a0e9cac8ff2f4f4c4a66eca8ef4fc3edc',1,'smooth::feedback']]],
-  ['operator_28_29_5',['operator()',['../classsmooth_1_1feedback_1_1ASIFilter.html#ab20f1f1bf140d70d9207b71acc117bbd',1,'smooth::feedback::ASIFilter::operator()()'],['../classsmooth_1_1feedback_1_1MPC.html#a18bc5a39d8e4d530489853cf4b117e28',1,'smooth::feedback::MPC::operator()()'],['../classsmooth_1_1feedback_1_1PID.html#abeedb8556936080f09130c2c3b628bb7',1,'smooth::feedback::PID::operator()()']]],
-  ['operator_3d_6',['operator=',['../classsmooth_1_1feedback_1_1MPC.html#ad62f2de999dd8953a214ce8190c1e9a3',1,'smooth::feedback::MPC::operator=(const MPC &amp;)=default'],['../classsmooth_1_1feedback_1_1MPC.html#aa08c0ff357decb0584b7a9f58fce2604',1,'smooth::feedback::MPC::operator=(MPC &amp;&amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#a369e981b2aae283299dcbfba5e972cac',1,'smooth::feedback::PID::operator=(const PID &amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#a5dcbfc1722b255b33667135642011636',1,'smooth::feedback::PID::operator=(PID &amp;&amp;)=default']]]
+  ['pid_0',['PID',['../classsmooth_1_1feedback_1_1PID.html#aa5de7b5c7935a2b6db8add2d00a47998',1,'smooth::feedback::PID::PID(const PIDParams &amp;prm=PIDParams{}) noexcept'],['../classsmooth_1_1feedback_1_1PID.html#ad36e4bccc9ad61d5050495a893f66500',1,'smooth::feedback::PID::PID(const PID &amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#ab1076ca62fa37eb2286153bacecdcfe6',1,'smooth::feedback::PID::PID(PID &amp;&amp;)=default']]],
+  ['plus_1',['plus',['../structsmooth_1_1feedback_1_1time__trait_3_01rclcpp_1_1Time_01_4.html#a9e7e4d0841eb6de3e142971443c64ebc',1,'smooth::feedback::time_trait&lt; rclcpp::Time &gt;']]],
+  ['polish_5fqp_2',['polish_qp',['../qp_8hpp.html#ad27b3771b96cb03c2afe78a9555ff842',1,'smooth::feedback::detail']]],
+  ['predict_3',['predict',['../classsmooth_1_1feedback_1_1EKF.html#a2d0f818873bae3eff990568295a9bcca',1,'smooth::feedback::EKF']]]
 ];

@@ -6,6 +6,5 @@ var searchData=
   ['lambda_5fcr_3',['lambda_cr',['../structsmooth_1_1feedback_1_1OCPSolution.html#a79e36584d77a8671edf8642053a219c3',1,'smooth::feedback::OCPSolution']]],
   ['lambda_5fdyn_4',['lambda_dyn',['../structsmooth_1_1feedback_1_1OCPSolution.html#a4d2abc1e30969c96c37b4a55ad28fdcf',1,'smooth::feedback::OCPSolution']]],
   ['lambda_5fq_5',['lambda_q',['../structsmooth_1_1feedback_1_1OCPSolution.html#acbfc62aecff77f61d0fe1eaec1119317',1,'smooth::feedback::OCPSolution']]],
-  ['lgr_5fplus_5fone_6',['lgr_plus_one',['../mesh_8hpp.html#a7564ac413995f980db242faa46af2311',1,'smooth::feedback::detail']]],
-  ['linearizationinfo_7',['LinearizationInfo',['../structsmooth_1_1feedback_1_1LinearizationInfo.html',1,'smooth::feedback']]]
+  ['lgr_5fplus_5fone_6',['lgr_plus_one',['../mesh_8hpp.html#a7564ac413995f980db242faa46af2311',1,'smooth::feedback::detail']]]
 ];

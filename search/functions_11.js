@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['test_5focp_5fderivatives_0',['test_ocp_derivatives',['../ocp_8hpp.html#ab6d2c2b6bf1d2dd09c2d7ed215f806b6',1,'smooth::feedback']]]
+  ['unflatten_5focpsol_0',['unflatten_ocpsol',['../ocp__flatten_8hpp.html#a230a812340c338386f336e153191673e',1,'smooth::feedback']]],
+  ['update_1',['update',['../classsmooth_1_1feedback_1_1EKF.html#a57a23546447c59ae8dbfc4cacf23636e',1,'smooth::feedback::EKF']]]
 ];

@@ -148,12 +148,12 @@ $(function() {
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#abdb104690f474052c40aa4ba3f437b4e">  109</a></span>  G <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#abdb104690f474052c40aa4ba3f437b4e">g</a>;</div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span> </div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#aa6e2418ab0d852ff9541c2fb4e8a2fb7">  112</a></span>  CR <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#aa6e2418ab0d852ff9541c2fb4e8a2fb7">cr</a>;</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#add58d08c93856dbcb73558dc8bd93f80">  114</a></span>  Eigen::Vector&lt;double, Ncr&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#add58d08c93856dbcb73558dc8bd93f80">crl</a>;</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#a22b9394a2093acc154c32192cef3ecec">  116</a></span>  Eigen::Vector&lt;double, Ncr&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#a22b9394a2093acc154c32192cef3ecec">cru</a>;</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#add58d08c93856dbcb73558dc8bd93f80">  114</a></span>  Eigen::Vector&lt;double, Ncr&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#add58d08c93856dbcb73558dc8bd93f80">crl</a> = Eigen::Vector&lt;double, Ncr&gt;::Zero();</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#a22b9394a2093acc154c32192cef3ecec">  116</a></span>  Eigen::Vector&lt;double, Ncr&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#a22b9394a2093acc154c32192cef3ecec">cru</a> = Eigen::Vector&lt;double, Ncr&gt;::Zero();</div>
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span> </div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#aaf45d131fe8de830b927403e8a15536a">  119</a></span>  CE <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#aaf45d131fe8de830b927403e8a15536a">ce</a>;</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#ab21db7006c40b8dfde3e31917e7c4949">  121</a></span>  Eigen::Vector&lt;double, Nce&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#ab21db7006c40b8dfde3e31917e7c4949">cel</a>;</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#a91ef007d7b6863d746bc56bdaf078b0c">  123</a></span>  Eigen::Vector&lt;double, Nce&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#a91ef007d7b6863d746bc56bdaf078b0c">ceu</a>;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#ab21db7006c40b8dfde3e31917e7c4949">  121</a></span>  Eigen::Vector&lt;double, Nce&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#ab21db7006c40b8dfde3e31917e7c4949">cel</a> = Eigen::Vector&lt;double, Nce&gt;::Zero();</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno"><a class="line" href="structsmooth_1_1feedback_1_1OCP.html#a91ef007d7b6863d746bc56bdaf078b0c">  123</a></span>  Eigen::Vector&lt;double, Nce&gt; <a class="code hl_variable" href="structsmooth_1_1feedback_1_1OCP.html#a91ef007d7b6863d746bc56bdaf078b0c">ceu</a> = Eigen::Vector&lt;double, Nce&gt;::Zero();</div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>};</div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
@@ -200,151 +200,185 @@ $(function() {
 <div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>  <span class="keyword">using</span> U = <span class="keyword">typename</span> <a class="code hl_typedef" href="structsmooth_1_1feedback_1_1OCP.html#abd1281bdd34552c63d9764295c3f0ee9">OCP::U</a>;</div>
 <div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>  <span class="keyword">using</span> Q = Eigen::Vector&lt;double, OCP::Nq&gt;;</div>
 <div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.f), std::tuple&lt;double, X, U&gt;&gt;);</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.f), std::tuple&lt;double, X, U&gt;&gt;);</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span> </div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.g), std::tuple&lt;double, X, U&gt;&gt;);</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.g), std::tuple&lt;double, X, U&gt;&gt;);</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span> </div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.cr), std::tuple&lt;double, X, U&gt;&gt;);</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.cr), std::tuple&lt;double, X, U&gt;&gt;);</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.ce), std::tuple&lt;double, X, X, Q&gt;&gt;);</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.ce), std::tuple&lt;double, X, X, Q&gt;&gt;);</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> </div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.theta), std::tuple&lt;double, X, X, Q&gt;&gt;);</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>  <span class="keyword">static_assert</span>(diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.theta), std::tuple&lt;double, X, X, Q&gt;&gt;);</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span> </div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>  <span class="keyword">const</span> <span class="keyword">auto</span> cmp = [&amp;eps](<span class="keyword">const</span> <span class="keyword">auto</span> &amp; m1, <span class="keyword">const</span> <span class="keyword">auto</span> &amp; m2) {</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>    <span class="keywordflow">return</span> (</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>      <span class="comment">// clang-format off</span></div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>      (m1.cols() == m2.cols())</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>      &amp;&amp; (m1.rows() == m2.rows())</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>      &amp;&amp; (</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>          m1.isApprox(m2, 1e-4) ||</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>          Eigen::MatrixXd(m1 - m2).cwiseAbs().maxCoeff() &lt; eps</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>      )</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>      <span class="comment">// clang-format on</span></div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>    );</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  };</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span> </div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="keywordtype">bool</span> success = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span> </div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> trial = 0u; trial &lt; num_trials; ++trial) {</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    <span class="comment">// endpt parameters</span></div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> tf                        = 1 + <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(std::rand()) / RAND_MAX;</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    <span class="keyword">const</span> X x0                             = Random&lt;X&gt;();</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>    <span class="keyword">const</span> X xf                             = Random&lt;X&gt;();</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    <span class="keyword">const</span> Eigen::Vector&lt;double, OCP::Nq&gt; q = Eigen::Vector&lt;double, OCP::Nq&gt;::Random();</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> t                         = 1 + <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(std::rand()) / RAND_MAX;</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>    <span class="keyword">const</span> X x                              = Random&lt;X&gt;();</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>    <span class="keyword">const</span> U u                              = Random&lt;U&gt;();</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span> </div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>    {</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>      <span class="comment">// theta</span></div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] =</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.theta), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no jacobian for theta\n&quot;</span>;</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>  }</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.theta), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no hessian for theta\n&quot;</span>;</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  }</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.f), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no jacobian for f\n&quot;</span>;</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  }</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.f), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no hessian for f\n&quot;</span>;</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  }</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.g), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no jacobian for g\n&quot;</span>;</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  }</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.g), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no hessian for g\n&quot;</span>;</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>  }</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.cr), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no jacobian for cr\n&quot;</span>;</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  }</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.cr), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no hessian for cr\n&quot;</span>;</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  }</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.ce), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no jacobian for ce\n&quot;</span>;</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  }</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  <span class="keywordflow">if</span> (!diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.ce), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>    std::cout &lt;&lt; <span class="stringliteral">&quot;no hessian for ce\n&quot;</span>;</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  }</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span> </div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  <span class="keyword">const</span> <span class="keyword">auto</span> cmp = [&amp;eps](<span class="keyword">const</span> <span class="keyword">auto</span> &amp; m1, <span class="keyword">const</span> <span class="keyword">auto</span> &amp; m2) {</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    <span class="keywordflow">return</span> (</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>      <span class="comment">// clang-format off</span></div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>      (m1.cols() == m2.cols())</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>      &amp;&amp; (m1.rows() == m2.rows())</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>      &amp;&amp; (</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>          m1.isApprox(m2, 1e-4) ||</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>          Eigen::MatrixXd(m1 - m2).cwiseAbs().maxCoeff() &lt; eps</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>      )</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>      <span class="comment">// clang-format on</span></div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>    );</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>  };</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span> </div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>  <span class="keywordtype">bool</span> success = <span class="keyword">true</span>;</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span> </div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of theta: got\n&quot;</span></div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>      };</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of theta: got\n&quot;</span></div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>      };</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>    }</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span> </div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>    {</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>      <span class="comment">// end constraints</span></div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] =</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>        diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.ce, wrt(tf, x0, xf, q));</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.ce, wrt(tf, x0, xf, q));</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span> </div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of ce: got\n&quot;</span></div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>      };</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of ce: got\n&quot;</span></div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>      };</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>    }</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>    {</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>      <span class="comment">// dynamics</span></div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] = diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.f, wrt(t, x, u));</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.f, wrt(t, x, u));</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span> </div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of f: got\n&quot;</span></div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>      };</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of f: got\n&quot;</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>      };</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>    }</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span> </div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>    {</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>      <span class="comment">// integral</span></div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] = diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.g, wrt(t, x, u));</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.g, wrt(t, x, u));</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span> </div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of g: got\n&quot;</span></div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>      };</div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of g: got\n&quot;</span></div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>      };</div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>    }</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span> </div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>    {</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>      <span class="comment">// running constraints</span></div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] = diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.cr, wrt(t, x, u));</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.cr, wrt(t, x, u));</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span> </div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of cr: got\n&quot;</span></div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>      };</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of cr: got\n&quot;</span></div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>        success = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>      };</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>    }</div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>  }</div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span> </div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>  <span class="keywordflow">return</span> success;</div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>}</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span> </div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>}  <span class="comment">// namespace smooth::feedback</span></div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span> </div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span><span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__OCP_HPP_</span></div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> trial = 0u; trial &lt; num_trials; ++trial) {</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    <span class="comment">// endpt parameters</span></div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> tf                        = 1 + <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(std::rand()) / RAND_MAX;</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>    <span class="keyword">const</span> X x0                             = Random&lt;X&gt;();</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>    <span class="keyword">const</span> X xf                             = Random&lt;X&gt;();</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>    <span class="keyword">const</span> Eigen::Vector&lt;double, OCP::Nq&gt; q = Eigen::Vector&lt;double, OCP::Nq&gt;::Random();</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> t                         = 1 + <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(std::rand()) / RAND_MAX;</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    <span class="keyword">const</span> X x                              = Random&lt;X&gt;();</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>    <span class="keyword">const</span> U u                              = Random&lt;U&gt;();</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span> </div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>    <span class="comment">// theta</span></div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.theta), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def] = diff::dr&lt;1, diff::Type::Analytic&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num] = diff::dr&lt;1, DT&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of theta: got\n&quot;</span></div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>      };</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    }</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.theta), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] =</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span> </div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of theta: got\n&quot;</span></div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>      };</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>    }</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span> </div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>    <span class="comment">// end constraints</span></div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.ce), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def] = diff::dr&lt;1, diff::Type::Analytic&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num] = diff::dr&lt;1, DT&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of ce: got\n&quot;</span></div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>      };</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>    }</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.ce), std::tuple&lt;double, X, X, Q&gt;&gt;) {</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] =</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.theta, wrt(tf, x0, xf, q));</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span> </div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of ce: got\n&quot;</span></div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>      };</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>    }</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span> </div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>    <span class="comment">// dynamics</span></div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.f), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def] = diff::dr&lt;1, diff::Type::Analytic&gt;(ocp.f, wrt(t, x, u));</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num] = diff::dr&lt;1, DT&gt;(ocp.f, wrt(t, x, u));</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of f: got\n&quot;</span></div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>      };</div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>    }</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.f), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] = diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.f, wrt(t, x, u));</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.f, wrt(t, x, u));</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of f: got\n&quot;</span></div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>      };</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>    }</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span> </div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>    <span class="comment">// integrand</span></div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.g), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def] = diff::dr&lt;1, diff::Type::Analytic&gt;(ocp.g, wrt(t, x, u));</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num] = diff::dr&lt;1, DT&gt;(ocp.g, wrt(t, x, u));</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of g: got\n&quot;</span></div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>      };</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>    }</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.g), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] = diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.g, wrt(t, x, u));</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.g, wrt(t, x, u));</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of g: got\n&quot;</span></div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>      };</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>    }</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span> </div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>    <span class="comment">// running constraints</span></div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order1&lt;<span class="keyword">decltype</span>(ocp.cr), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def] = diff::dr&lt;1, diff::Type::Analytic&gt;(ocp.cr, wrt(t, x, u));</div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num] = diff::dr&lt;1, DT&gt;(ocp.cr, wrt(t, x, u));</div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>      <span class="keywordflow">if</span> (!cmp(df_def, df_num)) {</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 1st derivative of cr: got\n&quot;</span></div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>                  &lt;&lt; Eigen::MatrixXd(df_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>                  &lt;&lt; Eigen::MatrixXd(df_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>      };</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>    }</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (diff::detail::diffable_order2&lt;<span class="keyword">decltype</span>(ocp.cr), std::tuple&lt;double, X, U&gt;&gt;) {</div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_def, df_def, d2f_def] = diff::dr&lt;2, diff::Type::Analytic&gt;(ocp.cr, wrt(t, x, u));</div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>      <span class="keyword">const</span> <span class="keyword">auto</span> [f_num, df_num, d2f_num] = diff::dr&lt;2, DT&gt;(ocp.cr, wrt(t, x, u));</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>      <span class="keywordflow">if</span> (!cmp(d2f_def, d2f_num)) {</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>        std::cout &lt;&lt; <span class="stringliteral">&quot;Error in 2nd derivative of cr: got\n&quot;</span></div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>                  &lt;&lt; Eigen::MatrixXd(d2f_def) &lt;&lt; <span class="stringliteral">&quot;\nbut expected\n&quot;</span></div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>                  &lt;&lt; Eigen::MatrixXd(d2f_num) &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>        success = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>      };</div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>    }</div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>  }</div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span> </div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>  <span class="keywordflow">return</span> success;</div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>}</div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span> </div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span> </div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span><span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__OCP_HPP_</span></div>
 <div class="ttc" id="aconceptsmooth_1_1feedback_1_1FlatOCPType_html"><div class="ttname"><a href="conceptsmooth_1_1feedback_1_1FlatOCPType.html">smooth::feedback::FlatOCPType</a></div><div class="ttdoc">Concept that is true for FlatOCP specializations.</div><div class="ttdef"><b>Definition:</b> <a href="ocp_8hpp_source.html#l00132">ocp.hpp:132</a></div></div>
 <div class="ttc" id="aconceptsmooth_1_1feedback_1_1OCPType_html"><div class="ttname"><a href="conceptsmooth_1_1feedback_1_1OCPType.html">smooth::feedback::OCPType</a></div><div class="ttdoc">Concept that is true for OCP specializations.</div><div class="ttdef"><b>Definition:</b> <a href="ocp_8hpp_source.html#l00128">ocp.hpp:128</a></div></div>
 <div class="ttc" id="aocp_8hpp_html_ab6d2c2b6bf1d2dd09c2d7ed215f806b6"><div class="ttname"><a href="ocp_8hpp.html#ab6d2c2b6bf1d2dd09c2d7ed215f806b6">smooth::feedback::test_ocp_derivatives</a></div><div class="ttdeci">bool test_ocp_derivatives(OCPType auto &amp;ocp, uint32_t num_trials=1, double eps=1e-4)</div><div class="ttdoc">Test analytic derivatives for an OCP problem.</div><div class="ttdef"><b>Definition:</b> <a href="ocp_8hpp_source.html#l00191">ocp.hpp:191</a></div></div>

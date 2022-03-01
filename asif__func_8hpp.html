@@ -129,7 +129,7 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html">smooth::feedback::ASIFProblem&lt; G, U &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html">smooth::feedback::ASIFProblem&lt; X, U &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Active set invariance problem definition.  <a href="structsmooth_1_1feedback_1_1ASIFProblem.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1ASIFtoQPParams.html">smooth::feedback::ASIFtoQPParams</a></td></tr>
@@ -138,38 +138,38 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aee74948af61655bc2bc7852989b3d2a0"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U&gt; <br />
-requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</td></tr>
-<tr class="memitem:aee74948af61655bc2bc7852989b3d2a0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#aee74948af61655bc2bc7852989b3d2a0">smooth::feedback::asif_to_qp_allocate</a> (std::size_t K, std::size_t nu_ineq, std::size_t nh, QuadraticProgram&lt;-1, -1, double &gt; &amp;qp)</td></tr>
-<tr class="memdesc:aee74948af61655bc2bc7852989b3d2a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate QP matrices (part 1 of <a class="el" href="asif__func_8hpp.html#aaa79b7427703c307fefcaa0374be79bb" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>)  <a href="asif__func_8hpp.html#aee74948af61655bc2bc7852989b3d2a0">More...</a><br /></td></tr>
-<tr class="separator:aee74948af61655bc2bc7852989b3d2a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbbe07f6f9b0772a7d2f9c747806161c"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename BackupU , diff::Type DT = diff::Type::Default&gt; <br />
-requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</td></tr>
-<tr class="memitem:abbbe07f6f9b0772a7d2f9c747806161c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#abbbe07f6f9b0772a7d2f9c747806161c">smooth::feedback::asif_to_qp_fill</a> (const ASIFProblem&lt; G, U &gt; &amp;pbm, const ASIFtoQPParams &amp;prm, Dyn &amp;&amp;f, SafeSet &amp;&amp;h, BackupU &amp;&amp;bu, QuadraticProgram&lt;-1, -1, double &gt; &amp;qp)</td></tr>
-<tr class="memdesc:abbbe07f6f9b0772a7d2f9c747806161c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill QP matrices (part 2 of <a class="el" href="asif__func_8hpp.html#aaa79b7427703c307fefcaa0374be79bb" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>)  <a href="asif__func_8hpp.html#abbbe07f6f9b0772a7d2f9c747806161c">More...</a><br /></td></tr>
-<tr class="separator:abbbe07f6f9b0772a7d2f9c747806161c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa79b7427703c307fefcaa0374be79bb"><td class="memTemplParams" colspan="2">template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename BackupU , diff::Type DT = diff::Type::Default&gt; </td></tr>
-<tr class="memitem:aaa79b7427703c307fefcaa0374be79bb"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgram&lt;-1, -1, double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#aaa79b7427703c307fefcaa0374be79bb">smooth::feedback::asif_to_qp</a> (const ASIFProblem&lt; G, U &gt; &amp;pbm, const ASIFtoQPParams &amp;prm, Dyn &amp;&amp;f, SS &amp;&amp;h, BackupU &amp;&amp;bu)</td></tr>
-<tr class="memdesc:aaa79b7427703c307fefcaa0374be79bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert an <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html" title="Active set invariance problem definition.">ASIFProblem</a> to a <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a>.  <a href="asif__func_8hpp.html#aaa79b7427703c307fefcaa0374be79bb">More...</a><br /></td></tr>
-<tr class="separator:aaa79b7427703c307fefcaa0374be79bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a438fccce94dfd6f7bdf72c8999f07ba0"><td class="memTemplParams" colspan="2">template&lt;LieGroup X, Manifold U&gt; <br />
+requires (Dof&lt;X&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</td></tr>
+<tr class="memitem:a438fccce94dfd6f7bdf72c8999f07ba0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#a438fccce94dfd6f7bdf72c8999f07ba0">smooth::feedback::asif_to_qp_allocate</a> (QuadraticProgram&lt;-1, -1, double &gt; &amp;qp, std::size_t K, std::size_t nu_ineq, std::size_t nh)</td></tr>
+<tr class="memdesc:a438fccce94dfd6f7bdf72c8999f07ba0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate QP matrices (part 1 of <a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>)  <a href="asif__func_8hpp.html#a438fccce94dfd6f7bdf72c8999f07ba0">More...</a><br /></td></tr>
+<tr class="separator:a438fccce94dfd6f7bdf72c8999f07ba0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77d25a8510f2b34f543794d777d5ec2a"><td class="memTemplParams" colspan="2">template&lt;LieGroup X, Manifold U, diff::Type DT = diff::Type::Default&gt; <br />
+requires (Dof&lt;X&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</td></tr>
+<tr class="memitem:a77d25a8510f2b34f543794d777d5ec2a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#a77d25a8510f2b34f543794d777d5ec2a">smooth::feedback::asif_to_qp_update</a> (QuadraticProgram&lt;-1, -1, double &gt; &amp;qp, const ASIFProblem&lt; X, U &gt; &amp;pbm, const ASIFtoQPParams &amp;prm, auto &amp;&amp;f, auto &amp;&amp;h, auto &amp;&amp;bu)</td></tr>
+<tr class="memdesc:a77d25a8510f2b34f543794d777d5ec2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill QP matrices (part 2 of <a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>)  <a href="asif__func_8hpp.html#a77d25a8510f2b34f543794d777d5ec2a">More...</a><br /></td></tr>
+<tr class="separator:a77d25a8510f2b34f543794d777d5ec2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7290397f6f319bd45b20dbf162572f02"><td class="memTemplParams" colspan="2">template&lt;LieGroup X, Manifold U, diff::Type DT = diff::Type::Default&gt; </td></tr>
+<tr class="memitem:a7290397f6f319bd45b20dbf162572f02"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgram&lt;-1, -1, double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02">smooth::feedback::asif_to_qp</a> (const ASIFProblem&lt; X, U &gt; &amp;pbm, const ASIFtoQPParams &amp;prm, auto &amp;&amp;f, auto &amp;&amp;h, auto &amp;&amp;bu)</td></tr>
+<tr class="memdesc:a7290397f6f319bd45b20dbf162572f02"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert an <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html" title="Active set invariance problem definition.">ASIFProblem</a> to a <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a>.  <a href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02">More...</a><br /></td></tr>
+<tr class="separator:a7290397f6f319bd45b20dbf162572f02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Functions for active Set Invariance (ASI) filtering on Lie groups. </p>
 
 <p class="definition">Definition in file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="aaa79b7427703c307fefcaa0374be79bb" name="aaa79b7427703c307fefcaa0374be79bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa79b7427703c307fefcaa0374be79bb">&#9670;&nbsp;</a></span>asif_to_qp()</h2>
+<a id="a7290397f6f319bd45b20dbf162572f02" name="a7290397f6f319bd45b20dbf162572f02"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7290397f6f319bd45b20dbf162572f02">&#9670;&nbsp;</a></span>asif_to_qp()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename BackupU , diff::Type DT = diff::Type::Default&gt; </div>
+template&lt;LieGroup X, Manifold U, diff::Type DT = diff::Type::Default&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">QuadraticProgram&lt;-1, -1, double &gt; smooth::feedback::asif_to_qp </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html">ASIFProblem</a>&lt; G, U &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html">ASIFProblem</a>&lt; X, U &gt; &amp;&#160;</td>
           <td class="paramname"><em>pbm</em>, </td>
         </tr>
         <tr>
@@ -181,19 +181,19 @@ template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename Backup
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Dyn &amp;&amp;&#160;</td>
+          <td class="paramtype">auto &amp;&amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">SS &amp;&amp;&#160;</td>
+          <td class="paramtype">auto &amp;&amp;&#160;</td>
           <td class="paramname"><em>h</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">BackupU &amp;&amp;&#160;</td>
+          <td class="paramtype">auto &amp;&amp;&#160;</td>
           <td class="paramname"><em>bu</em>&#160;</td>
         </tr>
         <tr>
@@ -215,8 +215,8 @@ template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename Backup
 <p> A solution \( \mu^* \) to the QuadraticProgram corresponds to an input \( u_{des} \oplus \mu^* \) applied to the system.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
-    <tr><td class="paramname">G</td><td>state LieGroup type \(\mathbb{G}\) </td></tr>
-    <tr><td class="paramname">U</td><td>input Manifold type \(\mathbb{G}\)</td></tr>
+    <tr><td class="paramname">X</td><td>state LieGroup type \(\mathbb{X}\) </td></tr>
+    <tr><td class="paramname">U</td><td>input Manifold type \(\mathbb{X}\)</td></tr>
   </table>
   </dd>
 </dl>
@@ -224,9 +224,9 @@ template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename Backup
   <table class="params">
     <tr><td class="paramname">pbm</td><td>problem definition </td></tr>
     <tr><td class="paramname">prm</td><td>algorithm parameters </td></tr>
-    <tr><td class="paramname">f</td><td>system model \(f : \mathbb{R} \times \mathbb{G} \times \mathbb{U} \rightarrow \mathbb{R}^{\dim \mathfrak g}\) s.t. \( \mathrm{d}^r x_t = f(t, x, u) \) </td></tr>
-    <tr><td class="paramname">h</td><td>safe set \(h : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{R}^{n_h}\) s.t. \( S(t) = \{ h(t, x) \geq 0 \} \) denotes the safe set at time \( t \) </td></tr>
-    <tr><td class="paramname">bu</td><td>backup controller \(ub : \mathbb{R} \times \mathbb{G} \rightarrow \mathbb{U} \)</td></tr>
+    <tr><td class="paramname">f</td><td>system model \(f : \mathbb{R} \times \mathbb{X} \times \mathbb{U} \rightarrow \mathbb{R}^{\dim \mathfrak g}\) s.t. \( \mathrm{d}^r x_t = f(t, x, u) \) </td></tr>
+    <tr><td class="paramname">h</td><td>safe set \(h : \mathbb{R} \times \mathbb{X} \rightarrow \mathbb{R}^{n_h}\) s.t. \( S(t) = \{ h(t, x) \geq 0 \} \) denotes the safe set at time \( t \) </td></tr>
+    <tr><td class="paramname">bu</td><td>backup controller \(ub : \mathbb{R} \times \mathbb{X} \rightarrow \mathbb{U} \)</td></tr>
   </table>
   </dd>
 </dl>
@@ -238,22 +238,28 @@ template&lt;LieGroup G, Manifold U, typename Dyn , typename SS , typename Backup
 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>QuadraticProgram modeling the ASIF filtering problem </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00280">280</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00268">268</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
 
 </div>
 </div>
-<a id="aee74948af61655bc2bc7852989b3d2a0" name="aee74948af61655bc2bc7852989b3d2a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee74948af61655bc2bc7852989b3d2a0">&#9670;&nbsp;</a></span>asif_to_qp_allocate()</h2>
+<a id="a438fccce94dfd6f7bdf72c8999f07ba0" name="a438fccce94dfd6f7bdf72c8999f07ba0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a438fccce94dfd6f7bdf72c8999f07ba0">&#9670;&nbsp;</a></span>asif_to_qp_allocate()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup G, Manifold U&gt; <br />
-requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
+template&lt;LieGroup X, Manifold U&gt; <br />
+requires (Dof&lt;X&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
       <table class="memname">
         <tr>
           <td class="memname">void smooth::feedback::asif_to_qp_allocate </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html">QuadraticProgram</a>&lt;-1, -1, double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>qp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">std::size_t&#160;</td>
           <td class="paramname"><em>K</em>, </td>
         </tr>
@@ -267,13 +273,7 @@ requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">std::size_t&#160;</td>
-          <td class="paramname"><em>nh</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html">QuadraticProgram</a>&lt;-1, -1, double &gt; &amp;&#160;</td>
-          <td class="paramname"><em>qp</em>&#160;</td>
+          <td class="paramname"><em>nh</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -283,13 +283,13 @@ requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
       </table>
 </div><div class="memdoc">
 
-<p>Allocate QP matrices (part 1 of <a class="el" href="asif__func_8hpp.html#aaa79b7427703c307fefcaa0374be79bb" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>) </p>
+<p>Allocate QP matrices (part 1 of <a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>) </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">qp</td><td>allocated QP with zero matrices </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">K</td><td>number of constraint instances </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">nu_ineq</td><td>number in inequalities in input constraint </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">nh</td><td>number of barrier constraints </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">qp</td><td>allocated QP with zero matrices </td></tr>
   </table>
   </dd>
 </dl>
@@ -298,19 +298,25 @@ requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
 
 </div>
 </div>
-<a id="abbbe07f6f9b0772a7d2f9c747806161c" name="abbbe07f6f9b0772a7d2f9c747806161c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abbbe07f6f9b0772a7d2f9c747806161c">&#9670;&nbsp;</a></span>asif_to_qp_fill()</h2>
+<a id="a77d25a8510f2b34f543794d777d5ec2a" name="a77d25a8510f2b34f543794d777d5ec2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77d25a8510f2b34f543794d777d5ec2a">&#9670;&nbsp;</a></span>asif_to_qp_update()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup G, Manifold U, typename Dyn , typename SafeSet , typename BackupU , diff::Type DT = diff::Type::Default&gt; <br />
-requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
+template&lt;LieGroup X, Manifold U, diff::Type DT = diff::Type::Default&gt; <br />
+requires (Dof&lt;X&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
       <table class="memname">
         <tr>
-          <td class="memname">void smooth::feedback::asif_to_qp_fill </td>
+          <td class="memname">void smooth::feedback::asif_to_qp_update </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html">ASIFProblem</a>&lt; G, U &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html">QuadraticProgram</a>&lt;-1, -1, double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>qp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1ASIFProblem.html">ASIFProblem</a>&lt; X, U &gt; &amp;&#160;</td>
           <td class="paramname"><em>pbm</em>, </td>
         </tr>
         <tr>
@@ -322,26 +328,20 @@ requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Dyn &amp;&amp;&#160;</td>
+          <td class="paramtype">auto &amp;&amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">SafeSet &amp;&amp;&#160;</td>
+          <td class="paramtype">auto &amp;&amp;&#160;</td>
           <td class="paramname"><em>h</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">BackupU &amp;&amp;&#160;</td>
-          <td class="paramname"><em>bu</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html">QuadraticProgram</a>&lt;-1, -1, double &gt; &amp;&#160;</td>
-          <td class="paramname"><em>qp</em>&#160;</td>
+          <td class="paramtype">auto &amp;&amp;&#160;</td>
+          <td class="paramname"><em>bu</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -351,10 +351,10 @@ requires (Dof&lt;G&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
       </table>
 </div><div class="memdoc">
 
-<p>Fill QP matrices (part 2 of <a class="el" href="asif__func_8hpp.html#aaa79b7427703c307fefcaa0374be79bb" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>) </p>
+<p>Fill QP matrices (part 2 of <a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>) </p>
 <p >Note that the (dense) QP matrices must be pre-allocated and filled with zeros. </p>
 
-<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00133">133</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00127">127</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
 
 </div>
 </div>

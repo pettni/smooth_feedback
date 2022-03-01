@@ -10,6 +10,6 @@ var searchData=
   ['nlpsol_5fto_5focpsol_7',['nlpsol_to_ocpsol',['../ocp__to__nlp_8hpp.html#a66902c0c4064ecd9073bc04ab00cc57e',1,'smooth::feedback']]],
   ['nlpsolution_8',['NLPSolution',['../structsmooth_1_1feedback_1_1NLPSolution.html',1,'smooth::feedback']]],
   ['nq_9',['Nq',['../structsmooth_1_1feedback_1_1OCP.html#a18d9285dfd21d45dfa624c9535daaa5a',1,'smooth::feedback::OCP::Nq()'],['../structsmooth_1_1feedback_1_1OCPSolution.html#a3bcd0f5627540924cd74755349e21e7a',1,'smooth::feedback::OCPSolution::Nq()']]],
-  ['nu_10',['Nu',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#ac5510c00ed2a9a2fcb61e28ab2bff47e',1,'smooth::feedback::OptimalControlProblem::Nu()'],['../structsmooth_1_1feedback_1_1OCP.html#a11a0c39bc05816b78e451b924e02fedb',1,'smooth::feedback::OCP::Nu()']]],
-  ['nx_11',['Nx',['../structsmooth_1_1feedback_1_1OptimalControlProblem.html#a0d29993d746c52b35bb3d1f3e565aed4',1,'smooth::feedback::OptimalControlProblem::Nx()'],['../structsmooth_1_1feedback_1_1OCP.html#a139425bc473b8cb3636c49e60c023942',1,'smooth::feedback::OCP::Nx()']]]
+  ['nu_10',['Nu',['../structsmooth_1_1feedback_1_1OCP.html#a11a0c39bc05816b78e451b924e02fedb',1,'smooth::feedback::OCP']]],
+  ['nx_11',['Nx',['../structsmooth_1_1feedback_1_1OCP.html#a139425bc473b8cb3636c49e60c023942',1,'smooth::feedback::OCP']]]
 ];

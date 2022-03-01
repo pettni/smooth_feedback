@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['pid_0',['PID',['../classsmooth_1_1feedback_1_1PID.html#aa5de7b5c7935a2b6db8add2d00a47998',1,'smooth::feedback::PID::PID(const PIDParams &amp;prm=PIDParams{}) noexcept'],['../classsmooth_1_1feedback_1_1PID.html#ad36e4bccc9ad61d5050495a893f66500',1,'smooth::feedback::PID::PID(const PID &amp;)=default'],['../classsmooth_1_1feedback_1_1PID.html#ab1076ca62fa37eb2286153bacecdcfe6',1,'smooth::feedback::PID::PID(PID &amp;&amp;)=default']]],
-  ['plus_1',['plus',['../structsmooth_1_1feedback_1_1time__trait_3_01rclcpp_1_1Time_01_4.html#a9e7e4d0841eb6de3e142971443c64ebc',1,'smooth::feedback::time_trait&lt; rclcpp::Time &gt;']]],
-  ['polish_5fqp_2',['polish_qp',['../qp_8hpp.html#ad27b3771b96cb03c2afe78a9555ff842',1,'smooth::feedback::detail']]],
-  ['predict_3',['predict',['../classsmooth_1_1feedback_1_1EKF.html#a2d0f818873bae3eff990568295a9bcca',1,'smooth::feedback::EKF']]]
+  ['qp_5fcheck_5fstopping_0',['qp_check_stopping',['../qp_8hpp.html#a577b3e863e4a88a044f9d5354661892b',1,'smooth::feedback::detail']]],
+  ['qpsol_5fto_5focpsol_1',['qpsol_to_ocpsol',['../ocp__to__qp_8hpp.html#a7e907e31a7faca2612afc5aab873b2fb',1,'smooth::feedback']]]
 ];
