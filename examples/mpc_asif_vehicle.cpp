@@ -102,9 +102,9 @@ int main()
   };
 
   mpc.set_weights({
-    .Q  = Eigen::Matrix<double, 6, 6>::Identity(),
-    .QT = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
-    .R  = Eigen::Matrix2d::Identity(),
+    .Q   = Eigen::Matrix<double, 6, 6>::Identity(),
+    .Qtf = 0.1 * Eigen::Matrix<double, 6, 6>::Identity(),
+    .R   = Eigen::Matrix2d::Identity(),
   });
 
   // set desired trajectory in MPC

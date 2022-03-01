@@ -77,9 +77,9 @@ int main()
   };
 
   mpc.set_weights({
-    .Q  = Eigen::Matrix2d::Identity(),
-    .QT = 0.1 * Eigen::Matrix2d::Identity(),
-    .R  = 0.1 * Eigen::Matrix<double, 1, 1>::Identity(),
+    .Q   = Eigen::Matrix2d::Identity(),
+    .Qtf = 0.1 * Eigen::Matrix2d::Identity(),
+    .R   = 0.1 * Eigen::Matrix<double, 1, 1>::Identity(),
   });
   mpc.set_xdes_rel([]<typename T>(T t) -> X<T> { return X<T>{-0.5 * sin(0.3 * t), 0}; });
   mpc.set_udes_rel([]<typename T>(T) -> U<T> { return U<T>::Zero(); });

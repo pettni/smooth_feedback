@@ -55,9 +55,9 @@ TEST(Mpc, Api)
   mpc.reset_warmstart();
 
   mpc.set_weights({
-    .Q  = Eigen::Matrix3d::Identity(),
-    .QT = Eigen::Matrix3d::Identity(),
-    .R  = Eigen::Matrix2d::Identity(),
+    .Q   = Eigen::Matrix3d::Identity(),
+    .Qtf = Eigen::Matrix3d::Identity(),
+    .R   = Eigen::Matrix2d::Identity(),
   });
 
   mpc.set_udes([](T) -> U { return U::Ones(); });

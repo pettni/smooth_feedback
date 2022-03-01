@@ -33,25 +33,10 @@
 
 #include "ocp_to_qp.hpp"
 #include "time.hpp"
-#include "utils/d2r_exp_sparse.hpp"
 #include "utils/dr_exp_sparse.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
-
-template<LieGroup X, Manifold U>
-struct MPCWeights
-{
-  static constexpr auto Nx = Dof<X>;
-  static constexpr auto Nu = Dof<U>;
-
-  /// Running state cost
-  Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
-  /// Final state cost
-  Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
-  /// Running input cost
-  Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
-};
 
 namespace detail {
 
@@ -110,16 +95,11 @@ struct MPCObj
   static constexpr auto Nx = Dof<X>;
 
   // public members
-  X xf_des                         = Default<X>();
-  Eigen::Matrix<double, Nx, Nx> QT = Eigen::Matrix<double, Nx, Nx>::Identity();
+  X xf_des                          = Default<X>();
+  Eigen::Matrix<double, Nx, Nx> Qtf = Eigen::Matrix<double, Nx, Nx>::Identity();
 
   // private members
-  Eigen::SparseMatrix<double> hess = [this]() {
-    Eigen ::SparseMatrix<double> ret(1 + 2 * Nx + 1, 1 + 2 * Nx + 1);
-    block_add(ret, 1 + Nx, 1 + Nx, QT);
-    ret.makeCompressed();
-    return ret;
-  }();
+  Eigen::SparseMatrix<double> hess{1 + 2 * Nx + 1, 1 + 2 * Nx + 1};
 
   // functor members
   double operator()(
@@ -144,6 +124,11 @@ struct MPCObj
   hessian(const double, const X &, [[maybe_unused]] const X & xf, const Eigen::Vector<double, 1> &)
   {
     assert(xf_des.isApprox(xf, 1e-4));
+
+    set_zero(hess);
+    block_add(hess, 1 + Nx, 1 + Nx, Qtf);
+
+    hess.makeCompressed();
     return hess;
   }
 };
@@ -203,38 +188,38 @@ struct MPCIntegrand
   Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
 
   // private members
-  Eigen::SparseMatrix<double> hess = [this]() {
-    Eigen ::SparseMatrix<double> ret(1 + Nx + Nu, 1 + Nx + Nu);
-    block_add(ret, 1, 1, Q);
-    block_add(ret, 1 + Nx, 1 + Nx, R);
-    ret.makeCompressed();
-    return ret;
-  }();
+  Eigen::SparseMatrix<double> hess{1 + Nx + Nu, 1 + Nx + Nu};
 
   // functor members
   Eigen::Vector<double, 1> operator()(
-    [[maybe_unused]] const double t_loc,
+    [[maybe_unused]] const double t_rel,
     [[maybe_unused]] const X & x,
     [[maybe_unused]] const U & u) const
   {
-    assert((*xdes)(t_loc).isApprox(x, 1e-4));
-    assert((*udes)(t_loc).isApprox(u, 1e-4));
+    assert((*xdes)(t_rel).isApprox(x, 1e-4));
+    assert((*udes)(t_rel).isApprox(u, 1e-4));
     return Eigen::Vector<double, 1>{0.};
   }
 
   Eigen::RowVector<double, 1 + Nx + Nu> jacobian(
-    [[maybe_unused]] const double t_loc, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
+    [[maybe_unused]] const double t_rel, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
   {
-    assert((*xdes)(t_loc).isApprox(x, 1e-4));
-    assert((*udes)(t_loc).isApprox(u, 1e-4));
+    assert((*xdes)(t_rel).isApprox(x, 1e-4));
+    assert((*udes)(t_rel).isApprox(u, 1e-4));
     return Eigen::RowVector<double, 1 + Nx + Nu>::Zero();
   }
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>> hessian(
-    [[maybe_unused]] const double t_loc, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
+    [[maybe_unused]] const double t_rel, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
   {
-    assert((*xdes)(t_loc).isApprox(x, 1e-4));
-    assert((*udes)(t_loc).isApprox(u, 1e-4));
+    assert((*xdes)(t_rel).isApprox(x, 1e-4));
+    assert((*udes)(t_rel).isApprox(u, 1e-4));
+
+    set_zero(hess);
+    block_add(hess, 1, 1, Q);
+    block_add(hess, 1 + Nx, 1 + Nx, R);
+
+    hess.makeCompressed();
     return hess;
   }
 };
@@ -315,14 +300,15 @@ struct MPCCE
 }  // namespace detail
 
 /**
- * @brief Parameters for MPC
+ * @brief Parameters for MPC.
  */
 struct MPCParams
 {
   /**
-   * @brief Minimum number of collocation points
+   * @brief Minimum number of collocation points.
    *
-   * @note The actual number of points is ceil(K / Kmesh)
+   * @note The actual number of points is ceil(K / Kmesh) where Kmesh is a template parameter of
+   * MPC.
    */
   std::size_t K{10};
 
@@ -343,6 +329,29 @@ struct MPCParams
 };
 
 /**
+ * @brief Objective weights for MPC.
+ *
+ * The MPC cost function is
+ * \f[
+ *   \int_{0}^{t_f} (x(t) \ominus x_{des}(t_f))^T Q (x(t) \ominus x_{des}(t)) + (u(t) \ominus
+ * u_{des})^T R (u(t) \ominus u_{des}(t)) \mathrm{d} t + (x(t_f) \ominus x_{des}(t_f))^T Q_{t_f}
+ * (x(t_f) \ominus x_{des}(t_f)) \f]
+ */
+template<LieGroup X, Manifold U>
+struct MPCWeights
+{
+  static constexpr auto Nx = Dof<X>;
+  static constexpr auto Nu = Dof<U>;
+
+  /// @brief Running state cost
+  Eigen::Matrix<double, Nx, Nx> Q = Eigen::Matrix<double, Nx, Nx>::Identity();
+  /// @brief Final state cost
+  Eigen::Matrix<double, Nx, Nx> Qtf = Eigen::Matrix<double, Nx, Nx>::Identity();
+  /// @brief Running input cost
+  Eigen::Matrix<double, Nu, Nu> R = Eigen::Matrix<double, Nu, Nu>::Identity();
+};
+
+/**
  * @brief Model-Predictive Control (MPC) on Lie groups.
  *
  * @tparam T time type, must be a std::chrono::duration-like
@@ -354,9 +363,7 @@ struct MPCParams
  * @tparam Kmesh number of collocation points per mesh interval
  *
  * This MPC class keeps and repeatedly solves an internal OCP that is updated to track a
- * time-dependent trajectory defined through set_xudes().
- *
- * The dynamics F are linearized around the desired trajectory.
+ * time-dependent trajectory defined via set_xdes() and set_udes().
  */
 template<
   Time T,
@@ -369,7 +376,6 @@ template<
 class MPC
 {
   static constexpr auto Ncr = std::invoke_result_t<CR, X, U>::SizeAtCompileTime;
-  using VecCR               = Eigen::Vector<double, Ncr>;
 
 public:
   /**
@@ -384,10 +390,20 @@ public:
    *
    * @note Allocates dynamic memory for work matrices and a sparse QP.
    *
-   * @todo Optimization: Only time-dependent parts of QP are dynamics and end constraints, so
-   * only those need to be updated.
+   * @note The functions f and cr are are linearized around the desired trajectory and must
+   * therefore be instances of first-order differentiable types. For best results, cr should be
+   * (group-)linear and f locally well approximated around \f$ x_{des} \f$ by a (group-)linear
+   * function.
+   *
+   * @todo Optimization: The only time-dependent parts of the QP are the dynamics and end
+   * constraints, so only those need to be updated.
    */
-  inline MPC(F && f, CR && cr, VecCR && crl, VecCR && cru, MPCParams && prm = MPCParams{})
+  inline MPC(
+    F && f,
+    CR && cr,
+    Eigen::Vector<double, Ncr> && crl,
+    Eigen::Vector<double, Ncr> && cru,
+    MPCParams && prm = {})
       : xdes_{std::make_shared<detail::XDes<T, X>>()},
         udes_{std::make_shared<detail::UDes<T, U>>()}, mesh_{(prm.K + Kmesh - 1) / Kmesh},
         ocp_{
@@ -405,35 +421,39 @@ public:
   {
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
   }
-  /// Same as above but for lvalues
+  /// @brief Same as above but for lvalues
   inline MPC(
     const F & f,
     const CR & cr,
-    const VecCR & crl,
-    const VecCR & cru,
-    const MPCParams & prm = MPCParams{})
-      : MPC(F(f), CR(cr), VecCR(crl), VecCR(cru), MPCParams(prm))
+    const Eigen::Vector<double, Ncr> & crl,
+    const Eigen::Vector<double, Ncr> & cru,
+    const MPCParams & prm = {})
+      : MPC(
+        F(f),
+        CR(cr),
+        Eigen::Vector<double, Ncr>(crl),
+        Eigen::Vector<double, Ncr>(cru),
+        MPCParams(prm))
   {}
-  /// Default constructor
+  /// @brief Default constructor
   inline MPC() = default;
-  /// Default copy constructor
+  /// @brief Default copy constructor
   inline MPC(const MPC &) = default;
-  /// Default move constructor
+  /// @brief Default move constructor
   inline MPC(MPC &&) = default;
-  /// Default copy assignment
+  /// @brief Default copy assignment
   inline MPC & operator=(const MPC &) = default;
-  /// Default move assignment
+  /// @brief Default move assignment
   inline MPC & operator=(MPC &&) = default;
-  /// Default destructor
+  /// @brief Default destructor
   inline ~MPC() = default;
 
   /**
-   * @brief Solve MPC problem and return input.
+   * @brief Calculate new MPC input.
    *
    * @param[in] t current time
    * @param[in] x current state
-   * @param[out] u_traj (optional) return MPC input solution \f$ [\mu_0, \mu_1, \ldots, \mu_{K - 1}]
-   * \f$
+   * @param[out] u_traj (optional) return MPC input solution \f$ [u_0, u_1, \ldots, u_{K - 1}] \f$
    * @param[out] x_traj (optional) return MPC state solution \f$ [x_0, x_1, \ldots, x_K] \f$
    *
    * @return {u, code}
@@ -446,10 +466,9 @@ public:
   {
     static constexpr auto Nx = Dof<X>;
     static constexpr auto Nu = Dof<U>;
-    const auto N             = mesh_.N_colloc();
 
+    const auto N      = mesh_.N_colloc();
     const auto xvar_L = Nx * (N + 1);
-
     const auto xvar_B = 0u;
     const auto uvar_B = xvar_L;
 
@@ -470,14 +489,18 @@ public:
     // output solution trajectories
     if (u_traj.has_value()) {
       u_traj.value().get().resize(N);
-      for (const auto & [i, trel] : zip(std::views::iota(0u, N), mesh_.all_nodes())) {
-        u_traj.value().get()[i] = (*udes_)(trel) + sol.primal.template segment<Nu>(uvar_B + i * Nu);
+      for (const auto & [i, tau] : zip(std::views::iota(0u, N), mesh_.all_nodes())) {
+        const double t_rel = prm_.tf * tau;
+        u_traj.value().get()[i] =
+          (*udes_)(t_rel) + sol.primal.template segment<Nu>(uvar_B + i * Nu);
       }
     }
     if (x_traj.has_value()) {
       x_traj.value().get().resize(N + 1);
-      for (const auto & [i, trel] : zip(std::views::iota(0u, N + 1), mesh_.all_nodes())) {
-        x_traj.value().get()[i] = (*xdes_)(trel) + sol.primal.template segment<Nx>(xvar_B + i * Nx);
+      for (const auto & [i, tau] : zip(std::views::iota(0u, N + 1), mesh_.all_nodes())) {
+        const double t_rel = prm_.tf * tau;
+        x_traj.value().get()[i] =
+          (*xdes_)(t_rel) + sol.primal.template segment<Nx>(xvar_B + i * Nx);
       }
     }
 
@@ -486,22 +509,19 @@ public:
       if (
         // clang-format off
         sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime || sol.code == QPSolutionStatus::MaxIterations
-        // clang-format n
+        // clang-format on
       ) {
         warmstart_ = sol;
       }
     }
 
-    return {rplus((*udes_)(0), sol.primal.template segment<Nu>(Nx * (N + 1))), sol.code};
+    return {rplus((*udes_)(0), sol.primal.template segment<Nu>(uvar_B)), sol.code};
   }
 
   /**
    * @brief Set the desired input trajectory (absolute time)
    */
-  inline void set_udes(std::function<U(T)> && u_des)
-  {
-    udes_->udes = std::move(u_des);
-  }
+  inline void set_udes(std::function<U(T)> && u_des) { udes_->udes = std::move(u_des); }
 
   /**
    * @brief Set the desired input trajectory (absolute time, rvalue version)
@@ -518,8 +538,8 @@ public:
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<U>>, U>)
   inline void set_udes_rel(Fun && f, T t0 = T(0))
   {
-    set_udes([t0 = t0, f = std::forward<Fun>(f)](T t) -> U {
-      const double t_rel = time_trait<T>::minus(t, t0);
+    set_udes([t0 = t0, f = std::forward<Fun>(f)](T t_abs) -> U {
+      const double t_rel = time_trait<T>::minus(t_abs, t0);
       return std::invoke(f, t_rel);
     });
   }
@@ -529,14 +549,15 @@ public:
    */
   inline void set_xdes(std::function<X(T)> && x_des, std::function<Tangent<X>(T)> && dx_des)
   {
-    xdes_->xdes = std::move(x_des);
+    xdes_->xdes  = std::move(x_des);
     xdes_->dxdes = std::move(dx_des);
   }
 
   /**
    * @brief Set the desired state trajectory (absolute time, rvalue version)
    */
-  inline void set_xdes(const std::function<X(T)> & x_des, const std::function<Tangent<X>(T)> & dx_des)
+  inline void
+  set_xdes(const std::function<X(T)> & x_des, const std::function<Tangent<X>(T)> & dx_des)
   {
     set_xdes(std::function<X(T)>(x_des), std::function<Tangent<X>(T)>(dx_des));
   }
@@ -554,13 +575,13 @@ public:
     requires(std::is_same_v<std::invoke_result_t<Fun, Scalar<X>>, X>)
   inline void set_xdes_rel(Fun && f, T t0 = T(0))
   {
-    std::function<X(T)> x_des = [t0 = t0, f = f](T t) -> X {
-      const double t_rel = time_trait<T>::minus(t, t0);
+    std::function<X(T)> x_des = [t0 = t0, f = f](T t_abs) -> X {
+      const double t_rel = time_trait<T>::minus(t_abs, t0);
       return std::invoke(f, t_rel);
     };
 
-    std::function<Tangent<X>(T)> dx_des = [t0 = t0, f = f](T t) -> Tangent<X> {
-      const double t_rel = time_trait<T>::minus(t, t0);
+    std::function<Tangent<X>(T)> dx_des = [t0 = t0, f = f](T t_abs) -> Tangent<X> {
+      const double t_rel = time_trait<T>::minus(t_abs, t0);
       return std::get<1>(diff::dr<1, DT>(f, wrt(t_rel)));
     };
 
@@ -572,9 +593,9 @@ public:
    */
   inline void set_weights(const MPCWeights<X, U> & weights)
   {
-    ocp_.g.R      = weights.R;
-    ocp_.g.Q      = weights.Q;
-    ocp_.theta.QT = weights.QT;
+    ocp_.g.R       = weights.R;
+    ocp_.g.Q       = weights.Q;
+    ocp_.theta.Qtf = weights.Qtf;
   }
 
   /**
@@ -590,18 +611,25 @@ private:
   // collocation mesh
   Mesh<Kmesh, Kmesh> mesh_{};
 
-  // problem description
-  using ocp_t = OCP<X, U, detail::MPCObj<X>, detail::MPCDyn<X, U, F, DT>, detail::MPCIntegrand<T, X, U>, detail::MPCCR<X, U, CR, DT>, detail::MPCCE<X>>;
-  ocp_t ocp_;
+  // internal optimal control problem
+  OCP<
+    X,
+    U,
+    detail::MPCObj<X>,
+    detail::MPCDyn<X, U, F, DT>,
+    detail::MPCIntegrand<T, X, U>,
+    detail::MPCCR<X, U, CR, DT>,
+    detail::MPCCE<X>>
+    ocp_;
 
   // parameters
   MPCParams prm_{};
 
-  // pre-allocated QP matrices
+  // internal allocation
   detail::OcpToQpWorkmemory work_;
   QuadraticProgramSparse<double> qp_;
 
-  // store last solution for warmstarting
+  // last solution stored for warmstarting
   std::optional<QPSolution<-1, -1, double>> warmstart_{};
 };
 
