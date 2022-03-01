@@ -37,6 +37,7 @@
 #include <smooth/diff.hpp>
 
 #include "mesh.hpp"
+#include "smooth/feedback/utils/sparse.hpp"
 
 namespace smooth::feedback {
 
@@ -104,29 +105,8 @@ template<uint8_t Deriv>
 void setZero(MeshValue<Deriv> & mv)
 {
   mv.F.setZero();
-
-  if constexpr (Deriv >= 1) {
-    if (mv.dF.isCompressed()) {
-      mv.dF.coeffs().setZero();
-    } else {
-      for (auto i = 0; i < mv.dF.outerSize(); ++i) {
-        for (Eigen::InnerIterator it(mv.dF, i); it; ++it) {
-          mv.dF.coeffRef(it.row(), it.col()) = 0;
-        }
-      }
-    }
-  }
-  if constexpr (Deriv >= 2) {
-    if (mv.d2F.isCompressed()) {
-      mv.d2F.coeffs().setZero();
-    } else {
-      for (auto i = 0; i < mv.d2F.outerSize(); ++i) {
-        for (Eigen::InnerIterator it(mv.d2F, i); it; ++it) {
-          mv.d2F.coeffRef(it.row(), it.col()) = 0;
-        }
-      }
-    }
-  }
+  if constexpr (Deriv >= 1) { set_zero(mv.dF); }
+  if constexpr (Deriv >= 2) { set_zero(mv.d2F); }
 }
 
 /**

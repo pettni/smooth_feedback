@@ -24,15 +24,26 @@
 // SOFTWARE.
 
 #include <gtest/gtest.h>
+#include <smooth/se3.hpp>
 
 #include "smooth/feedback/utils/dr_exp_sparse.hpp"
+
+template<typename G>
+smooth::Tangent<G> random_tangent(int i)
+{
+  if (i == 0) {
+    return smooth::Tangent<G>::Zero();
+  } else {
+    return smooth::Tangent<G>::Random();
+  }
+}
 
 TEST(DEXP, Rn)
 {
   using G = Eigen::Vector4d;
 
   for (auto i = 0u; i < 5; ++i) {
-    const smooth::Tangent<G> a = smooth::Tangent<G>::Random();
+    const smooth::Tangent<G> a = random_tangent<G>(i);
 
     Eigen::SparseMatrix<double> calc1(4, 4);
     smooth::feedback::dr_exp_sparse<G>(calc1, a);
@@ -49,11 +60,27 @@ TEST(DEXP, SE2)
   using G = smooth::SE2d;
 
   for (auto i = 0u; i < 5; ++i) {
-    const smooth::Tangent<G> a = smooth::Tangent<G>::Random();
+    const smooth::Tangent<G> a = random_tangent<G>(i);
 
     Eigen::SparseMatrix<double> calc1(3, 3);
     smooth::feedback::dr_exp_sparse<G>(calc1, a);
     ASSERT_EQ(calc1.nonZeros(), 7);
+
+    const auto calc2 = smooth::dr_exp<G>(a);
+
+    ASSERT_TRUE(calc1.isApprox(calc2));
+  }
+}
+
+TEST(DEXP, SE3)
+{
+  using G = smooth::SE3d;
+
+  for (auto i = 0u; i < 5; ++i) {
+    const smooth::Tangent<G> a = random_tangent<G>(i);
+
+    Eigen::SparseMatrix<double> calc1(6, 6);
+    smooth::feedback::dr_exp_sparse<G>(calc1, a);
 
     const auto calc2 = smooth::dr_exp<G>(a);
 
@@ -66,7 +93,7 @@ TEST(DEXP, Bundle)
   using G = smooth::Bundle<smooth::SE2d, Eigen::Vector2d, smooth::SE2d>;
 
   for (auto i = 0u; i < 5; ++i) {
-    const smooth::Tangent<G> a = smooth::Tangent<G>::Random();
+    const smooth::Tangent<G> a = random_tangent<G>(i);
 
     Eigen::SparseMatrix<double> calc1(8, 8);
     smooth::feedback::dr_exp_sparse<G>(calc1, a);
@@ -83,7 +110,7 @@ TEST(DEXPINV, Rn)
   using G = Eigen::Vector4d;
 
   for (auto i = 0u; i < 5; ++i) {
-    const smooth::Tangent<G> a = smooth::Tangent<G>::Random();
+    const smooth::Tangent<G> a = random_tangent<G>(i);
 
     Eigen::SparseMatrix<double> calc1(4, 4);
     smooth::feedback::dr_expinv_sparse<G>(calc1, a);
@@ -100,11 +127,27 @@ TEST(DEXPINV, SE2)
   using G = smooth::SE2d;
 
   for (auto i = 0u; i < 5; ++i) {
-    const smooth::Tangent<G> a = smooth::Tangent<G>::Random();
+    const smooth::Tangent<G> a = random_tangent<G>(i);
 
     Eigen::SparseMatrix<double> calc1(3, 3);
     smooth::feedback::dr_expinv_sparse<G>(calc1, a);
     ASSERT_EQ(calc1.nonZeros(), 7);
+
+    const auto calc2 = smooth::dr_expinv<G>(a);
+
+    ASSERT_TRUE(calc1.isApprox(calc2));
+  }
+}
+
+TEST(DEXPINV, SE3)
+{
+  using G = smooth::SE3d;
+
+  for (auto i = 0u; i < 5; ++i) {
+    const smooth::Tangent<G> a = random_tangent<G>(i);
+
+    Eigen::SparseMatrix<double> calc1(6, 6);
+    smooth::feedback::dr_expinv_sparse<G>(calc1, a);
 
     const auto calc2 = smooth::dr_expinv<G>(a);
 
@@ -117,7 +160,7 @@ TEST(DEXPINV, Bundle)
   using G = smooth::Bundle<smooth::SE2d, Eigen::Vector2d, smooth::SE2d>;
 
   for (auto i = 0u; i < 5; ++i) {
-    const smooth::Tangent<G> a = smooth::Tangent<G>::Random();
+    const smooth::Tangent<G> a = random_tangent<G>(i);
 
     Eigen::SparseMatrix<double> calc1(8, 8);
     smooth::feedback::dr_expinv_sparse<G>(calc1, a);

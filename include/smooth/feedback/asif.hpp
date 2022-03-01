@@ -60,7 +60,7 @@ struct ASIFilterParams
  * recent solution for warmstarting, and facilitates working with time-varying
  * problems.
  */
-template<Time T, LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::Default>
+template<LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::Default>
 class ASIFilter
 {
 public:
@@ -82,7 +82,7 @@ public:
       : f_(std::move(f)), prm_(std::move(prm))
   {
     const int nu_ineq = prm_.ulim.A.rows();
-    asif_to_qp_allocate<G, U>(prm_.asif.K, nu_ineq, prm_.nh, qp_);
+    asif_to_qp_allocate<G, U>(qp_, prm_.asif.K, nu_ineq, prm_.nh);
   }
 
   /**
@@ -102,17 +102,11 @@ public:
    *
    * @returns {u, code}: safe control input and QP solver code
    */
-  template<typename SS, typename BU>
-  std::pair<U, QPSolutionStatus> operator()(T t, const G & g, const U & u_des, SS && h, BU && bu)
+  std::pair<U, QPSolutionStatus> operator()(const G & g, const U & u_des, auto && h, auto && bu)
   {
     using std::chrono::duration, std::chrono::duration_cast, std::chrono::nanoseconds;
 
-    assert((prm_.nh == std::invoke_result_t<SS, Scalar<G>, G>::RowsAtCompileTime));
-
-    auto f = [this,
-              &t]<typename _T>(double t_loc, const CastT<_T, G> & vx, const CastT<_T, U> & vu) {
-      return f_(time_trait<T>::plus(t, t_loc), vx, vu);
-    };
+    assert((prm_.nh == std::invoke_result_t<decltype(h), Scalar<G>, G>::RowsAtCompileTime));
 
     ASIFProblem<G, U> pbm{
       .T     = prm_.T,
@@ -122,8 +116,8 @@ public:
       .ulim  = prm_.ulim,
     };
 
-    asif_to_qp_fill<G, U, decltype(f), decltype(h), decltype(bu), DT>(
-      pbm, prm_.asif, std::move(f), std::forward<SS>(h), std::forward<BU>(bu), qp_);
+    asif_to_qp_update<G, U, DT>(
+      qp_, pbm, prm_.asif, f_, std::forward<decltype(h)>(h), std::forward<decltype(bu)>(bu));
     auto sol = feedback::solve_qp(qp_, prm_.qp, warmstart_);
 
     if (sol.code == QPSolutionStatus::Optimal) { warmstart_ = sol; }

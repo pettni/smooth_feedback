@@ -39,11 +39,11 @@ using namespace boost::numeric::odeint;
 using Time = std::chrono::duration<double>;
 
 template<typename T>
-using G = Eigen::Vector2<T>;
+using X = Eigen::Vector2<T>;
 template<typename T>
 using U = Eigen::Matrix<T, 1, 1>;
 
-using Gd = G<double>;
+using Gd = X<double>;
 using Ud = U<double>;
 
 int main()
@@ -56,42 +56,42 @@ int main()
   Ud u;
 
   // dynamics
-  auto f = []<typename T>(Time, const G<T> & x, const U<T> u) -> smooth::Tangent<G<T>> {
+  auto f = []<typename S>(const X<S> & x, const U<S> u) -> smooth::Tangent<X<S>> {
     return {x(1), u(0)};
   };
 
-  // parameters
-  smooth::feedback::MPCParams<Gd, Ud> prm{
-    .T = 5,
-    .K = 20,
-    .weights =
-      {
-        .Q  = Eigen::Matrix2d::Identity(),
-        .QT = 0.1 * Eigen::Matrix2d::Identity(),
-        .R  = Eigen::Matrix<double, 1, 1>::Constant(0.1),
-      },
-    .ulim =
-      smooth::feedback::ManifoldBounds<Ud>{
-        .A = Eigen::Matrix<double, 1, 1>(1),
-        .c = Ud::Zero(),
-        .l = Eigen::Matrix<double, 1, 1>(-0.5),
-        .u = Eigen::Matrix<double, 1, 1>(0.5),
-      },
-  };
+  // running constraints
+  auto cr = []<typename S>(const X<S> &, const U<S> & u) -> Eigen::Vector<S, 1> { return u; };
+  Eigen::Vector<double, 1> crl{-0.5}, cru{0.5};
 
   // create MPC object and set input bounds, and desired trajectories
-  smooth::feedback::MPC<Time, Gd, Ud, decltype(f)> mpc(f, prm);
-  mpc.set_xdes([]<typename T>(T t) -> G<T> { return G<T>{-0.5 * sin(0.3 * t), 0}; });
-  mpc.set_udes([]<typename T>(T) -> U<T> { return U<T>::Zero(); });
+  smooth::feedback::MPC<Time, Gd, Ud, decltype(f), decltype(cr)> mpc{
+    f,
+    cr,
+    crl,
+    cru,
+    {
+      .K  = 20,
+      .tf = 5,
+    },
+  };
+
+  mpc.set_weights({
+    .Q  = Eigen::Matrix2d::Identity(),
+    .QT = 0.1 * Eigen::Matrix2d::Identity(),
+    .R  = 0.1 * Eigen::Matrix<double, 1, 1>::Identity(),
+  });
+  mpc.set_xdes_rel([]<typename T>(T t) -> X<T> { return X<T>{-0.5 * sin(0.3 * t), 0}; });
+  mpc.set_udes_rel([]<typename T>(T) -> U<T> { return U<T>::Zero(); });
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) -> void {
-    d = f(Time(t), x, u);
-  };
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double) { d = f(x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
+  const auto t0 = std::chrono::high_resolution_clock::now();
+
   for (std::chrono::milliseconds t = 0s; t < 60s; t += 50ms) {
     // compute MPC input
     auto [u_mpc, code] = mpc(t, g);
@@ -110,7 +110,12 @@ int main()
     stepper.do_step(ode, g, 0, 0.05);
   }
 
-#ifdef ENABLE_PLOTTING
+  const auto tf = std::chrono::high_resolution_clock::now();
+
+  std::cout << "MPC loop time: "
+            << std::chrono::duration_cast<std::chrono::microseconds>(tf - t0).count() << "us\n";
+
+#if ENABLE_PLOTTING
   matplot::figure();
   matplot::hold(matplot::on);
 

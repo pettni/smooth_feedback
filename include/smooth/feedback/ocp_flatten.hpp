@@ -52,51 +52,6 @@ namespace smooth::feedback {
 namespace detail {
 
 /**
- * @brief (Right) Hessian of composed function \f$ (f \circ g)(x) \f$.
- *
- * @param[out] out result                           [No x No*Nx]
- * @param[in] Jf (Right) Jacobian of f at y = g(x)  [No x Ny   ]
- * @param[in] Hf (Right) Hessian of f at y = g(x)   [Ny x No*Ny]
- * @param[in] Jg (Right) Jacobian of g at x         [Ni x Nx   ]
- * @param[in] Hg (Right) Hessian of g at x          [Nx x Ni*Nx]
- */
-inline void d2r_fog(
-  Eigen::SparseMatrix<double> & out,
-  const Eigen::SparseMatrix<double> & Jf,
-  const Eigen::SparseMatrix<double> & Hf,
-  const Eigen::SparseMatrix<double> & Jg,
-  const Eigen::SparseMatrix<double> & Hg)
-{
-  const auto Nout_o = Jf.rows();
-  const auto Nvar_y = Jf.cols();
-
-  [[maybe_unused]] const auto Nout_i = Jg.rows();
-  const auto Nvar_x                  = Jg.cols();
-
-  // check some dimensions
-  assert(Nvar_y == Nout_i);
-  assert(Hf.rows() == Nvar_y);
-  assert(Hf.cols() == Nout_o * Nvar_y);
-  assert(Hg.rows() == Nvar_x);
-  assert(Hg.cols() == Nout_i * Nvar_x);
-
-  out.resize(Nvar_x, Nvar_x * Nout_o);
-  set_zero(out);
-
-  for (auto no = 0u; no < Nout_o; ++no) {
-    block_add(out, 0, no * Nvar_x, Jg.transpose() * Hf.middleCols(no * Nvar_y, Nvar_y) * Jg);
-  }
-
-  for (auto i = 0u; i < Jf.outerSize(); ++i) {
-    for (Eigen::InnerIterator it(Jf, i); it; ++it) {
-      block_add(out, 0, it.row() * Nvar_x, Hg.middleCols(it.col() * Nvar_x, Nvar_x), it.value());
-    }
-  }
-
-  out.makeCompressed();
-}
-
-/**
  * @brief Algebra generators as sparse matrices
  */
 template<LieGroup G>
@@ -260,7 +215,8 @@ public:
   }
 
   // First derivative
-  const Eigen::SparseMatrix<double> & jacobian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const double tdbl          = static_cast<double>(t);
@@ -304,14 +260,15 @@ public:
     // compress working memory
     dexpinv_e_.makeCompressed();
     d2expinv_e_.makeCompressed();
-    J_.makeCompressed();
 
+    J_.makeCompressed();
     return J_;
   }
 
   // Second derivative
   //    \sum Bn (-1)^n / n! d2r (ad_a^n f)_aa - \sum Bn / n! d2r(ad_a^n dxl)_aa
-  const Eigen::SparseMatrix<double> & hessian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  hessian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
@@ -328,9 +285,10 @@ public:
     update_joplus(e, v, dxlval, dulval);
     update_hoplus(e, v, dxlval, dulval);
 
-    double coef   = 1;                       // hold (-1)^i / i!
-    Tangent<X> vi = f(t, x, u) - dxlval;     // (ad_a)^i * (f - dxl)
-    ji_           = Jf * Joplus_;            // dr (vi)_{t, e, v}
+    double coef   = 1;                    // hold (-1)^i / i!
+    Tangent<X> vi = f(t, x, u) - dxlval;  // (ad_a)^i * (f - dxl)
+    ji_           = Jf * Joplus_;         // dr (vi)_{t, e, v}
+    set_zero(hi_);
     d2r_fog(hi_, Jf, Hf, Joplus_, Hoplus_);  // d2r (vi)_{t, e, v}
 
     set_zero(H_);
@@ -459,7 +417,8 @@ public:
     return f.template operator()<T>(t, rplus(xl(t), e), rplus(ul(t), v));
   }
 
-  const Eigen::SparseMatrix<double> & jacobian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const auto & [xlval, dxlval] = diff::dr(xl, wrt(t));
@@ -476,7 +435,8 @@ public:
     return J_;
   }
 
-  const Eigen::SparseMatrix<double> & hessian(double t, const E & e, const V & v) requires(
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  hessian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
@@ -579,7 +539,7 @@ public:
     return f.template operator()<T>(tf, rplus(xl(T(0.)), e0), rplus(xl(tf), ef), q);
   }
 
-  const Eigen::SparseMatrix<double> &
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
@@ -599,7 +559,7 @@ public:
     return J_;
   }
 
-  const Eigen::SparseMatrix<double> &
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
   hessian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, X, Q>>)

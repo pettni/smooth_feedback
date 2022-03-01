@@ -36,8 +36,6 @@
 using namespace std::chrono_literals;
 using namespace boost::numeric::odeint;
 
-using Time = std::chrono::duration<double>;
-
 template<typename T>
 using G = Eigen::Matrix<T, 2, 1>;
 template<typename T>
@@ -49,7 +47,7 @@ using Ud = U<double>;
 int main()
 {
   // dynamics
-  auto f = []<typename T>(Time, const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
+  auto f = []<typename T>(const G<T> & x, const U<T> & u) -> smooth::Tangent<G<T>> {
     return {x(1), u(0)};
   };
 
@@ -85,7 +83,7 @@ int main()
   };
 
   // create filter
-  smooth::feedback::ASIFilter<Time, Gd, Ud, decltype(f)> asif(f, prm);
+  smooth::feedback::ASIFilter<Gd, Ud, decltype(f)> asif(f, prm);
 
   // system variables
   Gd g(-5, 1);
@@ -93,14 +91,12 @@ int main()
 
   // prepare for integrating the closed-loop system
   runge_kutta4<Gd, double, smooth::Tangent<Gd>, double, vector_space_algebra> stepper{};
-  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double t) {
-    d = f(Time(t), x, u);
-  };
+  const auto ode = [&f, &u](const Gd & x, smooth::Tangent<Gd> & d, double) { d = f(x, u); };
   std::vector<double> tvec, xvec, vvec, uvec;
 
   // integrate closed-loop system
   for (std::chrono::milliseconds t = 0s; t < 10s; t += 50ms) {
-    auto [u_asif, code] = asif(t, g, udes, h, bu);
+    auto [u_asif, code] = asif(g, udes, h, bu);
 
     u = u_asif;
 
@@ -109,7 +105,7 @@ int main()
     }
 
     // store data
-    tvec.push_back(duration_cast<Time>(t).count());
+    tvec.push_back(duration_cast<std::chrono::duration<double>>(t).count());
     xvec.push_back(g.x());
     vvec.push_back(g.y());
     uvec.push_back(u.x());
