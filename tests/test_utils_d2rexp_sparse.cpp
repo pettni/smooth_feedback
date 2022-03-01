@@ -36,7 +36,7 @@ smooth::Tangent<G> random_tangent(int i)
   } else {
     return smooth::Tangent<G>::Random();
   }
-};
+}
 
 TEST(D2EXP, Rn)
 {
