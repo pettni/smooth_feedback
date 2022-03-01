@@ -129,12 +129,12 @@ void dr_exp_impl(
       out.reserve(pattern);
     }
     if constexpr (Inv) {
-      const auto A = d2r_expinv<G>(a);
+      const auto A = dr_expinv<G>(a);
       for (auto i = 0u; i < a.size(); ++i) {
         for (auto j = 0u; j < a.size(); ++j) { out.coeffRef(r0 + i, c0 + j) = A(i, j); }
       }
     } else {
-      const auto A = d2r_exp<G>(a);
+      const auto A = dr_exp<G>(a);
       for (auto i = 0u; i < a.size(); ++i) {
         for (auto j = 0u; j < a.size(); ++j) { out.coeffRef(r0 + i, c0 + j) = A(i, j); }
       }

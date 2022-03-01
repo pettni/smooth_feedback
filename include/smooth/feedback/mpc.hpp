@@ -369,6 +369,7 @@ template<
 class MPC
 {
   static constexpr auto Ncr = std::invoke_result_t<CR, X, U>::SizeAtCompileTime;
+  using VecCR               = Eigen::Vector<double, Ncr>;
 
 public:
   /**
@@ -386,12 +387,7 @@ public:
    * @todo Optimization: Only time-dependent parts of QP are dynamics and end constraints, so
    * only those need to be updated.
    */
-  inline MPC(
-    F && f,
-    CR && cr,
-    Eigen::Vector<double, Ncr> && crl,
-    Eigen::Vector<double, Ncr> && cru,
-    MPCParams && prm = MPCParams{})
+  inline MPC(F && f, CR && cr, VecCR && crl, VecCR && cru, MPCParams && prm = MPCParams{})
       : xdes_{std::make_shared<detail::XDes<T, X>>()},
         udes_{std::make_shared<detail::UDes<T, U>>()}, mesh_{(prm.K + Kmesh - 1) / Kmesh},
         ocp_{
@@ -413,15 +409,10 @@ public:
   inline MPC(
     const F & f,
     const CR & cr,
-    const Eigen::Vector<double, Ncr> & crl,
-    const Eigen::Vector<double, Ncr> & cru,
+    const VecCR & crl,
+    const VecCR & cru,
     const MPCParams & prm = MPCParams{})
-      : MPC(
-        F(f),
-        CR(cr),
-        Eigen::Vector<double, Ncr>(crl),
-        Eigen::Vector<double, Ncr>(cru),
-        MPCParams(prm))
+      : MPC(F(f), CR(cr), VecCR(crl), VecCR(cru), MPCParams(prm))
   {}
   /// Default constructor
   inline MPC() = default;
@@ -494,9 +485,7 @@ public:
     if (prm_.warmstart) {
       if (
         // clang-format off
-        sol.code == QPSolutionStatus::Optimal
-        || sol.code == QPSolutionStatus::MaxTime
-        || sol.code == QPSolutionStatus::MaxIterations
+        sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime || sol.code == QPSolutionStatus::MaxIterations
         // clang-format n
       ) {
         warmstart_ = sol;

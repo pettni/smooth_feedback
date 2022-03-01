@@ -45,6 +45,13 @@ TEST(Mpc, Api)
 
   smooth::feedback::MPC<T, X, U, decltype(f), decltype(cr)> mpc{f, cr, -crl, crl};
 
+  const T t = 1;
+  const X x = X::Random();
+
+  // nothing set
+  auto [u0, code0] = mpc(t, x);
+  ASSERT_EQ(code0, smooth::feedback::QPSolutionStatus::Optimal);
+
   mpc.reset_warmstart();
 
   mpc.set_weights({
@@ -57,9 +64,6 @@ TEST(Mpc, Api)
   mpc.set_xdes_rel(
     []<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
 
-  const T t = 1;
-  const X x = X::Random();
-
   // no warmstart
   auto [u1, code1] = mpc(t, x);
   ASSERT_EQ(code1, smooth::feedback::QPSolutionStatus::Optimal);
@@ -69,4 +73,13 @@ TEST(Mpc, Api)
   ASSERT_EQ(code2, smooth::feedback::QPSolutionStatus::Optimal);
 
   ASSERT_TRUE(u1.isApprox(u2));
+
+  // output stuff
+  std::vector<X> xs;
+  std::vector<U> us;
+  auto [u3, code3] = mpc(t, x, us, xs);
+
+  ASSERT_TRUE(u3.isApprox(u1));
+
+  ASSERT_TRUE(us.size() + 1 == xs.size());
 }

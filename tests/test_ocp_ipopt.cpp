@@ -106,7 +106,7 @@ TEST(OcpIpopt, Solve)
     },
     {
       {"linear_solver", "mumps"},
-      {"hessian_approximation", "limited-memory"},
+      {"hessian_approximation", "exact"},
     },
     {
       {"tol", 1e-8},
