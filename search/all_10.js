@@ -26,8 +26,8 @@ var searchData=
   ['solve_5fqp_23',['solve_qp',['../qp_8hpp.html#a283bbafbfd5264d629f02ad495e896d8',1,'smooth::feedback']]],
   ['solve_5fqp_5fosqp_24',['solve_qp_osqp',['../osqp_8hpp.html#a06fe30d7710b8815813cf4a06adb08c5',1,'smooth::feedback']]],
   ['sparse_2ehpp_25',['sparse.hpp',['../sparse_8hpp.html',1,'']]],
-  ['status_26',['Status',['../structsmooth_1_1feedback_1_1NLPSolution.html#a0eef2fdf38dd3ea8e2473360fbd34fe8',1,'smooth::feedback::NLPSolution']]],
-  ['status_27',['status',['../structsmooth_1_1feedback_1_1NLPSolution.html#aa83844b0fd1dfc0d9f453671a2082e0a',1,'smooth::feedback::NLPSolution']]],
+  ['status_26',['status',['../structsmooth_1_1feedback_1_1NLPSolution.html#aa83844b0fd1dfc0d9f453671a2082e0a',1,'smooth::feedback::NLPSolution']]],
+  ['status_27',['Status',['../structsmooth_1_1feedback_1_1NLPSolution.html#a0eef2fdf38dd3ea8e2473360fbd34fe8',1,'smooth::feedback::NLPSolution']]],
   ['stop_5fcheck_5fiter_28',['stop_check_iter',['../structsmooth_1_1feedback_1_1QPSolverParams.html#a19bc1cf5805ff6505ca8b855650d1592',1,'smooth::feedback::QPSolverParams']]],
   ['time_29',['Time',['../conceptsmooth_1_1feedback_1_1Time.html',1,'smooth::feedback']]]
 ];

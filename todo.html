@@ -86,8 +86,8 @@ $(function() {
 <p class="interdd"></p>
 <p class="enddd">Accept dxl as a template argument to avoid double differentiation.  </p>
 </dd>
-<dt>Member <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a8173f5e425512e4d0b9afab37a2bc840">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;::MPC</a>  (F &amp;&amp;f, CR &amp;&amp;cr, VecCR &amp;&amp;crl, VecCR &amp;&amp;cru, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html" title="Parameters for MPC.">MPCParams</a> &amp;&amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html" title="Parameters for MPC.">MPCParams</a>{})</dt>
-<dd><a class="anchor" id="_todo000001"></a>Optimization: Only time-dependent parts of QP are dynamics and end constraints, so only those need to be updated.  </dd>
+<dt>Member <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ad297f0a8d7053b0c36acd4ddd03df042">smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;::MPC</a>  (F &amp;&amp;f, CR &amp;&amp;cr, Eigen::Vector&lt; double, Ncr &gt; &amp;&amp;crl, Eigen::Vector&lt; double, Ncr &gt; &amp;&amp;cru, <a class="el" href="structsmooth_1_1feedback_1_1MPCParams.html" title="Parameters for MPC.">MPCParams</a> &amp;&amp;prm={})</dt>
+<dd><a class="anchor" id="_todo000001"></a>Optimization: The only time-dependent parts of the QP are the dynamics and end constraints, so only those need to be updated.  </dd>
 <dt>Member <a class="el" href="ocp_8hpp.html#ab6d2c2b6bf1d2dd09c2d7ed215f806b6">smooth::feedback::test_ocp_derivatives</a>  (OCPType auto &amp;ocp, uint32_t num_trials=1, double eps=1e-4)</dt>
 <dd><a class="anchor" id="_todo000002"></a>Make it possible to test a subset of derivatives </dd>
 </dl>

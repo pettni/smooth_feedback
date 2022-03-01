@@ -9,7 +9,7 @@ var searchData=
   ['qpsolution_6',['QPSolution',['../structsmooth_1_1feedback_1_1QPSolution.html',1,'smooth::feedback']]],
   ['qpsolutionstatus_7',['QPSolutionStatus',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feb',1,'smooth::feedback']]],
   ['qpsolverparams_8',['QPSolverParams',['../structsmooth_1_1feedback_1_1QPSolverParams.html',1,'smooth::feedback']]],
-  ['qt_9',['QT',['../structsmooth_1_1feedback_1_1MPCWeights.html#a7030e3c4a4f3c27eb796cc141f1d256b',1,'smooth::feedback::MPCWeights']]],
+  ['qtf_9',['Qtf',['../structsmooth_1_1feedback_1_1MPCWeights.html#a7aaa56ab380f25489316eeccd1522a3c',1,'smooth::feedback::MPCWeights']]],
   ['quadraticprogram_10',['QuadraticProgram',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
   ['quadraticprogram_3c_2d1_2c_20_2d1_2c_20double_20_3e_11',['QuadraticProgram&lt;-1, -1, double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
   ['quadraticprogramsparse_12',['QuadraticProgramSparse',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]],
