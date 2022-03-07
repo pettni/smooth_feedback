@@ -331,7 +331,8 @@ TEST(QP, Scale)
   problem.l.setRandom();
   problem.u.setRandom();
 
-  auto [scaled_problem, scale, c] = smooth::feedback::detail::scale_qp(problem);
+  auto scaled_problem = problem;
+  auto [scale, c]     = smooth::feedback::detail::scale_qp(scaled_problem);
 
   Eigen::Matrix<double, N, N> D_x = scale.head(N).asDiagonal();
   Eigen::Matrix<double, M, M> D_e = scale.tail(M).asDiagonal();
@@ -343,12 +344,14 @@ TEST(QP, Scale)
   ASSERT_TRUE((D_e * problem.u).isApprox(scaled_problem.u));
 
   smooth::feedback::QuadraticProgramSparse sp_problem;
-  sp_problem.A                             = problem.A.sparseView();
-  sp_problem.P                             = problem.P.sparseView();
-  sp_problem.q                             = problem.q;
-  sp_problem.l                             = problem.l;
-  sp_problem.u                             = problem.u;
-  auto [sp_scaled_problem, sp_scale, sp_c] = smooth::feedback::detail::scale_qp(sp_problem);
+  sp_problem.A = problem.A.sparseView();
+  sp_problem.P = problem.P.sparseView();
+  sp_problem.q = problem.q;
+  sp_problem.l = problem.l;
+  sp_problem.u = problem.u;
+
+  auto scaled_sp_problem = sp_problem;
+  auto [sp_scale, sp_c]  = smooth::feedback::detail::scale_qp(scaled_sp_problem);
 
   ASSERT_NEAR(c, sp_c, 1e-5);
   ASSERT_TRUE(sp_scale.isApprox(scale));

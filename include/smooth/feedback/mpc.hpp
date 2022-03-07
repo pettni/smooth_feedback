@@ -102,6 +102,8 @@ struct MPCObj
   Eigen::SparseMatrix<double> hess{1 + 2 * Nx + 1, 1 + 2 * Nx + 1};
 
   // functor members
+
+  // function f(t, x0, xf, q) = (1/2) xf' Q xf + q_0
   double operator()(
     const double,
     const X &,
@@ -110,7 +112,12 @@ struct MPCObj
   {
     assert(q(0) == 1.);
     assert(xf_des.isApprox(xf, 1e-4));
-    return 0.;
+    if constexpr (false) {
+      const auto e = rminus(xf, xf_des);
+      return 0.5 * e.dot(Qtf * e) + q(0);
+    } else {
+      return 1.;
+    }
   }
 
   Eigen::RowVector<double, 1 + 2 * Nx + 1>
@@ -191,6 +198,8 @@ struct MPCIntegrand
   Eigen::SparseMatrix<double> hess{1 + Nx + Nu, 1 + Nx + Nu};
 
   // functor members
+
+  // function f(x, t, u) = (1/2) * (x' Q x + u' R u)
   Eigen::Vector<double, 1> operator()(
     [[maybe_unused]] const double t_rel,
     [[maybe_unused]] const X & x,
@@ -198,7 +207,13 @@ struct MPCIntegrand
   {
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
-    return Eigen::Vector<double, 1>{0.};
+    if constexpr (false) {
+      const auto ex = rminus(x, (*xdes)(t_rel));
+      const auto eu = rminus(u, (*udes)(t_rel));
+      return Eigen::Vector<double, 1>{0.5 * ex.dot(Q * ex) + 0.5 * eu.dot(R * eu)};
+    } else {
+      return Eigen::Vector<double, 1>{0.};
+    }
   }
 
   Eigen::RowVector<double, 1 + Nx + Nu> jacobian(
@@ -279,18 +294,18 @@ struct MPCCE
   Eigen::SparseMatrix<double> jac{Nx, 1 + 2 * Nx + 1};
 
   // functor members
-  Tangent<X> operator()(
-    const double, [[maybe_unused]] const X & x0, const X &, const Eigen::Vector<double, 1> &) const
+  Tangent<X>
+  operator()(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &) const
   {
     return rminus(x0, x0_fix);
   }
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(const double, [[maybe_unused]] const X & x0, const X &, const Eigen::Vector<double, 1> &)
+  jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
     set_zero(jac);
 
-    dr_exp_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
+    dr_expinv_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
 
     jac.makeCompressed();
     return jac;
@@ -504,15 +519,13 @@ public:
       }
     }
 
-    // save solution for warmstart
+    // save solution to warmstart next iteration
     if (prm_.warmstart) {
-      if (
-        // clang-format off
-        sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime || sol.code == QPSolutionStatus::MaxIterations
-        // clang-format on
-      ) {
+      // clang-format off
+      if (sol.code == QPSolutionStatus::Optimal || sol.code == QPSolutionStatus::MaxTime || sol.code == QPSolutionStatus::MaxIterations) {
         warmstart_ = sol;
       }
+      // clang-format on
     }
 
     return {rplus((*udes_)(0), sol.primal.template segment<Nu>(uvar_B)), sol.code};

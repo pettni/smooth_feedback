@@ -279,8 +279,8 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
 
     // end constraints
     if constexpr (diff::detail::diffable_order1<decltype(ocp.ce), std::tuple<double, X, X, Q>>) {
-      const auto [f_def, df_def] = diff::dr<1, diff::Type::Analytic>(ocp.theta, wrt(tf, x0, xf, q));
-      const auto [f_num, df_num] = diff::dr<1, DT>(ocp.theta, wrt(tf, x0, xf, q));
+      const auto [f_def, df_def] = diff::dr<1, diff::Type::Analytic>(ocp.ce, wrt(tf, x0, xf, q));
+      const auto [f_num, df_num] = diff::dr<1, DT>(ocp.ce, wrt(tf, x0, xf, q));
 
       if (!cmp(df_def, df_num)) {
         std::cout << "Error in 1st derivative of ce: got\n"
@@ -291,8 +291,8 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
     }
     if constexpr (diff::detail::diffable_order2<decltype(ocp.ce), std::tuple<double, X, X, Q>>) {
       const auto [f_def, df_def, d2f_def] =
-        diff::dr<2, diff::Type::Analytic>(ocp.theta, wrt(tf, x0, xf, q));
-      const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.theta, wrt(tf, x0, xf, q));
+        diff::dr<2, diff::Type::Analytic>(ocp.ce, wrt(tf, x0, xf, q));
+      const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.ce, wrt(tf, x0, xf, q));
 
       if (!cmp(d2f_def, d2f_num)) {
         std::cout << "Error in 2nd derivative of ce: got\n"
