@@ -250,9 +250,11 @@ auto scale_qp(const Pbm & pbm)
 
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows();
 
-  // ALLOCATION
-  Eigen::Vector<Scalar, N> sx     = Eigen::Vector<Scalar, N>::Ones(n);  // variable scaling
-  Eigen::Vector<Scalar, M> sy     = Eigen::Vector<Scalar, M>::Ones(m);  // constraint scaling
+  // return variables
+  Eigen::Vector<Scalar, N> sx = Eigen::Vector<Scalar, N>::Ones(n);  // variable scaling
+  Eigen::Vector<Scalar, M> sy = Eigen::Vector<Scalar, M>::Ones(m);  // constraint scaling
+
+  // working memory
   Eigen::Vector<Scalar, N> sx_inc = Eigen::Vector<Scalar, N>::Zero(n);  // incr variable scaling
   Eigen::Vector<Scalar, M> sy_inc = Eigen::Vector<Scalar, M>::Zero(m);  // incr constraint scaling
 
@@ -290,10 +292,8 @@ auto scale_qp(const Pbm & pbm)
     for (auto k = 0u; k < pbm.A.outerSize(); ++k) {
       for (Eigen::InnerIterator it(pbm.A, k); it; ++it) {
         const Scalar Aij = std::abs(sy(it.row()) * sx(it.col()) * it.value());
-        // bottom left block of H
-        sx_inc(it.col()) = std::max(sx_inc(it.col()), Aij);
-        // upper right block of H
-        sy_inc(it.row()) = std::max(sy_inc(it.row()), Aij);
+        sx_inc(it.col()) = std::max(sx_inc(it.col()), Aij);  // bottom left block of H
+        sy_inc(it.row()) = std::max(sy_inc(it.row()), Aij);  // upper right block of H
       }
     }
 
@@ -339,7 +339,6 @@ bool polish_qp(
 {
   using AmatT                  = decltype(Pbm::A);
   using Scalar                 = typename AmatT::Scalar;
-  using VecX                   = Eigen::Matrix<Scalar, -1, 1>;
   static constexpr bool sparse = std::is_base_of_v<Eigen::SparseMatrixBase<AmatT>, AmatT>;
 
   static constexpr Scalar inf = std::numeric_limits<Scalar>::infinity();
@@ -356,7 +355,7 @@ bool polish_qp(
     if (sol.dual[idx] > 100 * eps && pbm.u[idx] != inf) { nu++; }
   }
 
-  Eigen::Matrix<Eigen::Index, -1, 1> LU_idx(nl + nu);
+  Eigen::VectorXi LU_idx(nl + nu);
   for (Eigen::Index idx = 0, lcntr = 0, ucntr = 0; idx < m; ++idx) {
     if (sol.dual[idx] < -100 * eps && pbm.l[idx] != -inf) { LU_idx(lcntr++) = idx; }
     if (sol.dual[idx] > 100 * eps && pbm.u[idx] != inf) { LU_idx(nl + ucntr++) = idx; }
@@ -371,7 +370,7 @@ bool polish_qp(
   // fill up H
   if constexpr (sparse) {
     // preallocate nonzeros
-    Eigen::Matrix<int, -1, 1> nnz(n + nl + nu);
+    Eigen::VectorXi nnz(n + nl + nu);
     for (auto i = 0u; i != n; ++i) {
       nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i];
     }
@@ -379,10 +378,10 @@ bool polish_qp(
       nnz(n + i) = pbm.A.outerIndexPtr()[LU_idx(i) + 1] - pbm.A.outerIndexPtr()[LU_idx(i)];
     }
     H.reserve(nnz);
-    Hp.reserve(nnz + Eigen::Matrix<int, -1, 1>::Ones(n + nl + nu));
+    Hp.reserve(nnz + Eigen::VectorXi::Ones(n + nl + nu));
 
     // fill P in top left block
-    for (Eigen::Index k = 0u; k != n; ++k) {
+    for (auto k = 0u; k < n; ++k) {
       for (Eigen::InnerIterator it(pbm.P, k); it; ++it) {
         const Scalar pij              = c * sx(it.col()) * sx(it.row()) * it.value();
         H.insert(it.row(), it.col())  = pij;
@@ -414,11 +413,12 @@ bool polish_qp(
     H.makeCompressed();
     Hp.makeCompressed();
   } else {
-    Hp.topLeftCorner(n, n) += VecX::Constant(n, prm.delta).asDiagonal();
-    Hp.bottomRightCorner(nl + nu, nl + nu) -= VecX::Constant(nl + nu, prm.delta).asDiagonal();
+    Hp.topLeftCorner(n, n) += Eigen::VectorX<Scalar>::Constant(n, prm.delta).asDiagonal();
+    Hp.bottomRightCorner(nl + nu, nl + nu) -=
+      Eigen::VectorX<Scalar>::Constant(nl + nu, prm.delta).asDiagonal();
   }
 
-  VecX h(n + nl + nu);
+  Eigen::VectorX<Scalar> h(n + nl + nu);
   h.head(n) = -c * sx.cwiseProduct(pbm.q);
   for (auto i = 0u; i != nl; ++i) { h(n + i) = sy(LU_idx(i)) * pbm.l(LU_idx(i)); }
   for (auto i = 0u; i != nu; ++i) { h(n + nl + i) = sy(LU_idx(nl + i)) * pbm.u(LU_idx(nl + i)); }
@@ -429,12 +429,12 @@ bool polish_qp(
   std::conditional_t<
     sparse,
     Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>,
-    Eigen::LDLT<Eigen::Ref<decltype(H)>, Eigen::Upper>>
+    Eigen::LDLT<decltype(H), Eigen::Upper>>
     ldlt(Hp);
 
   if (ldlt.info()) { return false; }
 
-  VecX t_hat = VecX::Zero(n + nl + nu);
+  Eigen::VectorX<Scalar> t_hat = Eigen::VectorX<Scalar>::Zero(n + nl + nu);
   for (auto i = 0u; i != prm.polish_iter; ++i) {
     t_hat += ldlt.solve(h - H.template selfadjointView<Eigen::Upper>() * t_hat);
   }
@@ -442,8 +442,8 @@ bool polish_qp(
   // UPDATE SOLUTION
 
   sol.primal = t_hat.template head<N>(n);
-  for (Eigen::Index i = 0; i < nl; ++i) { sol.dual(LU_idx(i)) = t_hat(n + i); }
-  for (Eigen::Index i = 0; i < nu; ++i) { sol.dual(LU_idx(nl + i)) = t_hat(n + nl + i); }
+  for (auto i = 0u; i < nl; ++i) { sol.dual(LU_idx(i)) = t_hat(n + i); }
+  for (auto i = 0u; i < nu; ++i) { sol.dual(LU_idx(nl + i)) = t_hat(n + nl + i); }
 
   return true;
 }
@@ -451,14 +451,14 @@ bool polish_qp(
 /**
  * @brief Check stopping criterion for QP solver.
  */
-template<typename Pbm, typename D1, typename D2, typename D3, typename D4, typename D5>
+template<typename Pbm>
 std::optional<QPSolutionStatus> qp_check_stopping(
   const Pbm & pbm,
-  const Eigen::MatrixBase<D1> & x,
-  const Eigen::MatrixBase<D2> & y,
-  const Eigen::MatrixBase<D3> & z,
-  const Eigen::MatrixBase<D4> & dx,
-  const Eigen::MatrixBase<D5> & dy,
+  const Eigen::Vector<typename decltype(Pbm::A)::Scalar, decltype(Pbm::A)::ColsAtCompileTime> & x,
+  const Eigen::Vector<typename decltype(Pbm::A)::Scalar, decltype(Pbm::A)::RowsAtCompileTime> & y,
+  const Eigen::Vector<typename decltype(Pbm::A)::Scalar, decltype(Pbm::A)::RowsAtCompileTime> & z,
+  const Eigen::Vector<typename decltype(Pbm::A)::Scalar, decltype(Pbm::A)::ColsAtCompileTime> & dx,
+  const Eigen::Vector<typename decltype(Pbm::A)::Scalar, decltype(Pbm::A)::RowsAtCompileTime> & dy,
   const QPSolverParams & prm)
 {
   using Scalar = typename decltype(Pbm::A)::Scalar;
@@ -571,11 +571,6 @@ detail::qp_solution_t<Pbm> solve_qp(
   static constexpr Eigen::Index N = AmatT::ColsAtCompileTime;
   static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
 
-  // typedefs
-  using Rn = Eigen::Vector<Scalar, N>;
-  using Rm = Eigen::Vector<Scalar, M>;
-  using Rk = Eigen::Vector<Scalar, K>;
-
   // dynamic sizes
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows(), k = n + m;
 
@@ -590,10 +585,17 @@ detail::qp_solution_t<Pbm> solve_qp(
   // return code: when set algorithm is finished
   std::optional<QPSolutionStatus> ret_code = std::nullopt;
 
-  // allocate working arrays
-  Rn x_us(n), dx_us(n);
-  Rm z_next(m), y_us(m), z_us(m), dy_us(m), rho(m);
-  Rk p(k);
+  // typedefs
+  using Ht = std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, K, K>>;
+  using LDLTt = std::
+    conditional_t<sparse, Eigen::SimplicialLDLT<Ht, Eigen::Upper>, Eigen::LDLT<Ht, Eigen::Upper>>;
+
+  // allocate working memory
+  Eigen::Vector<Scalar, N> x(n), x_us(n), dx_us(n);
+  Eigen::Vector<Scalar, M> z(m), y(m), z_next(m), y_us(m), z_us(m), dy_us(m), rho(m);
+  Eigen::Vector<Scalar, K> p(k);
+  Ht H(k, k);
+  LDLTt ldlt;
 
   // problem scaling
   Scalar c                    = 1;
@@ -619,14 +621,13 @@ detail::qp_solution_t<Pbm> solve_qp(
   const auto t0 = std::chrono::high_resolution_clock::now();
 
   // fill square symmetric system matrix H = [P A'; A 0]
-  std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, K, K>> H(k, k);
   if constexpr (sparse) {
     // preallocate nonzeros in H
-    Eigen::Matrix<int, -1, 1> nnz(k);
-    for (auto i = 0u; i != n; ++i) {
+    Eigen::VectorXi nnz(k);
+    for (auto i = 0u; i < n; ++i) {
       nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
     }
-    for (auto i = 0u; i != m; ++i) {
+    for (auto i = 0u; i < m; ++i) {
       nnz(n + i) = pbm.A.outerIndexPtr()[i + 1] - pbm.A.outerIndexPtr()[i] + 1;
     }
     H.reserve(nnz);
@@ -645,11 +646,12 @@ detail::qp_solution_t<Pbm> solve_qp(
         H.insert(it.col(), n + it.row()) = sy(it.row()) * sx(it.col()) * it.value();
       }
     }
-    for (auto row = 0u; row != m; ++row) { H.insert(n + row, n + row) = Scalar(-1) / rho(row); }
+    for (auto row = 0u; row < m; ++row) { H.insert(n + row, n + row) = Scalar(-1) / rho(row); }
     H.makeCompressed();
   } else {
     H.template topLeftCorner<N, N>(n, n) = c * sx.asDiagonal() * pbm.P * sx.asDiagonal();
-    H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
+    H.template topLeftCorner<N, N>(n, n) +=
+      Eigen::Vector<Scalar, N>::Constant(n, sigma).asDiagonal();
     H.template topRightCorner<N, M>(n, m) = (sy.asDiagonal() * pbm.A * sx.asDiagonal()).transpose();
     H.template bottomRightCorner<M, M>(m, m) = (-rho).cwiseInverse().asDiagonal();
   }
@@ -670,19 +672,18 @@ detail::qp_solution_t<Pbm> solve_qp(
   }
 
   // factorize H
-  std::conditional_t<
-    sparse,
-    Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>,
-    Eigen::LDLT<Eigen::Ref<decltype(H)>, Eigen::Upper>>
-    ldlt(H);
+  if constexpr (sparse) {
+    ldlt.analyzePattern(H);  // structure-dependent
+    ldlt.factorize(H);       // value-dependent
+  } else {
+    ldlt.compute(H);
+  }
 
   const auto t_factor = std::chrono::high_resolution_clock::now();
 
   if (ldlt.info()) { ret_code = QPSolutionStatus::Unknown; }
 
   // initialize solver variables
-  Rn x;
-  Rm z, y;
   if (warmstart.has_value()) {
     // warmstart variables must be scaled
     x = warmstart.value().get().primal;
