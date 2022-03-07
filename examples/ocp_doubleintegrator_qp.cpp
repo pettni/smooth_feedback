@@ -28,7 +28,7 @@
  */
 
 #include <smooth/feedback/ocp_to_qp.hpp>
-#include <smooth/feedback/qp.hpp>
+#include <smooth/feedback/qp_solver.hpp>
 
 #include <chrono>
 #include <iostream>

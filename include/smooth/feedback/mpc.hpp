@@ -32,6 +32,7 @@
 #include <memory>
 
 #include "ocp_to_qp.hpp"
+#include "qp_solver.hpp"
 #include "time.hpp"
 #include "utils/dr_exp_sparse.hpp"
 #include "utils/sparse.hpp"
