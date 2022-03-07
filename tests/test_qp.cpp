@@ -327,32 +327,23 @@ TEST(QP, Scale)
   problem.q.setRandom();
 
   problem.A.setRandom();
-  problem.A *= 100;
+  problem.A *= 10;
   problem.l.setRandom();
   problem.u.setRandom();
 
-  auto scaled_problem = problem;
-  auto [scale, c]     = smooth::feedback::detail::scale_qp(scaled_problem);
+  auto [c, sx, sy]     = smooth::feedback::detail::scale_qp(problem);
 
-  Eigen::Matrix<double, N, N> D_x = scale.head(N).asDiagonal();
-  Eigen::Matrix<double, M, M> D_e = scale.tail(M).asDiagonal();
+  Eigen::Matrix<double, N, N> Ps = c * sx.asDiagonal() * problem.P * sx.asDiagonal();
+  Eigen::Matrix<double, M, N> As = sy.asDiagonal() * problem.A * sx.asDiagonal();
 
-  ASSERT_TRUE((c * D_x * problem.P * D_x).isApprox(scaled_problem.P));
-  ASSERT_TRUE((c * D_x * problem.q).isApprox(scaled_problem.q));
-  ASSERT_TRUE((D_e * problem.A * D_x).isApprox(scaled_problem.A));
-  ASSERT_TRUE((D_e * problem.l).isApprox(scaled_problem.l));
-  ASSERT_TRUE((D_e * problem.u).isApprox(scaled_problem.u));
+  Eigen::Matrix<double, N + M, N + M> H;
+  H.setZero();
+  H.topLeftCorner<N, N>() = Ps;
+  H.bottomLeftCorner<M, N>() = As;
+  H.topRightCorner<N, M>() = As.transpose();
 
-  smooth::feedback::QuadraticProgramSparse sp_problem;
-  sp_problem.A = problem.A.sparseView();
-  sp_problem.P = problem.P.sparseView();
-  sp_problem.q = problem.q;
-  sp_problem.l = problem.l;
-  sp_problem.u = problem.u;
+  Eigen::VectorXd hnorm = H.colwise().lpNorm<Eigen::Infinity>();
 
-  auto scaled_sp_problem = sp_problem;
-  auto [sp_scale, sp_c]  = smooth::feedback::detail::scale_qp(scaled_sp_problem);
-
-  ASSERT_NEAR(c, sp_c, 1e-5);
-  ASSERT_TRUE(sp_scale.isApprox(scale));
+  ASSERT_GE(hnorm.minCoeff(), 0.9);
+  ASSERT_LE(hnorm.maxCoeff(), 1.1);
 }

@@ -42,6 +42,8 @@
 #include <limits>
 #include <optional>
 
+#include "utils/sparse.hpp"
+
 namespace smooth::feedback {
 
 /**
@@ -63,7 +65,7 @@ namespace smooth::feedback {
 template<Eigen::Index M, Eigen::Index N, typename Scalar = double>
 struct QuadraticProgram
 {
-  /// Positive semi-definite square cost (only upper trianglular part is used)
+  /// Positive semi-definite square cost (only upper triangular part is used)
   Eigen::Matrix<Scalar, N, N> P;
   /// Linear cost
   Eigen::Matrix<Scalar, N, 1> q;
@@ -206,27 +208,27 @@ using qp_solution_t = typename qp_solution<T>::type;
 // \endcond
 
 /**
- * @brief Re-scale a QuadraticProgram in-place.
+ * @brief Re-scale a QuadraticProgram.
  *
- * @param[in, out] pbm problem \f$ (P, q, A, l, u) \f$ to rescale.
- * @returns scaling parameters {s, c}
+ * @param pbm problem \f$ (P, q, A, l, u) \f$ to rescale.
+ * @returns scaling parameters {c, sx, sy}
  *
  * @note Allocates heap memory for dynamically sized problems.
  *
  * The scaled problem is defined as
  *
- * * \f$ \bar P = c S_x P S_x \f$,
- * * \f$ \bar q = c q S_x \f$,
- * * \f$ \bar A = S_e A S_x \f$,
- * * \f$ \bar l = S_e l \f$,
- * * \f$ \bar u = S_e u \f$,
+ * * \f$ P_s = c S_x P S_x \f$,
+ * * \f$ q_s = c q S_x \f$,
+ * * \f$ A_s = S_y A S_x \f$,
+ * * \f$ l_s = S_y l \f$,
+ * * \f$ u_s = S_y u \f$,
  *
- * where \f$ S_x = diag(s_{0:n}), S_e = diag(s_{n:n+m}) \f$.
+ * where Sx = diag(sx), Sy = diag(sy).
  *
  * The relation between scaled variables and original variables are
  *
- * * Primal: \f$ \bar x = S_x^{-1} x \f$,
- * * Dual: \f$ \bar y = c E_x^{-1} x \f$.
+ * * Primal: \f$ x_s = S_x^{-1} x \f$,
+ * * Dual: \f$ y_s = c S_y^{-1} y \f$.
  *
  * The objective of the rescaling is the make the columns of
  * \f[
@@ -238,94 +240,78 @@ using qp_solution_t = typename qp_solution<T>::type;
  * \f]
  */
 template<typename Pbm>
-auto scale_qp(Pbm & pbm)
+auto scale_qp(const Pbm & pbm)
 {
-  using AmatT                  = decltype(Pbm::A);
-  using Scalar                 = typename AmatT::Scalar;
-  static constexpr bool sparse = std::is_base_of_v<Eigen::SparseMatrixBase<AmatT>, AmatT>;
+  using AmatT  = decltype(Pbm::A);
+  using Scalar = typename AmatT::Scalar;
 
   static constexpr Eigen::Index M = AmatT::RowsAtCompileTime;
   static constexpr Eigen::Index N = AmatT::ColsAtCompileTime;
-  static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
 
-  const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows(), k = n + m;
-  const auto norm = [](auto && t) -> Scalar { return t.template lpNorm<Eigen::Infinity>(); };
+  const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows();
 
-  Eigen::Vector<Scalar, K> scale   = Eigen::Vector<Scalar, K>::Ones(k);  // scaling
-  Eigen::Vector<Scalar, K> d_scale = Eigen::Vector<Scalar, K>::Zero(k);  // incremental scaling
+  // ALLOCATION
+  Eigen::Vector<Scalar, N> sx     = Eigen::Vector<Scalar, N>::Ones(n);  // variable scaling
+  Eigen::Vector<Scalar, M> sy     = Eigen::Vector<Scalar, M>::Ones(m);  // constraint scaling
+  Eigen::Vector<Scalar, N> sx_inc = Eigen::Vector<Scalar, N>::Zero(n);  // incr variable scaling
+  Eigen::Vector<Scalar, M> sy_inc = Eigen::Vector<Scalar, M>::Zero(m);  // incr constraint scaling
 
   // find "norm" of cost function
   for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
     for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
-      d_scale(it.col()) = std::max(d_scale(it.col()), std::abs(it.value()));
+      sx_inc(it.col()) = std::max(sx_inc(it.col()), std::abs(it.value()));
     }
   }
 
   // if there are "zero cols"
   for (auto i = 0u; i != n; ++i) {
-    if (d_scale(i) == 0) { d_scale(i) = 1; }
+    if (sx_inc(i) == 0) { sx_inc(i) = 1; }
   }
 
   // scale cost function
-  Scalar c = Scalar(1) / std::max({1e-6, d_scale.template head<N>(n).mean(), norm(pbm.q)});
-  pbm.P *= c;
-  pbm.q *= c;
+  const Scalar c =
+    Scalar(1) / std::max({1e-8, sx_inc.mean(), pbm.q.template lpNorm<Eigen::Infinity>()});
 
   int iter = 0;
 
-  // calculate norm for every column of [P A' ; A 0]
+  // calculate inf-norm for every column of [Ps As' ; As 0]
   do {
-    d_scale.setZero();
-    for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
-      for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
+    sx_inc.setZero();
+    sy_inc.setZero();
+    for (auto k = 0u; k < pbm.P.outerSize(); ++k) {
+      for (Eigen::InnerIterator it(pbm.P, k); it; ++it) {
         // upper left block of H
-        d_scale(it.col()) = std::max(d_scale(it.col()), std::abs(it.value()));
+        sx_inc(it.col()) = std::max({
+          sx_inc(it.col()),
+          std::abs(c * sx(it.row()) * sx(it.col()) * it.value()),
+        });
       }
     }
-    for (auto i = 0u; i < pbm.A.outerSize(); ++i) {
-      for (Eigen::InnerIterator it(pbm.A, i); it; ++it) {
+    for (auto k = 0u; k < pbm.A.outerSize(); ++k) {
+      for (Eigen::InnerIterator it(pbm.A, k); it; ++it) {
+        const Scalar Aij = std::abs(sy(it.row()) * sx(it.col()) * it.value());
         // bottom left block of H
-        d_scale(it.col()) = std::max(d_scale(it.col()), std::abs(it.value()));
+        sx_inc(it.col()) = std::max(sx_inc(it.col()), Aij);
         // upper right block of H
-        d_scale(n + it.row()) = std::max(d_scale(n + it.row()), std::abs(it.value()));
+        sy_inc(it.row()) = std::max(sy_inc(it.row()), Aij);
       }
     }
 
     // if there are "zero cols" we don't scale
-    for (auto i = 0u; i < k; ++i) {
-      if (d_scale(i) == 0) { d_scale(i) = 1; }
+    for (auto i = 0u; i < n; ++i) {
+      if (sx_inc(i) == 0) { sx_inc(i) = 1; }
+    }
+    for (auto i = 0u; i < m; ++i) {
+      if (sy_inc(i) == 0) { sy_inc(i) = 1; }
     }
 
-    d_scale = d_scale.cwiseMax(1e-8).cwiseInverse().cwiseSqrt();
+    sx.applyOnTheLeft(sx_inc.cwiseMax(1e-8).cwiseInverse().cwiseSqrt().asDiagonal());
+    sy.applyOnTheLeft(sy_inc.cwiseMax(1e-8).cwiseInverse().cwiseSqrt().asDiagonal());
+  } while (iter++ < 10
+           && std::max((sx_inc.array() - 1).abs().maxCoeff(), (sy_inc.array() - 1).abs().maxCoeff())
+                > 0.1);
 
-    // perform scaling
-    if constexpr (sparse) {
-      // P = Sx * P * Sx
-      for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
-        for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
-          pbm.P.coeffRef(it.row(), it.col()) *= d_scale(it.row()) * d_scale(it.col());
-        }
-      }
-      // A = Se * A * Sx
-      for (auto i = 0u; i < pbm.A.outerSize(); ++i) {
-        for (Eigen::InnerIterator it(pbm.A, i); it; ++it) {
-          pbm.A.coeffRef(it.row(), it.col()) *= d_scale(n + it.row()) * d_scale(it.col());
-        }
-      }
-    } else {
-      pbm.P.applyOnTheLeft(d_scale.template head<N>(n).asDiagonal());
-      pbm.P.applyOnTheRight(d_scale.template head<N>(n).asDiagonal());
-      pbm.A.applyOnTheLeft(d_scale.template segment<M>(n, m).asDiagonal());
-      pbm.A.applyOnTheRight(d_scale.template head<N>(n).asDiagonal());
-    }
-    pbm.q.applyOnTheLeft(d_scale.template head<N>(n).asDiagonal());
-    pbm.l.applyOnTheLeft(d_scale.template segment<M>(n, m).asDiagonal());
-    pbm.u.applyOnTheLeft(d_scale.template segment<M>(n, m).asDiagonal());
-
-    scale.applyOnTheLeft(d_scale.asDiagonal());
-  } while (iter++ < 10 && (d_scale.array() - 1).abs().maxCoeff() > 0.1);
-
-  return std::make_tuple(std::move(scale), c);
+  return std::make_tuple(c, std::move(sx), std::move(sy));
 }
 
 /**
@@ -475,8 +461,8 @@ std::optional<QPSolutionStatus> qp_check_stopping(
   const auto norm = [](auto && t) -> Scalar { return t.template lpNorm<Eigen::Infinity>(); };
 
   // working memory
-  Eigen::Matrix<Scalar, decltype(Pbm::A)::ColsAtCompileTime, 1> Px(n), Aty(n);
-  Eigen::Matrix<Scalar, decltype(Pbm::A)::RowsAtCompileTime, 1> Ax(m);
+  Eigen::Vector<Scalar, decltype(Pbm::A)::ColsAtCompileTime> Px(n), Aty(n);
+  Eigen::Vector<Scalar, decltype(Pbm::A)::RowsAtCompileTime> Ax(m);
 
   // OPTIMALITY
 
@@ -579,9 +565,9 @@ detail::qp_solution_t<Pbm> solve_qp(
   static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
 
   // typedefs
-  using Rn = Eigen::Matrix<Scalar, N, 1>;
-  using Rm = Eigen::Matrix<Scalar, M, 1>;
-  using Rk = Eigen::Matrix<Scalar, K, 1>;
+  using Rn = Eigen::Vector<Scalar, N>;
+  using Rm = Eigen::Vector<Scalar, M>;
+  using Rk = Eigen::Vector<Scalar, K>;
 
   // dynamic sizes
   const Eigen::Index n = pbm.A.cols(), m = pbm.A.rows(), k = n + m;
@@ -603,10 +589,35 @@ detail::qp_solution_t<Pbm> solve_qp(
   Rk p(k);
 
   // scale problem
-  Scalar c                      = 1;
-  Eigen::Matrix<Scalar, K, 1> S = Eigen::Matrix<Scalar, K, 1>::Ones(k);
-  Pbm spbm                      = pbm;
-  if (prm.scaling) { std::tie(S, c) = detail::scale_qp(spbm); }
+  Scalar c                    = 1;
+  Eigen::Vector<Scalar, N> sx = Eigen::Vector<Scalar, N>::Ones(n);
+  Eigen::Vector<Scalar, M> sy = Eigen::Vector<Scalar, M>::Ones(m);
+  if (prm.scaling) { std::tie(c, sx, sy) = detail::scale_qp(pbm); }
+
+  Pbm spbm = pbm;
+
+  if constexpr (sparse) {
+    // P = c * Sx * P * Sx
+    for (auto i = 0u; i < spbm.P.outerSize(); ++i) {
+      for (Eigen::InnerIterator it(spbm.P, i); it; ++it) {
+        spbm.P.coeffRef(it.row(), it.col()) *= c * sx(it.row()) * sx(it.col());
+      }
+    }
+    // A = Se * A * Sx
+    for (auto i = 0u; i < spbm.A.outerSize(); ++i) {
+      for (Eigen::InnerIterator it(spbm.A, i); it; ++it) {
+        spbm.A.coeffRef(it.row(), it.col()) *= sy(it.row()) * sx(it.col());
+      }
+    }
+  } else {
+    spbm.P.applyOnTheLeft(c * sx.asDiagonal());
+    spbm.P.applyOnTheRight(sx.asDiagonal());
+    spbm.A.applyOnTheLeft(sy.asDiagonal());
+    spbm.A.applyOnTheRight(sx.asDiagonal());
+  }
+  spbm.q.applyOnTheLeft(c * sx.asDiagonal());
+  spbm.l.applyOnTheLeft(sy.asDiagonal());
+  spbm.u.applyOnTheLeft(sy.asDiagonal());
 
   for (auto i = 0u; i != m; ++i) {
     if (spbm.l(i) == inf || spbm.u(i) == -inf || spbm.u(i) - spbm.l(i) < Scalar(0.)) {
@@ -639,18 +650,10 @@ detail::qp_solution_t<Pbm> solve_qp(
     H.reserve(nnz);
 
     // fill nonzeros in H
-    using PIter = typename Eigen::SparseMatrix<Scalar, Eigen::ColMajor>::InnerIterator;
-    using AIter = typename Eigen::SparseMatrix<Scalar, Eigen::RowMajor>::InnerIterator;
-    for (Eigen::Index col = 0u; col != n; ++col) {
-      for (PIter it(spbm.P, col); it && it.index() <= col; ++it) {
-        H.insert(it.index(), col) = it.value();
-      }
-      H.coeffRef(col, col) += sigma;
-    }
-    for (auto row = 0u; row != m; ++row) {
-      for (AIter it(spbm.A, row); it; ++it) { H.insert(it.index(), n + row) = it.value(); }
-      H.insert(n + row, n + row) = Scalar(-1) / rho(row);
-    }
+    block_add(H, 0, 0, spbm.P, 1, true);
+    block_add_identity(H, 0, 0, sigma);
+    block_add(H, 0, n, spbm.A.transpose());
+    for (auto row = 0u; row != m; ++row) { H.insert(n + row, n + row) = Scalar(-1) / rho(row); }
     H.makeCompressed();
   } else {
     H.template topLeftCorner<N, N>(n, n) = spbm.P;
@@ -691,9 +694,9 @@ detail::qp_solution_t<Pbm> solve_qp(
   if (warmstart.has_value()) {
     // warmstart variables must be scaled
     x = warmstart.value().get().primal;
-    x.applyOnTheLeft(S.template head<N>(n).cwiseInverse().asDiagonal());
+    x.applyOnTheLeft(sx.cwiseInverse().asDiagonal());
     y = warmstart.value().get().dual;
-    y.applyOnTheLeft(S.template segment<M>(n, m).cwiseInverse().asDiagonal());
+    y.applyOnTheLeft(sy.cwiseInverse().asDiagonal());
     y *= c;
     z.noalias() = spbm.A * x;
   } else {
@@ -725,11 +728,11 @@ detail::qp_solution_t<Pbm> solve_qp(
 
     if (iter % prm.stop_check_iter == 1) {
       // check stopping criteria for unscaled problem and unscaled variables
-      x_us     = S.template head<N>(n).cwiseProduct(x);
-      y_us     = S.template segment<M>(n, m).cwiseProduct(y) / c;
-      z_us     = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
-      dx_us    = S.template head<N>(n).cwiseProduct(x - dx_us);
-      dy_us    = S.template segment<M>(n, m).cwiseProduct(y - dy_us) / c;
+      x_us     = sx.cwiseProduct(x);
+      y_us     = sy.cwiseProduct(y) / c;
+      z_us     = sy.cwiseInverse().cwiseProduct(z);
+      dx_us    = sx.cwiseProduct(x - dx_us);
+      dy_us    = sy.cwiseProduct(y - dy_us) / c;
       ret_code = detail::qp_check_stopping(pbm, x_us, y_us, z_us, dx_us, dy_us, prm);
 
       if (prm.verbose) {
@@ -771,9 +774,9 @@ detail::qp_solution_t<Pbm> solve_qp(
     if (detail::polish_qp(spbm, sol, prm)) {
       if (prm.verbose) {
         using std::cout, std::setw, std::right, std::chrono::microseconds;
-        x_us = S.template head<N>(n).cwiseProduct(sol.primal);          // NOTE: x std::moved to sol
-        y_us = S.template segment<M>(n, m).cwiseProduct(sol.dual) / c;  // NOTE: y std::moved to sol
-        z_us = S.template segment<M>(n, m).cwiseInverse().cwiseProduct(z);
+        x_us = sx.cwiseProduct(sol.primal);    // NOTE: x std::moved to sol
+        y_us = sy.cwiseProduct(sol.dual) / c;  // NOTE: y std::moved to sol
+        z_us = sy.cwiseInverse().cwiseProduct(z);
         // clang-format off
         cout << setw(8) << right << "polish:"
           << std::scientific
@@ -794,8 +797,8 @@ detail::qp_solution_t<Pbm> solve_qp(
   const auto t_polish = std::chrono::high_resolution_clock::now();
 
   // unscale solution
-  sol.primal.applyOnTheLeft(S.template head<N>(n).asDiagonal());
-  sol.dual.applyOnTheLeft(S.template segment<M>(n, m).asDiagonal());
+  sol.primal.applyOnTheLeft(sx.asDiagonal());
+  sol.dual.applyOnTheLeft(sy.asDiagonal());
   sol.dual /= c;
   sol.objective = sol.primal.dot(0.5 * pbm.P * sol.primal + pbm.q);
 
