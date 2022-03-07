@@ -131,13 +131,13 @@ struct QPSolution
   /// Exit code
   QPSolutionStatus code = QPSolutionStatus::Unknown;
   /// Number of iterations
-  uint64_t iter;
+  uint32_t iter;
   /// Primal vector
   Eigen::Matrix<Scalar, N, 1> primal;
   /// Dual vector
   Eigen::Matrix<Scalar, M, 1> dual;
   /// Solution objective value
-  double objective;
+  Scalar objective{0.};
 };
 
 /**
@@ -322,11 +322,20 @@ auto scale_qp(const Pbm & pbm)
  * @param[in] pbm problem formulation
  * @param[in, out] sol solution to polish
  * @param[in] prm solver options
+ * @param[in] c cost scaling
+ * @param[in] sx variable scaling
+ * @param[in] sy constraint scaling
  *
  * @warning This function allocates heap memory even for static-sized problems.
  */
-template<typename Pbm>
-bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams & prm)
+template<typename Pbm, typename D1, typename D2>
+bool polish_qp(
+  const Pbm & pbm,
+  qp_solution_t<Pbm> & sol,
+  const QPSolverParams & prm,
+  const typename decltype(Pbm::A)::Scalar c,
+  const Eigen::MatrixBase<D1> & sx,
+  const Eigen::MatrixBase<D2> & sy)
 {
   using AmatT                  = decltype(Pbm::A);
   using Scalar                 = typename AmatT::Scalar;
@@ -372,29 +381,28 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
     H.reserve(nnz);
     Hp.reserve(nnz + Eigen::Matrix<int, -1, 1>::Ones(n + nl + nu));
 
-    using PIter = typename Eigen::SparseMatrix<Scalar, Eigen::ColMajor>::InnerIterator;
-    using AIter = typename Eigen::SparseMatrix<Scalar, Eigen::RowMajor>::InnerIterator;
-
     // fill P in top left block
-    for (Eigen::Index p_col = 0u; p_col != n; ++p_col) {
-      for (PIter it(pbm.P, p_col); it && it.index() <= p_col; ++it) {
-        H.insert(it.index(), p_col)  = it.value();
-        Hp.insert(it.index(), p_col) = it.value();
+    for (Eigen::Index k = 0u; k != n; ++k) {
+      for (Eigen::InnerIterator it(pbm.P, k); it; ++it) {
+        const Scalar pij              = c * sx(it.col()) * sx(it.row()) * it.value();
+        H.insert(it.row(), it.col())  = pij;
+        Hp.insert(it.row(), it.col()) = pij;
       }
     }
 
     // fill selected rows of A in top right block
     for (auto a_row = 0u; a_row != nl + nu; ++a_row) {
-      for (AIter it(pbm.A, LU_idx(a_row)); it; ++it) {
-        H.insert(it.index(), n + a_row)  = it.value();
-        Hp.insert(it.index(), n + a_row) = it.value();
+      for (Eigen::InnerIterator it(pbm.A, LU_idx(a_row)); it; ++it) {
+        const Scalar Aij               = sy(it.row()) * sx(it.col()) * it.value();
+        H.insert(it.col(), n + a_row)  = Aij;
+        Hp.insert(it.col(), n + a_row) = Aij;
       }
     }
   } else {
     H.setZero();
-    H.topLeftCorner(n, n) = pbm.P;
+    H.topLeftCorner(n, n) = c * sx.asDiagonal() * pbm.P * sx.asDiagonal();
     for (auto i = 0u; i != nl + nu; ++i) {
-      H.col(n + i).template head<N>(n) = pbm.A.row(LU_idx(i));
+      H.col(n + i).template head<N>(n) = sy(LU_idx(i)) * pbm.A.row(LU_idx(i)) * sx.asDiagonal();
     }
     Hp = H;
   }
@@ -411,9 +419,9 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
   }
 
   VecX h(n + nl + nu);
-  h.head(n) = -pbm.q;
-  for (auto i = 0u; i != nl; ++i) { h(n + i) = pbm.l(LU_idx(i)); }
-  for (auto i = 0u; i != nu; ++i) { h(n + nl + i) = pbm.u(LU_idx(nl + i)); }
+  h.head(n) = -c * sx.cwiseProduct(pbm.q);
+  for (auto i = 0u; i != nl; ++i) { h(n + i) = sy(LU_idx(i)) * pbm.l(LU_idx(i)); }
+  for (auto i = 0u; i != nu; ++i) { h(n + nl + i) = sy(LU_idx(nl + i)) * pbm.u(LU_idx(nl + i)); }
 
   // ITERATIVE REFINEMENT
 
@@ -436,7 +444,6 @@ bool polish_qp(const Pbm & pbm, qp_solution_t<Pbm> & sol, const QPSolverParams &
   sol.primal = t_hat.template head<N>(n);
   for (Eigen::Index i = 0; i < nl; ++i) { sol.dual(LU_idx(i)) = t_hat(n + i); }
   for (Eigen::Index i = 0; i < nu; ++i) { sol.dual(LU_idx(nl + i)) = t_hat(n + nl + i); }
-  sol.objective = sol.primal.dot(0.5 * pbm.P * sol.primal + pbm.q);
 
   return true;
 }
@@ -588,46 +595,21 @@ detail::qp_solution_t<Pbm> solve_qp(
   Rm z_next(m), y_us(m), z_us(m), dy_us(m), rho(m);
   Rk p(k);
 
-  // scale problem
+  // problem scaling
   Scalar c                    = 1;
   Eigen::Vector<Scalar, N> sx = Eigen::Vector<Scalar, N>::Ones(n);
   Eigen::Vector<Scalar, M> sy = Eigen::Vector<Scalar, M>::Ones(m);
   if (prm.scaling) { std::tie(c, sx, sy) = detail::scale_qp(pbm); }
 
-  Pbm spbm = pbm;
-
-  if constexpr (sparse) {
-    // P = c * Sx * P * Sx
-    for (auto i = 0u; i < spbm.P.outerSize(); ++i) {
-      for (Eigen::InnerIterator it(spbm.P, i); it; ++it) {
-        spbm.P.coeffRef(it.row(), it.col()) *= c * sx(it.row()) * sx(it.col());
-      }
-    }
-    // A = Se * A * Sx
-    for (auto i = 0u; i < spbm.A.outerSize(); ++i) {
-      for (Eigen::InnerIterator it(spbm.A, i); it; ++it) {
-        spbm.A.coeffRef(it.row(), it.col()) *= sy(it.row()) * sx(it.col());
-      }
-    }
-  } else {
-    spbm.P.applyOnTheLeft(c * sx.asDiagonal());
-    spbm.P.applyOnTheRight(sx.asDiagonal());
-    spbm.A.applyOnTheLeft(sy.asDiagonal());
-    spbm.A.applyOnTheRight(sx.asDiagonal());
-  }
-  spbm.q.applyOnTheLeft(c * sx.asDiagonal());
-  spbm.l.applyOnTheLeft(sy.asDiagonal());
-  spbm.u.applyOnTheLeft(sy.asDiagonal());
-
   for (auto i = 0u; i != m; ++i) {
-    if (spbm.l(i) == inf || spbm.u(i) == -inf || spbm.u(i) - spbm.l(i) < Scalar(0.)) {
+    if (pbm.l(i) == inf || pbm.u(i) == -inf || pbm.u(i) - pbm.l(i) < Scalar(0.)) {
       ret_code = QPSolutionStatus::PrimalInfeasible;  // feasible set trivially empty
     }
 
     // set rho depending on constraint type
-    if (spbm.l(i) == -inf && spbm.u(i) == inf) {
+    if (pbm.l(i) == -inf && pbm.u(i) == inf) {
       rho(i) = Scalar(1e-6);  // unbounded
-    } else if (abs(spbm.l(i) - spbm.u(i)) < 1e-5) {
+    } else if (sy(i) * abs(pbm.l(i) - pbm.u(i)) < 1e-5) {
       rho(i) = Scalar(1e3) * rho_bar;  // equality
     } else {
       rho(i) = rho_bar;  // inequality
@@ -636,29 +618,39 @@ detail::qp_solution_t<Pbm> solve_qp(
 
   const auto t0 = std::chrono::high_resolution_clock::now();
 
-  // fill square symmetric system matrix H
+  // fill square symmetric system matrix H = [P A'; A 0]
   std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, K, K>> H(k, k);
   if constexpr (sparse) {
     // preallocate nonzeros in H
     Eigen::Matrix<int, -1, 1> nnz(k);
     for (auto i = 0u; i != n; ++i) {
-      nnz(i) = spbm.P.outerIndexPtr()[i + 1] - spbm.P.outerIndexPtr()[i] + 1;
+      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
     }
     for (auto i = 0u; i != m; ++i) {
-      nnz(n + i) = spbm.A.outerIndexPtr()[i + 1] - spbm.A.outerIndexPtr()[i] + 1;
+      nnz(n + i) = pbm.A.outerIndexPtr()[i + 1] - pbm.A.outerIndexPtr()[i] + 1;
     }
     H.reserve(nnz);
 
     // fill nonzeros in H
-    block_add(H, 0, 0, spbm.P, 1, true);
+    for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
+      for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
+        if (it.col() >= it.row()) {
+          H.insert(it.row(), it.col()) = c * sx(it.row()) * sx(it.col()) * it.value();
+        }
+      }
+    }
     block_add_identity(H, 0, 0, sigma);
-    block_add(H, 0, n, spbm.A.transpose());
+    for (auto i = 0u; i < pbm.A.outerSize(); ++i) {
+      for (Eigen::InnerIterator it(pbm.A, i); it; ++it) {
+        H.insert(it.col(), n + it.row()) = sy(it.row()) * sx(it.col()) * it.value();
+      }
+    }
     for (auto row = 0u; row != m; ++row) { H.insert(n + row, n + row) = Scalar(-1) / rho(row); }
     H.makeCompressed();
   } else {
-    H.template topLeftCorner<N, N>(n, n) = spbm.P;
+    H.template topLeftCorner<N, N>(n, n) = c * sx.asDiagonal() * pbm.P * sx.asDiagonal();
     H.template topLeftCorner<N, N>(n, n) += Rn::Constant(n, sigma).asDiagonal();
-    H.template topRightCorner<N, M>(n, m)    = spbm.A.transpose();
+    H.template topRightCorner<N, M>(n, m) = (sy.asDiagonal() * pbm.A * sx.asDiagonal()).transpose();
     H.template bottomRightCorner<M, M>(m, m) = (-rho).cwiseInverse().asDiagonal();
   }
 
@@ -698,7 +690,7 @@ detail::qp_solution_t<Pbm> solve_qp(
     y = warmstart.value().get().dual;
     y.applyOnTheLeft(sy.cwiseInverse().asDiagonal());
     y *= c;
-    z.noalias() = spbm.A * x;
+    z.noalias() = sy.asDiagonal() * pbm.A * warmstart.value().get().primal;
   } else {
     x.setZero(n);
     y.setZero(m);
@@ -708,7 +700,7 @@ detail::qp_solution_t<Pbm> solve_qp(
   // main optimization loop
   auto iter = 0u;
   for (; (!prm.max_iter || iter != prm.max_iter.value()) && !ret_code; ++iter) {
-    p.template head<N>(n)       = sigma * x - spbm.q;
+    p.template head<N>(n)       = sigma * x - c * sx.asDiagonal() * pbm.q;
     p.template segment<M>(n, m) = z - rho.cwiseInverse().cwiseProduct(y);
     p                           = ldlt.solve(p);
 
@@ -720,8 +712,8 @@ detail::qp_solution_t<Pbm> solve_qp(
     x      = alpha * p.template head<N>(n) + alpha_comp * x;
     z_next = (alpha * rho.cwiseInverse().cwiseProduct(p.template segment<M>(n, m))
               + alpha_comp * rho.cwiseInverse().cwiseProduct(y) + z)
-               .cwiseMax(spbm.l)
-               .cwiseMin(spbm.u);
+               .cwiseMax(sy.asDiagonal() * pbm.l)
+               .cwiseMin(sy.asDiagonal() * pbm.u);
     y = alpha_comp * y + alpha * p.template segment<M>(n, m) + rho.cwiseProduct(z)
       - rho.cwiseProduct(z_next);
     z = z_next;
@@ -757,21 +749,18 @@ detail::qp_solution_t<Pbm> solve_qp(
     }
   }
 
-  double obj = x.dot(0.5 * pbm.P * x + pbm.q);
-
   detail::qp_solution_t<Pbm> sol{
-    .code      = ret_code.value_or(QPSolutionStatus::MaxIterations),
-    .iter      = iter - 1,
-    .primal    = std::move(x),
-    .dual      = std::move(y),
-    .objective = obj,
+    .code   = ret_code.value_or(QPSolutionStatus::MaxIterations),
+    .iter   = iter - 1,
+    .primal = std::move(x),
+    .dual   = std::move(y),
   };
 
   const auto t_iter = std::chrono::high_resolution_clock::now();
 
   // polish solution if optimal
   if (sol.code == QPSolutionStatus::Optimal && prm.polish) {
-    if (detail::polish_qp(spbm, sol, prm)) {
+    if (detail::polish_qp(pbm, sol, prm, c, sx, sy)) {
       if (prm.verbose) {
         using std::cout, std::setw, std::right, std::chrono::microseconds;
         x_us = sx.cwiseProduct(sol.primal);    // NOTE: x std::moved to sol
