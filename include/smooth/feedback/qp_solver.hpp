@@ -286,9 +286,6 @@ public:
 
   /**
    * @brief Prepare for solving problems.
-   *
-   * Performs
-   *  - Memory allocation
    */
   void analyze(const Pbm & pbm)
   {
@@ -339,7 +336,7 @@ public:
           if (it.col() >= it.row()) { H_.insert(it.row(), it.col()) = Scalar(1.); }
         }
       }
-      block_add_identity(H_, 0, 0, 1);
+      block_add_identity(H_, 0, 0, n);
       for (auto i = 0u; i < pbm.A.outerSize(); ++i) {
         for (Eigen::InnerIterator it(pbm.A, i); it; ++it) {
           H_.insert(it.col(), n + it.row()) = Scalar(1.);
@@ -354,9 +351,6 @@ public:
 
   /**
    * @brief Solve quadratic program.
-   *
-   * Performs
-   *  - Problem scaling
    */
   const QPSolution<M, N, Scalar> & solve(
     const Pbm & pbm,
@@ -406,7 +400,7 @@ public:
           }
         }
       }
-      block_add_identity(H_, 0, 0, sigma);
+      block_add_identity(H_, 0, 0, n, sigma);
       for (auto i = 0u; i < pbm.A.outerSize(); ++i) {
         for (Eigen::InnerIterator it(pbm.A, i); it; ++it) {
           H_.coeffRef(it.col(), n + it.row()) = sy_(it.row()) * sx_(it.col()) * it.value();
