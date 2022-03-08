@@ -598,14 +598,16 @@ protected:
     };
 
     // check primal
-    Ax_.noalias() = pbm.A * x_us_;
-    if (
-      norm(Ax_ - z_us_) <= prm_.eps_abs + prm_.eps_rel * std::max<Scalar>(norm(Ax_), norm(z_us_))) {
+    Ax_.noalias()        = pbm.A * x_us_;
+    const Scalar Ax_norm = norm(Ax_);
+    Ax_ -= z_us_;
+    if (norm(Ax_) <= prm_.eps_abs + prm_.eps_rel * std::max<Scalar>(Ax_norm, norm(z_us_))) {
       // primal succeeded, check dual
       Px_.noalias()           = pbm.P * x_us_;
       Aty_.noalias()          = pbm.A.transpose() * y_us_;
       const Scalar dual_scale = std::max<Scalar>({norm(Px_), norm(pbm.q), norm(Aty_)});
-      if (norm(Px_ + pbm.q + Aty_) <= prm_.eps_abs + prm_.eps_rel * dual_scale) {
+      Px_ += pbm.q + Aty_;
+      if (norm(Px_) <= prm_.eps_abs + prm_.eps_rel * dual_scale) {
         return QPSolutionStatus::Optimal;
       }
     }
@@ -707,7 +709,7 @@ protected:
     }
 
     // scale cost function
-    c_ = Scalar(1) / std::max({1e-8, sx_inc_.mean(), pbm.q.template lpNorm<Eigen::Infinity>()});
+    c_ = Scalar(1) / std::max({1e-6, sx_inc_.mean(), pbm.q.template lpNorm<Eigen::Infinity>()});
 
     int iter = 0;
 
