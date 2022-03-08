@@ -28,7 +28,7 @@
 
 /**
  * @file
- * @brief Quadratic Programming.
+ * @brief Quadratic Program definition.
  */
 
 #include <Eigen/Dense>

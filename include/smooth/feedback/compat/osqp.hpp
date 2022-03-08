@@ -34,7 +34,7 @@
 #include <Eigen/Sparse>
 #include <osqp/osqp.h>
 
-#include "smooth/feedback/qp.hpp"
+#include "smooth/feedback/qp_solver.hpp"
 
 namespace smooth::feedback {
 

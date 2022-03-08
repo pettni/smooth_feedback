@@ -433,9 +433,11 @@ public:
           .cel   = Eigen::Vector<double, Dof<X>>::Zero(),
           .ceu   = Eigen::Vector<double, Dof<X>>::Zero(),
         },
-        prm_{std::move(prm)}
+        prm_{std::move(prm)}, qp_solver_{prm_.qp}
   {
     detail::ocp_to_qp_allocate<DT>(qp_, work_, ocp_, mesh_);
+    ocp_to_qp_update<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    qp_solver_.analyze(qp_);
   }
   /// @brief Same as above but for lvalues
   inline MPC(
@@ -500,7 +502,7 @@ public:
     qp_.P.makeCompressed();
 
     // solve QP
-    auto sol = solve_qp(qp_, prm_.qp, warmstart_);
+    const auto & sol = qp_solver_.solve(qp_, warmstart_);
 
     // output solution trajectories
     if (u_traj.has_value()) {
@@ -642,6 +644,9 @@ private:
   // internal allocation
   detail::OcpToQpWorkmemory work_;
   QuadraticProgramSparse<double> qp_;
+
+  // internal QP solver
+  QPSolver<QuadraticProgramSparse<double>> qp_solver_;
 
   // last solution stored for warmstarting
   std::optional<QPSolution<-1, -1, double>> warmstart_{};

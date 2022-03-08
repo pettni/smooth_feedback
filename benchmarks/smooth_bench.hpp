@@ -26,7 +26,7 @@
 #ifndef BENCHMARK__SMOOTH_BENCH_HPP_
 #define BENCHMARK__SMOOTH_BENCH_HPP_
 
-#include <smooth/feedback/qp.hpp>
+#include <smooth/feedback/qp_solver.hpp>
 
 #include "bench_types.hpp"
 

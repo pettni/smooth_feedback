@@ -28,7 +28,7 @@
 
 /**
  * @file
- * @brief Quadratic Programming.
+ * @brief Quadratic Program solver.
  */
 
 #include <Eigen/Cholesky>
@@ -262,10 +262,6 @@ class QPSolver
   using LDLTt = std::
     conditional_t<sparse, Eigen::SimplicialLDLT<Ht, Eigen::Upper>, Eigen::LDLT<Ht, Eigen::Upper>>;
 
-  // norm function
-  static inline const auto norm = [](auto && t) -> Scalar {
-    return t.template lpNorm<Eigen::Infinity>();
-  };
   static inline const Scalar inf = std::numeric_limits<Scalar>::infinity();
 
 public:
@@ -302,24 +298,25 @@ public:
     sol_.primal.setZero(n);
     sol_.dual.setZero(m);
 
-    // scaling variables
+    // scaling variables and working memory
     c_ = 1;
     sx_.setOnes(n);
     sy_.setOnes(m);
-
-    // scaling working memory
     sx_inc_.setZero(n);
     sy_inc_.setZero(m);
 
     // solve working memory
-    dx_.resize(n);
-    dy_.resize(m);
-    rho_.resize(m);
     z_.resize(m);
     z_next_.resize(m);
+    rho_.resize(m);
     p_.resize(k);
 
     // stopping working memory
+    x_us_.resize(n);
+    dx_us_.resize(n);
+    y_us_.resize(m);
+    dy_us_.resize(m);
+    z_us_.resize(m);
     Px_.resize(n);
     Aty_.resize(n);
     Ax_.resize(m);
@@ -399,6 +396,7 @@ public:
 
     // fill square symmetric system matrix H = [P A'; A 0]
     if constexpr (sparse) {
+      assert(H_.isCompressed());  // pattern set in analyze()
       H_.coeffs().setZero();
 
       for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
@@ -418,7 +416,7 @@ public:
         H_.coeffRef(n + row, n + row) = Scalar(-1) / rho_(row);
       }
 
-      assert(H_.isCompressed());
+      assert(H_.isCompressed());  // pattern set in analyze()
     } else {
       H_.setZero();
 
@@ -447,17 +445,14 @@ public:
 
     // factorize H
     if constexpr (sparse) {
-      ldlt_.factorize(H_);  // value-dependent
+      ldlt_.factorize(H_);
     } else {
       ldlt_.compute(H_);
     }
 
     const auto t_factor = std::chrono::high_resolution_clock::now();
 
-    if (ldlt_.info()) {
-      std::cout << "Factorization failed\n";
-      ret_code = QPSolutionStatus::Unknown;
-    }
+    if (ldlt_.info()) { ret_code = QPSolutionStatus::Unknown; }
 
     // initialize solver variables
     if (warmstart.has_value()) {
@@ -484,7 +479,7 @@ public:
 
       if (iter % prm_.stop_check_iter == 1) {
         // termination checking requires difference, store old scaled values
-        dx_ = sol_.primal, dy_ = sol_.dual;
+        dx_us_ = sol_.primal, dy_us_ = sol_.dual;
       }
 
       sol_.primal = alpha * p_.template head<N>(n) + alpha_comp * sol_.primal;
@@ -498,11 +493,11 @@ public:
 
       if (iter % prm_.stop_check_iter == 1) {
         // unscale solution
-        dx_         = sx_.cwiseProduct(sol_.primal - dx_);
-        dy_         = sy_.cwiseProduct(sol_.dual - dy_) / c_;
-        sol_.primal = sx_.cwiseProduct(sol_.primal);
-        sol_.dual   = sy_.cwiseProduct(sol_.dual) / c_;
-        z_          = sy_.cwiseInverse().cwiseProduct(z_);
+        x_us_  = sx_.cwiseProduct(sol_.primal);
+        y_us_  = sy_.cwiseProduct(sol_.dual) / c_;
+        z_us_  = sy_.cwiseInverse().cwiseProduct(z_);
+        dx_us_ = sx_.cwiseProduct(sol_.primal - dx_us_);
+        dy_us_ = sy_.cwiseProduct(sol_.dual - dy_us_) / c_;
 
         // check stopping criteria for unscaled problem and unscaled variables
         ret_code = check_stopping(pbm);
@@ -528,11 +523,6 @@ public:
             ret_code = QPSolutionStatus::MaxTime;
           }
         }
-
-        // rescale solution
-        sol_.primal = sx_.cwiseInverse().cwiseProduct(sol_.primal);
-        sol_.dual   = c_ * sy_.cwiseInverse().cwiseProduct(sol_.dual);
-        z_          = sy_.cwiseProduct(z_);
       }
     }
 
@@ -543,25 +533,20 @@ public:
       if (detail::polish_qp(pbm, sol_, prm_, c_, sx_, sy_)) {
         if (prm_.verbose) {
           // unscale solution
-          sol_.primal = sx_.cwiseProduct(sol_.primal);
-          sol_.dual   = sy_.cwiseProduct(sol_.dual) / c_;
-          z_          = sy_.cwiseInverse().cwiseProduct(z_);
+          x_us_ = sx_.cwiseProduct(sol_.primal);
+          y_us_ = sy_.cwiseProduct(sol_.dual) / c_;
+          z_us_ = sy_.cwiseInverse().cwiseProduct(z_);
 
           using std::cout, std::setw, std::right, std::chrono::microseconds;
           // clang-format off
           cout << setw(8) << right << "polish:"
             << std::scientific
-            << setw(14) << right << (0.5 * pbm.P * sol_.primal + pbm.q).dot(sol_.primal)
-            << setw(14) << right << (pbm.A * sol_.primal - z_).template lpNorm<Eigen::Infinity>()
-            << setw(14) << right << (pbm.P * sol_.primal + pbm.q + pbm.A.transpose() * sol_.dual).template lpNorm<Eigen::Infinity>()
+            << setw(14) << right << (0.5 * pbm.P * x_us_ + pbm.q).dot(x_us_)
+            << setw(14) << right << (pbm.A * sol_.primal - z_us_).template lpNorm<Eigen::Infinity>()
+            << setw(14) << right << (pbm.P * sol_.primal + pbm.q + pbm.A.transpose() * y_us_).template lpNorm<Eigen::Infinity>()
             << setw(10) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
             << '\n';
           // clang-format on
-
-          // re-scale solution
-          sol_.primal = sx_.cwiseInverse().cwiseProduct(sol_.primal);
-          sol_.dual   = c_ * sy_.cwiseInverse().cwiseProduct(sol_.dual);
-          z_          = sy_.cwiseProduct(z_);
         }
 
       } else {
@@ -573,10 +558,11 @@ public:
     const auto t_polish = std::chrono::high_resolution_clock::now();
 
     // unscale solution
-    sol_.code      = ret_code.value_or(QPSolutionStatus::Unknown);
+    sol_.code      = ret_code.value_or(QPSolutionStatus::MaxIterations);
     sol_.primal    = sx_.cwiseProduct(sol_.primal);
     sol_.dual      = sy_.cwiseProduct(sol_.dual) / c_;
     sol_.objective = sol_.primal.dot(0.5 * pbm.P * sol_.primal + pbm.q);
+    sol_.iter      = iter;
 
     if (prm_.verbose) {
       using std::cout, std::left, std::right, std::setw, std::chrono::microseconds;
@@ -606,14 +592,18 @@ protected:
   {
     const Eigen::Index m = pbm.A.rows();
 
-    // OPTIMALITY
+    // norm function
+    static const auto norm = [](auto && t) -> Scalar {
+      return t.template lpNorm<Eigen::Infinity>();
+    };
 
     // check primal
-    Ax_.noalias() = pbm.A * sol_.primal;
-    if (norm(Ax_ - z_) <= prm_.eps_abs + prm_.eps_rel * std::max<Scalar>(norm(Ax_), norm(z_))) {
+    Ax_.noalias() = pbm.A * x_us_;
+    if (
+      norm(Ax_ - z_us_) <= prm_.eps_abs + prm_.eps_rel * std::max<Scalar>(norm(Ax_), norm(z_us_))) {
       // primal succeeded, check dual
-      Px_.noalias()           = pbm.P * sol_.primal;
-      Aty_.noalias()          = pbm.A.transpose() * sol_.dual;
+      Px_.noalias()           = pbm.P * x_us_;
+      Aty_.noalias()          = pbm.A.transpose() * y_us_;
       const Scalar dual_scale = std::max<Scalar>({norm(Px_), norm(pbm.q), norm(Aty_)});
       if (norm(Px_ + pbm.q + Aty_) <= prm_.eps_abs + prm_.eps_rel * dual_scale) {
         return QPSolutionStatus::Optimal;
@@ -622,21 +612,21 @@ protected:
 
     // PRIMAL INFEASIBILITY
 
-    Aty_.noalias()        = pbm.A.transpose() * dy_;  // note new value A' * dy
-    const Scalar Edy_norm = norm(dy_);
+    Aty_.noalias()        = pbm.A.transpose() * dy_us_;  // NOTE new value A' * dy
+    const Scalar Edy_norm = norm(dy_us_);
 
     Scalar u_dyp_plus_l_dyn = Scalar(0);
     for (auto i = 0u; i != m; ++i) {
       if (pbm.u(i) != inf) {
-        u_dyp_plus_l_dyn += pbm.u(i) * std::max<Scalar>(Scalar(0), dy_(i));
-      } else if (dy_(i) > prm_.eps_primal_inf * Edy_norm) {
+        u_dyp_plus_l_dyn += pbm.u(i) * std::max<Scalar>(Scalar(0), dy_us_(i));
+      } else if (dy_us_(i) > prm_.eps_primal_inf * Edy_norm) {
         // contributes +inf to sum --> no certificate
         u_dyp_plus_l_dyn = inf;
         break;
       }
       if (pbm.l(i) != -inf) {
-        u_dyp_plus_l_dyn += pbm.l(i) * std::min<Scalar>(Scalar(0), dy_(i));
-      } else if (dy_(i) < -prm_.eps_primal_inf * Edy_norm) {
+        u_dyp_plus_l_dyn += pbm.l(i) * std::min<Scalar>(Scalar(0), dy_us_(i));
+      } else if (dy_us_(i) < -prm_.eps_primal_inf * Edy_norm) {
         // contributes +inf to sum --> no certificate
         u_dyp_plus_l_dyn = inf;
         break;
@@ -649,11 +639,12 @@ protected:
 
     // DUAL INFEASIBILITY
 
-    Ax_.noalias()        = pbm.A * dx_;  // note new value A * dx
-    const Scalar dx_norm = norm(dx_);
+    Ax_.noalias()        = pbm.A * dx_us_;  // note new value A * dx
+    const Scalar dx_norm = norm(dx_us_);
+    Px_.noalias()        = pbm.P * dx_us_;
 
-    bool dual_infeasible = (norm(pbm.P * dx_) <= prm_.eps_dual_inf * dx_norm)
-                        && (pbm.q.dot(dx_) <= prm_.eps_dual_inf * dx_norm);
+    bool dual_infeasible = (norm(Px_) <= prm_.eps_dual_inf * dx_norm)
+                        && (pbm.q.dot(dx_us_) <= prm_.eps_dual_inf * dx_norm);
     for (auto i = 0u; i != m && dual_infeasible; ++i) {
       if (pbm.u(i) == inf) {
         dual_infeasible &= (Ax_(i) >= -prm_.eps_dual_inf * dx_norm);
@@ -764,19 +755,20 @@ private:
   // solution
   QPSolution<M, N, Scalar> sol_;
 
-  // scaling variables
+  // scaling variables and working memory
   Scalar c_;
   Rn sx_, sx_inc_;
   Rm sy_, sy_inc_;
 
   // solve working memory
-  Rn dx_;
-  Rm dy_, z_, z_next_, rho_;
+  Rm z_, z_next_, rho_;
   Rk p_;
 
-  // stopping variables
+  // stopping working memory
+  Rn x_us_, dx_us_;
   Rn Px_, Aty_;
   Rm Ax_;
+  Rm y_us_, z_us_, dy_us_;
 
   // system matrix and decomposition
   Ht H_;
