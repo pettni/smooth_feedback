@@ -476,14 +476,14 @@ public:
         dx_us_ = sol_.primal, dy_us_ = sol_.dual;
       }
 
-      sol_.primal = alpha * p_.template head<N>(n) + alpha_comp * sol_.primal;
+      sol_.primal = alpha * p_.template segment<N>(0, n) + alpha_comp * sol_.primal;
       z_next_     = (alpha * rho_.cwiseInverse().cwiseProduct(p_.template segment<M>(n, m))
                  + alpha_comp * rho_.cwiseInverse().cwiseProduct(sol_.dual) + z_)
                   .cwiseMax(sy_.cwiseProduct(pbm.l))
                   .cwiseMin(sy_.cwiseProduct(pbm.u));
       sol_.dual = alpha_comp * sol_.dual + alpha * p_.template segment<M>(n, m)
                 + rho_.cwiseProduct(z_) - rho_.cwiseProduct(z_next_);
-      z_ = z_next_;
+      std::swap(z_, z_next_);
 
       if (iter % prm_.stop_check_iter == 1) {
         // unscale solution
@@ -501,9 +501,9 @@ public:
           // clang-format off
           cout << setw(7) << right << iter << ":"
             << std::scientific
-            << setw(14) << right << (0.5 * pbm.P * sol_.primal + pbm.q).dot(sol_.primal)
-            << setw(14) << right << (pbm.A * sol_.primal - z_).template lpNorm<Eigen::Infinity>()
-            << setw(14) << right << (pbm.P * sol_.primal + pbm.q + pbm.A.transpose() * sol_.dual).template lpNorm<Eigen::Infinity>()
+            << setw(14) << right << (0.5 * pbm.P * x_us_ + pbm.q).dot(x_us_)
+            << setw(14) << right << (pbm.A * x_us_ - z_us_).template lpNorm<Eigen::Infinity>()
+            << setw(14) << right << (pbm.P * x_us_ + pbm.q + pbm.A.transpose() * y_us_).template lpNorm<Eigen::Infinity>()
             << setw(10) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
             << '\n';
           // clang-format on
@@ -536,8 +536,8 @@ public:
           cout << setw(8) << right << "polish:"
             << std::scientific
             << setw(14) << right << (0.5 * pbm.P * x_us_ + pbm.q).dot(x_us_)
-            << setw(14) << right << (pbm.A * sol_.primal - z_us_).template lpNorm<Eigen::Infinity>()
-            << setw(14) << right << (pbm.P * sol_.primal + pbm.q + pbm.A.transpose() * y_us_).template lpNorm<Eigen::Infinity>()
+            << setw(14) << right << (pbm.A * x_us_ - z_us_).template lpNorm<Eigen::Infinity>()
+            << setw(14) << right << (pbm.P * x_us_ + pbm.q + pbm.A.transpose() * y_us_).template lpNorm<Eigen::Infinity>()
             << setw(10) << right << duration_cast<microseconds>(std::chrono::high_resolution_clock::now() - t0).count()
             << '\n';
           // clang-format on
@@ -590,6 +590,8 @@ protected:
     static const auto norm = [](auto && t) -> Scalar {
       return t.template lpNorm<Eigen::Infinity>();
     };
+
+    // OPTIMALITY
 
     // check primal
     Ax_.noalias()        = pbm.A * x_us_;
