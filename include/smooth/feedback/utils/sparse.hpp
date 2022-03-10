@@ -56,7 +56,7 @@ namespace smooth::feedback {
  */
 template<typename Source, int Options>
   requires(std::is_base_of_v<Eigen::EigenBase<Source>, Source>)
-void block_add(
+inline void block_add(
   Eigen::SparseMatrix<double, Options> & dest,
   Eigen::Index row0,
   Eigen::Index col0,
@@ -89,7 +89,7 @@ void block_add(
  * @note Values are accessed with coeffRef().
  */
 template<int Options>
-void block_add_identity(
+inline void block_add_identity(
   Eigen::SparseMatrix<double, Options> & dest,
   Eigen::Index row0,
   Eigen::Index col0,
@@ -105,7 +105,7 @@ void block_add_identity(
  * If mat is compressed all coefficients are set to explicit zeros.
  */
 template<typename Scalar, int Options>
-void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
+inline void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
 {
   if (mat.isCompressed()) {
     mat.coeffs().setZero();

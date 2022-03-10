@@ -251,6 +251,9 @@ void ocp_to_qp_update(
 
   mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);
 
+  work.int_out.dF.makeCompressed();
+  work.int_out.d2F.makeCompressed();
+
   // clang-format off
   block_add(qp.P, 0, 0, work.int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L), qo_q.x(), true);
 
@@ -304,6 +307,7 @@ void ocp_to_qp_update(
   /////////////////////////////
 
   mesh_eval<1, DT>(work.cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
+  work.cr_out.dF.makeCompressed();
 
   block_add(qp.A, crcon_B, 0, work.cr_out.dF.middleCols(2, xvar_L + uvar_L));
   qp.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - work.cr_out.F;

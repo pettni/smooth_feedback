@@ -133,7 +133,8 @@ struct MPCObj
   {
     assert(xf_des.isApprox(xf, 1e-4));
 
-    set_zero(hess);
+    if (hess.isCompressed()) { set_zero(hess); }
+
     block_add(hess, 1 + Nx, 1 + Nx, Qtf);
 
     hess.makeCompressed();
@@ -161,7 +162,7 @@ struct MPCDyn
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(const double, const X & x, const U & u)
   {
-    set_zero(jac);
+    if (jac.isCompressed()) { set_zero(jac); }
 
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
     block_add(jac, 0, 1, df);
@@ -231,7 +232,8 @@ struct MPCIntegrand
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
 
-    set_zero(hess);
+    if (hess.isCompressed()) { set_zero(hess); }
+
     block_add(hess, 1, 1, Q);
     block_add(hess, 1 + Nx, 1 + Nx, R);
 
@@ -265,7 +267,7 @@ struct MPCCR
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(const double, const X & x, const U & u)
   {
-    set_zero(jac);
+    if (jac.isCompressed()) { set_zero(jac); }
 
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
     block_add(jac, 0, 1, df);
@@ -304,7 +306,7 @@ struct MPCCE
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
-    set_zero(jac);
+    if (jac.isCompressed()) { set_zero(jac); }
 
     dr_expinv_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
 

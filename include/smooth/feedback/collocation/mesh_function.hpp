@@ -102,7 +102,7 @@ struct MeshValue<2> : public MeshValue<1>
  * removed but memory is kept.
  */
 template<uint8_t Deriv>
-void setZero(MeshValue<Deriv> & mv)
+void set_zero(MeshValue<Deriv> & mv)
 {
   mv.F.setZero();
   if constexpr (Deriv >= 1) { set_zero(mv.dF); }
@@ -202,7 +202,7 @@ void mesh_eval(
     out.allocated = true;
   }
 
-  setZero(out);
+  set_zero(out);
 
   for (const auto & [i, tau, w_quad, x, u] :
        zip(iota(0u, N), m.all_nodes(), m.all_weights(), xs, us)) {
@@ -359,7 +359,7 @@ void mesh_integrate(
     out.allocated = true;
   }
 
-  setZero(out);
+  set_zero(out);
 
   for (const auto & [i, tau, w, x, u] : zip(iota(0u, N), m.all_nodes(), m.all_weights(), xs, us)) {
     const double ti = t0 + (tf - t0) * tau;
@@ -549,7 +549,7 @@ void mesh_dyn(
     out.allocated = true;
   }
 
-  setZero(out);
+  set_zero(out);
 
   // We build the constraint through two loops over xi:
   //   - the first loop adds wk * f(tk, xk, uk)

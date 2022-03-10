@@ -307,6 +307,7 @@ public:
     z_next_.resize(m);
     rho_.resize(m);
     p_.resize(k);
+    pt_.resize(k);
 
     // stopping working memory
     x_us_.resize(n);
@@ -329,24 +330,9 @@ public:
         nnz(n + i) = pbm.A.outerIndexPtr()[i + 1] - pbm.A.outerIndexPtr()[i] + 1;
       }
       H_.reserve(nnz);
-
-      // fill nonzeros in H
-      for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
-        for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
-          if (it.col() >= it.row()) { H_.insert(it.row(), it.col()) = Scalar(1.); }
-        }
-      }
-      block_add_identity(H_, 0, 0, n);
-      for (auto i = 0u; i < pbm.A.outerSize(); ++i) {
-        for (Eigen::InnerIterator it(pbm.A, i); it; ++it) {
-          H_.insert(it.col(), n + it.row()) = Scalar(1.);
-        }
-      }
-      for (auto row = 0u; row < m; ++row) { H_.insert(n + row, n + row) = Scalar(1); }
-
-      H_.makeCompressed();
-      ldlt_.analyzePattern(H_);
     }
+
+    first_ = true;
   }
 
   /**
@@ -390,8 +376,10 @@ public:
 
     // fill square symmetric system matrix H = [P A'; A 0]
     if constexpr (sparse) {
-      assert(H_.isCompressed());  // pattern set in analyze()
-      H_.coeffs().setZero();
+      if (!first_) {
+        assert(H_.isCompressed());
+        H_.coeffs().setZero();
+      }
 
       for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
         for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
@@ -410,9 +398,9 @@ public:
         H_.coeffRef(n + row, n + row) = Scalar(-1) / rho_(row);
       }
 
-      assert(H_.isCompressed());  // pattern set in analyze()
+      if (first_) { H_.makeCompressed(); }
     } else {
-      H_.setZero();
+      if (!first_) { H_.setZero(); }
 
       H_.template topLeftCorner<N, N>(n, n) = c_ * sx_.asDiagonal() * pbm.P * sx_.asDiagonal();
       H_.template topLeftCorner<N, N>(n, n) +=
@@ -439,10 +427,13 @@ public:
 
     // factorize H
     if constexpr (sparse) {
-      ldlt_.factorize(H_);
+      if (first_) { ldlt_.analyzePattern(H_); }
+      ldlt_.factorize(H_);  // makes copy for permuted matrix..
     } else {
       ldlt_.compute(H_);
     }
+
+    first_ = false;
 
     const auto t_factor = std::chrono::high_resolution_clock::now();
 
@@ -466,7 +457,14 @@ public:
       p_.template segment<N>(0, n) = sigma * sol_.primal - c_ * sx_.asDiagonal() * pbm.q;
       p_.template segment<M>(n, m) = z_ - rho_.cwiseInverse().cwiseProduct(sol_.dual);
       if constexpr (sparse) {
-        p_ = ldlt_.solve(p_);
+        // p_ = ldlt_.solve(p_);
+        // manual solve because ldlt_.solve() uses temporaries...
+        // Pinv L D L' P x = b  <==> x = Pinv * (L' \ Dinv(L \ (P * b)))
+        pt_.noalias() = ldlt_.permutationP() * p_;
+        ldlt_.matrixL().solveInPlace(pt_);
+        pt_.applyOnTheLeft(ldlt_.vectorD().cwiseInverse().asDiagonal());
+        ldlt_.matrixU().solveInPlace(pt_);
+        p_.noalias() = ldlt_.permutationPinv() * pt_;
       } else {
         ldlt_.solveInPlace(p_);
       }
@@ -748,29 +746,30 @@ protected:
 
 private:
   // solver parameters
-  QPSolverParams prm_;
+  QPSolverParams prm_{};
 
   // solution
-  QPSolution<M, N, Scalar> sol_;
+  QPSolution<M, N, Scalar> sol_{};
 
   // scaling variables and working memory
-  Scalar c_;
-  Rn sx_, sx_inc_;
-  Rm sy_, sy_inc_;
+  Scalar c_{0};
+  Rn sx_{}, sx_inc_{};
+  Rm sy_{}, sy_inc_{};
 
   // solve working memory
-  Rm z_, z_next_, rho_;
-  Rk p_;
+  Rm z_{}, z_next_{}, rho_{};
+  Rk p_{}, pt_{};
 
   // stopping working memory
-  Rn x_us_, dx_us_;
-  Rn Px_, Aty_;
-  Rm Ax_;
-  Rm y_us_, z_us_, dy_us_;
+  Rn x_us_{}, dx_us_{};
+  Rn Px_{}, Aty_{};
+  Rm Ax_{};
+  Rm y_us_{}, z_us_{}, dy_us_{};
 
   // system matrix and decomposition
-  Ht H_;
-  LDLTt ldlt_;
+  bool first_{true};
+  Ht H_{};
+  LDLTt ldlt_{};
 };
 
 /**
