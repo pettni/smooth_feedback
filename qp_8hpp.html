@@ -76,38 +76,23 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#enum-members">Enumerations</a>  </div>
   <div class="headertitle"><div class="title">qp.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>Quadratic Programming.  
+<p>Quadratic Program definition.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;Eigen/Cholesky&gt;</code><br />
-<code>#include &lt;Eigen/Dense&gt;</code><br />
+<div class="textblock"><code>#include &lt;Eigen/Dense&gt;</code><br />
 <code>#include &lt;Eigen/Sparse&gt;</code><br />
-<code>#include &lt;Eigen/SparseCholesky&gt;</code><br />
-<code>#include &lt;chrono&gt;</code><br />
-<code>#include &lt;iomanip&gt;</code><br />
-<code>#include &lt;iostream&gt;</code><br />
-<code>#include &lt;limits&gt;</code><br />
-<code>#include &lt;optional&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for qp.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="qp_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2qp_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2qp_8hpp" id="ainclude_2smooth_2feedback_2qp_8hpp">
-<area shape="rect" title="Quadratic Programming." alt="" coords="505,5,672,47"/>
-<area shape="rect" title=" " alt="" coords="5,95,116,121"/>
-<area shape="rect" title=" " alt="" coords="140,95,235,121"/>
-<area shape="rect" title=" " alt="" coords="259,95,358,121"/>
-<area shape="rect" title=" " alt="" coords="382,95,534,121"/>
-<area shape="rect" title=" " alt="" coords="558,95,619,121"/>
-<area shape="rect" title=" " alt="" coords="643,95,710,121"/>
-<area shape="rect" title=" " alt="" coords="734,95,806,121"/>
-<area shape="rect" title=" " alt="" coords="830,95,883,121"/>
-<area shape="rect" title=" " alt="" coords="907,95,974,121"/>
+<area shape="rect" title="Quadratic Program definition." alt="" coords="29,5,196,47"/>
+<area shape="rect" title=" " alt="" coords="5,95,100,121"/>
+<area shape="rect" title=" " alt="" coords="125,95,223,121"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -115,12 +100,13 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="qp_8hpp__dep__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2qp_8hppdep" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2qp_8hppdep" id="ainclude_2smooth_2feedback_2qp_8hppdep">
-<area shape="rect" title="Quadratic Programming." alt="" coords="196,5,363,47"/>
-<area shape="rect" href="asif__func_8hpp.html" title="Functions for active Set Invariance (ASI) filtering on Lie groups." alt="" coords="5,95,172,136"/>
-<area shape="rect" href="osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="196,95,363,136"/>
-<area shape="rect" href="ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="387,95,553,136"/>
-<area shape="rect" href="asif_8hpp_source.html" title=" " alt="" coords="5,184,172,225"/>
-<area shape="rect" href="mpc_8hpp_source.html" title=" " alt="" coords="387,184,553,225"/>
+<area shape="rect" title="Quadratic Program definition." alt="" coords="196,5,363,47"/>
+<area shape="rect" href="asif__func_8hpp.html" title="Functions for active Set Invariance (ASI) filtering on Lie groups." alt="" coords="196,95,363,136"/>
+<area shape="rect" href="ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="5,95,172,136"/>
+<area shape="rect" href="qp__solver_8hpp.html" title="Quadratic Program solver." alt="" coords="387,95,553,136"/>
+<area shape="rect" href="asif_8hpp_source.html" title=" " alt="" coords="196,184,363,225"/>
+<area shape="rect" href="mpc_8hpp_source.html" title=" " alt="" coords="5,184,172,225"/>
+<area shape="rect" href="osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="387,184,553,225"/>
 </map>
 </div>
 </div>
@@ -137,52 +123,30 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html">smooth::feedback::QPSolution&lt; M, N, Scalar &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solver solution.  <a href="structsmooth_1_1feedback_1_1QPSolution.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html">smooth::feedback::QPSolverParams</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Options for solve_qp.  <a href="structsmooth_1_1feedback_1_1QPSolverParams.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a4c42702d39c497506de53f19717d4feb"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">smooth::feedback::QPSolutionStatus</a> : int { <br />
+<tr class="memitem:af9f448845abc374417b01864f1ae56c5"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5">smooth::feedback::QPSolutionStatus</a> { <br />
 &#160;&#160;<b>Optimal</b>
-, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feba9dc0130434f81159ae1da5d0d87551ee">PolishFailed</a>
-, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feba190b2e9507159faf8c6939d98220a75e">PrimalInfeasible</a>
-, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4febad5184b646ae0f0f1f1cde90d98b540e5">DualInfeasible</a>
-, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feba89d18cc81de326d8fc836491777795e0">MaxIterations</a>
-, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feba9e8b9350c8f1716701ec1f9bbe76432e">MaxTime</a>
+, <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5a9dc0130434f81159ae1da5d0d87551ee">PolishFailed</a>
+, <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5a190b2e9507159faf8c6939d98220a75e">PrimalInfeasible</a>
+, <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5ad5184b646ae0f0f1f1cde90d98b540e5">DualInfeasible</a>
+, <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5a89d18cc81de326d8fc836491777795e0">MaxIterations</a>
+, <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5a9e8b9350c8f1716701ec1f9bbe76432e">MaxTime</a>
 , <br />
-&#160;&#160;<a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feba88183b946cc5f0e8c96b2e66e1c74a7e">Unknown</a>
+&#160;&#160;<a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5a88183b946cc5f0e8c96b2e66e1c74a7e">Unknown</a>
 <br />
  }</td></tr>
-<tr class="memdesc:a4c42702d39c497506de53f19717d4feb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solver exit codes.  <a href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">More...</a><br /></td></tr>
-<tr class="separator:a4c42702d39c497506de53f19717d4feb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:aa790bef4513b4ac1815d67c8dbf9c026"><td class="memTemplParams" colspan="2">template&lt;typename Pbm &gt; </td></tr>
-<tr class="memitem:aa790bef4513b4ac1815d67c8dbf9c026"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#aa790bef4513b4ac1815d67c8dbf9c026">smooth::feedback::detail::scale_qp</a> (const Pbm &amp;pbm)</td></tr>
-<tr class="memdesc:aa790bef4513b4ac1815d67c8dbf9c026"><td class="mdescLeft">&#160;</td><td class="mdescRight">Re-scale a <a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgram.html" title="Quadratic program definition.">QuadraticProgram</a>.  <a href="qp_8hpp.html#aa790bef4513b4ac1815d67c8dbf9c026">More...</a><br /></td></tr>
-<tr class="separator:aa790bef4513b4ac1815d67c8dbf9c026"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad27b3771b96cb03c2afe78a9555ff842"><td class="memTemplParams" colspan="2">template&lt;typename Pbm &gt; </td></tr>
-<tr class="memitem:ad27b3771b96cb03c2afe78a9555ff842"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#ad27b3771b96cb03c2afe78a9555ff842">smooth::feedback::detail::polish_qp</a> (const Pbm &amp;pbm, qp_solution_t&lt; Pbm &gt; &amp;sol, const QPSolverParams &amp;prm)</td></tr>
-<tr class="memdesc:ad27b3771b96cb03c2afe78a9555ff842"><td class="mdescLeft">&#160;</td><td class="mdescRight">Polish solution of quadratic program.  <a href="qp_8hpp.html#ad27b3771b96cb03c2afe78a9555ff842">More...</a><br /></td></tr>
-<tr class="separator:ad27b3771b96cb03c2afe78a9555ff842"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a577b3e863e4a88a044f9d5354661892b"><td class="memTemplParams" colspan="2">template&lt;typename Pbm , typename D1 , typename D2 , typename D3 , typename D4 , typename D5 &gt; </td></tr>
-<tr class="memitem:a577b3e863e4a88a044f9d5354661892b"><td class="memTemplItemLeft" align="right" valign="top">std::optional&lt; QPSolutionStatus &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#a577b3e863e4a88a044f9d5354661892b">smooth::feedback::detail::qp_check_stopping</a> (const Pbm &amp;pbm, const Eigen::MatrixBase&lt; D1 &gt; &amp;x, const Eigen::MatrixBase&lt; D2 &gt; &amp;y, const Eigen::MatrixBase&lt; D3 &gt; &amp;z, const Eigen::MatrixBase&lt; D4 &gt; &amp;dx, const Eigen::MatrixBase&lt; D5 &gt; &amp;dy, const QPSolverParams &amp;prm)</td></tr>
-<tr class="memdesc:a577b3e863e4a88a044f9d5354661892b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check stopping criterion for QP solver.  <a href="qp_8hpp.html#a577b3e863e4a88a044f9d5354661892b">More...</a><br /></td></tr>
-<tr class="separator:a577b3e863e4a88a044f9d5354661892b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a283bbafbfd5264d629f02ad495e896d8"><td class="memTemplParams" colspan="2">template&lt;typename Pbm &gt; </td></tr>
-<tr class="memitem:a283bbafbfd5264d629f02ad495e896d8"><td class="memTemplItemLeft" align="right" valign="top">detail::qp_solution_t&lt; Pbm &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="qp_8hpp.html#a283bbafbfd5264d629f02ad495e896d8">smooth::feedback::solve_qp</a> (const Pbm &amp;pbm, const QPSolverParams &amp;prm, std::optional&lt; std::reference_wrapper&lt; const detail::qp_solution_t&lt; Pbm &gt; &gt; &gt; warmstart={})</td></tr>
-<tr class="memdesc:a283bbafbfd5264d629f02ad495e896d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solve a quadratic program using the operator splitting approach.  <a href="qp_8hpp.html#a283bbafbfd5264d629f02ad495e896d8">More...</a><br /></td></tr>
-<tr class="separator:a283bbafbfd5264d629f02ad495e896d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:af9f448845abc374417b01864f1ae56c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solver exit codes.  <a href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5">More...</a><br /></td></tr>
+<tr class="separator:af9f448845abc374417b01864f1ae56c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p >Quadratic Programming. </p>
+<div class="textblock"><p >Quadratic Program definition. </p>
 
 <p class="definition">Definition in file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 </div><h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a4c42702d39c497506de53f19717d4feb" name="a4c42702d39c497506de53f19717d4feb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c42702d39c497506de53f19717d4feb">&#9670;&nbsp;</a></span>QPSolutionStatus</h2>
+<a id="af9f448845abc374417b01864f1ae56c5" name="af9f448845abc374417b01864f1ae56c5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9f448845abc374417b01864f1ae56c5">&#9670;&nbsp;</a></span>QPSolutionStatus</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -191,7 +155,7 @@ Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">enum class <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">smooth::feedback::QPSolutionStatus</a> : int</td>
+          <td class="memname">enum class <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5">smooth::feedback::QPSolutionStatus</a></td>
         </tr>
       </table>
   </td>
@@ -203,253 +167,22 @@ Functions</h2></td></tr>
 
 <p>Solver exit codes. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a4c42702d39c497506de53f19717d4feba9dc0130434f81159ae1da5d0d87551ee" name="a4c42702d39c497506de53f19717d4feba9dc0130434f81159ae1da5d0d87551ee"></a>PolishFailed&#160;</td><td class="fielddoc"><p >Solution satisifes optimality condition. Solution is polished if <code><a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#aa5a9bda5887e5eec02c9bdfdad3b1a7a" title="run solution polishing (uses dynamic memory)">QPSolverParams::polish</a> = true</code>. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="af9f448845abc374417b01864f1ae56c5a9dc0130434f81159ae1da5d0d87551ee" name="af9f448845abc374417b01864f1ae56c5a9dc0130434f81159ae1da5d0d87551ee"></a>PolishFailed&#160;</td><td class="fielddoc"><p >Solution satisifes optimality condition. Solution is polished if <code><a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html#aa5a9bda5887e5eec02c9bdfdad3b1a7a" title="run solution polishing (uses dynamic memory)">QPSolverParams::polish</a> = true</code>. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a4c42702d39c497506de53f19717d4feba190b2e9507159faf8c6939d98220a75e" name="a4c42702d39c497506de53f19717d4feba190b2e9507159faf8c6939d98220a75e"></a>PrimalInfeasible&#160;</td><td class="fielddoc"><p >Solution satisfies optimality condition but is not polished. </p>
+<tr><td class="fieldname"><a id="af9f448845abc374417b01864f1ae56c5a190b2e9507159faf8c6939d98220a75e" name="af9f448845abc374417b01864f1ae56c5a190b2e9507159faf8c6939d98220a75e"></a>PrimalInfeasible&#160;</td><td class="fielddoc"><p >Solution satisfies optimality condition but is not polished. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a4c42702d39c497506de53f19717d4febad5184b646ae0f0f1f1cde90d98b540e5" name="a4c42702d39c497506de53f19717d4febad5184b646ae0f0f1f1cde90d98b540e5"></a>DualInfeasible&#160;</td><td class="fielddoc"><p >A certificate of primal infeasibility was found, no solution returned. </p>
+<tr><td class="fieldname"><a id="af9f448845abc374417b01864f1ae56c5ad5184b646ae0f0f1f1cde90d98b540e5" name="af9f448845abc374417b01864f1ae56c5ad5184b646ae0f0f1f1cde90d98b540e5"></a>DualInfeasible&#160;</td><td class="fielddoc"><p >A certificate of primal infeasibility was found, no solution returned. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a4c42702d39c497506de53f19717d4feba89d18cc81de326d8fc836491777795e0" name="a4c42702d39c497506de53f19717d4feba89d18cc81de326d8fc836491777795e0"></a>MaxIterations&#160;</td><td class="fielddoc"><p >A certificate of dual infeasibility was found, no solution returned. </p>
+<tr><td class="fieldname"><a id="af9f448845abc374417b01864f1ae56c5a89d18cc81de326d8fc836491777795e0" name="af9f448845abc374417b01864f1ae56c5a89d18cc81de326d8fc836491777795e0"></a>MaxIterations&#160;</td><td class="fielddoc"><p >A certificate of dual infeasibility was found, no solution returned. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a4c42702d39c497506de53f19717d4feba9e8b9350c8f1716701ec1f9bbe76432e" name="a4c42702d39c497506de53f19717d4feba9e8b9350c8f1716701ec1f9bbe76432e"></a>MaxTime&#160;</td><td class="fielddoc"><p >Max number of iterations was reached, returned solution is not optimal. </p>
+<tr><td class="fieldname"><a id="af9f448845abc374417b01864f1ae56c5a9e8b9350c8f1716701ec1f9bbe76432e" name="af9f448845abc374417b01864f1ae56c5a9e8b9350c8f1716701ec1f9bbe76432e"></a>MaxTime&#160;</td><td class="fielddoc"><p >Max number of iterations was reached, returned solution is not optimal. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a4c42702d39c497506de53f19717d4feba88183b946cc5f0e8c96b2e66e1c74a7e" name="a4c42702d39c497506de53f19717d4feba88183b946cc5f0e8c96b2e66e1c74a7e"></a>Unknown&#160;</td><td class="fielddoc"><p >Max time was reached, returned solution is not optimal. </p>
+<tr><td class="fieldname"><a id="af9f448845abc374417b01864f1ae56c5a88183b946cc5f0e8c96b2e66e1c74a7e" name="af9f448845abc374417b01864f1ae56c5a88183b946cc5f0e8c96b2e66e1c74a7e"></a>Unknown&#160;</td><td class="fielddoc"><p >Max time was reached, returned solution is not optimal. </p>
 <p >Solution is useless because of other reasons, no solution returned </p>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00114">114</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ad27b3771b96cb03c2afe78a9555ff842" name="ad27b3771b96cb03c2afe78a9555ff842"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad27b3771b96cb03c2afe78a9555ff842">&#9670;&nbsp;</a></span>polish_qp()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Pbm &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">bool smooth::feedback::detail::polish_qp </td>
-          <td>(</td>
-          <td class="paramtype">const Pbm &amp;&#160;</td>
-          <td class="paramname"><em>pbm</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">qp_solution_t&lt; Pbm &gt; &amp;&#160;</td>
-          <td class="paramname"><em>sol</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html">QPSolverParams</a> &amp;&#160;</td>
-          <td class="paramname"><em>prm</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Polish solution of quadratic program. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">Pbm</td><td>problem type</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pbm</td><td>problem formulation </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">sol</td><td>solution to polish </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">prm</td><td>solver options</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section warning"><dt>Warning</dt><dd>This function allocates heap memory even for static-sized problems. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00353">353</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a577b3e863e4a88a044f9d5354661892b" name="a577b3e863e4a88a044f9d5354661892b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a577b3e863e4a88a044f9d5354661892b">&#9670;&nbsp;</a></span>qp_check_stopping()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Pbm , typename D1 , typename D2 , typename D3 , typename D4 , typename D5 &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::optional&lt; QPSolutionStatus &gt; smooth::feedback::detail::qp_check_stopping </td>
-          <td>(</td>
-          <td class="paramtype">const Pbm &amp;&#160;</td>
-          <td class="paramname"><em>pbm</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const Eigen::MatrixBase&lt; D1 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>x</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const Eigen::MatrixBase&lt; D2 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>y</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const Eigen::MatrixBase&lt; D3 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>z</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const Eigen::MatrixBase&lt; D4 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>dx</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const Eigen::MatrixBase&lt; D5 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>dy</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html">QPSolverParams</a> &amp;&#160;</td>
-          <td class="paramname"><em>prm</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Check stopping criterion for QP solver. </p>
-
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00472">472</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
-
-</div>
-</div>
-<a id="aa790bef4513b4ac1815d67c8dbf9c026" name="aa790bef4513b4ac1815d67c8dbf9c026"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa790bef4513b4ac1815d67c8dbf9c026">&#9670;&nbsp;</a></span>scale_qp()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Pbm &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">auto smooth::feedback::detail::scale_qp </td>
-          <td>(</td>
-          <td class="paramtype">const Pbm &amp;&#160;</td>
-          <td class="paramname"><em>pbm</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Re-scale a QuadraticProgram. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">pbm</td><td>problem \( (P, q, A, l, u) \) to rescale.</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>tuple <code>(spbm, s, c)</code> where <code>spbm</code> is a scaled problem \( (\bar P, \bar q, \bar A, \bar l, \bar u)\).</dd></dl>
-<p>The scaled problem is defined as</p>
-<ul>
-<li>\( \bar P = c S_x P S_x \),</li>
-<li>\( \bar q = c q S_x \),</li>
-<li>\( \bar A = S_e A S_x \),</li>
-<li>\( \bar l = S_e l \),</li>
-<li>\( \bar u = S_e u \),</li>
-</ul>
-<p >where \( S_x = diag(s_{0:n}), S_e = diag(s_{n:n+m}) \).</p>
-<p >The relation between scaled variables and original variables are</p>
-<ul>
-<li>Primal: \( \bar x = S_x^{-1} x \),</li>
-<li>Dual: \( \bar y = c E_x^{-1} x \).</li>
-</ul>
-<p >The objective of the rescaling is the make the columns of </p><p class="formulaDsp">
-\[ \begin{bmatrix} \bar P &amp; \bar A^T \\ \bar A &amp; 0 \end{bmatrix} \]
-</p>
-<p> have similar \( l_\infty \) norm, and similarly for the columns of </p><p class="formulaDsp">
-\[ \begin{bmatrix} \bar P &amp; \bar q \end{bmatrix}. \]
-</p>
- 
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00242">242</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a283bbafbfd5264d629f02ad495e896d8" name="a283bbafbfd5264d629f02ad495e896d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a283bbafbfd5264d629f02ad495e896d8">&#9670;&nbsp;</a></span>solve_qp()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Pbm &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">detail::qp_solution_t&lt; Pbm &gt; smooth::feedback::solve_qp </td>
-          <td>(</td>
-          <td class="paramtype">const Pbm &amp;&#160;</td>
-          <td class="paramname"><em>pbm</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html">QPSolverParams</a> &amp;&#160;</td>
-          <td class="paramname"><em>prm</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::optional&lt; std::reference_wrapper&lt; const detail::qp_solution_t&lt; Pbm &gt; &gt; &gt;&#160;</td>
-          <td class="paramname"><em>warmstart</em> = <code>{}</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Solve a quadratic program using the operator splitting approach. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">Pbm</td><td>problem type (QuadraticProgram or QuadraticProgramSparse)</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">pbm</td><td>problem formulation </td></tr>
-    <tr><td class="paramname">prm</td><td>solver options </td></tr>
-    <tr><td class="paramname">warmstart</td><td>provide initial guess for primal and dual variables </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>solution as QuasraticProgramSolution&lt;M, N&gt;</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>dynamic problem sizes (<code>M == -1 || N == -1</code>) are supported</dd></dl>
-<p>This is a third-party implementation of the algorithm described in the following paper:</p><ul>
-<li>Stellato, B., Banjac, G., Goulart, P. et al. <b>OSQP: an operator splitting solver for quadratic programs.</b> <em>Math. Prog. Comp.</em> 12, 637–672 (2020). <a href="https://doi.org/10.1007/s12532-020-00179-2">https://doi.org/10.1007/s12532-020-00179-2</a></li>
-</ul>
-<p >For the official C implementation, see <a href="https://osqp.org/">https://osqp.org/</a>. </p>
-
-<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00577">577</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp_8hpp_source.html#l00106">106</a> of file <a class="el" href="qp_8hpp_source.html">qp.hpp</a>.</p>
 
 </div>
 </div>

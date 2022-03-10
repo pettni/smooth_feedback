@@ -13,6 +13,6 @@ var searchData=
   ['dr_5fexpinv_5fsparse_10',['dr_expinv_sparse',['../dr__exp__sparse_8hpp.html#a5ce639399da652ed96cfb57bbec6a9ac',1,'smooth::feedback']]],
   ['dt_11',['dt',['../structsmooth_1_1feedback_1_1ASIFtoQPParams.html#a2a4826417bae112b0d4f5818bd744c39',1,'smooth::feedback::ASIFtoQPParams']]],
   ['dual_12',['dual',['../structsmooth_1_1feedback_1_1QPSolution.html#aa4284da0c53e19215616e6471254ec01',1,'smooth::feedback::QPSolution']]],
-  ['dualinfeasible_13',['DualInfeasible',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4febad5184b646ae0f0f1f1cde90d98b540e5',1,'smooth::feedback']]],
+  ['dualinfeasible_13',['DualInfeasible',['../qp_8hpp.html#af9f448845abc374417b01864f1ae56c5ad5184b646ae0f0f1f1cde90d98b540e5',1,'smooth::feedback']]],
   ['dyn_5ferror_2ehpp_14',['dyn_error.hpp',['../dyn__error_8hpp.html',1,'']]]
 ];

@@ -14,5 +14,5 @@ var searchData=
   ['is_5fspecialization_5fof_3c_20z_3c_20args_2e_2e_2e_20_3e_2c_20z_20_3e_11',['is_specialization_of&lt; Z&lt; Args... &gt;, Z &gt;',['../structsmooth_1_1feedback_1_1traits_1_1is__specialization__of_3_01Z_3_01Args_8_8_8_01_4_00_01Z_01_4.html',1,'smooth::feedback::traits']]],
   ['is_5fspecialization_5fof_5fsizet_12',['is_specialization_of_sizet',['../structsmooth_1_1feedback_1_1traits_1_1is__specialization__of__sizet.html',1,'smooth::feedback::traits']]],
   ['is_5fspecialization_5fof_5fsizet_3c_20z_3c_20args_2e_2e_2e_20_3e_2c_20z_20_3e_13',['is_specialization_of_sizet&lt; Z&lt; Args... &gt;, Z &gt;',['../structsmooth_1_1feedback_1_1traits_1_1is__specialization__of__sizet_3_01Z_3_01Args_8_8_8_01_4_00_01Z_01_4.html',1,'smooth::feedback::traits']]],
-  ['iter_14',['iter',['../structsmooth_1_1feedback_1_1NLPSolution.html#ad19a13f1ab94211f2d53797342ed358f',1,'smooth::feedback::NLPSolution::iter()'],['../structsmooth_1_1feedback_1_1QPSolution.html#a43ac2d7756736ee34ac86e129a285808',1,'smooth::feedback::QPSolution::iter()']]]
+  ['iter_14',['iter',['../structsmooth_1_1feedback_1_1NLPSolution.html#ad19a13f1ab94211f2d53797342ed358f',1,'smooth::feedback::NLPSolution::iter()'],['../structsmooth_1_1feedback_1_1QPSolution.html#a9874d3d7fbad25a00a7d9e43fd782276',1,'smooth::feedback::QPSolution::iter()']]]
 ];

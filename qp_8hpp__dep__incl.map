@@ -1,8 +1,9 @@
 <map id="include/smooth/feedback/qp.hpp" name="include/smooth/feedback/qp.hpp">
-<area shape="rect" id="node1" title="Quadratic Programming." alt="" coords="196,5,363,47"/>
-<area shape="rect" id="node2" href="$asif__func_8hpp.html" title="Functions for active Set Invariance (ASI) filtering on Lie groups." alt="" coords="5,95,172,136"/>
-<area shape="rect" id="node4" href="$osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="196,95,363,136"/>
-<area shape="rect" id="node5" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="387,95,553,136"/>
-<area shape="rect" id="node3" href="$asif_8hpp_source.html" title=" " alt="" coords="5,184,172,225"/>
-<area shape="rect" id="node6" href="$mpc_8hpp_source.html" title=" " alt="" coords="387,184,553,225"/>
+<area shape="rect" id="node1" title="Quadratic Program definition." alt="" coords="196,5,363,47"/>
+<area shape="rect" id="node2" href="$asif__func_8hpp.html" title="Functions for active Set Invariance (ASI) filtering on Lie groups." alt="" coords="196,95,363,136"/>
+<area shape="rect" id="node4" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="5,95,172,136"/>
+<area shape="rect" id="node6" href="$qp__solver_8hpp.html" title="Quadratic Program solver." alt="" coords="387,95,553,136"/>
+<area shape="rect" id="node3" href="$asif_8hpp_source.html" title=" " alt="" coords="196,184,363,225"/>
+<area shape="rect" id="node5" href="$mpc_8hpp_source.html" title=" " alt="" coords="5,184,172,225"/>
+<area shape="rect" id="node7" href="$osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="387,184,553,225"/>
 </map>

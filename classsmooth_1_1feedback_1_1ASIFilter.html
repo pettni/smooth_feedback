@@ -94,16 +94,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a57e25b5c4c793b6bbe23a32d2d7854d7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html#a57e25b5c4c793b6bbe23a32d2d7854d7">ASIFilter</a> (Dyn &amp;&amp;f, <a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html">ASIFilterParams</a>&lt; U &gt; &amp;&amp;prm=<a class="el" href="structsmooth_1_1feedback_1_1ASIFilterParams.html">ASIFilterParams</a>&lt; U &gt;{})</td></tr>
 <tr class="memdesc:a57e25b5c4c793b6bbe23a32d2d7854d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an ASI filter (rvalue version).  <a href="classsmooth_1_1feedback_1_1ASIFilter.html#a57e25b5c4c793b6bbe23a32d2d7854d7">More...</a><br /></td></tr>
 <tr class="separator:a57e25b5c4c793b6bbe23a32d2d7854d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9deece970ad511fb286cd0ccc54ee38"><td class="memItemLeft" align="right" valign="top">std::pair&lt; U, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">QPSolutionStatus</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html#ac9deece970ad511fb286cd0ccc54ee38">operator()</a> (const G &amp;g, const U &amp;u_des, auto &amp;&amp;h, auto &amp;&amp;bu)</td></tr>
+<tr class="memitem:ac9deece970ad511fb286cd0ccc54ee38"><td class="memItemLeft" align="right" valign="top">std::pair&lt; U, <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5">QPSolutionStatus</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html#ac9deece970ad511fb286cd0ccc54ee38">operator()</a> (const G &amp;g, const U &amp;u_des, auto &amp;&amp;h, auto &amp;&amp;bu)</td></tr>
 <tr class="memdesc:ac9deece970ad511fb286cd0ccc54ee38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filter an input.  <a href="classsmooth_1_1feedback_1_1ASIFilter.html#ac9deece970ad511fb286cd0ccc54ee38">More...</a><br /></td></tr>
 <tr class="separator:ac9deece970ad511fb286cd0ccc54ee38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;LieGroup G, Manifold U, typename Dyn, diff::Type DT = diff::Type::Default&gt;<br />
 class smooth::feedback::ASIFilter&lt; G, U, Dyn, DT &gt;</div><p >ASI Filter. </p>
-<p >Thin wrapper around <a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a> and <a class="el" href="qp_8hpp.html#a283bbafbfd5264d629f02ad495e896d8" title="Solve a quadratic program using the operator splitting approach.">solve_qp()</a> that keeps track of the most recent solution for warmstarting, and facilitates working with time-varying problems. </p>
+<p >Thin wrapper around <a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a> and <a class="el" href="qp__solver_8hpp.html#a283bbafbfd5264d629f02ad495e896d8" title="Solve a quadratic program using the operator splitting approach.">solve_qp()</a> that keeps track of the most recent solution for warmstarting, and facilitates working with time-varying problems. </p>
 
-<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00064">64</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00065">65</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a26c643c2fa2cf692c5ee35b1711ebceb" name="a26c643c2fa2cf692c5ee35b1711ebceb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26c643c2fa2cf692c5ee35b1711ebceb">&#9670;&nbsp;</a></span>ASIFilter() <span class="overload">[1/2]</span></h2>
@@ -150,7 +150,7 @@ template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::D
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00074">74</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00075">75</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
 
 </div>
 </div>
@@ -192,7 +192,7 @@ template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::D
 
 <p>Construct an ASI filter (rvalue version). </p>
 
-<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00081">81</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00082">82</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
 
 </div>
 </div>
@@ -209,7 +209,7 @@ template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::D
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::pair&lt; U, <a class="el" href="qp_8hpp.html#a4c42702d39c497506de53f19717d4feb">QPSolutionStatus</a> &gt; <a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html">smooth::feedback::ASIFilter</a>&lt; G, U, Dyn, DT &gt;::operator() </td>
+          <td class="memname">std::pair&lt; U, <a class="el" href="qp_8hpp.html#af9f448845abc374417b01864f1ae56c5">QPSolutionStatus</a> &gt; <a class="el" href="classsmooth_1_1feedback_1_1ASIFilter.html">smooth::feedback::ASIFilter</a>&lt; G, U, Dyn, DT &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">const G &amp;&#160;</td>
           <td class="paramname"><em>g</em>, </td>
@@ -259,7 +259,7 @@ template&lt;LieGroup G, Manifold U, typename Dyn , diff::Type DT = diff::Type::D
 <dl class="section note"><dt>Note</dt><dd>h and bu are defined w.r.t the current time. That is, the safety set at global time \(\tau\) is \( S(\tau) = \{ h(\tau - t) \geq 0 \} \), and the backup controll action is \( u(\tau, x) = bu(\tau - t, x ) \).</dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>{u, code}: safe control input and QP solver code </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00105">105</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif_8hpp_source.html#l00106">106</a> of file <a class="el" href="asif_8hpp_source.html">asif.hpp</a>.</p>
 
 </div>
 </div>

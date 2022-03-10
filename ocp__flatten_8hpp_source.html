@@ -201,7 +201,7 @@ $(function() {
 <div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
 <div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>  <span class="keywordtype">void</span> update_joplus(<span class="keyword">const</span> E &amp; e, <span class="keyword">const</span> V &amp; v, <span class="keyword">const</span> E &amp; dxl, <span class="keyword">const</span> V &amp; dul)</div>
 <div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>  {</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(Joplus_);</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Joplus_);</div>
 <div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <a class="code hl_function" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">block_add_identity</a>(Joplus_, t_B, t_B, 1);</div>
 <div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>    <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(Joplus_, x_B, t_B, Ad&lt;X&gt;(smooth::exp&lt;X&gt;(-e)) * dxl);</div>
 <div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(Joplus_, u_B, t_B, Ad&lt;U&gt;(smooth::exp&lt;U&gt;(-v)) * dul);</div>
@@ -221,7 +221,7 @@ $(function() {
 <div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>    <span class="keyword">const</span> TangentMap&lt;U&gt; Adexp_U  = Ad&lt;U&gt;(smooth::exp&lt;U&gt;(-v));</div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>    <span class="keyword">const</span> TangentMap&lt;U&gt; dAdexp_U = ad&lt;U&gt;(Adexp_U * dul) * Adexp_U * dr_exp&lt;U&gt;(-v);</div>
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span> </div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(Hoplus_);</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Hoplus_);</div>
 <div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> nx = 0u; nx &lt; Nx; ++nx) {</div>
 <div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>      <span class="keyword">const</span> <span class="keyword">auto</span> b0 = Nvars * (x_B + nx);</div>
 <div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(Hoplus_, t_B, b0 + x_B, dAdexp_X.middleRows(nx, 1));</div>
@@ -276,9 +276,9 @@ $(function() {
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>    <span class="keyword">const</span> <span class="keyword">auto</span> u               = rplus(ulval, v);</div>
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
 <div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>    <span class="comment">// zero working memory</span></div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(dexpinv_e_);</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(d2expinv_e_);</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(J_);</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(dexpinv_e_);</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(d2expinv_e_);</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(J_);</div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span> </div>
 <div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>    <span class="comment">// left stuff</span></div>
 <div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    dr_expinv_sparse&lt;X&gt;(dexpinv_e_, e);</div>
@@ -338,10 +338,10 @@ $(function() {
 <div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>    <span class="keywordtype">double</span> coef   = 1;                    <span class="comment">// hold (-1)^i / i!</span></div>
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>    Tangent&lt;X&gt; vi = f(t, x, u) - dxlval;  <span class="comment">// (ad_a)^i * (f - dxl)</span></div>
 <div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>    ji_           = Jf * Joplus_;         <span class="comment">// dr (vi)_{t, e, v}</span></div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(hi_);</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(hi_);</div>
 <div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>    <a class="code hl_function" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">d2r_fog</a>(hi_, Jf, Hf, Joplus_, Hoplus_);  <span class="comment">// d2r (vi)_{t, e, v}</span></div>
 <div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span> </div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(H_);</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(H_);</div>
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> iter = 0u; iter &lt; std::tuple_size_v&lt;<span class="keyword">decltype</span>(smooth::detail::kBn)&gt;; ++iter) {</div>
 <div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>      <span class="keywordflow">if</span> (smooth::detail::kBn[iter] != 0) {</div>
 <div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>        <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(H_, 0, 0, hi_, smooth::detail::kBn[iter] * coef);</div>
@@ -405,7 +405,7 @@ $(function() {
 <div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span> </div>
 <div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>  <span class="keywordtype">void</span> update_joplus(<span class="keyword">const</span> E &amp; e, <span class="keyword">const</span> V &amp; v, <span class="keyword">const</span> E &amp; dxl, <span class="keyword">const</span> V &amp; dul)</div>
 <div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>  {</div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(Joplus_);</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Joplus_);</div>
 <div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>    <a class="code hl_function" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">block_add_identity</a>(Joplus_, t_B, t_B, 1);</div>
 <div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>    <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(Joplus_, x_B, t_B, Ad&lt;X&gt;(smooth::exp&lt;X&gt;(-e)) * dxl);</div>
 <div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>    <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(Joplus_, u_B, t_B, Ad&lt;U&gt;(smooth::exp&lt;U&gt;(-v)) * dul);</div>
@@ -425,7 +425,7 @@ $(function() {
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>    <span class="keyword">const</span> TangentMap&lt;U&gt; Adexp_U  = Ad&lt;U&gt;(smooth::exp&lt;U&gt;(-v));</div>
 <div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>    <span class="keyword">const</span> TangentMap&lt;U&gt; dAdexp_U = ad&lt;U&gt;(Adexp_U * dul) * Adexp_U * dr_exp&lt;U&gt;(-v);</div>
 <div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span> </div>
-<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(Hoplus_);</div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Hoplus_);</div>
 <div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> nx = 0u; nx &lt; Nx; ++nx) {</div>
 <div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>      <span class="keyword">const</span> <span class="keyword">auto</span> b0 = Nvars * (x_B + nx);</div>
 <div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(Hoplus_, t_B, b0 + x_B, dAdexp_X.middleRows(nx, 1));</div>
@@ -472,7 +472,7 @@ $(function() {
 <div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span>    <span class="comment">// derivative of +</span></div>
 <div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span>    update_joplus(e, v, dxlval, dulval);</div>
 <div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>    <span class="comment">// update result</span></div>
-<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(J_);</div>
+<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(J_);</div>
 <div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>    J_ = Jf * Joplus_;</div>
 <div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>    J_.makeCompressed();</div>
 <div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span>    <span class="keywordflow">return</span> J_;</div>
@@ -496,7 +496,7 @@ $(function() {
 <div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>    update_joplus(e, v, dxlval, dulval);</div>
 <div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>    update_hoplus(e, v, dxlval, dulval);</div>
 <div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span>    <span class="comment">// update result</span></div>
-<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(H_);</div>
+<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(H_);</div>
 <div class="line"><a id="l00457" name="l00457"></a><span class="lineno">  457</span>    <a class="code hl_function" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">d2r_fog</a>(H_, Jf, Hf, Joplus_, Hoplus_);</div>
 <div class="line"><a id="l00458" name="l00458"></a><span class="lineno">  458</span>    H_.makeCompressed();</div>
 <div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span>    <span class="keywordflow">return</span> H_;</div>
@@ -527,7 +527,7 @@ $(function() {
 <div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span> </div>
 <div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>  <span class="keywordtype">void</span> update_joplus(<span class="keyword">const</span> E &amp; e0, <span class="keyword">const</span> E &amp; ef, <span class="keyword">const</span> E &amp; dxlf)</div>
 <div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>  {</div>
-<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(Joplus_);</div>
+<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Joplus_);</div>
 <div class="line"><a id="l00494" name="l00494"></a><span class="lineno">  494</span>    <a class="code hl_function" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">block_add_identity</a>(Joplus_, tf_B, tf_B, 1);</div>
 <div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>    <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(Joplus_, xf_B, tf_B, Ad&lt;X&gt;(smooth::exp&lt;X&gt;(-ef)) * dxlf);</div>
 <div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>    dr_exp_sparse&lt;X&gt;(Joplus_, e0, x0_B, x0_B);</div>
@@ -542,7 +542,7 @@ $(function() {
 <div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>    <span class="keyword">const</span> TangentMap&lt;X&gt; Adexp_f  = Ad&lt;X&gt;(smooth::exp&lt;X&gt;(-ef));</div>
 <div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>    <span class="keyword">const</span> TangentMap&lt;X&gt; dAdexp_f = ad&lt;X&gt;(Adexp_f * dxlf) * Adexp_f * dr_exp&lt;X&gt;(-ef);</div>
 <div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span> </div>
-<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(Hoplus_);</div>
+<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Hoplus_);</div>
 <div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span> </div>
 <div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> nx = 0u; nx &lt; Nx; ++nx) {</div>
 <div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span>      <span class="keyword">const</span> <span class="keyword">auto</span> b0 = Nvars * (xf_B + nx);</div>
@@ -589,7 +589,7 @@ $(function() {
 <div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span>    <span class="comment">// derivative of +</span></div>
 <div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span>    update_joplus(e0, ef, dxlfval);</div>
 <div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>    <span class="comment">// update result</span></div>
-<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(J_);</div>
+<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(J_);</div>
 <div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>    J_ = Jf * Joplus_;</div>
 <div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>    J_.makeCompressed();</div>
 <div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>    <span class="keywordflow">return</span> J_;</div>
@@ -612,7 +612,7 @@ $(function() {
 <div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>    update_joplus(e0, ef, dxlfval);</div>
 <div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span>    update_hoplus(e0, ef, dxlfval);</div>
 <div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span>    <span class="comment">// update result</span></div>
-<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>    <a class="code hl_function" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">set_zero</a>(H_);</div>
+<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>    <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(H_);</div>
 <div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span>    <a class="code hl_function" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">d2r_fog</a>(H_, Jf, Hf, Joplus_, Hoplus_);</div>
 <div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>    H_.makeCompressed();</div>
 <div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>    <span class="keywordflow">return</span> H_;</div>
@@ -682,6 +682,7 @@ $(function() {
 <div class="ttc" id="aconceptsmooth_1_1feedback_1_1OCPType_html"><div class="ttname"><a href="conceptsmooth_1_1feedback_1_1OCPType.html">smooth::feedback::OCPType</a></div><div class="ttdoc">Concept that is true for OCP specializations.</div><div class="ttdef"><b>Definition:</b> <a href="ocp_8hpp_source.html#l00128">ocp.hpp:128</a></div></div>
 <div class="ttc" id="ad2r__exp__sparse_8hpp_html"><div class="ttname"><a href="d2r__exp__sparse_8hpp.html">d2r_exp_sparse.hpp</a></div><div class="ttdoc">Sparse second derivatives of the exponential maps.</div></div>
 <div class="ttc" id="adr__exp__sparse_8hpp_html"><div class="ttname"><a href="dr__exp__sparse_8hpp.html">dr_exp_sparse.hpp</a></div><div class="ttdoc">Sparse derivatives of the exponential maps.</div></div>
+<div class="ttc" id="amesh__function_8hpp_html_a47d0aa908b2b5b4abd0d2e20d9af577d"><div class="ttname"><a href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">smooth::feedback::set_zero</a></div><div class="ttdeci">void set_zero(MeshValue&lt; Deriv &gt; &amp;mv)</div><div class="ttdoc">Reset MeshValue to zeros.</div><div class="ttdef"><b>Definition:</b> <a href="mesh__function_8hpp_source.html#l00105">mesh_function.hpp:105</a></div></div>
 <div class="ttc" id="aocp_8hpp_html"><div class="ttname"><a href="ocp_8hpp.html">ocp.hpp</a></div><div class="ttdoc">Optimal control problem definition.</div></div>
 <div class="ttc" id="aocp__flatten_8hpp_html_a230a812340c338386f336e153191673e"><div class="ttname"><a href="ocp__flatten_8hpp.html#a230a812340c338386f336e153191673e">smooth::feedback::unflatten_ocpsol</a></div><div class="ttdeci">auto unflatten_ocpsol(const auto &amp;flatsol, auto &amp;&amp;xl_fun, auto &amp;&amp;ul_fun)</div><div class="ttdoc">Unflatten a FlatOCPSolution.</div><div class="ttdef"><b>Definition:</b> <a href="ocp__flatten_8hpp_source.html#l00640">ocp_flatten.hpp:640</a></div></div>
 <div class="ttc" id="aocp__flatten_8hpp_html_a4bc5619b05115013232f582fa34d1ad3"><div class="ttname"><a href="ocp__flatten_8hpp.html#a4bc5619b05115013232f582fa34d1ad3">smooth::feedback::flatten_ocp</a></div><div class="ttdeci">auto flatten_ocp(const OCPType auto &amp;ocp, auto &amp;&amp;xl, auto &amp;&amp;ul)</div><div class="ttdoc">Flatten a LieGroup OCP by defining it in the tangent space around a trajectory.</div><div class="ttdef"><b>Definition:</b> <a href="ocp__flatten_8hpp_source.html#l00603">ocp_flatten.hpp:603</a></div></div>
@@ -689,7 +690,6 @@ $(function() {
 <div class="ttc" id="asparse_8hpp_html_a24b13a6fcf890dabd88a0cddb34fc816"><div class="ttname"><a href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">smooth::feedback::d2r_fog</a></div><div class="ttdeci">void d2r_fog(Eigen::SparseMatrix&lt; double &gt; &amp;out, const S1 &amp;Jf, const S2 &amp;Hf, const S3 &amp;Jg, const S4 &amp;Hg, Eigen::Index r0=0, Eigen::Index c0=0)</div><div class="ttdoc">(Right) Hessian of composed function .</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00182">sparse.hpp:182</a></div></div>
 <div class="ttc" id="asparse_8hpp_html_a450f053f34df2822afa5e9d2729ce1e1"><div class="ttname"><a href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">smooth::feedback::block_add</a></div><div class="ttdeci">void block_add(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, const Source &amp;source, double scale=1, double upper_only=false)</div><div class="ttdoc">Write block into a sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00059">sparse.hpp:59</a></div></div>
 <div class="ttc" id="asparse_8hpp_html_a6183ee03ddef295ddae480d8ad172418"><div class="ttname"><a href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">smooth::feedback::block_add_identity</a></div><div class="ttdeci">void block_add_identity(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</div><div class="ttdoc">Write identity matrix block into sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00092">sparse.hpp:92</a></div></div>
-<div class="ttc" id="asparse_8hpp_html_ad555247715e51283027071ad39030345"><div class="ttname"><a href="sparse_8hpp.html#ad555247715e51283027071ad39030345">smooth::feedback::set_zero</a></div><div class="ttdeci">void set_zero(Eigen::SparseMatrix&lt; Scalar, Options &gt; &amp;mat)</div><div class="ttdoc">Zero a sparse matrix without changing allocation.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00108">sparse.hpp:108</a></div></div>
 <div class="ttc" id="astructsmooth_1_1feedback_1_1OCPSolution_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1OCPSolution.html">smooth::feedback::OCPSolution</a></div><div class="ttdoc">Solution to OCP.</div><div class="ttdef"><b>Definition:</b> <a href="ocp_8hpp_source.html#l00139">ocp.hpp:140</a></div></div>
 <div class="ttc" id="astructsmooth_1_1feedback_1_1OCPSolution_html_a7d54f0b7a076ef5074b55aa689486971"><div class="ttname"><a href="structsmooth_1_1feedback_1_1OCPSolution.html#a7d54f0b7a076ef5074b55aa689486971">smooth::feedback::OCPSolution::t0</a></div><div class="ttdeci">double t0</div><div class="ttdoc">Initial and final time.</div><div class="ttdef"><b>Definition:</b> <a href="ocp_8hpp_source.html#l00155">ocp.hpp:155</a></div></div>
 <div class="ttc" id="astructsmooth_1_1feedback_1_1OCP_html"><div class="ttname"><a href="structsmooth_1_1feedback_1_1OCP.html">smooth::feedback::OCP</a></div><div class="ttdoc">Optimal control problem definition.</div><div class="ttdef"><b>Definition:</b> <a href="ocp_8hpp_source.html#l00075">ocp.hpp:76</a></div></div>

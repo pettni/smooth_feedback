@@ -101,16 +101,19 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="sparse_8hpp__dep__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2utils_2sparse_8hppdep" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2utils_2sparse_8hppdep" id="ainclude_2smooth_2feedback_2utils_2sparse_8hppdep">
-<area shape="rect" title="Sparse matrix utilities." alt="" coords="344,5,511,47"/>
+<area shape="rect" title="Sparse matrix utilities." alt="" coords="405,5,572,47"/>
 <area shape="rect" href="mesh_8hpp.html" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="223,95,389,136"/>
 <area shape="rect" href="mesh__function_8hpp.html" title="Evaluate transform&#45;like functions and derivatives on collocation points." alt="" coords="5,184,207,225"/>
 <area shape="rect" href="ocp__flatten_8hpp.html" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="528,184,695,225"/>
+<area shape="rect" href="qp__solver_8hpp.html" title="Quadratic Program solver." alt="" coords="849,95,1016,136"/>
 <area shape="rect" href="d2r__exp__sparse_8hpp.html" title="Sparse second derivatives of the exponential maps." alt="" coords="465,95,635,136"/>
 <area shape="rect" href="dr__exp__sparse_8hpp.html" title="Sparse derivatives of the exponential maps." alt="" coords="659,95,825,136"/>
 <area shape="rect" href="dyn__error_8hpp.html" title="Collocation dynamics constraints." alt="" coords="283,184,452,225"/>
 <area shape="rect" href="ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="344,273,511,315"/>
 <area shape="rect" href="ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="92,273,259,315"/>
 <area shape="rect" href="mpc_8hpp_source.html" title=" " alt="" coords="92,363,259,404"/>
+<area shape="rect" href="asif_8hpp_source.html" title=" " alt="" coords="944,184,1111,225"/>
+<area shape="rect" href="osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="753,184,920,225"/>
 </map>
 </div>
 </div>
@@ -160,6 +163,9 @@ requires ( std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; st
 <div class="memtemplate">
 template&lt;typename Source , int Options&gt; <br />
 requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void smooth::feedback::block_add </td>
@@ -203,6 +209,11 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Write block into a sparse matrix. </p>
@@ -232,6 +243,9 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;int Options&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void smooth::feedback::block_add_identity </td>
@@ -269,6 +283,11 @@ template&lt;int Options&gt; </div>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Write identity matrix block into sparse matrix. </p>
@@ -450,6 +469,9 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename Scalar , int Options&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void smooth::feedback::set_zero </td>
@@ -459,6 +481,11 @@ template&lt;typename Scalar , int Options&gt; </div>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Zero a sparse matrix without changing allocation. </p>

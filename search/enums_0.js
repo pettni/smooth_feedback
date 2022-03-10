@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['qpsolutionstatus_0',['QPSolutionStatus',['../qp_8hpp.html#a4c42702d39c497506de53f19717d4feb',1,'smooth::feedback']]]
+  ['qpsolutionstatus_0',['QPSolutionStatus',['../qp_8hpp.html#af9f448845abc374417b01864f1ae56c5',1,'smooth::feedback']]]
 ];

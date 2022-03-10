@@ -1,0 +1,15 @@
+<map id="include/smooth/feedback/qp_solver.hpp" name="include/smooth/feedback/qp_solver.hpp">
+<area shape="rect" id="node1" title="Quadratic Program solver." alt="" coords="488,5,655,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,95,116,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="141,169,236,196"/>
+<area shape="rect" id="node4" title=" " alt="" coords="753,169,851,196"/>
+<area shape="rect" id="node5" title=" " alt="" coords="277,95,429,121"/>
+<area shape="rect" id="node6" title=" " alt="" coords="453,95,514,121"/>
+<area shape="rect" id="node7" title=" " alt="" coords="538,95,605,121"/>
+<area shape="rect" id="node8" title=" " alt="" coords="629,95,701,121"/>
+<area shape="rect" id="node9" title=" " alt="" coords="725,95,778,121"/>
+<area shape="rect" id="node10" title=" " alt="" coords="970,169,1037,196"/>
+<area shape="rect" id="node11" href="$qp_8hpp.html" title="Quadratic Program definition." alt="" coords="192,95,252,121"/>
+<area shape="rect" id="node12" href="$sparse_8hpp.html" title="Sparse matrix utilities." alt="" coords="853,95,967,121"/>
+<area shape="rect" id="node13" title=" " alt="" coords="876,169,944,196"/>
+</map>
