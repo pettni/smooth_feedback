@@ -83,7 +83,7 @@ void compare_results(
     double duration_b = std::chrono::duration<double>(b_res.dt).count();
 
     if (FLAGS_verbose) {
-      using std::cout, std::setw, '\n';
+      using std::cout, std::setw;
       cout << "Details for problem " << i << '\n';
 
       cout << setw(30) << a_name + " code " << static_cast<int>(a_res.status) << '\n';

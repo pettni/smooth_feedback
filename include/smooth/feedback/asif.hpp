@@ -29,6 +29,7 @@
 #include <cassert>
 
 #include "asif_func.hpp"
+#include "qp_solver.hpp"
 #include "time.hpp"
 
 namespace smooth::feedback {
