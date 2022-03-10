@@ -57,7 +57,7 @@ struct QPSolverParams
 
   /// relaxation parameter
   float alpha = 1.6;
-  /// first dul step size
+  /// first dual step size
   float rho = 0.1;
   /// second dual step length
   float sigma = 1e-6;
@@ -74,10 +74,10 @@ struct QPSolverParams
   /// threshold for dual infeasibility
   float eps_dual_inf = 1e-4;
 
-  /// max number of iterations
+  /// max number of iterations (default no limit)
   std::optional<uint32_t> max_iter = {};
 
-  /// max solution time
+  /// max solution time (default no limit)
   std::optional<std::chrono::nanoseconds> max_time = {};
 
   /// iterations between checking stopping criterion
@@ -111,7 +111,7 @@ using qp_solution_t = QPSolution<
  * @param[in] sx variable scaling
  * @param[in] sy constraint scaling
  *
- * @warning This function allocates heap memory even for static-sized problems.
+ * @warning This function allocates dynamic memory even for static-sized problems.
  */
 template<typename Pbm, typename D1, typename D2>
 bool polish_qp(

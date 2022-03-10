@@ -116,7 +116,7 @@ int main()
   std::cout << "MPC loop time: "
             << std::chrono::duration_cast<std::chrono::microseconds>(tf - t0).count() << "us\n";
 
-#if 0
+#if ENABLE_PLOTTING
   matplot::figure();
   matplot::hold(matplot::on);
 
