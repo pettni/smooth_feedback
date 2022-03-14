@@ -28,28 +28,61 @@
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 
+using T = double;
+using X = smooth::SE2d;
+using U = Eigen::Vector2d;
+
+struct MyDynamics
+{
+  template<typename S>
+  smooth::Tangent<smooth::CastT<S, X>>
+  operator()(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) const
+  {
+    return smooth::Tangent<smooth::CastT<S, X>>(u(0), S(0), u(1));
+  }
+
+  inline void set_time(double t) { t_ = t; }
+
+  double t_{0};
+};
+
+struct MyRunningConstraints
+{
+  template<typename S>
+  Eigen::Vector<S, 2> operator()(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) const
+  {
+    return u;
+  }
+
+  inline void set_time(double t) { t_ = t; }
+
+  double t_{0};
+};
+
+using MPC_t = smooth::feedback::MPC<T, X, U, MyDynamics, MyRunningConstraints>;
+
+TEST(Mpc, StaticProperties)
+{
+  static_assert(std::is_copy_constructible_v<MPC_t>);
+  static_assert(std::is_copy_assignable_v<MPC_t>);
+  static_assert(std::is_move_constructible_v<MPC_t>);
+  static_assert(std::is_move_assignable_v<MPC_t>);
+}
+
+// special type that maintains references to f and cr
+using MPC_reft = smooth::feedback::MPC<T, X, U, MyDynamics &, MyRunningConstraints &>;
+
 TEST(Mpc, Api)
 {
-  using T = double;
-  using X = smooth::SE2d;
-  using U = Eigen::Vector2d;
-
-  auto f = []<typename S>(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
-    return smooth::Tangent<smooth::CastT<S, X>>(u(0), S(0), u(1));
-  };
-
-  auto cr = []<typename S>(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
-    return u;
-  };
+  MyDynamics f{};
+  MyRunningConstraints cr{};
   Eigen::Vector2d crl = Eigen::Vector2d::Ones();
+  MPC_reft mpc{f, cr, -crl, crl};
 
-  smooth::feedback::MPC<T, X, U, decltype(f), decltype(cr)> mpc{f, cr, -crl, crl};
-
-  const T t = 1;
   const X x = X::Random();
 
   // nothing set
-  auto [u0, code0] = mpc(t, x);
+  auto [u0, code0] = mpc(1, x);
   ASSERT_EQ(code0, smooth::feedback::QPSolutionStatus::Optimal);
 
   mpc.reset_warmstart();
@@ -65,11 +98,11 @@ TEST(Mpc, Api)
     []<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
 
   // no warmstart
-  auto [u1, code1] = mpc(t, x);
+  auto [u1, code1] = mpc(2, x);
   ASSERT_EQ(code1, smooth::feedback::QPSolutionStatus::Optimal);
 
   // with warmstart
-  auto [u2, code2] = mpc(t, x);
+  auto [u2, code2] = mpc(3, x);
   ASSERT_EQ(code2, smooth::feedback::QPSolutionStatus::Optimal);
 
   ASSERT_TRUE(u1.isApprox(u2));
@@ -77,9 +110,59 @@ TEST(Mpc, Api)
   // output stuff
   std::vector<X> xs;
   std::vector<U> us;
-  auto [u3, code3] = mpc(t, x, us, xs);
+  auto [u3, code3] = mpc(4, x, us, xs);
 
   ASSERT_TRUE(u3.isApprox(u1));
 
   ASSERT_TRUE(us.size() + 1 == xs.size());
+
+  ASSERT_GE(f.t_, 4);
+  ASSERT_GE(cr.t_, 4);
+}
+
+TEST(Mpc, Constructors)
+{
+  MyDynamics f{};
+  MyRunningConstraints cr{};
+  Eigen::Vector2d crl = Eigen::Vector2d::Ones();
+  MPC_t mpc{f, cr, -crl, crl};
+
+  const X x = X::Random();
+
+  mpc.reset_warmstart();
+
+  mpc.set_weights({
+    .Q   = Eigen::Matrix3d::Identity(),
+    .Qtf = Eigen::Matrix3d::Identity(),
+    .R   = Eigen::Matrix2d::Identity(),
+  });
+
+  mpc.set_udes([](T) -> U { return U::Ones(); });
+  mpc.set_xdes_rel(
+    []<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
+
+  auto [u1, code1] = mpc(0, x);
+
+  // copy construction
+  auto mpc2        = mpc;
+  auto [u2, code2] = mpc2(0, x);
+
+  // copy assignment
+  MPC_t mpc3;
+  mpc3             = mpc;
+  auto [u3, code3] = mpc3(0, x);
+
+  // move construction
+  auto mpc4        = std::move(mpc);
+  auto [u4, code4] = mpc4(0, x);
+
+  // move assignment
+  MPC_t mpc5;
+  mpc5             = std::move(mpc2);
+  auto [u5, code5] = mpc5(0, x);
+
+  ASSERT_TRUE(u1.isApprox(u2));
+  ASSERT_TRUE(u1.isApprox(u3));
+  ASSERT_TRUE(u1.isApprox(u4));
+  ASSERT_TRUE(u1.isApprox(u5));
 }

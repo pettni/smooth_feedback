@@ -233,6 +233,31 @@ bool polish_qp(
   return true;
 }
 
+/**
+ * @brief Copy-able wrapper around Eigen LDLT types.
+ */
+template<typename LDLTt>
+struct LDLTWrapper
+{
+  bool first{true};  // true if ldlt object needs factorization
+  LDLTt ldlt{};
+
+  LDLTWrapper() = default;
+  LDLTWrapper(const LDLTWrapper &) : first{true}, ldlt{} {}
+  LDLTWrapper(LDLTWrapper &&) : first{true}, ldlt{} {}
+  LDLTWrapper & operator=(const LDLTWrapper &)
+  {
+    first = true;
+    return *this;
+  }
+  LDLTWrapper & operator=(LDLTWrapper &)
+  {
+    first = true;
+    return *this;
+  }
+  ~LDLTWrapper() = default;
+};
+
 }  // namespace detail
 
 /**
@@ -279,6 +304,15 @@ public:
    */
   QPSolver(const Pbm & pbm, const QPSolverParams & prm = {}) : prm_(prm) { analyze(pbm); }
 
+  /// @brief Default copy constructor
+  QPSolver(const QPSolver &) = default;
+  /// @brief Default move constructor
+  QPSolver(QPSolver &&) = default;
+  /// @brief Default copy assignment
+  QPSolver & operator=(const QPSolver &) = default;
+  /// @brief Default move assignment
+  QPSolver & operator=(QPSolver &&) = default;
+
   /**
    * @brief Access most recent QP solution.
    */
@@ -320,6 +354,7 @@ public:
     Ax_.resize(m);
 
     // preallocate nonzeros in H
+    H_.setZero();
     H_.resize(k, k);
     if constexpr (sparse) {
       Eigen::VectorXi nnz(k);
@@ -331,8 +366,6 @@ public:
       }
       H_.reserve(nnz);
     }
-
-    first_ = true;
   }
 
   /**
@@ -376,10 +409,7 @@ public:
 
     // fill square symmetric system matrix H = [P A'; A 0]
     if constexpr (sparse) {
-      if (!first_) {
-        assert(H_.isCompressed());
-        H_.coeffs().setZero();
-      }
+      if (H_.isCompressed()) { H_.coeffs().setZero(); }
 
       for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
         for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
@@ -398,9 +428,9 @@ public:
         H_.coeffRef(n + row, n + row) = Scalar(-1) / rho_(row);
       }
 
-      if (first_) { H_.makeCompressed(); }
+      if (!H_.isCompressed()) { H_.makeCompressed(); }
     } else {
-      if (!first_) { H_.setZero(); }
+      H_.setZero();
 
       H_.template topLeftCorner<N, N>(n, n) = c_ * sx_.asDiagonal() * pbm.P * sx_.asDiagonal();
       H_.template topLeftCorner<N, N>(n, n) +=
@@ -427,17 +457,16 @@ public:
 
     // factorize H
     if constexpr (sparse) {
-      if (first_) { ldlt_.analyzePattern(H_); }
-      ldlt_.factorize(H_);  // makes copy for permuted matrix..
+      if (ldlt_.first) { ldlt_.ldlt.analyzePattern(H_); }
+      ldlt_.ldlt.factorize(H_);  // makes copy for permuted matrix..
+      ldlt_.first = false;
     } else {
-      ldlt_.compute(H_);
+      ldlt_.ldlt.compute(H_);
     }
-
-    first_ = false;
 
     const auto t_factor = std::chrono::high_resolution_clock::now();
 
-    if (ldlt_.info()) { ret_code = QPSolutionStatus::Unknown; }
+    if (ldlt_.ldlt.info()) { ret_code = QPSolutionStatus::Unknown; }
 
     // initialize solver variables
     if (warmstart.has_value()) {
@@ -460,13 +489,13 @@ public:
         // p_ = ldlt_.solve(p_);
         // manual solve because ldlt_.solve() uses temporaries...
         // Pinv L D L' P x = b  <==> x = Pinv * (L' \ Dinv(L \ (P * b)))
-        pt_.noalias() = ldlt_.permutationP() * p_;
-        ldlt_.matrixL().solveInPlace(pt_);
-        pt_.applyOnTheLeft(ldlt_.vectorD().cwiseInverse().asDiagonal());
-        ldlt_.matrixU().solveInPlace(pt_);
-        p_.noalias() = ldlt_.permutationPinv() * pt_;
+        pt_.noalias() = ldlt_.ldlt.permutationP() * p_;
+        ldlt_.ldlt.matrixL().solveInPlace(pt_);
+        pt_.applyOnTheLeft(ldlt_.ldlt.vectorD().cwiseInverse().asDiagonal());
+        ldlt_.ldlt.matrixU().solveInPlace(pt_);
+        p_.noalias() = ldlt_.ldlt.permutationPinv() * pt_;
       } else {
-        ldlt_.solveInPlace(p_);
+        ldlt_.ldlt.solveInPlace(p_);
       }
 
       if (iter % prm_.stop_check_iter == 1) {
@@ -767,9 +796,8 @@ private:
   Rm y_us_{}, z_us_{}, dy_us_{};
 
   // system matrix and decomposition
-  bool first_{true};
   Ht H_{};
-  LDLTt ldlt_{};
+  detail::LDLTWrapper<LDLTt> ldlt_{};
 };
 
 /**
@@ -798,7 +826,7 @@ detail::qp_solution_t<Pbm> solve_qp(
   const QPSolverParams & prm,
   std::optional<std::reference_wrapper<const detail::qp_solution_t<Pbm>>> warmstart = {})
 {
-  QPSolver<Pbm> solver(pbm, prm);
+  QPSolver solver(pbm, prm);
   return solver.solve(pbm, warmstart);
 }
 

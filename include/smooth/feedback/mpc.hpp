@@ -145,7 +145,7 @@ struct MPCObj
 /**
  * @brief MPC dynamics (derivatives obtained via autodiff).
  */
-template<LieGroup X, Manifold U, typename F, diff::Type DT>
+template<Time T, LieGroup X, Manifold U, typename F, diff::Type DT>
 struct MPCDyn
 {
   static constexpr auto Nx = Dof<X>;
@@ -153,15 +153,27 @@ struct MPCDyn
 
   // public members
   F f;
+  T t0{};
 
   // functor members
-  Tangent<X> operator()(const double, const X & x, const U & u) const { return f(x, u); }
+  Tangent<X> operator()(const double t, const X & x, const U & u)
+  {
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
+      f.set_time(time_trait<T>::plus(t0, t));
+    }
+
+    return f(x, u);
+  }
 
   Eigen::SparseMatrix<double> jac{Nx, 1 + Nx + Nu};
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(const double, const X & x, const U & u)
+  jacobian(const double t, const X & x, const U & u)
   {
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
+      f.set_time(time_trait<T>::plus(t0, t));
+    }
+
     if (jac.isCompressed()) { set_zero(jac); }
 
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
@@ -245,7 +257,7 @@ struct MPCIntegrand
 /**
  * @brief MPC running constraints (jacobian obtained via automatic differentiation).
  */
-template<LieGroup X, Manifold U, typename F, diff::Type DT>
+template<Time T, LieGroup X, Manifold U, typename F, diff::Type DT>
 struct MPCCR
 {
   static constexpr auto Nx  = Dof<X>;
@@ -254,19 +266,28 @@ struct MPCCR
 
   // public members
   F f;
+  T t0{};
 
   // private members
   Eigen::SparseMatrix<double> jac{Ncr, 1 + Nx + Nu};
 
   // functor members
-  Eigen::Vector<double, Ncr> operator()(const double, const X & x, const U & u) const
+  Eigen::Vector<double, Ncr> operator()(const double t, const X & x, const U & u)
   {
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
+      f.set_time(time_trait<T>::plus(t0, t));
+    }
+
     return f(x, u);
   }
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(const double, const X & x, const U & u)
+  jacobian(const double t, const X & x, const U & u)
   {
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
+      f.set_time(time_trait<T>::plus(t0, t));
+    }
+
     if (jac.isCompressed()) { set_zero(jac); }
 
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
@@ -495,8 +516,10 @@ public:
     // update problem
     xdes_->t0         = t;
     udes_->t0         = t;
-    ocp_.ce.x0_fix    = x;
     ocp_.theta.xf_des = (*xdes_)(prm_.tf);
+    ocp_.f.t0         = t;
+    ocp_.cr.t0        = t;
+    ocp_.ce.x0_fix    = x;
 
     // transcribe to QP
     ocp_to_qp_update<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
@@ -634,9 +657,9 @@ private:
     X,
     U,
     detail::MPCObj<X>,
-    detail::MPCDyn<X, U, F, DT>,
+    detail::MPCDyn<T, X, U, F, DT>,
     detail::MPCIntegrand<T, X, U>,
-    detail::MPCCR<X, U, CR, DT>,
+    detail::MPCCR<T, X, U, CR, DT>,
     detail::MPCCE<X>>
     ocp_;
 
