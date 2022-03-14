@@ -35,6 +35,28 @@ static constexpr smooth::feedback::QPSolverParams test_prm{
   .polish  = true,
 };
 
+TEST(QP, StaticProperties)
+{
+  static_assert(std::is_copy_assignable_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+  static_assert(std::is_copy_constructible_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+  static_assert(std::is_move_assignable_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+  static_assert(std::is_move_constructible_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+
+  static_assert(std::is_copy_assignable_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
+  static_assert(std::is_copy_constructible_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
+  static_assert(std::is_move_assignable_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
+  static_assert(std::is_move_constructible_v<
+                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
+
+}
+
 TEST(QP, BasicStatic)
 {
   smooth::feedback::QuadraticProgram<2, 2> problem;
@@ -319,4 +341,83 @@ TEST(QP, TwoDimensional)
   ASSERT_TRUE(sol.dual.isApprox(sp_sol.dual));
 
   ASSERT_TRUE(sol.primal.isApprox(Eigen::Vector2d(46.6338, -17.5351), 1e-4));
+}
+
+TEST(QP, SolverAPI)
+{
+  smooth::feedback::QuadraticProgram<2, 2> problem;
+  problem.P << 0.0100131, 0, 0, 0.01;
+  problem.q << -0.329554, 0.536459;
+  problem.A << -0.0639209, -0.168, -0.467, 0;
+  problem.l << -inf, -inf;
+  problem.u << -0.034974, 0.46571;
+
+  smooth::feedback::QPSolver solver1(problem, test_prm);
+  auto sol1 = solver1.solve(problem);
+
+  // copy constructor
+  auto solver2 = solver1;
+  auto sol2    = solver2.solve(problem);
+
+  // copy assignment
+  smooth::feedback::QPSolver<decltype(problem)> solver3;
+  solver3   = solver1;
+  auto sol3 = solver3.solve(problem);
+
+  // move constructor
+  auto solver4 = std::move(solver1);
+  auto sol4    = solver4.solve(problem);
+
+  // move assignment
+  smooth::feedback::QPSolver<decltype(problem)> solver5;
+  solver5   = std::move(solver2);
+  auto sol5 = solver5.solve(problem);
+
+  ASSERT_TRUE(sol1.primal.isApprox(sol2.primal));
+  ASSERT_TRUE(sol1.primal.isApprox(sol3.primal));
+  ASSERT_TRUE(sol1.primal.isApprox(sol4.primal));
+  ASSERT_TRUE(sol1.primal.isApprox(sol5.primal));
+}
+
+TEST(QP, SparseSolverAPI)
+{
+  smooth::feedback::QuadraticProgram<2, 2> problem;
+  problem.P << 0.0100131, 0, 0, 0.01;
+  problem.q << -0.329554, 0.536459;
+  problem.A << -0.0639209, -0.168, -0.467, 0;
+  problem.l << -inf, -inf;
+  problem.u << -0.034974, 0.46571;
+
+  smooth::feedback::QuadraticProgramSparse sp_problem;
+  sp_problem.A = problem.A.sparseView();
+  sp_problem.P = problem.P.sparseView();
+  sp_problem.q = problem.q;
+  sp_problem.l = problem.l;
+  sp_problem.u = problem.u;
+
+  smooth::feedback::QPSolver solver1(sp_problem, test_prm);
+  auto sol1 = solver1.solve(sp_problem);
+
+  // copy constructor
+  auto solver2 = solver1;
+  auto sol2    = solver2.solve(sp_problem);
+
+  // copy assignment
+  smooth::feedback::QPSolver<decltype(sp_problem)> solver3;
+  solver3   = solver1;
+  auto sol3 = solver3.solve(sp_problem);
+
+  // move constructor
+  auto solver4 = std::move(solver1);
+  auto sol4    = solver4.solve(sp_problem);
+
+  // move assignment
+  smooth::feedback::QPSolver<decltype(sp_problem)> solver5;
+  solver5   = std::move(solver2);
+  auto sol5 = solver5.solve(sp_problem);
+
+  ASSERT_TRUE(sol1.primal.isApprox(sol2.primal));
+  ASSERT_TRUE(sol1.primal.isApprox(sol3.primal));
+  ASSERT_TRUE(sol1.primal.isApprox(sol4.primal));
+  ASSERT_TRUE(sol1.primal.isApprox(sol5.primal));
 }

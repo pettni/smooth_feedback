@@ -156,7 +156,7 @@ struct MPCDyn
   T t0{};
 
   // functor members
-  Tangent<X> operator()(const double t, const X & x, const U & u) const
+  Tangent<X> operator()(const double t, const X & x, const U & u)
   {
     if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
       f.set_time(time_trait<T>::plus(t0, t));

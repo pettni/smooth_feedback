@@ -59,15 +59,25 @@ struct MyRunningConstraints
   double t_{0};
 };
 
+using MPC_t = smooth::feedback::MPC<T, X, U, MyDynamics, MyRunningConstraints>;
+
+TEST(Mpc, StaticProperties)
+{
+  static_assert(std::is_copy_constructible_v<MPC_t>);
+  static_assert(std::is_copy_assignable_v<MPC_t>);
+  static_assert(std::is_move_constructible_v<MPC_t>);
+  static_assert(std::is_move_assignable_v<MPC_t>);
+}
+
+// special type that maintains references to f and cr
+using MPC_reft = smooth::feedback::MPC<T, X, U, MyDynamics &, MyRunningConstraints &>;
+
 TEST(Mpc, Api)
 {
   MyDynamics f{};
   MyRunningConstraints cr{};
-
   Eigen::Vector2d crl = Eigen::Vector2d::Ones();
-
-  // references are needed to avoid copy of f and cr
-  smooth::feedback::MPC<T, X, U, MyDynamics &, MyRunningConstraints &> mpc{f, cr, -crl, crl};
+  MPC_reft mpc{f, cr, -crl, crl};
 
   const X x = X::Random();
 
@@ -108,4 +118,51 @@ TEST(Mpc, Api)
 
   ASSERT_GE(f.t_, 4);
   ASSERT_GE(cr.t_, 4);
+}
+
+TEST(Mpc, Constructors)
+{
+  MyDynamics f{};
+  MyRunningConstraints cr{};
+  Eigen::Vector2d crl = Eigen::Vector2d::Ones();
+  MPC_t mpc{f, cr, -crl, crl};
+
+  const X x = X::Random();
+
+  mpc.reset_warmstart();
+
+  mpc.set_weights({
+    .Q   = Eigen::Matrix3d::Identity(),
+    .Qtf = Eigen::Matrix3d::Identity(),
+    .R   = Eigen::Matrix2d::Identity(),
+  });
+
+  mpc.set_udes([](T) -> U { return U::Ones(); });
+  mpc.set_xdes_rel(
+    []<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
+
+  auto [u1, code1] = mpc(0, x);
+
+  // copy construction
+  auto mpc2        = mpc;
+  auto [u2, code2] = mpc2(0, x);
+
+  // copy assignment
+  MPC_t mpc3;
+  mpc3             = mpc;
+  auto [u3, code3] = mpc3(0, x);
+
+  // move construction
+  auto mpc4        = std::move(mpc);
+  auto [u4, code4] = mpc4(0, x);
+
+  // move assignment
+  MPC_t mpc5;
+  mpc5             = std::move(mpc2);
+  auto [u5, code5] = mpc5(0, x);
+
+  ASSERT_TRUE(u1.isApprox(u2));
+  ASSERT_TRUE(u1.isApprox(u3));
+  ASSERT_TRUE(u1.isApprox(u4));
+  ASSERT_TRUE(u1.isApprox(u5));
 }
