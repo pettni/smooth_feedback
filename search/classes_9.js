@@ -1,4 +1,8 @@
 var searchData=
 [
-  ['udes_0',['UDes',['../structsmooth_1_1feedback_1_1detail_1_1UDes.html',1,'smooth::feedback::detail']]]
+  ['time_5ftrait_0',['time_trait',['../structsmooth_1_1feedback_1_1time__trait.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20rclcpp_3a_3atime_20_3e_1',['time_trait&lt; rclcpp::Time &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01rclcpp_1_1Time_01_4.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20std_3a_3achrono_3a_3aduration_3c_20rep_2c_20ratio_20_3e_20_3e_2',['time_trait&lt; std::chrono::duration&lt; Rep, Ratio &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1duration_3_01Rep_00_01Ratio_01_4_01_4.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20std_3a_3achrono_3a_3atime_5fpoint_3c_20clock_2c_20duration_20_3e_20_3e_3',['time_trait&lt; std::chrono::time_point&lt; Clock, Duration &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1time__point_3_01Clock_00_01Duration_01_4_01_4.html',1,'smooth::feedback']]],
+  ['time_5ftrait_3c_20t_20_3e_4',['time_trait&lt; T &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01T_01_4.html',1,'smooth::feedback']]]
 ];

@@ -95,6 +95,22 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae7be1e7ced87d6a0558a34eb9ef839e7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html#ae7be1e7ced87d6a0558a34eb9ef839e7">QPSolver</a> (const Pbm &amp;pbm, const <a class="el" href="structsmooth_1_1feedback_1_1QPSolverParams.html">QPSolverParams</a> &amp;prm={})</td></tr>
 <tr class="memdesc:ae7be1e7ced87d6a0558a34eb9ef839e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct and allocate working memory.  <a href="classsmooth_1_1feedback_1_1QPSolver.html#ae7be1e7ced87d6a0558a34eb9ef839e7">More...</a><br /></td></tr>
 <tr class="separator:ae7be1e7ced87d6a0558a34eb9ef839e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57b3ef3918f650beaff51402f8e4613f"><td class="memItemLeft" align="right" valign="top"><a id="a57b3ef3918f650beaff51402f8e4613f" name="a57b3ef3918f650beaff51402f8e4613f"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>QPSolver</b> (const <a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html">QPSolver</a> &amp;)=default</td></tr>
+<tr class="memdesc:a57b3ef3918f650beaff51402f8e4613f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy constructor. <br /></td></tr>
+<tr class="separator:a57b3ef3918f650beaff51402f8e4613f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf963067f136f75c08125afe45ffcde0"><td class="memItemLeft" align="right" valign="top"><a id="abf963067f136f75c08125afe45ffcde0" name="abf963067f136f75c08125afe45ffcde0"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>QPSolver</b> (<a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html">QPSolver</a> &amp;&amp;)=default</td></tr>
+<tr class="memdesc:abf963067f136f75c08125afe45ffcde0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move constructor. <br /></td></tr>
+<tr class="separator:abf963067f136f75c08125afe45ffcde0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e3fbcca142b1b2a96e2593926077bbe"><td class="memItemLeft" align="right" valign="top"><a id="a5e3fbcca142b1b2a96e2593926077bbe" name="a5e3fbcca142b1b2a96e2593926077bbe"></a>
+<a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html">QPSolver</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html">QPSolver</a> &amp;)=default</td></tr>
+<tr class="memdesc:a5e3fbcca142b1b2a96e2593926077bbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default copy assignment. <br /></td></tr>
+<tr class="separator:a5e3fbcca142b1b2a96e2593926077bbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aafb475d463a6cea2cace7854f756576f"><td class="memItemLeft" align="right" valign="top"><a id="aafb475d463a6cea2cace7854f756576f" name="aafb475d463a6cea2cace7854f756576f"></a>
+<a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html">QPSolver</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html">QPSolver</a> &amp;&amp;)=default</td></tr>
+<tr class="memdesc:aafb475d463a6cea2cace7854f756576f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default move assignment. <br /></td></tr>
+<tr class="separator:aafb475d463a6cea2cace7854f756576f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5214fd51e80f7e4154a52cf8df13de8"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structsmooth_1_1feedback_1_1QPSolution.html">QPSolution</a>&lt; M, N, Scalar &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsmooth_1_1feedback_1_1QPSolver.html#af5214fd51e80f7e4154a52cf8df13de8">sol</a> () const</td></tr>
 <tr class="memdesc:af5214fd51e80f7e4154a52cf8df13de8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access most recent QP solution.  <a href="classsmooth_1_1feedback_1_1QPSolver.html#af5214fd51e80f7e4154a52cf8df13de8">More...</a><br /></td></tr>
 <tr class="separator:af5214fd51e80f7e4154a52cf8df13de8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,7 +136,7 @@ class smooth::feedback::QPSolver&lt; Pbm &gt;</div><p >Solver for quadratic prog
 <p >Use this class to efficiently solve many QPs with the same problem structure.</p>
 <p >For one-off QPs, see <a class="el" href="qp__solver_8hpp.html#a283bbafbfd5264d629f02ad495e896d8" title="Solve a quadratic program using the operator splitting approach.">solve_qp()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00246">246</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00271">271</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a239f60d449635dc426309d0659896ee2" name="a239f60d449635dc426309d0659896ee2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a239f60d449635dc426309d0659896ee2">&#9670;&nbsp;</a></span>QPSolver() <span class="overload">[1/2]</span></h2>
@@ -150,7 +166,7 @@ template&lt;typename Pbm &gt; </div>
 
 <p>Default constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00271">271</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00296">296</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 
 </div>
 </div>
@@ -199,7 +215,7 @@ template&lt;typename Pbm &gt; </div>
 </dl>
 <p>Memory is allocated for solving problems with same structure as pbm. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00280">280</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00305">305</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 
 </div>
 </div>
@@ -232,7 +248,7 @@ template&lt;typename Pbm &gt; </div>
 
 <p>Prepare for solving problems. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00290">290</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00324">324</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 
 </div>
 </div>
@@ -264,7 +280,7 @@ template&lt;typename Pbm &gt; </div>
 
 <p>Check stopping criteria for solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00583">583</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00612">612</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 
 </div>
 </div>
@@ -316,7 +332,7 @@ template&lt;typename Pbm &gt; </div>
 \[ \begin{bmatrix} \bar P &amp; \bar q \end{bmatrix}. \]
 </p>
  
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00686">686</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00715">715</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 
 </div>
 </div>
@@ -347,7 +363,7 @@ template&lt;typename Pbm &gt; </div>
 
 <p>Access most recent QP solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00285">285</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00319">319</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 
 </div>
 </div>
@@ -389,7 +405,7 @@ template&lt;typename Pbm &gt; </div>
 
 <p>Solve quadratic program. </p>
 
-<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00341">341</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="qp__solver_8hpp_source.html#l00374">374</a> of file <a class="el" href="qp__solver_8hpp_source.html">qp_solver.hpp</a>.</p>
 
 </div>
 </div>

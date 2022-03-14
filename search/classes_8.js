@@ -1,8 +1,12 @@
 var searchData=
 [
-  ['time_5ftrait_0',['time_trait',['../structsmooth_1_1feedback_1_1time__trait.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20rclcpp_3a_3atime_20_3e_1',['time_trait&lt; rclcpp::Time &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01rclcpp_1_1Time_01_4.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20std_3a_3achrono_3a_3aduration_3c_20rep_2c_20ratio_20_3e_20_3e_2',['time_trait&lt; std::chrono::duration&lt; Rep, Ratio &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1duration_3_01Rep_00_01Ratio_01_4_01_4.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20std_3a_3achrono_3a_3atime_5fpoint_3c_20clock_2c_20duration_20_3e_20_3e_3',['time_trait&lt; std::chrono::time_point&lt; Clock, Duration &gt; &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01std_1_1chrono_1_1time__point_3_01Clock_00_01Duration_01_4_01_4.html',1,'smooth::feedback']]],
-  ['time_5ftrait_3c_20t_20_3e_4',['time_trait&lt; T &gt;',['../structsmooth_1_1feedback_1_1time__trait_3_01T_01_4.html',1,'smooth::feedback']]]
+  ['qpsolution_0',['QPSolution',['../structsmooth_1_1feedback_1_1QPSolution.html',1,'smooth::feedback']]],
+  ['qpsolution_3c_20m_2c_20n_2c_20scalar_20_3e_1',['QPSolution&lt; M, N, Scalar &gt;',['../structsmooth_1_1feedback_1_1QPSolution.html',1,'smooth::feedback']]],
+  ['qpsolver_2',['QPSolver',['../classsmooth_1_1feedback_1_1QPSolver.html',1,'smooth::feedback']]],
+  ['qpsolver_3c_20smooth_3a_3afeedback_3a_3aquadraticprogramsparse_3c_20double_20_3e_20_3e_3',['QPSolver&lt; smooth::feedback::QuadraticProgramSparse&lt; double &gt; &gt;',['../classsmooth_1_1feedback_1_1QPSolver.html',1,'smooth::feedback']]],
+  ['qpsolverparams_4',['QPSolverParams',['../structsmooth_1_1feedback_1_1QPSolverParams.html',1,'smooth::feedback']]],
+  ['quadraticprogram_5',['QuadraticProgram',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
+  ['quadraticprogram_3c_2d1_2c_20_2d1_2c_20double_20_3e_6',['QuadraticProgram&lt;-1, -1, double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgram.html',1,'smooth::feedback']]],
+  ['quadraticprogramsparse_7',['QuadraticProgramSparse',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]],
+  ['quadraticprogramsparse_3c_20double_20_3e_8',['QuadraticProgramSparse&lt; double &gt;',['../structsmooth_1_1feedback_1_1QuadraticProgramSparse.html',1,'smooth::feedback']]]
 ];

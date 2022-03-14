@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>smooth_feedback: smooth::feedback::detail::MPCDyn&lt; X, U, F, DT &gt; Struct Template Reference</title>
+<title>smooth_feedback: smooth::feedback::detail::MPCDyn&lt; T, X, U, F, DT &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -79,7 +79,7 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">smooth::feedback::detail::MPCDyn&lt; X, U, F, DT &gt; Struct Template Reference</div></div>
+  <div class="headertitle"><div class="title">smooth::feedback::detail::MPCDyn&lt; T, X, U, F, DT &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -90,47 +90,49 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a72da8e2421cd738a26381973274037b6"><td class="memItemLeft" align="right" valign="top">Tangent&lt; X &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a72da8e2421cd738a26381973274037b6">operator()</a> (const double, const X &amp;x, const U &amp;u) const</td></tr>
-<tr class="separator:a72da8e2421cd738a26381973274037b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cb7f755188152dd55d7f5ae6d9a3430"><td class="memItemLeft" align="right" valign="top">std::reference_wrapper&lt; const Eigen::SparseMatrix&lt; double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a4cb7f755188152dd55d7f5ae6d9a3430">jacobian</a> (const double, const X &amp;x, const U &amp;u)</td></tr>
-<tr class="separator:a4cb7f755188152dd55d7f5ae6d9a3430"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe0a6514cfbfb21982157a60ee75aa3e"><td class="memItemLeft" align="right" valign="top">Tangent&lt; X &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#abe0a6514cfbfb21982157a60ee75aa3e">operator()</a> (const double t, const X &amp;x, const U &amp;u)</td></tr>
+<tr class="separator:abe0a6514cfbfb21982157a60ee75aa3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34a3eb86b65d2ca2056a7069408889d7"><td class="memItemLeft" align="right" valign="top">std::reference_wrapper&lt; const Eigen::SparseMatrix&lt; double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a34a3eb86b65d2ca2056a7069408889d7">jacobian</a> (const double t, const X &amp;x, const U &amp;u)</td></tr>
+<tr class="separator:a34a3eb86b65d2ca2056a7069408889d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a1d89b0e04fef230535b8a24668a7afa7"><td class="memItemLeft" align="right" valign="top">F&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a1d89b0e04fef230535b8a24668a7afa7">f</a></td></tr>
-<tr class="separator:a1d89b0e04fef230535b8a24668a7afa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d7d6476bedeaf27cbbafd7667c0bfa0"><td class="memItemLeft" align="right" valign="top">Eigen::SparseMatrix&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a2d7d6476bedeaf27cbbafd7667c0bfa0">jac</a> {Nx, 1 + Nx + Nu}</td></tr>
-<tr class="separator:a2d7d6476bedeaf27cbbafd7667c0bfa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53aedd2e2f8a9972b1b117034e953d1a"><td class="memItemLeft" align="right" valign="top">F&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a53aedd2e2f8a9972b1b117034e953d1a">f</a></td></tr>
+<tr class="separator:a53aedd2e2f8a9972b1b117034e953d1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9879ee15d9c1d0b967a09f012bf0998"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#ab9879ee15d9c1d0b967a09f012bf0998">t0</a> {}</td></tr>
+<tr class="separator:ab9879ee15d9c1d0b967a09f012bf0998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa03a35f2610d6ab6f70ce4cd8571838a"><td class="memItemLeft" align="right" valign="top">Eigen::SparseMatrix&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#aa03a35f2610d6ab6f70ce4cd8571838a">jac</a> {Nx, 1 + Nx + Nu}</td></tr>
+<tr class="separator:aa03a35f2610d6ab6f70ce4cd8571838a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:ac9e7f4f1deb277b7c2e1ea7ecc483fcc"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#ac9e7f4f1deb277b7c2e1ea7ecc483fcc">Nx</a> = Dof&lt;X&gt;</td></tr>
-<tr class="separator:ac9e7f4f1deb277b7c2e1ea7ecc483fcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a327e6c0270480ea2cc822a2110060dbe"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a327e6c0270480ea2cc822a2110060dbe">Nu</a> = Dof&lt;U&gt;</td></tr>
-<tr class="separator:a327e6c0270480ea2cc822a2110060dbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab23ff65462c21999e6e366ed7b3e4828"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#ab23ff65462c21999e6e366ed7b3e4828">Nx</a> = Dof&lt;X&gt;</td></tr>
+<tr class="separator:ab23ff65462c21999e6e366ed7b3e4828"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2a464050285a5e7a21be867307a0729"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#ae2a464050285a5e7a21be867307a0729">Nu</a> = Dof&lt;U&gt;</td></tr>
+<tr class="separator:ae2a464050285a5e7a21be867307a0729"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;LieGroup X, Manifold U, typename F, diff::Type DT&gt;<br />
-struct smooth::feedback::detail::MPCDyn&lt; X, U, F, DT &gt;</div><p ><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> dynamics (derivatives obtained via autodiff). </p>
+<div class="textblock"><div class="compoundTemplParams">template&lt;Time T, LieGroup X, Manifold U, typename F, diff::Type DT&gt;<br />
+struct smooth::feedback::detail::MPCDyn&lt; T, X, U, F, DT &gt;</div><p ><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> dynamics (derivatives obtained via autodiff). </p>
 
 <p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00149">149</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a4cb7f755188152dd55d7f5ae6d9a3430" name="a4cb7f755188152dd55d7f5ae6d9a3430"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4cb7f755188152dd55d7f5ae6d9a3430">&#9670;&nbsp;</a></span>jacobian()</h2>
+<a id="a34a3eb86b65d2ca2056a7069408889d7" name="a34a3eb86b65d2ca2056a7069408889d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34a3eb86b65d2ca2056a7069408889d7">&#9670;&nbsp;</a></span>jacobian()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
+template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::reference_wrapper&lt; const Eigen::SparseMatrix&lt; double &gt; &gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; X, U, F, DT &gt;::jacobian </td>
+          <td class="memname">std::reference_wrapper&lt; const Eigen::SparseMatrix&lt; double &gt; &gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::jacobian </td>
           <td>(</td>
           <td class="paramtype">const double&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>t</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -157,26 +159,26 @@ template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00163">163</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00171">171</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a72da8e2421cd738a26381973274037b6" name="a72da8e2421cd738a26381973274037b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a72da8e2421cd738a26381973274037b6">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="abe0a6514cfbfb21982157a60ee75aa3e" name="abe0a6514cfbfb21982157a60ee75aa3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe0a6514cfbfb21982157a60ee75aa3e">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
+template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Tangent&lt; X &gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; X, U, F, DT &gt;::operator() </td>
+          <td class="memname">Tangent&lt; X &gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">const double&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>t</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -193,7 +195,7 @@ template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td> const</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -203,21 +205,21 @@ template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00158">158</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00159">159</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a1d89b0e04fef230535b8a24668a7afa7" name="a1d89b0e04fef230535b8a24668a7afa7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d89b0e04fef230535b8a24668a7afa7">&#9670;&nbsp;</a></span>f</h2>
+<a id="a53aedd2e2f8a9972b1b117034e953d1a" name="a53aedd2e2f8a9972b1b117034e953d1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53aedd2e2f8a9972b1b117034e953d1a">&#9670;&nbsp;</a></span>f</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
+template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">F <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; X, U, F, DT &gt;::f</td>
+          <td class="memname">F <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::f</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -226,37 +228,37 @@ template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 
 </div>
 </div>
-<a id="a2d7d6476bedeaf27cbbafd7667c0bfa0" name="a2d7d6476bedeaf27cbbafd7667c0bfa0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d7d6476bedeaf27cbbafd7667c0bfa0">&#9670;&nbsp;</a></span>jac</h2>
+<a id="aa03a35f2610d6ab6f70ce4cd8571838a" name="aa03a35f2610d6ab6f70ce4cd8571838a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa03a35f2610d6ab6f70ce4cd8571838a">&#9670;&nbsp;</a></span>jac</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
+template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">Eigen::SparseMatrix&lt;double&gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; X, U, F, DT &gt;::jac {Nx, 1 + Nx + Nu}</td>
+          <td class="memname">Eigen::SparseMatrix&lt;double&gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::jac {Nx, 1 + Nx + Nu}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00160">160</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00168">168</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a327e6c0270480ea2cc822a2110060dbe" name="a327e6c0270480ea2cc822a2110060dbe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a327e6c0270480ea2cc822a2110060dbe">&#9670;&nbsp;</a></span>Nu</h2>
+<a id="ae2a464050285a5e7a21be867307a0729" name="ae2a464050285a5e7a21be867307a0729"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2a464050285a5e7a21be867307a0729">&#9670;&nbsp;</a></span>Nu</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
+template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr auto <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; X, U, F, DT &gt;::Nu = Dof&lt;U&gt;</td>
+          <td class="memname">constexpr auto <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::Nu = Dof&lt;U&gt;</td>
         </tr>
       </table>
   </td>
@@ -270,19 +272,19 @@ template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 
 </div>
 </div>
-<a id="ac9e7f4f1deb277b7c2e1ea7ecc483fcc" name="ac9e7f4f1deb277b7c2e1ea7ecc483fcc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac9e7f4f1deb277b7c2e1ea7ecc483fcc">&#9670;&nbsp;</a></span>Nx</h2>
+<a id="ab23ff65462c21999e6e366ed7b3e4828" name="ab23ff65462c21999e6e366ed7b3e4828"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab23ff65462c21999e6e366ed7b3e4828">&#9670;&nbsp;</a></span>Nx</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
+template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr auto <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; X, U, F, DT &gt;::Nx = Dof&lt;X&gt;</td>
+          <td class="memname">constexpr auto <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::Nx = Dof&lt;X&gt;</td>
         </tr>
       </table>
   </td>
@@ -293,6 +295,24 @@ template&lt;LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00151">151</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ab9879ee15d9c1d0b967a09f012bf0998" name="ab9879ee15d9c1d0b967a09f012bf0998"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9879ee15d9c1d0b967a09f012bf0998">&#9670;&nbsp;</a></span>t0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">T <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::t0 {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00156">156</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
