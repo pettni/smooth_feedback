@@ -41,9 +41,9 @@ struct MyDynamics
     return smooth::Tangent<smooth::CastT<S, X>>(u(0), S(0), u(1));
   }
 
-  inline void set_time(double t) { t0 = t; }
+  inline void set_time(double t) { t_ = t; }
 
-  double t0{0};
+  double t_{0};
 };
 
 struct MyRunningConstraints
@@ -54,9 +54,9 @@ struct MyRunningConstraints
     return u;
   }
 
-  inline void set_time(double t) { t0 = t; }
+  inline void set_time(double t) { t_ = t; }
 
-  double t0{0};
+  double t_{0};
 };
 
 TEST(Mpc, Api)
@@ -106,6 +106,6 @@ TEST(Mpc, Api)
 
   ASSERT_TRUE(us.size() + 1 == xs.size());
 
-  ASSERT_DOUBLE_EQ(f.t0, 4);
-  ASSERT_DOUBLE_EQ(cr.t0, 4);
+  ASSERT_GE(f.t_, 4);
+  ASSERT_GE(cr.t_, 4);
 }
