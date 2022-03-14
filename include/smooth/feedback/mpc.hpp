@@ -498,6 +498,10 @@ public:
     ocp_.ce.x0_fix    = x;
     ocp_.theta.xf_des = (*xdes_)(prm_.tf);
 
+    // if implemented, update time in user fcns
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) { ocp_.f.f.set_time(t); }
+    if constexpr (requires(CR & fvar, T tvar) { fvar.set_time(tvar); }) { ocp_.cr.f.set_time(t); }
+
     // transcribe to QP
     ocp_to_qp_update<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
     qp_.A.makeCompressed();

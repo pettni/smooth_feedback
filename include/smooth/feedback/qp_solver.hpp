@@ -320,6 +320,7 @@ public:
     Ax_.resize(m);
 
     // preallocate nonzeros in H
+    H_.setZero();
     H_.resize(k, k);
     if constexpr (sparse) {
       Eigen::VectorXi nnz(k);
@@ -767,7 +768,7 @@ private:
   Rm y_us_{}, z_us_{}, dy_us_{};
 
   // system matrix and decomposition
-  bool first_{true};
+  bool first_{true};  // memory to only do ldlt analyzePattern() once
   Ht H_{};
   LDLTt ldlt_{};
 };
@@ -798,7 +799,7 @@ detail::qp_solution_t<Pbm> solve_qp(
   const QPSolverParams & prm,
   std::optional<std::reference_wrapper<const detail::qp_solution_t<Pbm>>> warmstart = {})
 {
-  QPSolver<Pbm> solver(pbm, prm);
+  QPSolver solver(pbm, prm);
   return solver.solve(pbm, warmstart);
 }
 

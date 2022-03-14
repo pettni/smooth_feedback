@@ -28,28 +28,51 @@
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 
+using T = double;
+using X = smooth::SE2d;
+using U = Eigen::Vector2d;
+
+struct MyDynamics
+{
+  template<typename S>
+  smooth::Tangent<smooth::CastT<S, X>>
+  operator()(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) const
+  {
+    return smooth::Tangent<smooth::CastT<S, X>>(u(0), S(0), u(1));
+  }
+
+  inline void set_time(double t) { t0 = t; }
+
+  double t0{0};
+};
+
+struct MyRunningConstraints
+{
+  template<typename S>
+  Eigen::Vector<S, 2> operator()(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) const
+  {
+    return u;
+  }
+
+  inline void set_time(double t) { t0 = t; }
+
+  double t0{0};
+};
+
 TEST(Mpc, Api)
 {
-  using T = double;
-  using X = smooth::SE2d;
-  using U = Eigen::Vector2d;
+  MyDynamics f{};
+  MyRunningConstraints cr{};
 
-  auto f = []<typename S>(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
-    return smooth::Tangent<smooth::CastT<S, X>>(u(0), S(0), u(1));
-  };
-
-  auto cr = []<typename S>(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) {
-    return u;
-  };
   Eigen::Vector2d crl = Eigen::Vector2d::Ones();
 
-  smooth::feedback::MPC<T, X, U, decltype(f), decltype(cr)> mpc{f, cr, -crl, crl};
+  // references are needed to avoid copy of f and cr
+  smooth::feedback::MPC<T, X, U, MyDynamics &, MyRunningConstraints &> mpc{f, cr, -crl, crl};
 
-  const T t = 1;
   const X x = X::Random();
 
   // nothing set
-  auto [u0, code0] = mpc(t, x);
+  auto [u0, code0] = mpc(1, x);
   ASSERT_EQ(code0, smooth::feedback::QPSolutionStatus::Optimal);
 
   mpc.reset_warmstart();
@@ -65,11 +88,11 @@ TEST(Mpc, Api)
     []<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
 
   // no warmstart
-  auto [u1, code1] = mpc(t, x);
+  auto [u1, code1] = mpc(2, x);
   ASSERT_EQ(code1, smooth::feedback::QPSolutionStatus::Optimal);
 
   // with warmstart
-  auto [u2, code2] = mpc(t, x);
+  auto [u2, code2] = mpc(3, x);
   ASSERT_EQ(code2, smooth::feedback::QPSolutionStatus::Optimal);
 
   ASSERT_TRUE(u1.isApprox(u2));
@@ -77,9 +100,12 @@ TEST(Mpc, Api)
   // output stuff
   std::vector<X> xs;
   std::vector<U> us;
-  auto [u3, code3] = mpc(t, x, us, xs);
+  auto [u3, code3] = mpc(4, x, us, xs);
 
   ASSERT_TRUE(u3.isApprox(u1));
 
   ASSERT_TRUE(us.size() + 1 == xs.size());
+
+  ASSERT_DOUBLE_EQ(f.t0, 4);
+  ASSERT_DOUBLE_EQ(cr.t0, 4);
 }
