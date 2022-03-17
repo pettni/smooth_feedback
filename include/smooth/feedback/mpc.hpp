@@ -34,7 +34,6 @@
 #include "ocp_to_qp.hpp"
 #include "qp_solver.hpp"
 #include "time.hpp"
-#include "utils/dr_exp_sparse.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
@@ -329,7 +328,7 @@ struct MPCCE
   {
     if (jac.isCompressed()) { set_zero(jac); }
 
-    dr_expinv_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
+    block_add(jac, 0, 1, dr_expinv<X>(rminus(x0, x0_fix)));
 
     jac.makeCompressed();
     return jac;

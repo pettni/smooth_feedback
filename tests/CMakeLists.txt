@@ -82,10 +82,6 @@ add_executable(test_utils_sparse test_utils_sparse.cpp)
 target_link_libraries(test_utils_sparse PRIVATE TestConfig)
 gtest_discover_tests(test_utils_sparse)
 
-add_executable(test_utils_drexp_sparse test_utils_drexp_sparse.cpp)
-target_link_libraries(test_utils_drexp_sparse PRIVATE TestConfig)
-gtest_discover_tests(test_utils_drexp_sparse)
-
 add_executable(test_utils_d2rexp_sparse test_utils_d2rexp_sparse.cpp)
 target_link_libraries(test_utils_d2rexp_sparse PRIVATE TestConfig)
 gtest_discover_tests(test_utils_d2rexp_sparse)

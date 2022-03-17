@@ -34,8 +34,8 @@
 #include <Eigen/Sparse>
 #include <smooth/algo/hessian.hpp>
 #include <smooth/bundle.hpp>
+#include <smooth/derivatives.hpp>
 #include <smooth/feedback/ocp.hpp>
-#include <smooth/feedback/utils/dr_exp_sparse.hpp>
 #include <smooth/feedback/utils/sparse.hpp>
 #include <smooth/se2.hpp>
 
@@ -133,7 +133,7 @@ struct SE2Integral
     Eigen::SparseMatrix<double> ret(1, 8);
     ret.coeffRef(0, 0) = -(a.transpose() * smooth::dl_expinv<X<double>>(a))
                             .dot(Eigen::Vector<double, 5>{1., 0., 0.5, 0, 0});
-    smooth::feedback::block_add(ret, 0, 1, a.transpose() * smooth::dr_expinv<X<double>>(a));
+    smooth::feedback::block_add(ret, 0, 1, smooth::dr_rminus_squarednorm<X<double>>(a));
     ret.coeffRef(0, 6) = u.x();
     ret.coeffRef(0, 7) = u.y();
     return ret;
@@ -141,7 +141,7 @@ struct SE2Integral
 
   Eigen::SparseMatrix<double> hessian(double t, const X<double> & x, const U<double> &) const
   {
-    const auto H = smooth::hessian_rminus_norm(x, xdes(t));
+    const auto H = smooth::d2r_rminus_squarednorm<X<double>>(x - xdes(t));
 
     Eigen::SparseMatrix<double> ret(8, 8);
     /// @todo don't have derivatives w.r.t. t
@@ -192,14 +192,14 @@ struct SE2Ce
   {
     Eigen::SparseMatrix<double> ret(6, 12);
     ret.coeffRef(0, 0) = 1;
-    smooth::feedback::dr_expinv_sparse<X<double>>(ret, x0.log(), 1, 1);
+    smooth::feedback::block_add(ret, 1, 1, smooth::dr_expinv<X<double>>(x0.log()));
     return ret;
   }
 
   Eigen::SparseMatrix<double>
   hessian(double, const X<double> & x0, const X<double> &, const Vec<double, 1> &) const
   {
-    const auto d2_logx0 = smooth::hessian_rminus<X<double>>(x0, X<double>::Identity());
+    const auto d2_logx0 = smooth::d2r_rminus<X<double>>(x0.log());
 
     Eigen::SparseMatrix<double> ret(12, 6 * 12);
     for (auto i = 0u; i < 5; ++i) {

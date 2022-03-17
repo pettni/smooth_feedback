@@ -38,7 +38,6 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
-#include <smooth/algo/hessian.hpp>
 #include <smooth/diff.hpp>
 
 #include "ocp.hpp"
@@ -51,6 +50,33 @@ namespace smooth::feedback {
 // \cond
 namespace detail {
 
+/// @brief The first Bernoulli numbers
+static constexpr std::array<double, 23> kBn{
+  1,               // 0
+  -1. / 2,         // 1
+  1. / 6,          // 2
+  0.,              // 3
+  -1. / 30,        // 4
+  0,               // 5
+  1. / 42,         // 6
+  0,               // 7
+  -1. / 30,        // 8
+  0,               // 9
+  5. / 66,         // 10
+  0,               // 11
+  -691. / 2730,    // 12
+  0,               // 13
+  7. / 6,          // 14
+  0,               // 15
+  -3617. / 510,    // 16
+  0,               // 17
+  43867. / 798,    // 18
+  0,               // 19
+  -174611. / 330,  // 20
+  0,               // 21
+  854513. / 138,   // 22
+};
+
 /**
  * @brief Algebra generators as sparse matrices
  */
@@ -58,14 +84,14 @@ template<LieGroup G>
 inline auto algebra_generators_sparse = []() -> std::array<Eigen::SparseMatrix<double>, Dof<G>> {
   std::array<Eigen::SparseMatrix<double>, Dof<G>> ret;
   for (auto i = 0u; i < Dof<G>; ++i) {
-    ret[i] = smooth::detail::algebra_generators<G>[i].sparseView();
+    ret[i] = ad<G>(Tangent<G>::Unit(i)).sparseView();
     ret[i].makeCompressed();
   }
   return ret;
 }();
 
 /**
- * @brief Ad sparse.
+ * @brief Sparse version of ad.
  */
 template<LieGroup G>
 void ad_sparse(Eigen::SparseMatrix<double> & out, const Tangent<G> & a)
@@ -86,7 +112,7 @@ void ad_sparse(Eigen::SparseMatrix<double> & out, const Tangent<G> & a)
  * @brief Sparse matrices containing reordered rows of algebra generators.
  */
 template<LieGroup G>
-inline auto algebra_generators_sparse_rowwise =
+inline auto algebra_generators_sparse_reordered =
   []() -> std::array<Eigen::SparseMatrix<double, Eigen::RowMajor>, Dof<G>> {
   std::array<Eigen::SparseMatrix<double, Eigen::RowMajor>, Dof<G>> ret;
   for (auto k = 0u; k < Dof<G>; ++k) {
@@ -292,10 +318,8 @@ public:
     d2r_fog(hi_, Jf, Hf, Joplus_, Hoplus_);  // d2r (vi)_{t, e, v}
 
     set_zero(H_);
-    for (auto iter = 0u; iter < std::tuple_size_v<decltype(smooth::detail::kBn)>; ++iter) {
-      if (smooth::detail::kBn[iter] != 0) {
-        block_add(H_, 0, 0, hi_, smooth::detail::kBn[iter] * coef);
-      }
+    for (auto iter = 0u; iter < std::tuple_size_v<decltype(kBn)>; ++iter) {
+      if (kBn[iter] != 0) { block_add(H_, 0, 0, hi_, kBn[iter] * coef); }
 
       // update hi_
       hi_tmp_.setZero();
@@ -307,9 +331,9 @@ public:
       }
       for (auto k = 0u; k < Nx; ++k) {
         const auto b0 = k * Nvars;
-        block_add(hi_tmp_, 1, b0, algebra_generators_sparse_rowwise<X>[k] * ji_);
+        block_add(hi_tmp_, 1, b0, algebra_generators_sparse_reordered<X>[k] * ji_);
         block_add(
-          hi_tmp_, 0, b0 + 1, ji_.transpose() * algebra_generators_sparse_rowwise<X>[k], -1);
+          hi_tmp_, 0, b0 + 1, ji_.transpose() * algebra_generators_sparse_reordered<X>[k], -1);
       }
       std::swap(hi_, hi_tmp_);
 

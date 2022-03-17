@@ -35,7 +35,6 @@
  */
 
 #include <Eigen/Sparse>
-#include <smooth/algo/hessian.hpp>
 #include <smooth/bundle.hpp>
 #include <smooth/lie_group.hpp>
 #include <smooth/se2.hpp>
