@@ -26,7 +26,6 @@
 #ifndef SMOOTH__FEEDBACK__MPC_HPP_
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
-#include <smooth/algo/hessian.hpp>
 #include <smooth/lie_group.hpp>
 
 #include <memory>

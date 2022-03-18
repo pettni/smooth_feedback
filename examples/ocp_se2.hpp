@@ -32,7 +32,6 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include <smooth/algo/hessian.hpp>
 #include <smooth/bundle.hpp>
 #include <smooth/derivatives.hpp>
 #include <smooth/feedback/ocp.hpp>
