@@ -524,7 +524,12 @@ public:
     ocp_.ce.x0_fix    = x;
 
     // transcribe to QP
-    ocp_to_qp_update<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    ocp_to_qp_update_dyn<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    if constexpr (requires(CR & crvar, T tvar) { crvar.set_time(tvar); }) {
+      // only update if running constraints are time-dependent
+      ocp_to_qp_update_cr<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    }
+    ocp_to_qp_update_ce<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
     qp_.A.makeCompressed();
     qp_.P.makeCompressed();
 
