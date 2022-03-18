@@ -34,6 +34,7 @@
 #include "ocp_to_qp.hpp"
 #include "qp_solver.hpp"
 #include "time.hpp"
+#include "utils/dr_exp_sparse.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
@@ -132,9 +133,13 @@ struct MPCObj
   {
     assert(xf_des.isApprox(xf, 1e-4));
 
-    if (hess.isCompressed()) { set_zero(hess); }
+    set_zero(hess);
 
-    block_add(hess, 1 + Nx, 1 + Nx, Qtf);
+    for (auto i = 0u; i < Nx; ++i) {
+      for (auto j = 0u; j < Nx; ++j) {
+        if (Qtf(i, j) != 0) { hess.coeffRef(1 + i, 1 + j) = Qtf(i, j); }
+      }
+    }
 
     hess.makeCompressed();
     return hess;
@@ -164,22 +169,17 @@ struct MPCDyn
     return f(x, u);
   }
 
-  Eigen::SparseMatrix<double> jac{Nx, 1 + Nx + Nu};
-
-  std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(const double t, const X & x, const U & u)
+  Eigen::Matrix<double, Nx, 1 + Nx + Nu> jacobian(const double t, const X & x, const U & u)
   {
     if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
       f.set_time(time_trait<T>::plus(t0, t));
     }
 
-    if (jac.isCompressed()) { set_zero(jac); }
-
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
-    block_add(jac, 0, 1, df);
 
-    jac.makeCompressed();
-    return jac;
+    Eigen::Matrix<double, Nx, 1 + Nx + Nu> ret;
+    ret << Eigen::Vector<double, Nx>::Zero(), df;
+    return ret;
   }
 };
 
@@ -243,10 +243,18 @@ struct MPCIntegrand
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
 
-    if (hess.isCompressed()) { set_zero(hess); }
+    set_zero(hess);
 
-    block_add(hess, 1, 1, Q);
-    block_add(hess, 1 + Nx, 1 + Nx, R);
+    for (auto i = 0u; i < Nx; ++i) {
+      for (auto j = 0u; j < Nx; ++j) {
+        if (Q(i, j) != 0) { hess.coeffRef(1 + i, 1 + j) = Q(i, j); }
+      }
+    }
+    for (auto i = 0u; i < Nu; ++i) {
+      for (auto j = 0u; j < Nu; ++j) {
+        if (Q(i, j) != 0) { hess.coeffRef(1 + Nx + i, 1 + Nx + j) = R(i, j); }
+      }
+    }
 
     hess.makeCompressed();
     return hess;
@@ -287,10 +295,8 @@ struct MPCCR
       f.set_time(time_trait<T>::plus(t0, t));
     }
 
-    if (jac.isCompressed()) { set_zero(jac); }
-
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
-    block_add(jac, 0, 1, df);
+    block_write(jac, 0, 1, df);
 
     jac.makeCompressed();
     return jac;
@@ -326,9 +332,7 @@ struct MPCCE
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
-    if (jac.isCompressed()) { set_zero(jac); }
-
-    block_add(jac, 0, 1, dr_expinv<X>(rminus(x0, x0_fix)));
+    dr_expinv_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
 
     jac.makeCompressed();
     return jac;

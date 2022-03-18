@@ -225,7 +225,7 @@ void ocp_to_qp_update(
   const Eigen::Vector<double, 1> ql{1.};
 
   ///////////////////////
-  //// ENDPOINT COST ////
+  //// INTEGRAL COST ////
   ///////////////////////
 
   const auto & [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
@@ -233,21 +233,6 @@ void ocp_to_qp_update(
   const Eigen::Vector<double, Nx> qo_x0 = dth.middleCols(1, Nx).transpose();
   const Eigen::Vector<double, Nx> qo_xf = dth.middleCols(1 + Nx, Nx).transpose();
   const Eigen::Vector<double, Nq> qo_q  = dth.middleCols(1 + 2 * Nx, Nq).transpose();
-
-  const Eigen::Matrix<double, Nx, Nx> Qo_x0  = d2th.block(1, 1, Nx, Nx) / 2;
-  const Eigen::Matrix<double, Nx, Nx> Qo_x0f = d2th.block(1, 1 + Nx, Nx, Nx) / 2;
-  const Eigen::Matrix<double, Nx, Nx> Qo_xf  = d2th.block(1 + Nx, 1 + Nx, Nx, Nx) / 2;
-
-  block_add(qp.P, 0, 0, Qo_x0, 1., true);            // d2q / dx0x0
-  block_add(qp.P, 0, Nx * N, Qo_x0f, 1., true);      // d2q / dx0xf
-  block_add(qp.P, Nx * N, Nx * N, Qo_xf, 1., true);  // d2q / dxfxf
-
-  qp.q.segment(0, Nx) += qo_x0;       // dq / dx0
-  qp.q.segment(Nx * N, Nx) += qo_xf;  // dq / dxf
-
-  ///////////////////////
-  //// INTEGRAL COST ////
-  ///////////////////////
 
   mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);
 
@@ -260,6 +245,17 @@ void ocp_to_qp_update(
   qp.q.segment(xvar_B, xvar_L) = qo_q.x() * work.int_out.dF.middleCols(2, xvar_L).transpose();
   qp.q.segment(uvar_B, uvar_L) = qo_q.x() * work.int_out.dF.middleCols(2 + xvar_L, uvar_L).transpose();
   // clang-format on
+
+  ///////////////////////
+  //// ENDPOINT COST ////
+  ///////////////////////
+
+  block_add(qp.P, 0, 0, d2th.block(1, 1, Nx, Nx), 0.5, true);                        // d2q / dx0x0
+  block_add(qp.P, 0, Nx * N, d2th.block(1, 1 + Nx, Nx, Nx), 0.5, true);            // d2q / dx0xf
+  block_add(qp.P, Nx * N, Nx * N, d2th.block(1 + Nx, 1 + Nx, Nx, Nx), 0.5, true);  // d2q / dxfxf
+
+  qp.q.segment(0, Nx) += qo_x0;       // dq / dx0
+  qp.q.segment(Nx * N, Nx) += qo_xf;  // dq / dxf
 
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////

@@ -165,21 +165,23 @@ private:
   Xl xl;
   Ul ul;
 
-  Eigen::SparseMatrix<double> Joplus_, Hoplus_, J_, H_;
+  Eigen::SparseMatrix<double> Joplus_{Nvars, Nvars}, Hoplus_{Nvars, Nvars *Nvars}, J_{Nouts, Nvars},
+    H_{Nvars, Nouts *Nvars};
 
   // Would ideally like to remove these temporaries...
-  Eigen::SparseMatrix<double> ji_, ji_tmp_, hi_, hi_tmp_;
-  Eigen::SparseMatrix<double> ad_e, ad_vi;
-  Eigen::SparseMatrix<double> dexpinv_e_;
-  Eigen::SparseMatrix<double> d2exp_e_, d2exp_v_, d2expinv_e_;
+  Eigen::SparseMatrix<double> ji_{Nouts, Nvars}, ji_tmp_{Nouts, Nvars}, hi_{Nvars, Nouts *Nvars},
+    hi_tmp_{Nvars, Nouts *Nvars};
+  Eigen::SparseMatrix<double> ad_e{}, ad_vi{};
+  Eigen::SparseMatrix<double> dexpinv_e_{Nx, Nx};
+  Eigen::SparseMatrix<double> d2exp_e_{Nx, Nx *Nx}, d2exp_v_{Nu, Nu *Nu}, d2expinv_e_{Nx, Nx *Nx};
 
   /// @brief Calculate jacobian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
   void update_joplus(const E & e, const V & v, const E & dxl, const V & dul)
   {
     set_zero(Joplus_);
-    block_add_identity(Joplus_, t_B, t_B, 1);
-    block_add(Joplus_, x_B, t_B, Ad<X>(smooth::exp<X>(-e)) * dxl);
-    block_add(Joplus_, u_B, t_B, Ad<U>(smooth::exp<U>(-v)) * dul);
+    block_write_identity(Joplus_, t_B, t_B, 1);
+    block_write(Joplus_, x_B, t_B, Ad<X>(smooth::exp<X>(-e)) * dxl);
+    block_write(Joplus_, u_B, t_B, Ad<U>(smooth::exp<U>(-v)) * dul);
     dr_exp_sparse<X>(Joplus_, e, x_B, x_B);
     dr_exp_sparse<U>(Joplus_, v, u_B, u_B);
     Joplus_.makeCompressed();
@@ -220,11 +222,7 @@ private:
 public:
   template<typename A1, typename A2, typename A3>
   FlatDyn(A1 && a1, A2 && a2, A3 && a3)
-      : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3)),
-        Joplus_(Nvars, Nvars), Hoplus_(Nvars, Nvars * Nvars), J_(Nouts, Nvars),
-        H_(Nvars, Nouts * Nvars), ji_(Nouts, Nvars), ji_tmp_(Nouts, Nvars),
-        hi_(Nvars, Nouts * Nvars), hi_tmp_(Nvars, Nouts * Nvars), dexpinv_e_(Nx, Nx),
-        d2exp_e_(Nx, Nx * Nx), d2exp_v_(Nu, Nu * Nu), d2expinv_e_(Nx, Nx * Nx)
+      : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3))
   {}
 
   template<typename T>
