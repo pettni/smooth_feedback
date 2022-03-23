@@ -41,6 +41,7 @@
 
 namespace smooth::feedback {
 
+// \cond
 namespace detail {
 
 /**
@@ -99,10 +100,10 @@ void ocp_to_qp_allocate(
 
   // resize qp
   qp.P.resize(Nvar, Nvar);
-  qp.q.resize(Nvar);
+  qp.q.setZero(Nvar);
   qp.A.resize(Ncon, Nvar);
-  qp.l.resize(Ncon);
-  qp.u.resize(Ncon);
+  qp.l.setZero(Ncon);
+  qp.u.setZero(Ncon);
 
   // sparsity pattern of A (row-major)
   Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
@@ -136,26 +137,9 @@ void ocp_to_qp_allocate(
   mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);  // allocates work.int_out
 }
 
-/**
- * @brief Formulate an optimal control problem as a quadratic program via linearization.
- *
- * @tparam DT differentiation method to use for derivatives of the ocp
- * @tparam DT_xl differentiation method to use for derivatives of xl_fun
- *
- * @param[in, out] qp pre-allocated quadratic program
- * @param[in, out] work workin memory
- * @param[in] ocp input problem
- * @param[in] mesh time discretization
- * @param[in] tf time horizon
- * @param[in] xl_fun state linearization (must be differentiable w.r.t. time)
- * @param[in] ul_fun input linearization
- *
- * @return sparse quadratic program for a flattened formulation of ocp.
- *
- * @see ocp_to_qp_allocate() qpsol_to_ocpsol()
- */
+/// @brief ocp_to_qp_update: cost part
 template<diff::Type DT = diff::Type::Default>
-void ocp_to_qp_update(
+void ocp_to_qp_update_cost(
   QuadraticProgramSparse<double> & qp,
   OcpToQpWorkmemory & work,
   OCPType auto & ocp,
@@ -164,18 +148,13 @@ void ocp_to_qp_update(
   auto && xl_fun,
   auto && ul_fun)
 {
-  using utils::zip;
-  using namespace std::views;
-
   using ocp_t = typename std::decay_t<decltype(ocp)>;
-
-  using X = typename ocp_t::X;
+  using X     = typename ocp_t::X;
 
   static constexpr auto Nx = ocp_t::Nx;
   static constexpr auto Nu = ocp_t::Nu;
   static constexpr auto Nq = ocp_t::Nq;
-
-  const double t0 = 0.;
+  const double t0          = 0.;
 
   static_assert(ocp_t::Nq == 1, "exactly one integral supported in ocp_to_qp");
 
@@ -183,33 +162,17 @@ void ocp_to_qp_update(
   //// VARIABLE LAYOUT ////
   /////////////////////////
 
-  // [x0 x1 ... xN u0 u1 ... uN-1]
-
-  const auto N = mesh.N_colloc();
-
+  const auto N      = mesh.N_colloc();
   const auto xvar_L = Nx * (N + 1);
   const auto uvar_L = Nu * N;
-
   const auto xvar_B = 0u;
   const auto uvar_B = xvar_L;
-
-  const auto dcon_L  = Nx * N;
-  const auto crcon_L = ocp_t::Ncr * N;
-  const auto cecon_L = ocp_t::Nce;
-
-  const auto dcon_B  = 0u;
-  const auto crcon_B = dcon_L;
-  const auto cecon_B = crcon_B + crcon_L;
 
   ////////////////////////
   //// ZERO VARIABLES ////
   ////////////////////////
 
-  set_zero(qp.A);
   set_zero(qp.P);
-
-  qp.l.setConstant(-std::numeric_limits<double>::infinity());
-  qp.u.setConstant(std::numeric_limits<double>::infinity());
   qp.q.setZero();
 
   //////////////////////////////
@@ -225,7 +188,7 @@ void ocp_to_qp_update(
   const Eigen::Vector<double, 1> ql{1.};
 
   ///////////////////////
-  //// ENDPOINT COST ////
+  //// INTEGRAL COST ////
   ///////////////////////
 
   const auto & [th, dth, d2th] = diff::dr<2, DT>(ocp.theta, wrt(tf, xl0, xlf, ql));
@@ -233,21 +196,6 @@ void ocp_to_qp_update(
   const Eigen::Vector<double, Nx> qo_x0 = dth.middleCols(1, Nx).transpose();
   const Eigen::Vector<double, Nx> qo_xf = dth.middleCols(1 + Nx, Nx).transpose();
   const Eigen::Vector<double, Nq> qo_q  = dth.middleCols(1 + 2 * Nx, Nq).transpose();
-
-  const Eigen::Matrix<double, Nx, Nx> Qo_x0  = d2th.block(1, 1, Nx, Nx) / 2;
-  const Eigen::Matrix<double, Nx, Nx> Qo_x0f = d2th.block(1, 1 + Nx, Nx, Nx) / 2;
-  const Eigen::Matrix<double, Nx, Nx> Qo_xf  = d2th.block(1 + Nx, 1 + Nx, Nx, Nx) / 2;
-
-  block_add(qp.P, 0, 0, Qo_x0, 1., true);            // d2q / dx0x0
-  block_add(qp.P, 0, Nx * N, Qo_x0f, 1., true);      // d2q / dx0xf
-  block_add(qp.P, Nx * N, Nx * N, Qo_xf, 1., true);  // d2q / dxfxf
-
-  qp.q.segment(0, Nx) += qo_x0;       // dq / dx0
-  qp.q.segment(Nx * N, Nx) += qo_xf;  // dq / dxf
-
-  ///////////////////////
-  //// INTEGRAL COST ////
-  ///////////////////////
 
   mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);
 
@@ -260,6 +208,50 @@ void ocp_to_qp_update(
   qp.q.segment(xvar_B, xvar_L) = qo_q.x() * work.int_out.dF.middleCols(2, xvar_L).transpose();
   qp.q.segment(uvar_B, uvar_L) = qo_q.x() * work.int_out.dF.middleCols(2 + xvar_L, uvar_L).transpose();
   // clang-format on
+
+  ///////////////////////
+  //// ENDPOINT COST ////
+  ///////////////////////
+
+  block_add(qp.P, 0, 0, d2th.block(1, 1, Nx, Nx), 0.5, true);                      // d2q / dx0x0
+  block_add(qp.P, 0, Nx * N, d2th.block(1, 1 + Nx, Nx, Nx), 0.5, true);            // d2q / dx0xf
+  block_add(qp.P, Nx * N, Nx * N, d2th.block(1 + Nx, 1 + Nx, Nx, Nx), 0.5, true);  // d2q / dxfxf
+
+  qp.q.segment(0, Nx) += qo_x0;       // dq / dx0
+  qp.q.segment(Nx * N, Nx) += qo_xf;  // dq / dxf
+}
+
+/// @brief ocp_to_qp_update: dyn part
+template<diff::Type DT = diff::Type::Default>
+void ocp_to_qp_update_dyn(
+  QuadraticProgramSparse<double> & qp,
+  [[maybe_unused]] OcpToQpWorkmemory & work,
+  OCPType auto & ocp,
+  const MeshType auto & mesh,
+  double tf,
+  auto && xl_fun,
+  auto && ul_fun)
+{
+  using utils::zip;
+  using namespace std::views;
+  using ocp_t = typename std::decay_t<decltype(ocp)>;
+  using X     = typename ocp_t::X;
+
+  static constexpr auto Nx = ocp_t::Nx;
+  static constexpr auto Nu = ocp_t::Nu;
+  const double t0          = 0.;
+
+  static_assert(ocp_t::Nq == 1, "exactly one integral supported in ocp_to_qp");
+
+  /////////////////////////
+  //// VARIABLE LAYOUT ////
+  /////////////////////////
+
+  const auto N      = mesh.N_colloc();
+  const auto xvar_L = Nx * (N + 1);
+  const auto xvar_B = 0u;
+  const auto uvar_B = xvar_L;
+  const auto dcon_B = 0u;
 
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////
@@ -274,7 +266,7 @@ void ocp_to_qp_update(
     // [A0 x0 ... Ak-1 xk-1 0]  + [B0 u0 ... Bk-1 uk-1] + [E0 ... Ek-1] = alpha * X Dus
 
     for (const auto & [i, tau_i] : zip(iota(0u, Ki), mesh.interval_nodes(ival))) {
-      const auto t_i             = tf * tau_i;                         // unscaled time
+      const auto t_i             = t0 + (tf - t0) * tau_i;             // unscaled time
       const auto & [xl_i, dxl_i] = diff::dr<1, DT>(xl_fun, wrt(t_i));  // x-lin
       const auto ul_i            = ul_fun(t_i);                        // u-lin
 
@@ -288,12 +280,16 @@ void ocp_to_qp_update(
 
       // insert new constraint A xi + B ui + E = [x0 ... XNi] di
 
-      block_add(qp.A, dcon_B + (M + i) * Nx, xvar_B + (M + i) * Nx, A);
-      block_add(qp.A, dcon_B + (M + i) * Nx, uvar_B + (M + i) * Nu, B);
+      block_write(qp.A, dcon_B + (M + i) * Nx, xvar_B + (M + i) * Nx, A);
+      block_write(qp.A, dcon_B + (M + i) * Nx, uvar_B + (M + i) * Nu, B);
 
       for (auto j = 0u; j < Ki + 1; ++j) {
         for (auto diag = 0u; diag < Nx; ++diag) {
-          qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
+          if (j == i) {
+            qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
+          } else {
+            qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) = -alpha * Dus(j, i);
+          }
         }
       }
 
@@ -301,6 +297,43 @@ void ocp_to_qp_update(
       qp.u.segment(dcon_B + (M + i) * Nx, Nx) = -E;
     }
   }
+}
+
+/// @brief ocp_to_qp_update: running constraints part
+template<diff::Type DT = diff::Type::Default>
+void ocp_to_qp_update_cr(
+  QuadraticProgramSparse<double> & qp,
+  OcpToQpWorkmemory & work,
+  OCPType auto & ocp,
+  const MeshType auto & mesh,
+  double tf,
+  auto && xl_fun,
+  auto && ul_fun)
+{
+  using ocp_t = typename std::decay_t<decltype(ocp)>;
+
+  static constexpr auto Nx = ocp_t::Nx;
+  static constexpr auto Nu = ocp_t::Nu;
+
+  const double t0 = 0.;
+
+  /////////////////////////
+  //// VARIABLE LAYOUT ////
+  /////////////////////////
+
+  const auto N       = mesh.N_colloc();
+  const auto xvar_L  = Nx * (N + 1);
+  const auto uvar_L  = Nu * N;
+  const auto dcon_L  = Nx * N;
+  const auto crcon_L = ocp_t::Ncr * N;
+  const auto crcon_B = dcon_L;
+
+  //////////////////////////////
+  //// LINEARIZATION POINTS ////
+  //////////////////////////////
+
+  auto xslin = mesh.all_nodes() | transform([&](double t) { return xl_fun(t0 + (tf - t0) * t); });
+  auto uslin = mesh.all_nodes() | transform([&](double t) { return ul_fun(t0 + (tf - t0) * t); });
 
   /////////////////////////////
   //// RUNNING CONSTRAINTS ////
@@ -309,24 +342,90 @@ void ocp_to_qp_update(
   mesh_eval<1, DT>(work.cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
   work.cr_out.dF.makeCompressed();
 
-  block_add(qp.A, crcon_B, 0, work.cr_out.dF.middleCols(2, xvar_L + uvar_L));
+  block_write(qp.A, crcon_B, 0, work.cr_out.dF.middleCols(2, xvar_L + uvar_L));
   qp.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - work.cr_out.F;
   qp.u.segment(crcon_B, crcon_L) = ocp.cru.replicate(N, 1) - work.cr_out.F;
+}
+
+/// @brief ocp_to_qp_update: end constraints part
+template<diff::Type DT = diff::Type::Default>
+void ocp_to_qp_update_ce(
+  QuadraticProgramSparse<double> & qp,
+  [[maybe_unused]] OcpToQpWorkmemory & work,
+  OCPType auto & ocp,
+  const MeshType auto & mesh,
+  double tf,
+  auto && xl_fun,
+  [[maybe_unused]] auto && ul_fun)
+{
+  using ocp_t = typename std::decay_t<decltype(ocp)>;
+  using X     = typename ocp_t::X;
+
+  static constexpr auto Nx = ocp_t::Nx;
+
+  /////////////////////////
+  //// VARIABLE LAYOUT ////
+  /////////////////////////
+
+  const auto N       = mesh.N_colloc();
+  const auto xvar_L  = Nx * (N + 1);
+  const auto xvar_B  = 0u;
+  const auto dcon_L  = Nx * N;
+  const auto crcon_L = ocp_t::Ncr * N;
+  const auto cecon_L = ocp_t::Nce;
+  const auto crcon_B = dcon_L;
+  const auto cecon_B = crcon_B + crcon_L;
+
+  //////////////////////////////
+  //// LINEARIZATION POINTS ////
+  //////////////////////////////
+
+  const X xl0 = xl_fun(0.);
+  const X xlf = xl_fun(tf);
 
   //////////////////////////////
   //// ENDPOINT CONSTRAINTS ////
   //////////////////////////////
 
+  const Eigen::Vector<double, 1> ql{1.};
   const auto & [ceval, dceval] = diff::dr<1, DT>(ocp.ce, wrt(tf, xl0, xlf, ql));
 
-  block_add(qp.A, cecon_B, xvar_B, dceval.middleCols(1, Nx));                     // dce / dx0
-  block_add(qp.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce / dxf
+  block_write(qp.A, cecon_B, xvar_B, dceval.middleCols(1, Nx));                     // dce / dx0
+  block_write(qp.A, cecon_B, xvar_B + xvar_L - Nx, dceval.middleCols(1 + Nx, Nx));  // dce / dxf
 
   qp.l.segment(cecon_B, cecon_L) = ocp.cel - ceval;
   qp.u.segment(cecon_B, cecon_L) = ocp.ceu - ceval;
 }
 
+/**
+ * @brief Update a qp for ocp_to_qp_update()
+ *
+ * @param[out] qp quadratic program
+ * @param[in, out] work
+ * @param[in] ocp input problem
+ * @param[in] mesh time discretization
+ * @param[in] tf time horizon
+ * @param[in] xl_fun state linearization (must be differentiable w.r.t. time)
+ * @param[in] ul_fun input linearization
+ */
+template<diff::Type DT = diff::Type::Default>
+void ocp_to_qp_update(
+  QuadraticProgramSparse<double> & qp,
+  [[maybe_unused]] OcpToQpWorkmemory & work,
+  OCPType auto & ocp,
+  const MeshType auto & mesh,
+  double tf,
+  const auto & xl_fun,
+  [[maybe_unused]] const auto & ul_fun)
+{
+  ocp_to_qp_update_cost<DT>(qp, work, ocp, mesh, tf, xl_fun, ul_fun);
+  ocp_to_qp_update_dyn<DT>(qp, work, ocp, mesh, tf, xl_fun, ul_fun);
+  ocp_to_qp_update_cr<DT>(qp, work, ocp, mesh, tf, xl_fun, ul_fun);
+  ocp_to_qp_update_ce<DT>(qp, work, ocp, mesh, tf, xl_fun, ul_fun);
+}
+
 }  // namespace detail
+// \endcond
 
 /**
  * @brief Formulate an optimal control problem as a quadratic program via linearization.

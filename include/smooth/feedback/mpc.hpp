@@ -26,15 +26,14 @@
 #ifndef SMOOTH__FEEDBACK__MPC_HPP_
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
-#include <smooth/algo/hessian.hpp>
 #include <smooth/lie_group.hpp>
+#include <smooth/lie_group_sparse.hpp>
 
 #include <memory>
 
 #include "ocp_to_qp.hpp"
 #include "qp_solver.hpp"
 #include "time.hpp"
-#include "utils/dr_exp_sparse.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
@@ -133,9 +132,13 @@ struct MPCObj
   {
     assert(xf_des.isApprox(xf, 1e-4));
 
-    if (hess.isCompressed()) { set_zero(hess); }
+    set_zero(hess);
 
-    block_add(hess, 1 + Nx, 1 + Nx, Qtf);
+    for (auto i = 0u; i < Nx; ++i) {
+      for (auto j = 0u; j < Nx; ++j) {
+        if (Qtf(i, j) != 0) { hess.coeffRef(1 + i, 1 + j) = Qtf(i, j); }
+      }
+    }
 
     hess.makeCompressed();
     return hess;
@@ -165,22 +168,17 @@ struct MPCDyn
     return f(x, u);
   }
 
-  Eigen::SparseMatrix<double> jac{Nx, 1 + Nx + Nu};
-
-  std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(const double t, const X & x, const U & u)
+  Eigen::Matrix<double, Nx, 1 + Nx + Nu> jacobian(const double t, const X & x, const U & u)
   {
     if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
       f.set_time(time_trait<T>::plus(t0, t));
     }
 
-    if (jac.isCompressed()) { set_zero(jac); }
-
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
-    block_add(jac, 0, 1, df);
 
-    jac.makeCompressed();
-    return jac;
+    Eigen::Matrix<double, Nx, 1 + Nx + Nu> ret;
+    ret << Eigen::Vector<double, Nx>::Zero(), df;
+    return ret;
   }
 };
 
@@ -244,10 +242,18 @@ struct MPCIntegrand
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
 
-    if (hess.isCompressed()) { set_zero(hess); }
+    set_zero(hess);
 
-    block_add(hess, 1, 1, Q);
-    block_add(hess, 1 + Nx, 1 + Nx, R);
+    for (auto i = 0u; i < Nx; ++i) {
+      for (auto j = 0u; j < Nx; ++j) {
+        if (Q(i, j) != 0) { hess.coeffRef(1 + i, 1 + j) = Q(i, j); }
+      }
+    }
+    for (auto i = 0u; i < Nu; ++i) {
+      for (auto j = 0u; j < Nu; ++j) {
+        if (Q(i, j) != 0) { hess.coeffRef(1 + Nx + i, 1 + Nx + j) = R(i, j); }
+      }
+    }
 
     hess.makeCompressed();
     return hess;
@@ -288,10 +294,8 @@ struct MPCCR
       f.set_time(time_trait<T>::plus(t0, t));
     }
 
-    if (jac.isCompressed()) { set_zero(jac); }
-
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
-    block_add(jac, 0, 1, df);
+    block_write(jac, 0, 1, df);
 
     jac.makeCompressed();
     return jac;
@@ -315,6 +319,7 @@ struct MPCCE
   X x0_fix = Default<X>();
 
   // private members
+  Eigen::SparseMatrix<double> dexpinv_tmp = d_exp_sparse_pattern<X>;
   Eigen::SparseMatrix<double> jac{Nx, 1 + 2 * Nx + 1};
 
   // functor members
@@ -327,10 +332,9 @@ struct MPCCE
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
-    if (jac.isCompressed()) { set_zero(jac); }
+    dr_expinv_sparse<X>(dexpinv_tmp, rminus(x0, x0_fix));
 
-    dr_expinv_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
-
+    jac.middleCols(1, Nx) = dexpinv_tmp;
     jac.makeCompressed();
     return jac;
   }
@@ -522,7 +526,12 @@ public:
     ocp_.ce.x0_fix    = x;
 
     // transcribe to QP
-    ocp_to_qp_update<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    ocp_to_qp_update_dyn<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    if constexpr (requires(CR & crvar, T tvar) { crvar.set_time(tvar); }) {
+      // only update if running constraints are time-dependent
+      ocp_to_qp_update_cr<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
+    }
+    ocp_to_qp_update_ce<diff::Type::Analytic>(qp_, work_, ocp_, mesh_, prm_.tf, *xdes_, *udes_);
     qp_.A.makeCompressed();
     qp_.P.makeCompressed();
 

@@ -25,8 +25,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include <smooth/algo/hessian.hpp>
-#include <smooth/bundle.hpp>
+#include <smooth/derivatives.hpp>
 #include <smooth/feedback/ocp.hpp>
 #include <smooth/feedback/utils/sparse.hpp>
 #include <smooth/se2.hpp>
@@ -128,7 +127,7 @@ struct TestOcpIntegrand
   {
     const auto a = x - X<double>::Identity();
     Eigen::SparseMatrix<double> ret(1, Ninner);
-    ret.middleCols(x_B_inner, Nx)  = (a.transpose() * smooth::dr_expinv<X<double>>(a)).sparseView();
+    smooth::feedback::block_add(ret, 0, x_B_inner, smooth::dr_rminus_squarednorm<X<double>>(a));
     ret.coeffRef(0, u_B_inner)     = u.x();
     ret.coeffRef(0, u_B_inner + 1) = u.y();
     return ret;
@@ -136,7 +135,7 @@ struct TestOcpIntegrand
 
   Eigen::SparseMatrix<double> hessian(double, const X<double> & x, const U<double> &) const
   {
-    const auto H = smooth::hessian_rminus_norm(x, X<double>::Identity());
+    const auto H = smooth::d2r_rminus_squarednorm<X<double>>(x.log());
 
     Eigen::SparseMatrix<double> ret(Ninner, 1 * Ninner);
     smooth::feedback::block_add(ret, x_B_inner, x_B_inner, H);
@@ -197,8 +196,8 @@ struct TestOcpCe
   {
     Eigen::SparseMatrix<double> ret(Nouter, Nce * Nouter);
 
-    const auto d2_logx0 = smooth::hessian_rminus<X<double>>(x0, X<double>::Identity());
-    const auto d2_logxf = smooth::hessian_rminus<X<double>>(xf, X<double>::Identity());
+    const auto d2_logx0 = smooth::d2r_rminus<X<double>>(x0.log());
+    const auto d2_logxf = smooth::d2r_rminus<X<double>>(xf.log());
 
     for (auto i = 0u; i < Nx; ++i) {
       smooth::feedback::block_add(

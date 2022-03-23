@@ -73,7 +73,7 @@ int main()
     {
       .K  = 20,
       .tf = 5,
-      .qp = {.polish = false},
+      .qp = {.scaling = false, .polish = false},
     },
   };
 

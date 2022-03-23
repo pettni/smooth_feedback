@@ -39,7 +39,7 @@
 namespace smooth::feedback {
 
 /**
- * @brief Write block into a sparse matrix.
+ * @brief Add block into a sparse matrix.
  *
  * After this function the output variable dest is s.t.
  *
@@ -74,7 +74,42 @@ inline void block_add(
 }
 
 /**
- * @brief Write identity matrix block into sparse matrix.
+ * @brief Write block into a sparse matrix.
+ *
+ * After this function the output variable dest is s.t.
+ *
+ * dest[row0 + r, col0 + c] = scale * source[r, c]
+ *
+ * @param dest destination
+ * @param row0 starting row for block
+ * @param col0 starting column for block
+ * @param source block values
+ * @param scale scaling parameter
+ * @param upper_only only add into upper triangular part
+ *
+ * @note Values are accessed with coeffRef().
+ */
+template<typename Source, int Options>
+  requires(std::is_base_of_v<Eigen::EigenBase<Source>, Source>)
+inline void block_write(
+  Eigen::SparseMatrix<double, Options> & dest,
+  Eigen::Index row0,
+  Eigen::Index col0,
+  const Source & source,
+  double scale      = 1,
+  double upper_only = false)
+{
+  for (auto c = 0; c < source.outerSize(); ++c) {
+    for (Eigen::InnerIterator it(source, c); it; ++it) {
+      if (!upper_only || row0 + it.row() <= col0 + it.col()) {
+        dest.coeffRef(row0 + it.row(), col0 + it.col()) = scale * it.value();
+      }
+    }
+  }
+}
+
+/**
+ * @brief Add identity matrix block into sparse matrix.
  *
  * After this function the output variable dest is s.t.
  *
@@ -97,6 +132,32 @@ inline void block_add_identity(
   double scale = 1)
 {
   for (auto k = 0u; k < n; ++k) { dest.coeffRef(row0 + k, col0 + k) += scale; }
+}
+
+/**
+ * @brief Write identity matrix block into sparse matrix.
+ *
+ * After this function the output variable dest is s.t.
+ *
+ * dest[row0 + k, col0 + k] += scale, k = 0...n-1
+ *
+ * @param dest destination
+ * @param row0 starting row for block
+ * @param col0 starting column for block
+ * @param n size of identity matrix
+ * @param scale scaling parameter
+ *
+ * @note Values are accessed with coeffRef().
+ */
+template<int Options>
+inline void block_write_identity(
+  Eigen::SparseMatrix<double, Options> & dest,
+  Eigen::Index row0,
+  Eigen::Index col0,
+  Eigen::Index n,
+  double scale = 1)
+{
+  for (auto k = 0u; k < n; ++k) { dest.coeffRef(row0 + k, col0 + k) = scale; }
 }
 
 /**
