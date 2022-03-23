@@ -27,13 +27,13 @@
 #define SMOOTH__FEEDBACK__MPC_HPP_
 
 #include <smooth/lie_group.hpp>
+#include <smooth/lie_group_sparse.hpp>
 
 #include <memory>
 
 #include "ocp_to_qp.hpp"
 #include "qp_solver.hpp"
 #include "time.hpp"
-#include "utils/dr_exp_sparse.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
@@ -319,6 +319,7 @@ struct MPCCE
   X x0_fix = Default<X>();
 
   // private members
+  Eigen::SparseMatrix<double> dexpinv_tmp = d_exp_sparse_pattern<X>;
   Eigen::SparseMatrix<double> jac{Nx, 1 + 2 * Nx + 1};
 
   // functor members
@@ -331,8 +332,9 @@ struct MPCCE
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
   jacobian(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &)
   {
-    dr_expinv_sparse<X>(jac, rminus(x0, x0_fix), 0, 1);
+    dr_expinv_sparse<X>(dexpinv_tmp, rminus(x0, x0_fix));
 
+    jac.middleCols(1, Nx) = dexpinv_tmp;
     jac.makeCompressed();
     return jac;
   }
