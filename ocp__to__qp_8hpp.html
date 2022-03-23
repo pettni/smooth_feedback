@@ -75,7 +75,6 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">ocp_to_qp.hpp File Reference</div></div>
 </div><!--header-->
@@ -130,22 +129,8 @@ This graph shows which files directly or indirectly include this file:</div>
 </div>
 <p><a href="ocp__to__qp_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1OcpToQpWorkmemory.html">smooth::feedback::detail::OcpToQpWorkmemory</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Working memory for ocp_to_qp.  <a href="structsmooth_1_1feedback_1_1detail_1_1OcpToQpWorkmemory.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a23d6881444fc0e9c1f2922de24963368"><td class="memTemplParams" colspan="2">template&lt;diff::Type DT = diff::Type::Default&gt; </td></tr>
-<tr class="memitem:a23d6881444fc0e9c1f2922de24963368"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="ocp__to__qp_8hpp.html#a23d6881444fc0e9c1f2922de24963368">smooth::feedback::detail::ocp_to_qp_allocate</a> (QuadraticProgramSparse&lt; double &gt; &amp;qp, OcpToQpWorkmemory &amp;work, OCPType auto &amp;ocp, const MeshType auto &amp;mesh)</td></tr>
-<tr class="memdesc:a23d6881444fc0e9c1f2922de24963368"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate a qp for <a class="el" href="ocp__to__qp_8hpp.html#aa865477cc05696d28eecff71303b96d1" title="Formulate an optimal control problem as a quadratic program via linearization.">ocp_to_qp_update()</a>  <a href="ocp__to__qp_8hpp.html#a23d6881444fc0e9c1f2922de24963368">More...</a><br /></td></tr>
-<tr class="separator:a23d6881444fc0e9c1f2922de24963368"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa865477cc05696d28eecff71303b96d1"><td class="memTemplParams" colspan="2">template&lt;diff::Type DT = diff::Type::Default&gt; </td></tr>
-<tr class="memitem:aa865477cc05696d28eecff71303b96d1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="ocp__to__qp_8hpp.html#aa865477cc05696d28eecff71303b96d1">smooth::feedback::detail::ocp_to_qp_update</a> (QuadraticProgramSparse&lt; double &gt; &amp;qp, OcpToQpWorkmemory &amp;work, OCPType auto &amp;ocp, const MeshType auto &amp;mesh, double tf, auto &amp;&amp;xl_fun, auto &amp;&amp;ul_fun)</td></tr>
-<tr class="memdesc:aa865477cc05696d28eecff71303b96d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Formulate an optimal control problem as a quadratic program via linearization.  <a href="ocp__to__qp_8hpp.html#aa865477cc05696d28eecff71303b96d1">More...</a><br /></td></tr>
-<tr class="separator:aa865477cc05696d28eecff71303b96d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a35a7c13f2ca6ecdcfab3c85a3a823f"><td class="memTemplParams" colspan="2">template&lt;diff::Type DT = diff::Type::Default&gt; </td></tr>
 <tr class="memitem:a2a35a7c13f2ca6ecdcfab3c85a3a823f"><td class="memTemplItemLeft" align="right" valign="top">QuadraticProgramSparse&lt; double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="ocp__to__qp_8hpp.html#a2a35a7c13f2ca6ecdcfab3c85a3a823f">smooth::feedback::ocp_to_qp</a> (const OCPType auto &amp;ocp, const MeshType auto &amp;mesh, double tf, auto &amp;&amp;xl_fun, auto &amp;&amp;ul_fun)</td></tr>
 <tr class="memdesc:a2a35a7c13f2ca6ecdcfab3c85a3a823f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Formulate an optimal control problem as a quadratic program via linearization.  <a href="ocp__to__qp_8hpp.html#a2a35a7c13f2ca6ecdcfab3c85a3a823f">More...</a><br /></td></tr>
@@ -206,6 +191,7 @@ template&lt;diff::Type DT = diff::Type::Default&gt; </div>
 </div><div class="memdoc">
 
 <p>Formulate an optimal control problem as a quadratic program via linearization. </p>
+<p >/**</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ocp</td><td>input problem </td></tr>
@@ -217,150 +203,10 @@ template&lt;diff::Type DT = diff::Type::Default&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>sparse quadratic program for a flattened formulation of ocp.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>allocates memory for each call. To reduce memory allocation for repeated calls, see <a class="el" href="ocp__to__qp_8hpp.html#a23d6881444fc0e9c1f2922de24963368" title="Allocate a qp for ocp_to_qp_update()">ocp_to_qp_allocate()</a> and <a class="el" href="ocp__to__qp_8hpp.html#aa865477cc05696d28eecff71303b96d1" title="Formulate an optimal control problem as a quadratic program via linearization.">ocp_to_qp_update()</a>.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>allocates memory for each call. To reduce memory allocation for repeated calls, see ocp_to_qp_allocate() and ocp_to_qp_update().</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="ocp__to__qp_8hpp.html#a7e907e31a7faca2612afc5aab873b2fb" title="Convert QP solution to OCP solution.">qpsol_to_ocpsol()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ocp__to__qp_8hpp_source.html#l00348">348</a> of file <a class="el" href="ocp__to__qp_8hpp_source.html">ocp_to_qp.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a23d6881444fc0e9c1f2922de24963368" name="a23d6881444fc0e9c1f2922de24963368"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a23d6881444fc0e9c1f2922de24963368">&#9670;&nbsp;</a></span>ocp_to_qp_allocate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;diff::Type DT = diff::Type::Default&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void smooth::feedback::detail::ocp_to_qp_allocate </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html">QuadraticProgramSparse</a>&lt; double &gt; &amp;&#160;</td>
-          <td class="paramname"><em>qp</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1OcpToQpWorkmemory.html">OcpToQpWorkmemory</a> &amp;&#160;</td>
-          <td class="paramname"><em>work</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">OCPType auto &amp;&#160;</td>
-          <td class="paramname"><em>ocp</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const MeshType auto &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Allocate a qp for <a class="el" href="ocp__to__qp_8hpp.html#aa865477cc05696d28eecff71303b96d1" title="Formulate an optimal control problem as a quadratic program via linearization.">ocp_to_qp_update()</a> </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">qp</td><td>quadratic program to allocate </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">work</td><td>working memory to allocate </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">ocp</td><td>input problem </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">mesh</td><td>time discretization </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p class="definition">Definition at line <a class="el" href="ocp__to__qp_8hpp_source.html#l00064">64</a> of file <a class="el" href="ocp__to__qp_8hpp_source.html">ocp_to_qp.hpp</a>.</p>
-
-</div>
-</div>
-<a id="aa865477cc05696d28eecff71303b96d1" name="aa865477cc05696d28eecff71303b96d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa865477cc05696d28eecff71303b96d1">&#9670;&nbsp;</a></span>ocp_to_qp_update()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;diff::Type DT = diff::Type::Default&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void smooth::feedback::detail::ocp_to_qp_update </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1QuadraticProgramSparse.html">QuadraticProgramSparse</a>&lt; double &gt; &amp;&#160;</td>
-          <td class="paramname"><em>qp</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1OcpToQpWorkmemory.html">OcpToQpWorkmemory</a> &amp;&#160;</td>
-          <td class="paramname"><em>work</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">OCPType auto &amp;&#160;</td>
-          <td class="paramname"><em>ocp</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const MeshType auto &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>tf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">auto &amp;&amp;&#160;</td>
-          <td class="paramname"><em>xl_fun</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">auto &amp;&amp;&#160;</td>
-          <td class="paramname"><em>ul_fun</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Formulate an optimal control problem as a quadratic program via linearization. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">DT</td><td>differentiation method to use for derivatives of the ocp </td></tr>
-    <tr><td class="paramname">DT_xl</td><td>differentiation method to use for derivatives of xl_fun</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">qp</td><td>pre-allocated quadratic program </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">work</td><td>workin memory </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">ocp</td><td>input problem </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">mesh</td><td>time discretization </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">tf</td><td>time horizon </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">xl_fun</td><td>state linearization (must be differentiable w.r.t. time) </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">ul_fun</td><td>input linearization</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>sparse quadratic program for a flattened formulation of ocp.</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="ocp__to__qp_8hpp.html#a23d6881444fc0e9c1f2922de24963368" title="Allocate a qp for ocp_to_qp_update()">ocp_to_qp_allocate()</a> <a class="el" href="ocp__to__qp_8hpp.html#a7e907e31a7faca2612afc5aab873b2fb" title="Convert QP solution to OCP solution.">qpsol_to_ocpsol()</a> </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="ocp__to__qp_8hpp_source.html#l00158">158</a> of file <a class="el" href="ocp__to__qp_8hpp_source.html">ocp_to_qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp__to__qp_8hpp_source.html#l00447">447</a> of file <a class="el" href="ocp__to__qp_8hpp_source.html">ocp_to_qp.hpp</a>.</p>
 
 </div>
 </div>
@@ -429,7 +275,7 @@ template&lt;diff::Type DT = diff::Type::Default&gt; </div>
 </dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="ocp__to__qp_8hpp.html#a2a35a7c13f2ca6ecdcfab3c85a3a823f" title="Formulate an optimal control problem as a quadratic program via linearization.">ocp_to_qp()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ocp__to__qp_8hpp_source.html#l00378">378</a> of file <a class="el" href="ocp__to__qp_8hpp_source.html">ocp_to_qp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp__to__qp_8hpp_source.html#l00477">477</a> of file <a class="el" href="ocp__to__qp_8hpp_source.html">ocp_to_qp.hpp</a>.</p>
 
 </div>
 </div>

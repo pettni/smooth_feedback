@@ -92,8 +92,8 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abe0a6514cfbfb21982157a60ee75aa3e"><td class="memItemLeft" align="right" valign="top">Tangent&lt; X &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#abe0a6514cfbfb21982157a60ee75aa3e">operator()</a> (const double t, const X &amp;x, const U &amp;u)</td></tr>
 <tr class="separator:abe0a6514cfbfb21982157a60ee75aa3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34a3eb86b65d2ca2056a7069408889d7"><td class="memItemLeft" align="right" valign="top">std::reference_wrapper&lt; const Eigen::SparseMatrix&lt; double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a34a3eb86b65d2ca2056a7069408889d7">jacobian</a> (const double t, const X &amp;x, const U &amp;u)</td></tr>
-<tr class="separator:a34a3eb86b65d2ca2056a7069408889d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a820070f6ddad8e52ac82707a14e1ea90"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; double, Nx, 1+Nx+Nu &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#a820070f6ddad8e52ac82707a14e1ea90">jacobian</a> (const double t, const X &amp;x, const U &amp;u)</td></tr>
+<tr class="separator:a820070f6ddad8e52ac82707a14e1ea90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -101,8 +101,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a53aedd2e2f8a9972b1b117034e953d1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9879ee15d9c1d0b967a09f012bf0998"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#ab9879ee15d9c1d0b967a09f012bf0998">t0</a> {}</td></tr>
 <tr class="separator:ab9879ee15d9c1d0b967a09f012bf0998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa03a35f2610d6ab6f70ce4cd8571838a"><td class="memItemLeft" align="right" valign="top">Eigen::SparseMatrix&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html#aa03a35f2610d6ab6f70ce4cd8571838a">jac</a> {Nx, 1 + Nx + Nu}</td></tr>
-<tr class="separator:aa03a35f2610d6ab6f70ce4cd8571838a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -115,10 +113,10 @@ Static Public Attributes</h2></td></tr>
 <div class="textblock"><div class="compoundTemplParams">template&lt;Time T, LieGroup X, Manifold U, typename F, diff::Type DT&gt;<br />
 struct smooth::feedback::detail::MPCDyn&lt; T, X, U, F, DT &gt;</div><p ><a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> dynamics (derivatives obtained via autodiff). </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00149">149</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00152">152</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a34a3eb86b65d2ca2056a7069408889d7" name="a34a3eb86b65d2ca2056a7069408889d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34a3eb86b65d2ca2056a7069408889d7">&#9670;&nbsp;</a></span>jacobian()</h2>
+<a id="a820070f6ddad8e52ac82707a14e1ea90" name="a820070f6ddad8e52ac82707a14e1ea90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a820070f6ddad8e52ac82707a14e1ea90">&#9670;&nbsp;</a></span>jacobian()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -129,7 +127,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::reference_wrapper&lt; const Eigen::SparseMatrix&lt; double &gt; &gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::jacobian </td>
+          <td class="memname">Eigen::Matrix&lt; double, Nx, 1+Nx+Nu &gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::jacobian </td>
           <td>(</td>
           <td class="paramtype">const double&#160;</td>
           <td class="paramname"><em>t</em>, </td>
@@ -205,7 +203,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00159">159</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00162">162</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -224,25 +222,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00155">155</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
-
-</div>
-</div>
-<a id="aa03a35f2610d6ab6f70ce4cd8571838a" name="aa03a35f2610d6ab6f70ce4cd8571838a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa03a35f2610d6ab6f70ce4cd8571838a">&#9670;&nbsp;</a></span>jac</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">Eigen::SparseMatrix&lt;double&gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCDyn.html">smooth::feedback::detail::MPCDyn</a>&lt; T, X, U, F, DT &gt;::jac {Nx, 1 + Nx + Nu}</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00168">168</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00158">158</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -268,7 +248,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00152">152</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00155">155</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -294,7 +274,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00151">151</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00154">154</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -312,7 +292,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , diff::Type DT&gt; </div
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00156">156</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00159">159</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

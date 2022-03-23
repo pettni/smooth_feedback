@@ -101,19 +101,17 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="sparse_8hpp__dep__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2utils_2sparse_8hppdep" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2utils_2sparse_8hppdep" id="ainclude_2smooth_2feedback_2utils_2sparse_8hppdep">
-<area shape="rect" title="Sparse matrix utilities." alt="" coords="405,5,572,47"/>
-<area shape="rect" href="mesh_8hpp.html" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="223,95,389,136"/>
+<area shape="rect" title="Sparse matrix utilities." alt="" coords="256,5,423,47"/>
+<area shape="rect" href="mesh_8hpp.html" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="161,95,328,136"/>
 <area shape="rect" href="mesh__function_8hpp.html" title="Evaluate transform&#45;like functions and derivatives on collocation points." alt="" coords="5,184,207,225"/>
-<area shape="rect" href="ocp__flatten_8hpp.html" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="528,184,695,225"/>
-<area shape="rect" href="qp__solver_8hpp.html" title="Quadratic Program solver." alt="" coords="849,95,1016,136"/>
-<area shape="rect" href="d2r__exp__sparse_8hpp.html" title="Sparse second derivatives of the exponential maps." alt="" coords="465,95,635,136"/>
-<area shape="rect" href="dr__exp__sparse_8hpp.html" title="Sparse derivatives of the exponential maps." alt="" coords="659,95,825,136"/>
+<area shape="rect" href="ocp__flatten_8hpp.html" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="352,95,519,136"/>
+<area shape="rect" href="qp__solver_8hpp.html" title="Quadratic Program solver." alt="" coords="543,95,709,136"/>
 <area shape="rect" href="dyn__error_8hpp.html" title="Collocation dynamics constraints." alt="" coords="283,184,452,225"/>
 <area shape="rect" href="ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="344,273,511,315"/>
 <area shape="rect" href="ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="92,273,259,315"/>
 <area shape="rect" href="mpc_8hpp_source.html" title=" " alt="" coords="92,363,259,404"/>
-<area shape="rect" href="asif_8hpp_source.html" title=" " alt="" coords="944,184,1111,225"/>
-<area shape="rect" href="osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="753,184,920,225"/>
+<area shape="rect" href="asif_8hpp_source.html" title=" " alt="" coords="536,184,703,225"/>
+<area shape="rect" href="osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="727,184,893,225"/>
 </map>
 </div>
 </div>
@@ -124,12 +122,21 @@ Functions</h2></td></tr>
 <tr class="memitem:a450f053f34df2822afa5e9d2729ce1e1"><td class="memTemplParams" colspan="2">template&lt;typename Source , int Options&gt; <br />
 requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</td></tr>
 <tr class="memitem:a450f053f34df2822afa5e9d2729ce1e1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">smooth::feedback::block_add</a> (Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, const Source &amp;source, double scale=1, double upper_only=false)</td></tr>
-<tr class="memdesc:a450f053f34df2822afa5e9d2729ce1e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write block into a sparse matrix.  <a href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">More...</a><br /></td></tr>
+<tr class="memdesc:a450f053f34df2822afa5e9d2729ce1e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add block into a sparse matrix.  <a href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">More...</a><br /></td></tr>
 <tr class="separator:a450f053f34df2822afa5e9d2729ce1e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa494d383a6b5c90607f5a98de242ef2e"><td class="memTemplParams" colspan="2">template&lt;typename Source , int Options&gt; <br />
+requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</td></tr>
+<tr class="memitem:aa494d383a6b5c90607f5a98de242ef2e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#aa494d383a6b5c90607f5a98de242ef2e">smooth::feedback::block_write</a> (Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, const Source &amp;source, double scale=1, double upper_only=false)</td></tr>
+<tr class="memdesc:aa494d383a6b5c90607f5a98de242ef2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write block into a sparse matrix.  <a href="sparse_8hpp.html#aa494d383a6b5c90607f5a98de242ef2e">More...</a><br /></td></tr>
+<tr class="separator:aa494d383a6b5c90607f5a98de242ef2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6183ee03ddef295ddae480d8ad172418"><td class="memTemplParams" colspan="2">template&lt;int Options&gt; </td></tr>
 <tr class="memitem:a6183ee03ddef295ddae480d8ad172418"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">smooth::feedback::block_add_identity</a> (Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</td></tr>
-<tr class="memdesc:a6183ee03ddef295ddae480d8ad172418"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write identity matrix block into sparse matrix.  <a href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">More...</a><br /></td></tr>
+<tr class="memdesc:a6183ee03ddef295ddae480d8ad172418"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add identity matrix block into sparse matrix.  <a href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">More...</a><br /></td></tr>
 <tr class="separator:a6183ee03ddef295ddae480d8ad172418"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="memTemplParams" colspan="2">template&lt;int Options&gt; </td></tr>
+<tr class="memitem:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">smooth::feedback::block_write_identity</a> (Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</td></tr>
+<tr class="memdesc:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write identity matrix block into sparse matrix.  <a href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">More...</a><br /></td></tr>
+<tr class="separator:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad555247715e51283027071ad39030345"><td class="memTemplParams" colspan="2">template&lt;typename Scalar , int Options&gt; </td></tr>
 <tr class="memitem:ad555247715e51283027071ad39030345"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">smooth::feedback::set_zero</a> (Eigen::SparseMatrix&lt; Scalar, Options &gt; &amp;mat)</td></tr>
 <tr class="memdesc:ad555247715e51283027071ad39030345"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero a sparse matrix without changing allocation.  <a href="sparse_8hpp.html#ad555247715e51283027071ad39030345">More...</a><br /></td></tr>
@@ -216,7 +223,7 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
 </table>
 </div><div class="memdoc">
 
-<p>Write block into a sparse matrix. </p>
+<p>Add block into a sparse matrix. </p>
 <p >After this function the output variable dest is s.t.</p>
 <p >dest[row0 + r, col0 + c] += scale * source[r, c]</p>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -290,6 +297,160 @@ template&lt;int Options&gt; </div>
 </table>
 </div><div class="memdoc">
 
+<p>Add identity matrix block into sparse matrix. </p>
+<p >After this function the output variable dest is s.t.</p>
+<p >dest[row0 + k, col0 + k] += scale, k = 0...n-1</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dest</td><td>destination </td></tr>
+    <tr><td class="paramname">row0</td><td>starting row for block </td></tr>
+    <tr><td class="paramname">col0</td><td>starting column for block </td></tr>
+    <tr><td class="paramname">n</td><td>size of identity matrix </td></tr>
+    <tr><td class="paramname">scale</td><td>scaling parameter</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>Values are accessed with coeffRef(). </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00127">127</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+
+</div>
+</div>
+<a id="aa494d383a6b5c90607f5a98de242ef2e" name="aa494d383a6b5c90607f5a98de242ef2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa494d383a6b5c90607f5a98de242ef2e">&#9670;&nbsp;</a></span>block_write()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Source , int Options&gt; <br />
+requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void smooth::feedback::block_write </td>
+          <td>(</td>
+          <td class="paramtype">Eigen::SparseMatrix&lt; double, Options &gt; &amp;&#160;</td>
+          <td class="paramname"><em>dest</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Index&#160;</td>
+          <td class="paramname"><em>row0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Index&#160;</td>
+          <td class="paramname"><em>col0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Source &amp;&#160;</td>
+          <td class="paramname"><em>source</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>scale</em> = <code>1</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>upper_only</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Write block into a sparse matrix. </p>
+<p >After this function the output variable dest is s.t.</p>
+<p >dest[row0 + r, col0 + c] = scale * source[r, c]</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dest</td><td>destination </td></tr>
+    <tr><td class="paramname">row0</td><td>starting row for block </td></tr>
+    <tr><td class="paramname">col0</td><td>starting column for block </td></tr>
+    <tr><td class="paramname">source</td><td>block values </td></tr>
+    <tr><td class="paramname">scale</td><td>scaling parameter </td></tr>
+    <tr><td class="paramname">upper_only</td><td>only add into upper triangular part</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>Values are accessed with coeffRef(). </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00094">94</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a96d9bdee4a28396f7202e4a0ade5ba58" name="a96d9bdee4a28396f7202e4a0ade5ba58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96d9bdee4a28396f7202e4a0ade5ba58">&#9670;&nbsp;</a></span>block_write_identity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int Options&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void smooth::feedback::block_write_identity </td>
+          <td>(</td>
+          <td class="paramtype">Eigen::SparseMatrix&lt; double, Options &gt; &amp;&#160;</td>
+          <td class="paramname"><em>dest</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Index&#160;</td>
+          <td class="paramname"><em>row0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Index&#160;</td>
+          <td class="paramname"><em>col0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Index&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>scale</em> = <code>1</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
 <p>Write identity matrix block into sparse matrix. </p>
 <p >After this function the output variable dest is s.t.</p>
 <p >dest[row0 + k, col0 + k] += scale, k = 0...n-1</p>
@@ -305,7 +466,7 @@ template&lt;int Options&gt; </div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Values are accessed with coeffRef(). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00092">92</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00153">153</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -336,7 +497,7 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00126">126</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00187">187</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -422,7 +583,7 @@ requires ( std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; st
 </dl>
 <dl class="section note"><dt>Note</dt><dd>out must have appropriate size </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00182">182</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00243">243</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -458,7 +619,7 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
 <li>9 for explicit zeros </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00149">149</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00210">210</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -491,7 +652,7 @@ template&lt;typename Scalar , int Options&gt; </div>
 <p>Zero a sparse matrix without changing allocation. </p>
 <p >If mat is compressed all coefficients are set to explicit zeros. </p>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00108">108</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00169">169</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>

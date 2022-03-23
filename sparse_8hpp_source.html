@@ -131,107 +131,139 @@ $(function() {
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>  }</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>}</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="keyword">template</span>&lt;<span class="keywordtype">int</span> Options&gt;</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">   92</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">block_add_identity</a>(</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>  Eigen::SparseMatrix&lt;double, Options&gt; &amp; dest,</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>  Eigen::Index row0,</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>  Eigen::Index col0,</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>  Eigen::Index n,</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  <span class="keywordtype">double</span> scale = 1)</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>{</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k &lt; n; ++k) { dest.coeffRef(row0 + k, col0 + k) += scale; }</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>}</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Scalar, <span class="keywordtype">int</span> Options&gt;</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">  108</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Eigen::SparseMatrix&lt;Scalar, Options&gt; &amp; mat)</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>{</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>  <span class="keywordflow">if</span> (mat.isCompressed()) {</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    mat.coeffs().setZero();</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>  } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; mat.outerSize(); ++i) {</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>      <span class="keywordflow">for</span> (Eigen::InnerIterator it(mat, i); it; ++it) { mat.coeffRef(it.row(), it.col()) = 0; }</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    }</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>  }</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>}</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Mat&gt;</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>  <span class="keyword">requires</span>(std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">  126</a></span>uint64_t <a class="code hl_function" href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">count_explicit_zeros</a>(<span class="keyword">const</span> Mat &amp; mat)</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>{</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>  uint64_t ret = 0;</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> c = 0; c &lt; mat.outerSize(); ++c) {</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>    <span class="keywordflow">for</span> (Eigen::InnerIterator it(mat, c); it; ++it) {</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>      <span class="keywordflow">if</span> (it.value() == 0) { ++ret; }</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    }</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>  }</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Source, <span class="keywordtype">int</span> Options&gt;</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>  <span class="keyword">requires</span>(std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#aa494d383a6b5c90607f5a98de242ef2e">   94</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="sparse_8hpp.html#aa494d383a6b5c90607f5a98de242ef2e">block_write</a>(</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>  Eigen::SparseMatrix&lt;double, Options&gt; &amp; dest,</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>  Eigen::Index row0,</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  Eigen::Index col0,</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>  <span class="keyword">const</span> Source &amp; source,</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>  <span class="keywordtype">double</span> scale      = 1,</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>  <span class="keywordtype">double</span> upper_only = <span class="keyword">false</span>)</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>{</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> c = 0; c &lt; source.outerSize(); ++c) {</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    <span class="keywordflow">for</span> (Eigen::InnerIterator it(source, c); it; ++it) {</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>      <span class="keywordflow">if</span> (!upper_only || row0 + it.row() &lt;= col0 + it.col()) {</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        dest.coeffRef(row0 + it.row(), col0 + it.col()) = scale * it.value();</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>      }</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>    }</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>  }</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>}</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span> </div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span><span class="keyword">template</span>&lt;<span class="keywordtype">int</span> Options&gt;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">  127</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">block_add_identity</a>(</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>  Eigen::SparseMatrix&lt;double, Options&gt; &amp; dest,</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>  Eigen::Index row0,</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>  Eigen::Index col0,</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>  Eigen::Index n,</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>  <span class="keywordtype">double</span> scale = 1)</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>{</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k &lt; n; ++k) { dest.coeffRef(row0 + k, col0 + k) += scale; }</div>
 <div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>}</div>
 <div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span> </div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Mat&gt;</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>  <span class="keyword">requires</span>(std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">  149</a></span>Eigen::MatrixX&lt;typename Mat::Scalar&gt; <a class="code hl_function" href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">mark_explicit_zeros</a>(<span class="keyword">const</span> Mat &amp; mat)</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>{</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>  Eigen::MatrixX&lt;typename Mat::Scalar&gt; ret;</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>  ret.setConstant(mat.rows(), mat.cols(), 0);</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> c = 0; c &lt; mat.outerSize(); ++c) {</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <span class="keywordflow">for</span> (Eigen::InnerIterator it(mat, c); it; ++it) {</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>      <span class="keywordflow">if</span> (it.value() == 0) {</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>        ret(it.row(), it.col()) = 9;</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>      } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        ret(it.row(), it.col()) = 1;</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>      }</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>    }</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>  }</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  <span class="keywordflow">return</span> ret;</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>}</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S1, <span class="keyword">typename</span> S2, <span class="keyword">typename</span> S3, <span class="keyword">typename</span> S4&gt;</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>  <span class="keyword">requires</span>(</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>    std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S2&gt;, S2&gt; &amp;&amp;</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>      std::is_base_of_v&lt;Eigen::EigenBase&lt;S3&gt;, S3&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S4&gt;, S4&gt;)</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">  182</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">d2r_fog</a>(</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>  Eigen::SparseMatrix&lt;double&gt; &amp; out,</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>  <span class="keyword">const</span> S1 &amp; Jf,</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>  <span class="keyword">const</span> S2 &amp; Hf,</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  <span class="keyword">const</span> S3 &amp; Jg,</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>  <span class="keyword">const</span> S4 &amp; Hg,</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>  Eigen::Index r0 = 0,</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  Eigen::Index c0 = 0)</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>{</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  <span class="keyword">const</span> <span class="keyword">auto</span> No = Jf.rows();</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>  <span class="keyword">const</span> <span class="keyword">auto</span> Ny = Jf.cols();</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span> </div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>  [[maybe_unused]] <span class="keyword">const</span> <span class="keyword">auto</span> Ni = Jg.rows();</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>  <span class="keyword">const</span> <span class="keyword">auto</span> Nx                  = Jg.cols();</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>  <span class="comment">// check some dimensions</span></div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>  assert(Ny == Ni);</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>  assert(Hf.rows() == Ny);</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>  assert(Hf.cols() == No * Ny);</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>  assert(Hg.rows() == Nx);</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  assert(Hg.cols() == Ni * Nx);</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> no = 0u; no &lt; No; ++no) {</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>    <span class="comment">// TODO sparse-sparse-sparse product is expensive and allocates temporary</span></div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>    <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out, r0, c0 + no * Nx, Jg.transpose() * Hf.middleCols(no * Ny, Ny) * Jg);</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  }</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span> </div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0u; i &lt; Jf.outerSize(); ++i) {</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    <span class="keywordflow">for</span> (Eigen::InnerIterator it(Jf, i); it; ++it) {</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out, r0, c0 + it.row() * Nx, Hg.middleCols(it.col() * Nx, Nx), it.value());</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>    }</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  }</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>}</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span> </div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>}  <span class="comment">// namespace smooth::feedback</span></div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span><span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_</span></div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span><span class="keyword">template</span>&lt;<span class="keywordtype">int</span> Options&gt;</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">  153</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">block_write_identity</a>(</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>  Eigen::SparseMatrix&lt;double, Options&gt; &amp; dest,</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>  Eigen::Index row0,</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>  Eigen::Index col0,</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>  Eigen::Index n,</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>  <span class="keywordtype">double</span> scale = 1)</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>{</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> k = 0u; k &lt; n; ++k) { dest.coeffRef(row0 + k, col0 + k) = scale; }</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>}</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span> </div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Scalar, <span class="keywordtype">int</span> Options&gt;</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">  169</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">set_zero</a>(Eigen::SparseMatrix&lt;Scalar, Options&gt; &amp; mat)</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>{</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <span class="keywordflow">if</span> (mat.isCompressed()) {</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>    mat.coeffs().setZero();</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>  } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; mat.outerSize(); ++i) {</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>      <span class="keywordflow">for</span> (Eigen::InnerIterator it(mat, i); it; ++it) { mat.coeffRef(it.row(), it.col()) = 0; }</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    }</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>  }</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>}</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span> </div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Mat&gt;</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  <span class="keyword">requires</span>(std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">  187</a></span>uint64_t <a class="code hl_function" href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">count_explicit_zeros</a>(<span class="keyword">const</span> Mat &amp; mat)</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>{</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  uint64_t ret = 0;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> c = 0; c &lt; mat.outerSize(); ++c) {</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>    <span class="keywordflow">for</span> (Eigen::InnerIterator it(mat, c); it; ++it) {</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>      <span class="keywordflow">if</span> (it.value() == 0) { ++ret; }</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    }</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>  }</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>  <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>}</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Mat&gt;</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="keyword">requires</span>(std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">  210</a></span>Eigen::MatrixX&lt;typename Mat::Scalar&gt; <a class="code hl_function" href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">mark_explicit_zeros</a>(<span class="keyword">const</span> Mat &amp; mat)</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>{</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>  Eigen::MatrixX&lt;typename Mat::Scalar&gt; ret;</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  ret.setConstant(mat.rows(), mat.cols(), 0);</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> c = 0; c &lt; mat.outerSize(); ++c) {</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>    <span class="keywordflow">for</span> (Eigen::InnerIterator it(mat, c); it; ++it) {</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>      <span class="keywordflow">if</span> (it.value() == 0) {</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>        ret(it.row(), it.col()) = 9;</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>      } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>        ret(it.row(), it.col()) = 1;</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>      }</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>    }</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  }</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>}</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span> </div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S1, <span class="keyword">typename</span> S2, <span class="keyword">typename</span> S3, <span class="keyword">typename</span> S4&gt;</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>  <span class="keyword">requires</span>(</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>    std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S2&gt;, S2&gt; &amp;&amp;</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>      std::is_base_of_v&lt;Eigen::EigenBase&lt;S3&gt;, S3&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S4&gt;, S4&gt;)</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno"><a class="line" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">  243</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">d2r_fog</a>(</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>  Eigen::SparseMatrix&lt;double&gt; &amp; out,</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>  <span class="keyword">const</span> S1 &amp; Jf,</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>  <span class="keyword">const</span> S2 &amp; Hf,</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>  <span class="keyword">const</span> S3 &amp; Jg,</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>  <span class="keyword">const</span> S4 &amp; Hg,</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>  Eigen::Index r0 = 0,</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>  Eigen::Index c0 = 0)</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>{</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  <span class="keyword">const</span> <span class="keyword">auto</span> No = Jf.rows();</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  <span class="keyword">const</span> <span class="keyword">auto</span> Ny = Jf.cols();</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span> </div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  [[maybe_unused]] <span class="keyword">const</span> <span class="keyword">auto</span> Ni = Jg.rows();</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  <span class="keyword">const</span> <span class="keyword">auto</span> Nx                  = Jg.cols();</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span> </div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  <span class="comment">// check some dimensions</span></div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  assert(Ny == Ni);</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>  assert(Hf.rows() == Ny);</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>  assert(Hf.cols() == No * Ny);</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>  assert(Hg.rows() == Nx);</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>  assert(Hg.cols() == Ni * Nx);</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span> </div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> no = 0u; no &lt; No; ++no) {</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    <span class="comment">// TODO sparse-sparse-sparse product is expensive and allocates temporary</span></div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out, r0, c0 + no * Nx, Jg.transpose() * Hf.middleCols(no * Ny, Ny) * Jg);</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>  }</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span> </div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0u; i &lt; Jf.outerSize(); ++i) {</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>    <span class="keywordflow">for</span> (Eigen::InnerIterator it(Jf, i); it; ++it) {</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>      <a class="code hl_function" href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">block_add</a>(out, r0, c0 + it.row() * Nx, Hg.middleCols(it.col() * Nx, Nx), it.value());</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>    }</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>  }</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>}</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span> </div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>}  <span class="comment">// namespace smooth::feedback</span></div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span><span class="preprocessor">#endif  </span><span class="comment">// SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_</span></div>
 <div class="ttc" id="amesh__function_8hpp_html_a47d0aa908b2b5b4abd0d2e20d9af577d"><div class="ttname"><a href="mesh__function_8hpp.html#a47d0aa908b2b5b4abd0d2e20d9af577d">smooth::feedback::set_zero</a></div><div class="ttdeci">void set_zero(MeshValue&lt; Deriv &gt; &amp;mv)</div><div class="ttdoc">Reset MeshValue to zeros.</div><div class="ttdef"><b>Definition:</b> <a href="mesh__function_8hpp_source.html#l00105">mesh_function.hpp:105</a></div></div>
-<div class="ttc" id="asparse_8hpp_html_a24b13a6fcf890dabd88a0cddb34fc816"><div class="ttname"><a href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">smooth::feedback::d2r_fog</a></div><div class="ttdeci">void d2r_fog(Eigen::SparseMatrix&lt; double &gt; &amp;out, const S1 &amp;Jf, const S2 &amp;Hf, const S3 &amp;Jg, const S4 &amp;Hg, Eigen::Index r0=0, Eigen::Index c0=0)</div><div class="ttdoc">(Right) Hessian of composed function .</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00182">sparse.hpp:182</a></div></div>
-<div class="ttc" id="asparse_8hpp_html_a450f053f34df2822afa5e9d2729ce1e1"><div class="ttname"><a href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">smooth::feedback::block_add</a></div><div class="ttdeci">void block_add(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, const Source &amp;source, double scale=1, double upper_only=false)</div><div class="ttdoc">Write block into a sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00059">sparse.hpp:59</a></div></div>
-<div class="ttc" id="asparse_8hpp_html_a6183ee03ddef295ddae480d8ad172418"><div class="ttname"><a href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">smooth::feedback::block_add_identity</a></div><div class="ttdeci">void block_add_identity(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</div><div class="ttdoc">Write identity matrix block into sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00092">sparse.hpp:92</a></div></div>
-<div class="ttc" id="asparse_8hpp_html_a98aef964a93f8165ee540cd94e6df330"><div class="ttname"><a href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">smooth::feedback::mark_explicit_zeros</a></div><div class="ttdeci">Eigen::MatrixX&lt; typename Mat::Scalar &gt; mark_explicit_zeros(const Mat &amp;mat)</div><div class="ttdoc">Mark explicit zeros in sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00149">sparse.hpp:149</a></div></div>
-<div class="ttc" id="asparse_8hpp_html_af595288d0fed8e7f130244e0c8707d5d"><div class="ttname"><a href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">smooth::feedback::count_explicit_zeros</a></div><div class="ttdeci">uint64_t count_explicit_zeros(const Mat &amp;mat)</div><div class="ttdoc">Count number of explicit zeros in sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00126">sparse.hpp:126</a></div></div>
+<div class="ttc" id="asparse_8hpp_html_a24b13a6fcf890dabd88a0cddb34fc816"><div class="ttname"><a href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">smooth::feedback::d2r_fog</a></div><div class="ttdeci">void d2r_fog(Eigen::SparseMatrix&lt; double &gt; &amp;out, const S1 &amp;Jf, const S2 &amp;Hf, const S3 &amp;Jg, const S4 &amp;Hg, Eigen::Index r0=0, Eigen::Index c0=0)</div><div class="ttdoc">(Right) Hessian of composed function .</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00243">sparse.hpp:243</a></div></div>
+<div class="ttc" id="asparse_8hpp_html_a450f053f34df2822afa5e9d2729ce1e1"><div class="ttname"><a href="sparse_8hpp.html#a450f053f34df2822afa5e9d2729ce1e1">smooth::feedback::block_add</a></div><div class="ttdeci">void block_add(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, const Source &amp;source, double scale=1, double upper_only=false)</div><div class="ttdoc">Add block into a sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00059">sparse.hpp:59</a></div></div>
+<div class="ttc" id="asparse_8hpp_html_a6183ee03ddef295ddae480d8ad172418"><div class="ttname"><a href="sparse_8hpp.html#a6183ee03ddef295ddae480d8ad172418">smooth::feedback::block_add_identity</a></div><div class="ttdeci">void block_add_identity(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</div><div class="ttdoc">Add identity matrix block into sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00127">sparse.hpp:127</a></div></div>
+<div class="ttc" id="asparse_8hpp_html_a96d9bdee4a28396f7202e4a0ade5ba58"><div class="ttname"><a href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">smooth::feedback::block_write_identity</a></div><div class="ttdeci">void block_write_identity(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</div><div class="ttdoc">Write identity matrix block into sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00153">sparse.hpp:153</a></div></div>
+<div class="ttc" id="asparse_8hpp_html_a98aef964a93f8165ee540cd94e6df330"><div class="ttname"><a href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">smooth::feedback::mark_explicit_zeros</a></div><div class="ttdeci">Eigen::MatrixX&lt; typename Mat::Scalar &gt; mark_explicit_zeros(const Mat &amp;mat)</div><div class="ttdoc">Mark explicit zeros in sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00210">sparse.hpp:210</a></div></div>
+<div class="ttc" id="asparse_8hpp_html_aa494d383a6b5c90607f5a98de242ef2e"><div class="ttname"><a href="sparse_8hpp.html#aa494d383a6b5c90607f5a98de242ef2e">smooth::feedback::block_write</a></div><div class="ttdeci">void block_write(Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, const Source &amp;source, double scale=1, double upper_only=false)</div><div class="ttdoc">Write block into a sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00094">sparse.hpp:94</a></div></div>
+<div class="ttc" id="asparse_8hpp_html_af595288d0fed8e7f130244e0c8707d5d"><div class="ttname"><a href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">smooth::feedback::count_explicit_zeros</a></div><div class="ttdeci">uint64_t count_explicit_zeros(const Mat &amp;mat)</div><div class="ttdoc">Count number of explicit zeros in sparse matrix.</div><div class="ttdef"><b>Definition:</b> <a href="sparse_8hpp_source.html#l00187">sparse.hpp:187</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

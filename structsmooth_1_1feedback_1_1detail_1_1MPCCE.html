@@ -99,6 +99,8 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:aea9d182c4be072d8e0d986e2df92d3d2"><td class="memItemLeft" align="right" valign="top">X&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCCE.html#aea9d182c4be072d8e0d986e2df92d3d2">x0_fix</a> = Default&lt;X&gt;()</td></tr>
 <tr class="separator:aea9d182c4be072d8e0d986e2df92d3d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc049138a5e14f872827109dd2a9c438"><td class="memItemLeft" align="right" valign="top">Eigen::SparseMatrix&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCCE.html#afc049138a5e14f872827109dd2a9c438">dexpinv_tmp</a> = d_exp_sparse_pattern&lt;X&gt;</td></tr>
+<tr class="separator:afc049138a5e14f872827109dd2a9c438"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54c114d7a1e1e8acffe99cc0325aeb70"><td class="memItemLeft" align="right" valign="top">Eigen::SparseMatrix&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCCE.html#a54c114d7a1e1e8acffe99cc0325aeb70">jac</a> {Nx, 1 + 2 * Nx + 1}</td></tr>
 <tr class="separator:a54c114d7a1e1e8acffe99cc0325aeb70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -114,7 +116,7 @@ struct smooth::feedback::detail::MPCCE&lt; X &gt;</div><p ><a class="el" href="c
 \[ c_e(t_f, x_0, x_f, q) = x_0 \ominus x_{0, fix}. \]
 </p>
  
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00310">310</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00314">314</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="afe3afb50d453d17b2f2ef799722e21ab" name="afe3afb50d453d17b2f2ef799722e21ab"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afe3afb50d453d17b2f2ef799722e21ab">&#9670;&nbsp;</a></span>jacobian()</h2>
@@ -164,7 +166,7 @@ template&lt;LieGroup X&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00328">328</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00333">333</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -216,11 +218,29 @@ template&lt;LieGroup X&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00322">322</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00327">327</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="afc049138a5e14f872827109dd2a9c438" name="afc049138a5e14f872827109dd2a9c438"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc049138a5e14f872827109dd2a9c438">&#9670;&nbsp;</a></span>dexpinv_tmp</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;LieGroup X&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">Eigen::SparseMatrix&lt;double&gt; <a class="el" href="structsmooth_1_1feedback_1_1detail_1_1MPCCE.html">smooth::feedback::detail::MPCCE</a>&lt; X &gt;::dexpinv_tmp = d_exp_sparse_pattern&lt;X&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00322">322</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+
+</div>
+</div>
 <a id="a54c114d7a1e1e8acffe99cc0325aeb70" name="a54c114d7a1e1e8acffe99cc0325aeb70"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a54c114d7a1e1e8acffe99cc0325aeb70">&#9670;&nbsp;</a></span>jac</h2>
 
@@ -235,7 +255,7 @@ template&lt;LieGroup X&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00318">318</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00323">323</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -261,7 +281,7 @@ template&lt;LieGroup X&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00312">312</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00316">316</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -279,7 +299,7 @@ template&lt;LieGroup X&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00315">315</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00319">319</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
