@@ -216,40 +216,31 @@ public:
     const auto x               = rplus(xlval, e);
     const auto u               = rplus(ulval, v);
 
-    // zero working memory
-    set_zero(J_);
-
     dr_expinv_sparse<X>(dexpinv_e_, e);
     d2r_expinv_sparse<X>(d2expinv_e_, e);
     update_joplus(e, v, dxlval, dulval);
-
-    // left stuff
 
     // value and derivative of f
     const auto fval = f(t, x, u);
     const auto & Jf = f.jacobian(t, x, u);
 
-    // derivatives of +
+    // Want to differentiate  drexpinv * (f o plus - dxl) + ad dxl
 
-    // Add drexpinv * d (f \circ +)
+    // Start with drexpinv * d (f \circ (+))
     J_ = dexpinv_e_ * Jf * Joplus_;
-
-    // Add d ( drexpinv ) * (f \circ (+) - dxl) + d ( ad ) * dxl
+    // Add d ( drexpinv ) * (f \circ (+) - dxl)
     for (auto i = 0u; i < d2expinv_e_.outerSize(); ++i) {
       for (Eigen::InnerIterator it(d2expinv_e_, i); it; ++it) {
         J_.coeffRef(it.col() / Nx, 1 + (it.col() % Nx)) +=
           (fval(it.row()) - dxlval(it.row())) * it.value();
       }
     }
+    // Add d ( ad ) * dxl
     for (auto i = 0u; i < d_ad<X>.outerSize(); ++i) {
       for (Eigen::InnerIterator it(d_ad<X>, i); it; ++it) {
         J_.coeffRef(it.col() / Nx, 1 + (it.col() % Nx)) += dxlval(it.row()) * it.value();
       }
     }
-
-    // compress working memory
-    dexpinv_e_.makeCompressed();
-    d2expinv_e_.makeCompressed();
 
     J_.makeCompressed();
     return J_;
@@ -347,7 +338,8 @@ private:
   Eigen::SparseMatrix<double> Joplus_ = smooth::d_exp_sparse_pattern<BundleT>;
   Eigen::SparseMatrix<double> Hoplus_ = smooth::d2_exp_sparse_pattern<BundleT>;
 
-  Eigen::SparseMatrix<double> J_{Nouts, Nvars}, H_{Nvars, Nouts *Nvars};
+  Eigen::SparseMatrix<double> J_{Nouts, Nvars};
+  Eigen::SparseMatrix<double> H_{Nvars, Nouts * Nvars};
 
   /// @brief Calculate jacobian of (t, x(t)+e, u(t)+v) w.r.t. (t, e, v)
   void update_joplus(const E & e, const V & v, const E & dxl, const V & dul)
@@ -402,13 +394,10 @@ public:
   {
     const auto & [xlval, dxlval] = diff::dr(xl, wrt(t));
     const auto & [ulval, dulval] = diff::dr(ul, wrt(t));
+    const auto & Jf              = f.jacobian(t, rplus(xlval, e), rplus(ulval, v));
 
-    // derivative of f
-    const auto & Jf = f.jacobian(t, rplus(xlval, e), rplus(ulval, v));
-    // derivative of +
     update_joplus(e, v, dxlval, dulval);
-    // update result
-    set_zero(J_);
+
     J_ = Jf * Joplus_;
     J_.makeCompressed();
     return J_;
@@ -421,17 +410,14 @@ public:
   {
     const auto & [xlval, dxlval] = diff::dr(xl, wrt(t));
     const auto & [ulval, dulval] = diff::dr(ul, wrt(t));
+    const auto x                 = rplus(xlval, e);
+    const auto u                 = rplus(ulval, v);
+    const auto & Jf              = f.jacobian(t, x, u);
+    const auto & Hf              = f.hessian(t, x, u);
 
-    const auto x = rplus(xlval, e);
-    const auto u = rplus(ulval, v);
-
-    // derivatives of f
-    const auto & Jf = f.jacobian(t, x, u);
-    const auto & Hf = f.hessian(t, x, u);
-    // derivatives of +
     update_joplus(e, v, dxlval, dulval);
     update_hoplus(e, v, dxlval, dulval);
-    // update result
+
     set_zero(H_);
     d2r_fog(H_, Jf, Hf, Joplus_, Hoplus_);
     H_.makeCompressed();
@@ -513,16 +499,10 @@ public:
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
     const auto & [xlfval, dxlfval] = diff::dr(xl, wrt(tf));
+    const auto & Jf                = f.jacobian(tf, rplus(xl(0.), e0), rplus(xlfval, ef), q);
 
-    const auto x0 = rplus(xl(0.), e0);
-    const auto xf = rplus(xlfval, ef);
-
-    // derivative of f
-    const auto & Jf = f.jacobian(tf, x0, xf, q);
-    // derivative of +
     update_joplus(e0, ef, dxlfval);
-    // update result
-    set_zero(J_);
+
     J_ = Jf * Joplus_;
     J_.makeCompressed();
     return J_;
@@ -534,17 +514,14 @@ public:
       diff::detail::diffable_order2<F, std::tuple<double, X, X, Q>>)
   {
     const auto & [xlfval, dxlfval] = diff::dr(xl, wrt(tf));
+    const auto x0                  = rplus(xl(0.), e0);
+    const auto xf                  = rplus(xlfval, ef);
+    const auto & Jf                = f.jacobian(tf, x0, xf, q);  // Nouts x Nx
+    const auto & Hf                = f.hessian(tf, x0, xf, q);   // Nx x (Nouts * Nx)
 
-    const auto x0 = rplus(xl(0.), e0);
-    const auto xf = rplus(xlfval, ef);
-
-    // derivatives of f
-    const auto & Jf = f.jacobian(tf, x0, xf, q);  // Nouts x Nx
-    const auto & Hf = f.hessian(tf, x0, xf, q);   // Nx x (Nouts * Nx)
-    // derivatives of +
     update_joplus(e0, ef, dxlfval);
     update_hoplus(e0, ef, dxlfval);
-    // update result
+
     set_zero(H_);
     d2r_fog(H_, Jf, Hf, Joplus_, Hoplus_);
     H_.makeCompressed();
