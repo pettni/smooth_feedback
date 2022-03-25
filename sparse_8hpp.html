@@ -137,10 +137,11 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</td><
 <tr class="memitem:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">smooth::feedback::block_write_identity</a> (Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</td></tr>
 <tr class="memdesc:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write identity matrix block into sparse matrix.  <a href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">More...</a><br /></td></tr>
 <tr class="separator:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad555247715e51283027071ad39030345"><td class="memTemplParams" colspan="2">template&lt;typename Scalar , int Options&gt; </td></tr>
-<tr class="memitem:ad555247715e51283027071ad39030345"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#ad555247715e51283027071ad39030345">smooth::feedback::set_zero</a> (Eigen::SparseMatrix&lt; Scalar, Options &gt; &amp;mat)</td></tr>
-<tr class="memdesc:ad555247715e51283027071ad39030345"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero a sparse matrix without changing allocation.  <a href="sparse_8hpp.html#ad555247715e51283027071ad39030345">More...</a><br /></td></tr>
-<tr class="separator:ad555247715e51283027071ad39030345"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96a7773f23e86528a3a71167e0cb91d7"><td class="memTemplParams" colspan="2">template&lt;typename SparseMat &gt; <br />
+requires (std::is_base_of_v&lt; Eigen::SparseCompressedBase&lt;std::decay_t&lt;SparseMat&gt;&gt;, std::decay_t&lt;SparseMat&gt;&gt;)</td></tr>
+<tr class="memitem:a96a7773f23e86528a3a71167e0cb91d7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a96a7773f23e86528a3a71167e0cb91d7">smooth::feedback::set_zero</a> (SparseMat &amp;&amp;mat)</td></tr>
+<tr class="memdesc:a96a7773f23e86528a3a71167e0cb91d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero a sparse matrix expression without changing allocation.  <a href="sparse_8hpp.html#a96a7773f23e86528a3a71167e0cb91d7">More...</a><br /></td></tr>
+<tr class="separator:a96a7773f23e86528a3a71167e0cb91d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af595288d0fed8e7f130244e0c8707d5d"><td class="memTemplParams" colspan="2">template&lt;typename Mat &gt; <br />
 requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</td></tr>
 <tr class="memitem:af595288d0fed8e7f130244e0c8707d5d"><td class="memTemplItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">smooth::feedback::count_explicit_zeros</a> (const Mat &amp;mat)</td></tr>
@@ -497,7 +498,7 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00187">187</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00194">194</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -583,7 +584,7 @@ requires ( std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; st
 </dl>
 <dl class="section note"><dt>Note</dt><dd>out must have appropriate size </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00243">243</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00250">250</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -619,17 +620,18 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
 <li>9 for explicit zeros </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00210">210</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00217">217</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ad555247715e51283027071ad39030345" name="ad555247715e51283027071ad39030345"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad555247715e51283027071ad39030345">&#9670;&nbsp;</a></span>set_zero()</h2>
+<a id="a96a7773f23e86528a3a71167e0cb91d7" name="a96a7773f23e86528a3a71167e0cb91d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96a7773f23e86528a3a71167e0cb91d7">&#9670;&nbsp;</a></span>set_zero()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Scalar , int Options&gt; </div>
+template&lt;typename SparseMat &gt; <br />
+requires (std::is_base_of_v&lt; Eigen::SparseCompressedBase&lt;std::decay_t&lt;SparseMat&gt;&gt;, std::decay_t&lt;SparseMat&gt;&gt;)</div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -637,7 +639,7 @@ template&lt;typename Scalar , int Options&gt; </div>
         <tr>
           <td class="memname">void smooth::feedback::set_zero </td>
           <td>(</td>
-          <td class="paramtype">Eigen::SparseMatrix&lt; Scalar, Options &gt; &amp;&#160;</td>
+          <td class="paramtype">SparseMat &amp;&amp;&#160;</td>
           <td class="paramname"><em>mat</em></td><td>)</td>
           <td></td>
         </tr>
@@ -649,10 +651,12 @@ template&lt;typename Scalar , int Options&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Zero a sparse matrix without changing allocation. </p>
-<p >If mat is compressed all coefficients are set to explicit zeros. </p>
+<p>Zero a sparse matrix expression without changing allocation. </p>
+<dl class="section note"><dt>Note</dt><dd>Expression must be write-able.</dd>
+<dd>
+More efficient for compressed expressions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00169">169</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00174">174</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
