@@ -135,6 +135,10 @@ void ocp_to_qp_allocate(
   work.int_out.lambda.setConstant(1, 1);
   mesh_eval<1, DT>(work.cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);       // allocates work.cr_out
   mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);  // allocates work.int_out
+
+  work.cr_out.dF.makeCompressed();
+  work.int_out.dF.makeCompressed();
+  work.int_out.d2F.makeCompressed();
 }
 
 /// @brief ocp_to_qp_update: cost part
@@ -199,9 +203,6 @@ void ocp_to_qp_update_cost(
 
   mesh_integrate<2, DT>(work.int_out, mesh, ocp.g, 0, tf, xslin, uslin);
 
-  work.int_out.dF.makeCompressed();
-  work.int_out.d2F.makeCompressed();
-
   // clang-format off
   block_add(qp.P, 0, 0, work.int_out.d2F.block(2, 2, xvar_L + uvar_L, xvar_L + uvar_L), qo_q.x(), true);
 
@@ -249,9 +250,16 @@ void ocp_to_qp_update_dyn(
 
   const auto N      = mesh.N_colloc();
   const auto xvar_L = Nx * (N + 1);
+  const auto dcon_L = Nx * N;
   const auto xvar_B = 0u;
   const auto uvar_B = xvar_L;
   const auto dcon_B = 0u;
+
+  ////////////////////////
+  //// ZERO VARIABLES ////
+  ////////////////////////
+
+  set_zero(qp.A.middleRows(dcon_B, dcon_L));
 
   /////////////////////////////////
   //// COLLOCATION CONSTRAINTS ////
@@ -270,31 +278,27 @@ void ocp_to_qp_update_dyn(
       const auto & [xl_i, dxl_i] = diff::dr<1, DT>(xl_fun, wrt(t_i));  // x-lin
       const auto ul_i            = ul_fun(t_i);                        // u-lin
 
-      // LINEARIZE DYNAMICS
+      // linearize dynamics and insert new constraint A xi + B ui + E = [x0 ... XNi] di
+
       const auto & [f_i, df_i] = diff::dr<1, DT>(ocp.f, wrt(t_i, xl_i, ul_i));
 
-      const Eigen::Matrix<double, Nx, Nx> A =
-        tf * (-0.5 * ad<X>(f_i) - 0.5 * ad<X>(dxl_i) + df_i.template middleCols<Nx>(1));
-      const Eigen::Matrix<double, Nx, Nu> B = tf * df_i.template middleCols<Nu>(1 + Nx);
-      const Eigen::Vector<double, Nx> E     = tf * (f_i - dxl_i);
+      // clang-format off
+      block_add(qp.A, dcon_B + (M + i) * Nx, xvar_B + (M + i) * Nx, df_i.template middleCols<Nx>(1), tf);        // A
+      block_add(qp.A, dcon_B + (M + i) * Nx, uvar_B + (M + i) * Nu, df_i.template middleCols<Nu>(1 + Nx), tf);   // B
+      // clang-format on
 
-      // insert new constraint A xi + B ui + E = [x0 ... XNi] di
-
-      block_write(qp.A, dcon_B + (M + i) * Nx, xvar_B + (M + i) * Nx, A);
-      block_write(qp.A, dcon_B + (M + i) * Nx, uvar_B + (M + i) * Nu, B);
+      if constexpr (!IsCommutative<X>) {
+        block_add(qp.A, dcon_B + (M + i) * Nx, xvar_B + (M + i) * Nx, ad<X>(f_i + dxl_i), -tf / 2);
+      }
 
       for (auto j = 0u; j < Ki + 1; ++j) {
         for (auto diag = 0u; diag < Nx; ++diag) {
-          if (j == i) {
-            qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
-          } else {
-            qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) = -alpha * Dus(j, i);
-          }
+          qp.A.coeffRef(dcon_B + (M + i) * Nx + diag, (M + j) * Nx + diag) -= alpha * Dus(j, i);
         }
       }
 
-      qp.l.segment(dcon_B + (M + i) * Nx, Nx) = -E;
-      qp.u.segment(dcon_B + (M + i) * Nx, Nx) = -E;
+      qp.l.segment(dcon_B + (M + i) * Nx, Nx) = -tf * (f_i - dxl_i);
+      qp.u.segment(dcon_B + (M + i) * Nx, Nx) = qp.l.segment(dcon_B + (M + i) * Nx, Nx);
     }
   }
 }
@@ -340,7 +344,6 @@ void ocp_to_qp_update_cr(
   /////////////////////////////
 
   mesh_eval<1, DT>(work.cr_out, mesh, ocp.cr, 0, tf, xslin, uslin);
-  work.cr_out.dF.makeCompressed();
 
   block_write(qp.A, crcon_B, 0, work.cr_out.dF.middleCols(2, xvar_L + uvar_L));
   qp.l.segment(crcon_B, crcon_L) = ocp.crl.replicate(N, 1) - work.cr_out.F;

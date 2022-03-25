@@ -161,18 +161,25 @@ inline void block_write_identity(
 }
 
 /**
- * @brief Zero a sparse matrix without changing allocation.
+ * @brief Zero a sparse matrix expression without changing allocation.
  *
- * If mat is compressed all coefficients are set to explicit zeros.
+ * @note Expression must be write-able.
+ *
+ * @note More efficient for compressed expressions.
  */
-template<typename Scalar, int Options>
-inline void set_zero(Eigen::SparseMatrix<Scalar, Options> & mat)
+template<typename SparseMat>
+  requires(std::is_base_of_v<
+           Eigen::SparseCompressedBase<std::decay_t<SparseMat>>,
+           std::decay_t<SparseMat>>)
+inline void set_zero(SparseMat && mat)
 {
   if (mat.isCompressed()) {
     mat.coeffs().setZero();
   } else {
     for (auto i = 0; i < mat.outerSize(); ++i) {
-      for (Eigen::InnerIterator it(mat, i); it; ++it) { mat.coeffRef(it.row(), it.col()) = 0; }
+      for (typename std::decay_t<decltype(mat)>::InnerIterator it(mat, i); it; ++it) {
+        it.valueRef() = 0;
+      }
     }
   }
 }
