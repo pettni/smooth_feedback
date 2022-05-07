@@ -380,7 +380,7 @@ $(function() {
 <div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> &amp; ival : intervals_) { ival.K = std::max(ival.K - 1, Kmin); }</div>
 <div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>  }</div>
 <div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span> </div>
-<div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span>  <span class="keyword">template</span>&lt;smooth::traits::RnType RetT&gt;</div>
+<div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span>  <span class="keyword">template</span>&lt;smooth::RnType RetT&gt;</div>
 <div class="line"><a id="l00460" name="l00460"></a><span class="lineno"><a class="line" href="classsmooth_1_1feedback_1_1Mesh.html#a79b22ae2ebfa1af60e621ebf64232e8b">  460</a></span>  RetT <a class="code hl_function" href="classsmooth_1_1feedback_1_1Mesh.html#a79b22ae2ebfa1af60e621ebf64232e8b">eval</a>(<span class="keywordtype">double</span> t, std::ranges::range <span class="keyword">auto</span> &amp;&amp; r, std::size_t p = 0, <span class="keywordtype">bool</span> extend = <span class="keyword">true</span>)<span class="keyword"> const</span></div>
 <div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span><span class="keyword">  </span>{</div>
 <div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>    <span class="keyword">const</span> std::size_t ival = interval_find(t);</div>
