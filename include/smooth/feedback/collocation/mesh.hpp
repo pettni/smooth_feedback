@@ -33,7 +33,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/LU>
-#include <smooth/internal/utils.hpp>
+#include <smooth/detail/utils.hpp>
 #include <smooth/polynomial/quadrature.hpp>
 
 #include <ranges>
@@ -456,7 +456,7 @@ public:
    * @param p derivative to evaluate
    * @param extend set to true if a value is provided for t=+1
    */
-  template<smooth::traits::RnType RetT>
+  template<smooth::RnType RetT>
   RetT eval(double t, std::ranges::range auto && r, std::size_t p = 0, bool extend = true) const
   {
     const std::size_t ival = interval_find(t);
