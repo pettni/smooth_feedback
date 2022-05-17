@@ -178,10 +178,12 @@ public:
 
       const double tau0 = intervals_[i].tau0;
       const double tauf = i + 1 < intervals_.size() ? intervals_[i + 1].tau0 : 1.;
-      const double taum = (tauf - tau0) / n;
+      const double taum = (tauf - tau0) / static_cast<double>(n);
 
       while (n-- > 1) {
-        intervals_.insert(intervals_.begin() + i + 1, Interval{.K = Kmin, .tau0 = tau0 + n * taum});
+        intervals_.insert(
+          std::next(intervals_.begin(), static_cast<intptr_t>(i + 1)),
+          Interval{.K = Kmin, .tau0 = tau0 + static_cast<double>(n) * taum});
       }
     } else if (D < intervals_[i].K) {
       return;
@@ -265,8 +267,9 @@ public:
   {
     const auto n_ivals = N_ivals();
     auto all_views     = iota(0u, n_ivals) | transform([this, n_ivals = n_ivals](auto i) {
-                       const auto n_ival    = N_colloc_ival(i);
-                       const int64_t n_take = i + 1 < n_ivals ? n_ival : n_ival + 1;
+                       const auto n_ival = N_colloc_ival(i);
+                       const auto n_take =
+                         static_cast<int64_t>(i + 1 < n_ivals ? n_ival : n_ival + 1);
                        return interval_nodes(i) | take(n_take);
                      });
 

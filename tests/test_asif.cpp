@@ -66,7 +66,7 @@ TEST(Asif, Basic)
     .K = K,
   };
 
-  int niq = pbm.ulim.A.rows();
+  auto niq = pbm.ulim.A.rows();
 
   auto qp = smooth::feedback::asif_to_qp<G<double>, U1<double>>(pbm, prm, f, h, bu);
 

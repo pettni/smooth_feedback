@@ -95,8 +95,8 @@ void ocp_to_qp_allocate(
   const auto crcon_B = dcon_L;
   const auto cecon_B = crcon_B + crcon_L;
 
-  const auto Nvar = xvar_L + uvar_L;
-  const auto Ncon = dcon_L + crcon_L + cecon_L;
+  const auto Nvar = static_cast<Eigen::Index>(xvar_L + uvar_L);
+  const auto Ncon = static_cast<Eigen::Index>(dcon_L + crcon_L + cecon_L);
 
   // resize qp
   qp.P.resize(Nvar, Nvar);
@@ -107,7 +107,7 @@ void ocp_to_qp_allocate(
 
   // sparsity pattern of A (row-major)
   Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
-  for (auto ival = 0u, I0 = 0u; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
+  for (auto ival = 0ul, I0 = 0ul; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
     A_pattern.segment(dcon_B + I0 * Nx, Ki * Nx) +=
       Eigen::VectorXi::Constant(Ki * Nx, Nx + Ki + Nu);
@@ -265,7 +265,7 @@ void ocp_to_qp_update_dyn(
   //// COLLOCATION CONSTRAINTS ////
   /////////////////////////////////
 
-  for (auto ival = 0u, M = 0u; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
+  for (auto ival = 0ul, M = 0ul; ival < mesh.N_ivals(); M += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
 
     const auto [alpha, Dus] = mesh.interval_diffmat_unscaled(ival);

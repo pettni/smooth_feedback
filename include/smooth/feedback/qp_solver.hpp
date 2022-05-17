@@ -56,23 +56,23 @@ struct QPSolverParams
   bool verbose = false;
 
   /// relaxation parameter
-  float alpha = 1.6;
+  float alpha = 1.6f;
   /// first dual step size
-  float rho = 0.1;
+  float rho = 0.1f;
   /// second dual step length
-  float sigma = 1e-6;
+  float sigma = 1e-6f;
 
   /// scale problem
   bool scaling = true;
 
   /// absolute threshold for convergence
-  float eps_abs = 1e-3;
+  float eps_abs = 1e-3f;
   /// relative threshold for convergence
-  float eps_rel = 1e-3;
+  float eps_rel = 1e-3f;
   /// threshold for primal infeasibility
-  float eps_primal_inf = 1e-4;
+  float eps_primal_inf = 1e-4f;
   /// threshold for dual infeasibility
-  float eps_dual_inf = 1e-4;
+  float eps_dual_inf = 1e-4f;
 
   /// max number of iterations (default no limit)
   std::optional<uint32_t> max_iter = {};
@@ -88,7 +88,7 @@ struct QPSolverParams
   /// number of iterations to refine polish
   uint32_t polish_iter = 5;
   /// regularization parameter for polishing
-  float delta = 1e-6;
+  float delta = 1e-6f;
 };
 
 namespace detail {
@@ -135,13 +135,13 @@ bool polish_qp(
   // FIND ACTIVE CONSTRAINT SETS
 
   Eigen::Index nl = 0, nu = 0;
-  for (Eigen::Index idx = 0; idx < m; ++idx) {
+  for (auto idx = 0; idx < m; ++idx) {
     if (sol.dual[idx] < -100 * eps && pbm.l[idx] != -inf) { nl++; }
     if (sol.dual[idx] > 100 * eps && pbm.u[idx] != inf) { nu++; }
   }
 
   Eigen::VectorXi LU_idx(nl + nu);
-  for (Eigen::Index idx = 0, lcntr = 0, ucntr = 0; idx < m; ++idx) {
+  for (auto idx = 0, lcntr = 0, ucntr = 0; idx < m; ++idx) {
     if (sol.dual[idx] < -100 * eps && pbm.l[idx] != -inf) { LU_idx(lcntr++) = idx; }
     if (sol.dual[idx] > 100 * eps && pbm.u[idx] != inf) { LU_idx(nl + ucntr++) = idx; }
   }

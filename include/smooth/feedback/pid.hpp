@@ -163,7 +163,7 @@ public:
    * @param c desired trajectory as a smooth::Spline
    * @param t0 curve initial time s.t. the desired position at time t is equal to c(t - t0)
    */
-  template<std::size_t K>
+  template<int K>
   inline void set_xdes(T t0, const smooth::Spline<K, G> & c)
   {
     set_xdes(t0, smooth::Spline<K, G>(c));
@@ -172,7 +172,7 @@ public:
   /**
    * @brief Set desired trajectory as a smooth::Spline (rvalue version)
    */
-  template<std::size_t K>
+  template<int K>
   inline void set_xdes(T t0, smooth::Spline<K, G> && c)
   {
     set_xdes([t0 = std::move(t0), c = std::move(c)](T t) -> TrajectoryReturnT {
