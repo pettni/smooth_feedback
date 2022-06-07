@@ -17,16 +17,11 @@ find_package(smooth REQUIRED)
 # ---------------------------------------------------------------------------------------
 
 add_library(feedback INTERFACE)
-target_include_directories(feedback
-INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
+target_include_directories(
+  feedback INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(feedback
-INTERFACE
-  Boost::headers
-  smooth::smooth
-)
+target_link_libraries(feedback INTERFACE Boost::headers smooth::smooth)
 
 # ---------------------------------------------------------------------------------------
 # INSTALLATION
@@ -35,17 +30,16 @@ INTERFACE
 include(GNUInstallDirs)
 
 # Header files
-install(
-  DIRECTORY    ${PROJECT_SOURCE_DIR}/include/smooth
-  DESTINATION  ${CMAKE_INSTALL_INCLUDEDIR}
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/smooth
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # Targets
 install(
-  TARGETS               feedback
-  EXPORT                ${PROJECT_NAME}_targets
-  LIBRARY DESTINATION   ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION   ${CMAKE_INSTALL_LIBDIR}
+  TARGETS feedback
+  EXPORT ${PROJECT_NAME}_targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 # ---------------------------------------------------------------------------------------
@@ -56,10 +50,10 @@ set(export_dest_dir ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 
 # Generate TARGETS files
 install(
-  EXPORT       ${PROJECT_NAME}_targets
-  FILE         ${PROJECT_NAME}Targets.cmake
-  NAMESPACE    smooth::
-  DESTINATION  ${export_dest_dir}
+  EXPORT ${PROJECT_NAME}_targets
+  FILE ${PROJECT_NAME}Targets.cmake
+  NAMESPACE smooth::
+  DESTINATION ${export_dest_dir}
 )
 
 # Generate CONFIG file
@@ -68,6 +62,7 @@ configure_package_config_file(
   cmake/ConfigTemplate.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
   INSTALL_DESTINATION ${export_dest_dir}
+  NO_SET_AND_CHECK_MACRO
 )
 
 # Generate VERSION file
@@ -78,10 +73,9 @@ write_basic_package_version_file(
 )
 
 # Install CONFIG and VERSION files
-install(
-  FILES        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-               ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Version.cmake
-  DESTINATION  ${export_dest_dir}
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Version.cmake
+        DESTINATION ${export_dest_dir}
 )
 
 # ---------------------------------------------------------------------------------------
