@@ -199,7 +199,7 @@ public:
 
     // can not double-differentiate, so we hide derivative of xl w.r.t. t
     const double tdbl           = static_cast<double>(t);
-    const auto [unused, dxlval] = diff::dr(xl, wrt(tdbl));
+    const auto [unused, dxlval] = diff::dr<1>(xl, wrt(tdbl));
 
     return dr_expinv<XT>(e) * (f(t, rplus(xl(t), e), rplus(ul(t), v)) - dxlval.template cast<T>())
          + ad<XT>(e) * dxlval.template cast<T>();
@@ -211,8 +211,8 @@ public:
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const double tdbl          = static_cast<double>(t);
-    const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
-    const auto [ulval, dulval] = diff::dr(ul, wrt(tdbl));
+    const auto [xlval, dxlval] = diff::dr<1>(xl, wrt(tdbl));
+    const auto [ulval, dulval] = diff::dr<1>(ul, wrt(tdbl));
     const auto x               = rplus(xlval, e);
     const auto u               = rplus(ulval, v);
 
@@ -254,8 +254,8 @@ public:
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
     const double tdbl          = static_cast<double>(t);
-    const auto [xlval, dxlval] = diff::dr(xl, wrt(tdbl));
-    const auto [ulval, dulval] = diff::dr(ul, wrt(tdbl));
+    const auto [xlval, dxlval] = diff::dr<1>(xl, wrt(tdbl));
+    const auto [ulval, dulval] = diff::dr<1>(ul, wrt(tdbl));
 
     const auto x    = rplus(xlval, e);
     const auto u    = rplus(ul(t), v);
@@ -392,8 +392,8 @@ public:
   jacobian(double t, const E & e, const V & v) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
-    const auto & [xlval, dxlval] = diff::dr(xl, wrt(t));
-    const auto & [ulval, dulval] = diff::dr(ul, wrt(t));
+    const auto & [xlval, dxlval] = diff::dr<1>(xl, wrt(t));
+    const auto & [ulval, dulval] = diff::dr<1>(ul, wrt(t));
     const auto & Jf              = f.jacobian(t, rplus(xlval, e), rplus(ulval, v));
 
     update_joplus(e, v, dxlval, dulval);
@@ -408,8 +408,8 @@ public:
     diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
-    const auto & [xlval, dxlval] = diff::dr(xl, wrt(t));
-    const auto & [ulval, dulval] = diff::dr(ul, wrt(t));
+    const auto & [xlval, dxlval] = diff::dr<1>(xl, wrt(t));
+    const auto & [ulval, dulval] = diff::dr<1>(ul, wrt(t));
     const auto x                 = rplus(xlval, e);
     const auto u                 = rplus(ulval, v);
     const auto & Jf              = f.jacobian(t, x, u);
@@ -498,7 +498,7 @@ public:
   jacobian(double tf, const E & e0, const E & ef, const Q & q) requires(
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>>)
   {
-    const auto & [xlfval, dxlfval] = diff::dr(xl, wrt(tf));
+    const auto & [xlfval, dxlfval] = diff::dr<1>(xl, wrt(tf));
     const auto & Jf                = f.jacobian(tf, rplus(xl(0.), e0), rplus(xlfval, ef), q);
 
     update_joplus(e0, ef, dxlfval);
@@ -513,7 +513,7 @@ public:
     diff::detail::diffable_order1<F, std::tuple<double, X, X, Q>> &&
       diff::detail::diffable_order2<F, std::tuple<double, X, X, Q>>)
   {
-    const auto & [xlfval, dxlfval] = diff::dr(xl, wrt(tf));
+    const auto & [xlfval, dxlfval] = diff::dr<1>(xl, wrt(tf));
     const auto x0                  = rplus(xl(0.), e0);
     const auto xf                  = rplus(xlfval, ef);
     const auto & Jf                = f.jacobian(tf, x0, xf, q);  // Nouts x Nx

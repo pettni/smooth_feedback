@@ -9,23 +9,11 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
         build_type: [Debug, Release]
-        compiler: [
-         {
-          "cc": "/usr/bin/gcc-10",
-          "cxx": "/usr/bin/g++-10"
-         }
-         # {
-         #  "cc": "/usr/bin/clang-11",
-         #  "cxx": "/usr/bin/clang++-11"
-         # }
-        ]
 
     steps:
     - uses: actions/checkout@v2
@@ -62,8 +50,6 @@ jobs:
       run: |
         cmake -B ${{ github.workspace }}/build          \
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}     \
-        -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }}    \
-        -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
         -DBUILD_BENCHMARKS=OFF                          \
         -DBUILD_TESTS=ON                                \
         -DBUILD_EXAMPLES=ON
@@ -79,7 +65,7 @@ jobs:
   codecov:
     needs: [build]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v2
@@ -117,8 +103,6 @@ jobs:
       run: |
         cmake -B ${{ github.workspace }}/build            \
         -DCMAKE_BUILD_TYPE=Debug                          \
-        -DCMAKE_C_COMPILER=/usr/bin/gcc-10                \
-        -DCMAKE_CXX_COMPILER=/usr/bin/g++-10              \
         -DCMAKE_CXX_FLAGS="-O0 -g --coverage -fno-inline" \
         -DCMAKE_EXE_LINKER_FLAGS="--coverage"             \
         -DBUILD_TESTS=ON                                  \
