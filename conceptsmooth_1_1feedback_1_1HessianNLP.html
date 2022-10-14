@@ -84,20 +84,19 @@ $(function() {
 <p><code>#include &lt;<a class="el" href="nlp_8hpp_source.html">nlp.hpp</a>&gt;</code></p>
 <h2 class="groupheader">Concept definition</h2>
 <div class="fragment"><div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><span class="keyword">concept </span><a class="code hl_concept" href="conceptsmooth_1_1feedback_1_1HessianNLP.html">smooth::feedback::HessianNLP</a> = </div>
-<div class="line">  <a class="code hl_concept" href="conceptsmooth_1_1feedback_1_1NLP.html">NLP&lt;T&gt;</a> &amp;&amp; <span class="keyword">requires</span>(std::decay_t&lt;T&gt; &amp; nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)</div>
+<div class="line"><span class="keyword">concept </span><a class="code hl_concept" href="conceptsmooth_1_1feedback_1_1HessianNLP.html">smooth::feedback::HessianNLP</a> =  <a class="code hl_concept" href="conceptsmooth_1_1feedback_1_1NLP.html">NLP&lt;T&gt;</a> &amp;&amp; <span class="keyword">requires</span>(std::decay_t&lt;T&gt; &amp; nlp, Eigen::VectorXd x, Eigen::VectorXd lambda)</div>
 <div class="line">{</div>
 <div class="line">  </div>
 <div class="line">  {nlp.d2f_dx2(x)}         -&gt; std::convertible_to&lt;Eigen::SparseMatrix&lt;double&gt;&gt;;</div>
 <div class="line">  {nlp.d2g_dx2(x, lambda)} -&gt; std::convertible_to&lt;Eigen::SparseMatrix&lt;double&gt;&gt;;</div>
 <div class="line">  </div>
 <div class="line">}</div>
-<div class="ttc" id="aconceptsmooth_1_1feedback_1_1HessianNLP_html"><div class="ttname"><a href="conceptsmooth_1_1feedback_1_1HessianNLP.html">smooth::feedback::HessianNLP</a></div><div class="ttdoc">Nonlinear Programming Problem with Hessian information.</div><div class="ttdef"><b>Definition:</b> <a href="nlp_8hpp_source.html#l00084">nlp.hpp:84</a></div></div>
-<div class="ttc" id="aconceptsmooth_1_1feedback_1_1NLP_html"><div class="ttname"><a href="conceptsmooth_1_1feedback_1_1NLP.html">smooth::feedback::NLP</a></div><div class="ttdoc">Nonlinear Programming Problem.</div><div class="ttdef"><b>Definition:</b> <a href="nlp_8hpp_source.html#l00055">nlp.hpp:55</a></div></div>
+<div class="ttc" id="aconceptsmooth_1_1feedback_1_1HessianNLP_html"><div class="ttname"><a href="conceptsmooth_1_1feedback_1_1HessianNLP.html">smooth::feedback::HessianNLP</a></div><div class="ttdoc">Nonlinear Programming Problem with Hessian information.</div><div class="ttdef"><b>Definition:</b> <a href="nlp_8hpp_source.html#l00058">nlp.hpp:58</a></div></div>
+<div class="ttc" id="aconceptsmooth_1_1feedback_1_1NLP_html"><div class="ttname"><a href="conceptsmooth_1_1feedback_1_1NLP.html">smooth::feedback::NLP</a></div><div class="ttdoc">Nonlinear Programming Problem.</div><div class="ttdef"><b>Definition:</b> <a href="nlp_8hpp_source.html#l00031">nlp.hpp:31</a></div></div>
 </div><!-- fragment --><a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Nonlinear Programming Problem with Hessian information. </p>
 
-<p class="definition">Definition at line <a class="el" href="nlp_8hpp_source.html#l00084">84</a> of file <a class="el" href="nlp_8hpp_source.html">nlp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="nlp_8hpp_source.html#l00058">58</a> of file <a class="el" href="nlp_8hpp_source.html">nlp.hpp</a>.</p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

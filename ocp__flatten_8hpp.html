@@ -87,27 +87,27 @@ $(function() {
 <code>#include &lt;smooth/bundle.hpp&gt;</code><br />
 <code>#include &lt;smooth/diff.hpp&gt;</code><br />
 <code>#include &quot;<a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>&quot;</code><br />
-<code>#include &quot;smooth/lie_group_sparse.hpp&quot;</code><br />
+<code>#include &quot;smooth/lie_sparse.hpp&quot;</code><br />
 <code>#include &quot;<a class="el" href="sparse_8hpp_source.html">utils/sparse.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for ocp_flatten.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="ocp__flatten_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2ocp__flatten_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2ocp__flatten_8hpp" id="ainclude_2smooth_2feedback_2ocp__flatten_8hpp">
-<area shape="rect" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="486,5,653,47"/>
-<area shape="rect" title=" " alt="" coords="5,169,91,196"/>
-<area shape="rect" title=" " alt="" coords="615,169,713,196"/>
-<area shape="rect" title=" " alt="" coords="745,95,876,121"/>
-<area shape="rect" title=" " alt="" coords="115,169,226,196"/>
-<area shape="rect" href="ocp_8hpp.html" title="Optimal control problem definition." alt="" coords="356,95,423,121"/>
-<area shape="rect" title=" " alt="" coords="901,95,1091,121"/>
-<area shape="rect" href="sparse_8hpp.html" title="Sparse matrix utilities." alt="" coords="607,95,721,121"/>
-<area shape="rect" title=" " alt="" coords="250,169,395,196"/>
-<area shape="rect" title=" " alt="" coords="420,169,492,196"/>
-<area shape="rect" href="traits_8hpp_source.html" title=" " alt="" coords="516,169,591,196"/>
-<area shape="rect" title=" " alt="" coords="512,244,595,271"/>
-<area shape="rect" title=" " alt="" coords="738,169,806,196"/>
-<area shape="rect" title=" " alt="" coords="831,169,897,196"/>
+<area shape="rect" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="479,5,646,47"/>
+<area shape="rect" title=" " alt="" coords="5,177,91,203"/>
+<area shape="rect" title=" " alt="" coords="608,177,707,203"/>
+<area shape="rect" title=" " alt="" coords="739,95,869,121"/>
+<area shape="rect" title=" " alt="" coords="115,177,226,203"/>
+<area shape="rect" href="ocp_8hpp.html" title="Optimal control problem definition." alt="" coords="317,95,384,121"/>
+<area shape="rect" title=" " alt="" coords="893,95,1045,121"/>
+<area shape="rect" href="sparse_8hpp.html" title="Sparse matrix utilities." alt="" coords="601,95,714,121"/>
+<area shape="rect" title=" " alt="" coords="251,177,323,203"/>
+<area shape="rect" title=" " alt="" coords="347,169,485,211"/>
+<area shape="rect" href="traits_8hpp_source.html" title=" " alt="" coords="509,177,584,203"/>
+<area shape="rect" title=" " alt="" coords="505,259,588,285"/>
+<area shape="rect" title=" " alt="" coords="731,177,799,203"/>
+<area shape="rect" title=" " alt="" coords="824,177,891,203"/>
 </map>
 </div>
 </div>
@@ -176,7 +176,7 @@ Functions</h2></td></tr>
 <p>@warn The Hessian of the flattened dynamics is not implemented in an efficient manner.</p>
 <dl class="section return"><dt>Returns</dt><dd>FlatOCPType in variables (xe, ue) obtained via variables change x = xl ⊕ xe, u = ul ⊕ ue, </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ocp__flatten_8hpp_source.html#l00549">549</a> of file <a class="el" href="ocp__flatten_8hpp_source.html">ocp_flatten.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp__flatten_8hpp_source.html#l00513">513</a> of file <a class="el" href="ocp__flatten_8hpp_source.html">ocp_flatten.hpp</a>.</p>
 
 </div>
 </div>
@@ -217,7 +217,7 @@ template&lt;LieGroup X, Manifold U&gt; </div>
 <p>Unflatten a FlatOCPSolution. </p>
 <p >If flat_sol is a solution to flat_ocp = flatten_ocp(ocp, xl_fun, ul_fun), then unflatten_ocpsol(flat_sol, xl_fun, ul_fun) is a solution to ocp. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp__flatten_8hpp_source.html#l00586">586</a> of file <a class="el" href="ocp__flatten_8hpp_source.html">ocp_flatten.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp__flatten_8hpp_source.html#l00550">550</a> of file <a class="el" href="ocp__flatten_8hpp_source.html">ocp_flatten.hpp</a>.</p>
 
 </div>
 </div>

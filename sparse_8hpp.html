@@ -82,18 +82,18 @@ $(function() {
 
 <p>Sparse matrix utilities.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;Eigen/Sparse&gt;</code><br />
-<code>#include &lt;numeric&gt;</code><br />
+<div class="textblock"><code>#include &lt;numeric&gt;</code><br />
 <code>#include &lt;optional&gt;</code><br />
+<code>#include &lt;Eigen/Sparse&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for sparse.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="sparse_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2utils_2sparse_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2utils_2sparse_8hpp" id="ainclude_2smooth_2feedback_2utils_2sparse_8hpp">
-<area shape="rect" title="Sparse matrix utilities." alt="" coords="79,5,246,47"/>
-<area shape="rect" title=" " alt="" coords="5,95,104,121"/>
-<area shape="rect" title=" " alt="" coords="129,95,197,121"/>
-<area shape="rect" title=" " alt="" coords="221,95,288,121"/>
+<area shape="rect" title="Sparse matrix utilities." alt="" coords="48,5,215,47"/>
+<area shape="rect" title=" " alt="" coords="5,95,73,121"/>
+<area shape="rect" title=" " alt="" coords="98,95,165,121"/>
+<area shape="rect" title=" " alt="" coords="189,95,287,121"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -137,11 +137,11 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</td><
 <tr class="memitem:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">smooth::feedback::block_write_identity</a> (Eigen::SparseMatrix&lt; double, Options &gt; &amp;dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale=1)</td></tr>
 <tr class="memdesc:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write identity matrix block into sparse matrix.  <a href="sparse_8hpp.html#a96d9bdee4a28396f7202e4a0ade5ba58">More...</a><br /></td></tr>
 <tr class="separator:a96d9bdee4a28396f7202e4a0ade5ba58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96a7773f23e86528a3a71167e0cb91d7"><td class="memTemplParams" colspan="2">template&lt;typename SparseMat &gt; <br />
-requires (std::is_base_of_v&lt; Eigen::SparseCompressedBase&lt;std::decay_t&lt;SparseMat&gt;&gt;, std::decay_t&lt;SparseMat&gt;&gt;)</td></tr>
-<tr class="memitem:a96a7773f23e86528a3a71167e0cb91d7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a96a7773f23e86528a3a71167e0cb91d7">smooth::feedback::set_zero</a> (SparseMat &amp;&amp;mat)</td></tr>
-<tr class="memdesc:a96a7773f23e86528a3a71167e0cb91d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero a sparse matrix expression without changing allocation.  <a href="sparse_8hpp.html#a96a7773f23e86528a3a71167e0cb91d7">More...</a><br /></td></tr>
-<tr class="separator:a96a7773f23e86528a3a71167e0cb91d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4074e8e3c8ea8bc95ac9dfebb43564f6"><td class="memTemplParams" colspan="2">template&lt;typename SparseMat &gt; <br />
+requires (std::is_base_of_v&lt;Eigen::SparseCompressedBase&lt;std::decay_t&lt;SparseMat&gt;&gt;, std::decay_t&lt;SparseMat&gt;&gt;)</td></tr>
+<tr class="memitem:a4074e8e3c8ea8bc95ac9dfebb43564f6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a4074e8e3c8ea8bc95ac9dfebb43564f6">smooth::feedback::set_zero</a> (SparseMat &amp;&amp;mat)</td></tr>
+<tr class="memdesc:a4074e8e3c8ea8bc95ac9dfebb43564f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero a sparse matrix expression without changing allocation.  <a href="sparse_8hpp.html#a4074e8e3c8ea8bc95ac9dfebb43564f6">More...</a><br /></td></tr>
+<tr class="separator:a4074e8e3c8ea8bc95ac9dfebb43564f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af595288d0fed8e7f130244e0c8707d5d"><td class="memTemplParams" colspan="2">template&lt;typename Mat &gt; <br />
 requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</td></tr>
 <tr class="memitem:af595288d0fed8e7f130244e0c8707d5d"><td class="memTemplItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#af595288d0fed8e7f130244e0c8707d5d">smooth::feedback::count_explicit_zeros</a> (const Mat &amp;mat)</td></tr>
@@ -152,11 +152,11 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</td></tr>
 <tr class="memitem:a98aef964a93f8165ee540cd94e6df330"><td class="memTemplItemLeft" align="right" valign="top">Eigen::MatrixX&lt; typename Mat::Scalar &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">smooth::feedback::mark_explicit_zeros</a> (const Mat &amp;mat)</td></tr>
 <tr class="memdesc:a98aef964a93f8165ee540cd94e6df330"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark explicit zeros in sparse matrix.  <a href="sparse_8hpp.html#a98aef964a93f8165ee540cd94e6df330">More...</a><br /></td></tr>
 <tr class="separator:a98aef964a93f8165ee540cd94e6df330"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24b13a6fcf890dabd88a0cddb34fc816"><td class="memTemplParams" colspan="2">template&lt;typename S1 , typename S2 , typename S3 , typename S4 &gt; <br />
-requires ( std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S2&gt;, S2&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S3&gt;, S3&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S4&gt;, S4&gt;)</td></tr>
-<tr class="memitem:a24b13a6fcf890dabd88a0cddb34fc816"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">smooth::feedback::d2r_fog</a> (Eigen::SparseMatrix&lt; double &gt; &amp;out, const S1 &amp;Jf, const S2 &amp;Hf, const S3 &amp;Jg, const S4 &amp;Hg, Eigen::Index r0=0, Eigen::Index c0=0)</td></tr>
-<tr class="memdesc:a24b13a6fcf890dabd88a0cddb34fc816"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Right) Hessian of composed function \( (f \circ g)(x) \).  <a href="sparse_8hpp.html#a24b13a6fcf890dabd88a0cddb34fc816">More...</a><br /></td></tr>
-<tr class="separator:a24b13a6fcf890dabd88a0cddb34fc816"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a229d6c3ba248c80454412ca50076b642"><td class="memTemplParams" colspan="2">template&lt;typename S1 , typename S2 , typename S3 , typename S4 &gt; <br />
+requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S2&gt;, S2&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S3&gt;, S3&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S4&gt;, S4&gt;)</td></tr>
+<tr class="memitem:a229d6c3ba248c80454412ca50076b642"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="sparse_8hpp.html#a229d6c3ba248c80454412ca50076b642">smooth::feedback::d2r_fog</a> (Eigen::SparseMatrix&lt; double &gt; &amp;out, const S1 &amp;Jf, const S2 &amp;Hf, const S3 &amp;Jg, const S4 &amp;Hg, Eigen::Index r0=0, Eigen::Index c0=0)</td></tr>
+<tr class="memdesc:a229d6c3ba248c80454412ca50076b642"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Right) Hessian of composed function \( (f \circ g)(x) \).  <a href="sparse_8hpp.html#a229d6c3ba248c80454412ca50076b642">More...</a><br /></td></tr>
+<tr class="separator:a229d6c3ba248c80454412ca50076b642"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Sparse matrix utilities. </p>
@@ -240,7 +240,7 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Values are accessed with coeffRef(). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00059">59</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00035">35</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -313,7 +313,7 @@ template&lt;int Options&gt; </div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Values are accessed with coeffRef(). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00127">127</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00103">103</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -394,7 +394,7 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Source&gt;, Source&gt;)</div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Values are accessed with coeffRef(). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00094">94</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00070">70</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -467,7 +467,7 @@ template&lt;int Options&gt; </div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Values are accessed with coeffRef(). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00153">153</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00125">125</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -498,18 +498,18 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00194">194</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00158">158</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a24b13a6fcf890dabd88a0cddb34fc816" name="a24b13a6fcf890dabd88a0cddb34fc816"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a24b13a6fcf890dabd88a0cddb34fc816">&#9670;&nbsp;</a></span>d2r_fog()</h2>
+<a id="a229d6c3ba248c80454412ca50076b642" name="a229d6c3ba248c80454412ca50076b642"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a229d6c3ba248c80454412ca50076b642">&#9670;&nbsp;</a></span>d2r_fog()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename S1 , typename S2 , typename S3 , typename S4 &gt; <br />
-requires ( std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S2&gt;, S2&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S3&gt;, S3&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S4&gt;, S4&gt;)</div>
+requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S2&gt;, S2&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S3&gt;, S3&gt; &amp;&amp; std::is_base_of_v&lt;Eigen::EigenBase&lt;S4&gt;, S4&gt;)</div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -584,7 +584,7 @@ requires ( std::is_base_of_v&lt;Eigen::EigenBase&lt;S1&gt;, S1&gt; &amp;&amp; st
 </dl>
 <dl class="section note"><dt>Note</dt><dd>out must have appropriate size </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00250">250</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00213">213</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
@@ -620,18 +620,18 @@ requires (std::is_base_of_v&lt;Eigen::EigenBase&lt;Mat&gt;, Mat&gt;)</div>
 <li>9 for explicit zeros </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00217">217</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00181">181</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a96a7773f23e86528a3a71167e0cb91d7" name="a96a7773f23e86528a3a71167e0cb91d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96a7773f23e86528a3a71167e0cb91d7">&#9670;&nbsp;</a></span>set_zero()</h2>
+<a id="a4074e8e3c8ea8bc95ac9dfebb43564f6" name="a4074e8e3c8ea8bc95ac9dfebb43564f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4074e8e3c8ea8bc95ac9dfebb43564f6">&#9670;&nbsp;</a></span>set_zero()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename SparseMat &gt; <br />
-requires (std::is_base_of_v&lt; Eigen::SparseCompressedBase&lt;std::decay_t&lt;SparseMat&gt;&gt;, std::decay_t&lt;SparseMat&gt;&gt;)</div>
+requires (std::is_base_of_v&lt;Eigen::SparseCompressedBase&lt;std::decay_t&lt;SparseMat&gt;&gt;, std::decay_t&lt;SparseMat&gt;&gt;)</div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -656,7 +656,7 @@ requires (std::is_base_of_v&lt; Eigen::SparseCompressedBase&lt;std::decay_t&lt;S
 <dd>
 More efficient for compressed expressions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00174">174</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sparse_8hpp_source.html#l00140">140</a> of file <a class="el" href="sparse_8hpp_source.html">sparse.hpp</a>.</p>
 
 </div>
 </div>

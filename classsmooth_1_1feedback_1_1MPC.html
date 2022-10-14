@@ -167,7 +167,7 @@ class smooth::feedback::MPC&lt; T, X, U, F, CR, Kmesh, DT &gt;</div><p >Model-Pr
 </dl>
 <p>This <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> class keeps and repeatedly solves an internal <a class="el" href="structsmooth_1_1feedback_1_1OCP.html" title="Optimal control problem definition.">OCP</a> that is updated to track a time-dependent trajectory defined via <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#a72b73fbab5097d92622c7ccd8071232e" title="Set the desired state trajectory and velocity (absolute time)">set_xdes()</a> and <a class="el" href="classsmooth_1_1feedback_1_1MPC.html#ab3b7acfe0de48b39dafc7c9a6486b7c7" title="Set the desired input trajectory (absolute time)">set_udes()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00419">419</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00380">380</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad297f0a8d7053b0c36acd4ddd03df042" name="ad297f0a8d7053b0c36acd4ddd03df042"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad297f0a8d7053b0c36acd4ddd03df042">&#9670;&nbsp;</a></span>MPC() <span class="overload">[1/2]</span></h2>
@@ -239,7 +239,7 @@ c_{ru} \) as a function \( c_r : X \times U \rightarrow \mathbb{R}^{n_{c_r}} \).
 The functions f and cr are are linearized around the desired trajectory and must therefore be instances of first-order differentiable types. For best results, cr should be (group-)linear and f locally well approximated around \( x_{des} \) by a (group-)linear function.</dd></dl>
 <dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>Optimization: The only time-dependent parts of the QP are the dynamics and end constraints, so only those need to be updated. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00444">444</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00405">405</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -299,7 +299,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 
 <p>Same as above but for lvalues. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00470">470</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00427">427</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -364,7 +364,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{u, code} </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00506">506</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00458">458</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -395,7 +395,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 
 <p>Reset initial guess for next iteration to zero. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00654">654</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00603">603</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -427,7 +427,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 
 <p>Set the desired input trajectory (absolute time, rvalue version) </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00579">579</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00529">529</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -459,7 +459,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 
 <p>Set the desired input trajectory (absolute time) </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00574">574</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00524">524</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -511,7 +511,7 @@ requires (std::is_same_v&lt;std::invoke_result_t&lt;Fun, Scalar&lt;U&gt;&gt;, U&
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00589">589</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00539">539</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -543,7 +543,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 
 <p>Update <a class="el" href="classsmooth_1_1feedback_1_1MPC.html" title="Model-Predictive Control (MPC) on Lie groups.">MPC</a> weights. </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00644">644</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00593">593</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -585,7 +585,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 
 <p>Set the desired state trajectory (absolute time, rvalue version) </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00610">610</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00559">559</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -627,7 +627,7 @@ template&lt;Time T, LieGroup X, Manifold U, typename F , typename CR , std::size
 
 <p>Set the desired state trajectory and velocity (absolute time) </p>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00600">600</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00550">550</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>
@@ -680,7 +680,7 @@ requires (std::is_same_v&lt;std::invoke_result_t&lt;Fun, Scalar&lt;X&gt;&gt;, X&
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00626">626</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mpc_8hpp_source.html#l00575">575</a> of file <a class="el" href="mpc_8hpp_source.html">mpc.hpp</a>.</p>
 
 </div>
 </div>

@@ -144,7 +144,7 @@ Static Public Attributes</h2></td></tr>
 <tr class="memitem:a1c5ccaf2321beacbd829d6c432e3dc57"><td class="memItemLeft" align="right" valign="top">static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a1c5ccaf2321beacbd829d6c432e3dc57">Ncr</a> = std::invoke_result_t&lt;CR, double, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5a4bf845d86467394071fd7094802c42">X</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#abd1281bdd34552c63d9764295c3f0ee9">U</a>&gt;::SizeAtCompileTime</td></tr>
 <tr class="memdesc:a1c5ccaf2321beacbd829d6c432e3dc57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of running constraints.  <a href="structsmooth_1_1feedback_1_1OCP.html#a1c5ccaf2321beacbd829d6c432e3dc57">More...</a><br /></td></tr>
 <tr class="separator:a1c5ccaf2321beacbd829d6c432e3dc57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9db47b8fd4b39d0143b0d49af4ed964c"><td class="memItemLeft" align="right" valign="top">static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a9db47b8fd4b39d0143b0d49af4ed964c">Nce</a></td></tr>
+<tr class="memitem:a9db47b8fd4b39d0143b0d49af4ed964c"><td class="memItemLeft" align="right" valign="top">static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a9db47b8fd4b39d0143b0d49af4ed964c">Nce</a> = std::invoke_result_t&lt;CE, double, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5a4bf845d86467394071fd7094802c42">X</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5a4bf845d86467394071fd7094802c42">X</a>, Eigen::Matrix&lt;double, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a18d9285dfd21d45dfa624c9535daaa5a">Nq</a>, 1&gt;&gt;::SizeAtCompileTime</td></tr>
 <tr class="memdesc:a9db47b8fd4b39d0143b0d49af4ed964c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of end constraints.  <a href="structsmooth_1_1feedback_1_1OCP.html#a9db47b8fd4b39d0143b0d49af4ed964c">More...</a><br /></td></tr>
 <tr class="separator:a9db47b8fd4b39d0143b0d49af4ed964c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -174,7 +174,7 @@ struct smooth::feedback::OCP&lt; _X, _U, Theta, F, G, CR, CE &gt;</div><p >Optim
 <p >The optimal control problem depends on arbitrary functions \( \theta, f, g, c_r, c_e \). The type of those functions are template pararamters in this structure.</p>
 <dl class="section note"><dt>Note</dt><dd>To enable automatic differentiation \( \theta, f, g, c_r, c_e \) must be templated over the scalar type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00075">75</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00051">51</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ae1bea88bf72b7fdc826982499d264b3b" name="ae1bea88bf72b7fdc826982499d264b3b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae1bea88bf72b7fdc826982499d264b3b">&#9670;&nbsp;</a></span>Solution</h2>
@@ -192,7 +192,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Solution type corresponding to this problem. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00095">95</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00070">70</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -212,7 +212,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Input space. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00080">80</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00056">56</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -232,7 +232,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>State space. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00078">78</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00054">54</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -253,7 +253,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>End constraint \( c_e : R \times X \times X \times R^{n_q} \rightarrow R^{n_{ce}} \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00119">119</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00094">94</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -273,7 +273,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>End constraint lower bound \( c_{el} \in R^{n_{ce}} \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00121">121</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00096">96</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -293,7 +293,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>End constraint upper bound \( c_{eu} \in R^{n_{ce}} \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00123">123</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00098">98</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -313,7 +313,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Running constraint \( c_r : R \times X \times U \rightarrow R^{n_{cr}} \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00112">112</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00087">87</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -333,7 +333,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Running constraint lower bound \( c_{rl} \in R^{n_{cr}} \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00114">114</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00089">89</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -353,7 +353,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Running constraint upper bound \( c_{ru} \in R^{n_{cr}} \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00116">116</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00091">91</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -373,7 +373,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>System dynamics \( f : R \times X \times U \rightarrow Tangent&lt;X&gt; \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00107">107</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00082">82</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -393,7 +393,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Integrals \( g : R \times X \times U \rightarrow R^{n_q} \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00109">109</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00084">84</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -409,7 +409,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr int <a class="el" href="structsmooth_1_1feedback_1_1OCP.html">smooth::feedback::OCP</a>&lt; _X, _U, Theta, F, G, CR, CE &gt;::Nce</td>
+          <td class="memname">constexpr int <a class="el" href="structsmooth_1_1feedback_1_1OCP.html">smooth::feedback::OCP</a>&lt; _X, _U, Theta, F, G, CR, CE &gt;::Nce = std::invoke_result_t&lt;CE, double, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5a4bf845d86467394071fd7094802c42">X</a>, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a5a4bf845d86467394071fd7094802c42">X</a>, Eigen::Matrix&lt;double, <a class="el" href="structsmooth_1_1feedback_1_1OCP.html#a18d9285dfd21d45dfa624c9535daaa5a">Nq</a>, 1&gt;&gt;::SizeAtCompileTime</td>
         </tr>
       </table>
   </td>
@@ -418,12 +418,10 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">    std::invoke_result_t&lt;CE, double, X, X, Eigen::Matrix&lt;double, Nq, 1&gt;&gt;::SizeAtCompileTime</div>
-</div><!-- fragment -->
+
 <p>Number of end constraints. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00091">91</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00067">67</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -451,7 +449,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Number of running constraints. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00089">89</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00065">65</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -479,7 +477,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Number of integrals. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00087">87</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00063">63</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -507,7 +505,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Input space dimension. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00085">85</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00061">61</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -535,7 +533,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>State space dimension. </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00083">83</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00059">59</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>
@@ -555,7 +553,7 @@ template&lt;LieGroup _X, Manifold _U, typename Theta , typename F , typename G ,
 
 <p>Objective function \( \theta : R \times X \times X \times R^{n_q} \rightarrow R \). </p>
 
-<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00104">104</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ocp_8hpp_source.html#l00079">79</a> of file <a class="el" href="ocp_8hpp_source.html">ocp.hpp</a>.</p>
 
 </div>
 </div>

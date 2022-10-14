@@ -86,8 +86,8 @@ $(function() {
 <div class="textblock"><code>#include &lt;Eigen/Core&gt;</code><br />
 <code>#include &lt;boost/numeric/odeint.hpp&gt;</code><br />
 <code>#include &lt;smooth/compat/odeint.hpp&gt;</code><br />
+<code>#include &lt;smooth/concepts/lie_group.hpp&gt;</code><br />
 <code>#include &lt;smooth/diff.hpp&gt;</code><br />
-<code>#include &lt;smooth/lie_group.hpp&gt;</code><br />
 <code>#include &quot;common.hpp&quot;</code><br />
 <code>#include &quot;<a class="el" href="qp_8hpp_source.html">qp.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
@@ -95,17 +95,17 @@ Include dependency graph for asif_func.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="asif__func_8hpp__incl.png" border="0" usemap="#ainclude_2smooth_2feedback_2asif__func_8hpp" alt=""/></div>
 <map name="ainclude_2smooth_2feedback_2asif__func_8hpp" id="ainclude_2smooth_2feedback_2asif__func_8hpp">
-<area shape="rect" title="Functions for active Set Invariance (ASI) filtering on Lie groups." alt="" coords="477,5,643,47"/>
-<area shape="rect" title=" " alt="" coords="5,95,91,121"/>
-<area shape="rect" title=" " alt="" coords="115,95,282,121"/>
-<area shape="rect" title=" " alt="" coords="306,95,481,121"/>
-<area shape="rect" title=" " alt="" coords="505,95,615,121"/>
-<area shape="rect" title=" " alt="" coords="639,95,785,121"/>
-<area shape="rect" href="common_8hpp_source.html" title=" " alt="" coords="809,95,905,121"/>
-<area shape="rect" href="qp_8hpp.html" title="Quadratic Program definition." alt="" coords="950,95,1010,121"/>
-<area shape="rect" title=" " alt="" coords="766,169,909,196"/>
-<area shape="rect" title=" " alt="" coords="933,169,1027,196"/>
-<area shape="rect" title=" " alt="" coords="1052,169,1151,196"/>
+<area shape="rect" title="Functions for active Set Invariance (ASI) filtering on Lie groups." alt="" coords="491,5,658,47"/>
+<area shape="rect" title=" " alt="" coords="5,102,91,129"/>
+<area shape="rect" title=" " alt="" coords="115,102,282,129"/>
+<area shape="rect" title=" " alt="" coords="306,102,481,129"/>
+<area shape="rect" title=" " alt="" coords="505,95,644,136"/>
+<area shape="rect" title=" " alt="" coords="669,102,779,129"/>
+<area shape="rect" href="common_8hpp_source.html" title=" " alt="" coords="804,102,900,129"/>
+<area shape="rect" href="qp_8hpp.html" title="Quadratic Program definition." alt="" coords="958,102,1018,129"/>
+<area shape="rect" title=" " alt="" coords="718,184,917,211"/>
+<area shape="rect" title=" " alt="" coords="941,184,1035,211"/>
+<area shape="rect" title=" " alt="" coords="1060,184,1159,211"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -244,7 +244,7 @@ S(t) = \{ h(t, x) \geq 0 \} \) denotes the safe set at time \( t \) </td></tr>
 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>QuadraticProgram modeling the ASIF filtering problem </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00268">268</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00242">242</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
 
 </div>
 </div>
@@ -300,7 +300,7 @@ requires (Dof&lt;X&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00100">100</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00076">76</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
 
 </div>
 </div>
@@ -360,7 +360,7 @@ requires (Dof&lt;X&gt; &gt; 0 &amp;&amp; Dof&lt;U&gt; &gt; 0)</div>
 <p>Fill QP matrices (part 2 of <a class="el" href="asif__func_8hpp.html#a7290397f6f319bd45b20dbf162572f02" title="Convert an ASIFProblem to a QuadraticProgram.">asif_to_qp()</a>) </p>
 <p >Note that the (dense) QP matrices must be pre-allocated and filled with zeros. </p>
 
-<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00127">127</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="asif__func_8hpp_source.html#l00102">102</a> of file <a class="el" href="asif__func_8hpp_source.html">asif_func.hpp</a>.</p>
 
 </div>
 </div>
