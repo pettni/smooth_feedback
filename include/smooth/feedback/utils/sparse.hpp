@@ -1,40 +1,16 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_
-#define SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_
+#pragma once
 
 /**
  * @file
  * @brief Sparse matrix utilities.
  */
 
-#include <Eigen/Sparse>
-
 #include <numeric>
 #include <optional>
+
+#include <Eigen/Sparse>
 
 namespace smooth::feedback {
 
@@ -125,11 +101,7 @@ inline void block_write(
  */
 template<int Options>
 inline void block_add_identity(
-  Eigen::SparseMatrix<double, Options> & dest,
-  Eigen::Index row0,
-  Eigen::Index col0,
-  Eigen::Index n,
-  double scale = 1)
+  Eigen::SparseMatrix<double, Options> & dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale = 1)
 {
   for (auto k = 0u; k < n; ++k) { dest.coeffRef(row0 + k, col0 + k) += scale; }
 }
@@ -151,11 +123,7 @@ inline void block_add_identity(
  */
 template<int Options>
 inline void block_write_identity(
-  Eigen::SparseMatrix<double, Options> & dest,
-  Eigen::Index row0,
-  Eigen::Index col0,
-  Eigen::Index n,
-  double scale = 1)
+  Eigen::SparseMatrix<double, Options> & dest, Eigen::Index row0, Eigen::Index col0, Eigen::Index n, double scale = 1)
 {
   for (auto k = 0u; k < n; ++k) { dest.coeffRef(row0 + k, col0 + k) = scale; }
 }
@@ -168,18 +136,14 @@ inline void block_write_identity(
  * @note More efficient for compressed expressions.
  */
 template<typename SparseMat>
-  requires(std::is_base_of_v<
-           Eigen::SparseCompressedBase<std::decay_t<SparseMat>>,
-           std::decay_t<SparseMat>>)
+  requires(std::is_base_of_v<Eigen::SparseCompressedBase<std::decay_t<SparseMat>>, std::decay_t<SparseMat>>)
 inline void set_zero(SparseMat && mat)
 {
   if (mat.isCompressed()) {
     mat.coeffs().setZero();
   } else {
     for (auto i = 0; i < mat.outerSize(); ++i) {
-      for (typename std::decay_t<decltype(mat)>::InnerIterator it(mat, i); it; ++it) {
-        it.valueRef() = 0;
-      }
+      for (typename std::decay_t<decltype(mat)>::InnerIterator it(mat, i); it; ++it) { it.valueRef() = 0; }
     }
   }
 }
@@ -244,9 +208,8 @@ Eigen::MatrixX<typename Mat::Scalar> mark_explicit_zeros(const Mat & mat)
  * @note out must have appropriate size
  */
 template<typename S1, typename S2, typename S3, typename S4>
-  requires(
-    std::is_base_of_v<Eigen::EigenBase<S1>, S1> && std::is_base_of_v<Eigen::EigenBase<S2>, S2> &&
-      std::is_base_of_v<Eigen::EigenBase<S3>, S3> && std::is_base_of_v<Eigen::EigenBase<S4>, S4>)
+  requires(std::is_base_of_v<Eigen::EigenBase<S1>, S1> && std::is_base_of_v<Eigen::EigenBase<S2>, S2> &&
+             std::is_base_of_v<Eigen::EigenBase<S3>, S3> && std::is_base_of_v<Eigen::EigenBase<S4>, S4>)
 inline void d2r_fog(
   Eigen::SparseMatrix<double> & out,
   const S1 & Jf,
@@ -282,5 +245,3 @@ inline void d2r_fog(
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__UTILS__SPARSE_HPP_

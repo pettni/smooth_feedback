@@ -23,9 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Core>
+#include <gtest/gtest.h>
 
 #include "smooth/feedback/collocation/dyn_error.hpp"
 
@@ -38,8 +37,9 @@ TEST(CollocationDyn, DynError)
 
   // system dynamics
   const auto f =
-    []<typename T>(const T & t, const Eigen::Vector<T, 1> &, const Eigen::Vector<T, 0> &)
-    -> Eigen::Vector<T, 1> { return Eigen::Vector<T, 1>{{0.2 * t - 0.4}}; };
+    []<typename T>(const T & t, const Eigen::Vector<T, 1> &, const Eigen::Vector<T, 0> &) -> Eigen::Vector<T, 1> {
+    return Eigen::Vector<T, 1>{{0.2 * t - 0.4}};
+  };
 
   double t0 = 3;
   double tf = 5;
@@ -54,8 +54,7 @@ TEST(CollocationDyn, DynError)
   std::size_t M = 0;
   Eigen::MatrixXd X(1, m.N_colloc() + 1);
   for (auto p = 0u; p < m.N_ivals(); ++p) {
-    for (const auto & [i, tau] :
-         smooth::utils::zip(std::views::iota(0u, m.N_colloc_ival(p)), m.interval_nodes(p))) {
+    for (const auto & [i, tau] : smooth::utils::zip(std::views::iota(0u, m.N_colloc_ival(p)), m.interval_nodes(p))) {
       X.col(M + i) = x(t0 + (tf - t0) * tau);
     }
     M += m.N_colloc_ival(p);
@@ -65,9 +64,7 @@ TEST(CollocationDyn, DynError)
   auto xfun = [X = X, t0 = t0, tf = tf, m = m](const double t) -> Eigen::Vector<double, 1> {
     return m.eval<Eigen::Vector<double, 1>>((t - t0) / (tf - t0), X.colwise(), 0, true);
   };
-  auto ufun = [](const double) -> Eigen::Vector<double, 0> {
-    return Eigen::Vector<double, 0>::Zero();
-  };
+  auto ufun = [](const double) -> Eigen::Vector<double, 0> { return Eigen::Vector<double, 0>::Zero(); };
 
   m.increase_degrees();
   auto rel_errs = smooth::feedback::mesh_dyn_error(f, m, t0, tf, xfun, ufun);

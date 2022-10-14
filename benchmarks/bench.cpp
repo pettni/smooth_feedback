@@ -1,35 +1,12 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson, John B. Mains
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
-#include <gflags/gflags.h>
-#include <matplot/matplot.h>
+// Copyright (C) 2022 Petter Nilsson, John B. Mains. MIT License.
 
 #include <iomanip>
 #include <iostream>
 #include <ranges>
 #include <sstream>
+
+#include <gflags/gflags.h>
+#include <matplot/matplot.h>
 
 #include "osqp_bench.hpp"
 #include "smooth_bench.hpp"
@@ -42,10 +19,7 @@ DEFINE_uint64(m_multiple, 1, "Number of inequalities as multiple of size");
 DEFINE_bool(verbose, false, "Print per problem information");
 
 void compare_results(
-  const std::string & a_name,
-  const BatchResult & a,
-  const std::string & b_name,
-  const BatchResult & b)
+  const std::string & a_name, const BatchResult & a, const std::string & b_name, const BatchResult & b)
 {
   assert(a.results.size() == b.results.size());
 
@@ -193,23 +167,18 @@ int main(int argc, char ** argv)
       std::vector<smooth::feedback::QuadraticProgram<-1, -1>> qp_list;
       std::vector<smooth::feedback::QuadraticProgramSparse<double>> qp_sparse_list;
 
-      std::generate_n(
-        std::back_inserter(qp_list), FLAGS_batch, [&]() { return random_qp(m, n, density, rng); });
+      std::generate_n(std::back_inserter(qp_list), FLAGS_batch, [&]() { return random_qp(m, n, density, rng); });
 
-      std::transform(
-        qp_list.begin(), qp_list.end(), std::back_inserter(qp_sparse_list), [](const auto & qp) {
-          return qp_dense_to_sparse(qp);
-        });
+      std::transform(qp_list.begin(), qp_list.end(), std::back_inserter(qp_sparse_list), [](const auto & qp) {
+        return qp_dense_to_sparse(qp);
+      });
 
-      auto smooth_d_res =
-        solve_batch<SmoothWrapper<smooth::feedback::QuadraticProgram<-1, -1>>>(qp_list, prm);
+      auto smooth_d_res = solve_batch<SmoothWrapper<smooth::feedback::QuadraticProgram<-1, -1>>>(qp_list, prm);
 
       auto smooth_s_res =
-        solve_batch<SmoothWrapper<smooth::feedback::QuadraticProgramSparse<double>>>(
-          qp_sparse_list, prm);
+        solve_batch<SmoothWrapper<smooth::feedback::QuadraticProgramSparse<double>>>(qp_sparse_list, prm);
 
-      auto osqp_res = solve_batch<OsqpWrapper<smooth::feedback::QuadraticProgramSparse<double>>>(
-        qp_sparse_list, prm);
+      auto osqp_res = solve_batch<OsqpWrapper<smooth::feedback::QuadraticProgramSparse<double>>>(qp_sparse_list, prm);
 
       std::cout << "#################################################################" << '\n';
       std::cout << "#################################################################" << '\n';
@@ -245,8 +214,7 @@ int main(int argc, char ** argv)
         std::chrono::duration_cast<std::chrono::duration<double>>(time_smooth_s).count() / N_tot);
       data.time_smooth_d.push_back(
         std::chrono::duration_cast<std::chrono::duration<double>>(time_smooth_d).count() / N_tot);
-      data.time_osqp.push_back(
-        std::chrono::duration_cast<std::chrono::duration<double>>(time_osqp).count() / N_tot);
+      data.time_osqp.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(time_osqp).count() / N_tot);
     }
 
     plot_data.push_back(data);

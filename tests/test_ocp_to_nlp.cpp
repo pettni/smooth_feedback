@@ -23,9 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Core>
+#include <gtest/gtest.h>
 #include <smooth/so3.hpp>
 
 #include "smooth/feedback/ocp_to_nlp.hpp"
@@ -64,25 +63,19 @@ TEST(OcpToNlp, Derivatives2)
     return ret;
   };
 
-  const smooth::feedback::OCP<
-    Vec<double, 2>,
-    Vec<double, 1>,
-    decltype(theta),
-    decltype(f),
-    decltype(g),
-    decltype(cr),
-    decltype(ce)>
-    ocp{
-      .theta = theta,
-      .f     = f,
-      .g     = g,
-      .cr    = cr,
-      .crl   = Vec<double, 4>::Constant(4, -1),
-      .cru   = Vec<double, 4>::Constant(4, 1),
-      .ce    = ce,
-      .cel   = Vec<double, 6>::Constant(6, -1),
-      .ceu   = Vec<double, 6>::Constant(6, 1),
-    };
+  const smooth::feedback::
+    OCP<Vec<double, 2>, Vec<double, 1>, decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
+      ocp{
+        .theta = theta,
+        .f     = f,
+        .g     = g,
+        .cr    = cr,
+        .crl   = Vec<double, 4>::Constant(4, -1),
+        .cru   = Vec<double, 4>::Constant(4, 1),
+        .ce    = ce,
+        .cel   = Vec<double, 6>::Constant(6, -1),
+        .ceu   = Vec<double, 6>::Constant(6, 1),
+      };
 
   smooth::feedback::Mesh<3, 3> mesh;
   mesh.refine_ph(0, 4);
@@ -106,15 +99,12 @@ TEST(OcpToNlp, Derivatives2)
   // Numerical derivatives (of base function)
   const auto [fval, df_dx_num, d2f_dx2_num] =
     smooth::diff::dr<2>([&](const auto & xvar) { return nlp.f(xvar); }, smooth::wrt(x));
-  const auto [gval, dg_dx_num] =
-    smooth::diff::dr<1>([&](const auto & xvar) { return nlp.g(xvar); }, smooth::wrt(x));
-  const auto g_l_fun = [&](Eigen::VectorXd xvar) -> double { return lambda.dot(nlp.g(xvar)); };
+  const auto [gval, dg_dx_num] = smooth::diff::dr<1>([&](const auto & xvar) { return nlp.g(xvar); }, smooth::wrt(x));
+  const auto g_l_fun           = [&](Eigen::VectorXd xvar) -> double { return lambda.dot(nlp.g(xvar)); };
   const auto [u1_, u2_, d2g_dx2_num] = smooth::diff::dr<2>(g_l_fun, smooth::wrt(x));
 
   ASSERT_TRUE(Eigen::MatrixXd(df_dx).isApprox(df_dx_num, 1e-4));
   ASSERT_TRUE(Eigen::MatrixXd(dg_dx).isApprox(dg_dx_num, 1e-4));
-  ASSERT_TRUE(Eigen::MatrixXd(Eigen::MatrixXd(d2f_dx2).selfadjointView<Eigen::Upper>())
-                .isApprox(d2f_dx2_num, 1e-3));
-  ASSERT_TRUE(Eigen::MatrixXd(Eigen::MatrixXd(d2g_dx2).selfadjointView<Eigen::Upper>())
-                .isApprox(d2g_dx2_num, 1e-3));
+  ASSERT_TRUE(Eigen::MatrixXd(Eigen::MatrixXd(d2f_dx2).selfadjointView<Eigen::Upper>()).isApprox(d2f_dx2_num, 1e-3));
+  ASSERT_TRUE(Eigen::MatrixXd(Eigen::MatrixXd(d2g_dx2).selfadjointView<Eigen::Upper>()).isApprox(d2g_dx2_num, 1e-3));
 }

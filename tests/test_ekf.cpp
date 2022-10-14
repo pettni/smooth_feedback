@@ -24,11 +24,9 @@
 // SOFTWARE.
 
 #include <gtest/gtest.h>
-
-#include <unsupported/Eigen/MatrixFunctions>
-
 #include <smooth/feedback/ekf.hpp>
 #include <smooth/so3.hpp>
+#include <unsupported/Eigen/MatrixFunctions>
 
 TEST(Ekf, NoCrash)
 {
@@ -75,9 +73,7 @@ void test_update_linear()
 
     // add measurement (without noise)
     ekf.update(
-      [&H, &h]<typename T>(const Eigen::Matrix<T, Nx, 1> & xvar) -> Eigen::Matrix<T, Ny, 1> {
-        return H * xvar + h;
-      },
+      [&H, &h]<typename T>(const Eigen::Matrix<T, Nx, 1> & xvar) -> Eigen::Matrix<T, Ny, 1> { return H * xvar + h; },
       H * x + h,
       R);
 
@@ -114,11 +110,9 @@ void test_predict_linear()
     Eigen::Matrix<double, Nx, 1> xhat = Eigen::Matrix<double, Nx, 1>::Random();
 
     // linear system
-    smooth::feedback::EKF<
-      Eigen::Matrix<double, Nx, 1>,
-      smooth::diff::Type::Numerical,
-      boost::numeric::odeint::runge_kutta4>
-      ekf;
+    smooth::feedback::
+      EKF<Eigen::Matrix<double, Nx, 1>, smooth::diff::Type::Numerical, boost::numeric::odeint::runge_kutta4>
+        ekf;
 
     Eigen::Matrix<double, Nx, Nx> P = Eigen::Matrix<double, Nx, 1>::Random().asDiagonal();
     P.diagonal() += Eigen::Matrix<double, Nx, 1>::Constant(1.1);
@@ -135,9 +129,7 @@ void test_predict_linear()
 
     // propagate
     ekf.predict(
-      [&A]<typename T>(double, const Eigen::Matrix<T, Nx, 1> & xvar) -> Eigen::Matrix<T, Nx, 1> {
-        return A * xvar;
-      },
+      [&A]<typename T>(double, const Eigen::Matrix<T, Nx, 1> & xvar) -> Eigen::Matrix<T, Nx, 1> { return A * xvar; },
       Q,
       tau,
       1e-3);
@@ -178,9 +170,7 @@ TEST(Ekf, PredictTimeCut)
   // propagate
   double tau = 0.7;
   ekf.predict(
-    [&b]<typename T>(T, const Eigen::Matrix<T, 2, 1> &) -> Eigen::Matrix<T, 2, 1> {
-      return b.template cast<T>();
-    },
+    [&b]<typename T>(T, const Eigen::Matrix<T, 2, 1> &) -> Eigen::Matrix<T, 2, 1> { return b.template cast<T>(); },
     Q,
     tau,
     0.5);

@@ -1,44 +1,21 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__COLLOCATION__MESH_HPP_
-#define SMOOTH__FEEDBACK__COLLOCATION__MESH_HPP_
+#pragma once
 
 /**
  * @file
  * @brief Refinable Legendre-Gauss-Radau mesh of time interval [0, 1]
  */
 
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <smooth/detail/utils.hpp>
-#include <smooth/polynomial/quadrature.hpp>
-
 #include <ranges>
 #include <span>
 #include <vector>
+
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <smooth/detail/traits.hpp>
+#include <smooth/detail/utils.hpp>
+#include <smooth/polynomial/quadrature.hpp>
 
 #include "smooth/feedback/traits.hpp"
 #include "smooth/feedback/utils/sparse.hpp"
@@ -47,8 +24,8 @@ namespace smooth::feedback {
 
 using smooth::utils::zip;
 
-using std::views::iota, std::views::drop, std::views::reverse, std::views::take,
-  std::views::transform, std::views::join;
+using std::views::iota, std::views::drop, std::views::reverse, std::views::take, std::views::transform,
+  std::views::join;
 
 namespace detail {
 
@@ -122,9 +99,7 @@ public:
     } else {
       const double dx = 1. / static_cast<double>(n);
       intervals_.reserve(n);
-      for (std::size_t i = 0; i < n; ++i) {
-        intervals_.emplace_back(k, static_cast<double>(i) * dx);
-      }
+      for (std::size_t i = 0; i < n; ++i) { intervals_.emplace_back(k, static_cast<double>(i) * dx); }
     }
   }
 
@@ -139,9 +114,7 @@ public:
   inline std::size_t N_colloc() const
   {
     return std::accumulate(
-      intervals_.begin(), intervals_.end(), 0u, [](std::size_t curr, const auto & x) {
-        return curr + x.K;
-      });
+      intervals_.begin(), intervals_.end(), 0u, [](std::size_t curr, const auto & x) { return curr + x.K; });
   }
 
   /**
@@ -268,8 +241,7 @@ public:
     const auto n_ivals = N_ivals();
     auto all_views     = iota(0u, n_ivals) | transform([this, n_ivals = n_ivals](auto i) {
                        const auto n_ival = N_colloc_ival(i);
-                       const auto n_take =
-                         static_cast<int64_t>(i + 1 < n_ivals ? n_ival : n_ival + 1);
+                       const auto n_take = static_cast<int64_t>(i + 1 < n_ivals ? n_ival : n_ival + 1);
                        return interval_nodes(i) | take(n_take);
                      });
 
@@ -352,8 +324,7 @@ public:
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
         static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
         static constexpr auto D_ext_s =
-          polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first)
-            .template block<K + 1, K>(0, 0);
+          polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first).template block<K + 1, K>(0, 0);
         ret = MatMap(D_ext_s[0].data(), k + 1, k);
       }
     });
@@ -384,8 +355,7 @@ public:
         static constexpr auto nw_ext_s = detail::lgr_plus_one<K>();
         static constexpr auto B_ext_s  = lagrange_basis<K>(nw_ext_s.first);
         static constexpr auto D_ext_s =
-          polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first)
-            .template block<K + 1, K>(0, 0);
+          polynomial_basis_derivatives<K, K + 1>(B_ext_s, nw_ext_s.first).template block<K + 1, K>(0, 0);
         // Eigen maps don't have copy constructors so use placement new
         new (&ret) MatMap(D_ext_s[0].data(), k + 1, k);
       }
@@ -427,8 +397,8 @@ public:
   {
     if (t < 0) { return 0; }
     if (t > 1) { return intervals_.size() - 1; }
-    auto it = utils::binary_interval_search(
-      intervals_, t, [](const auto & ival, double _t) { return ival.tau0 <=> _t; });
+    auto it =
+      utils::binary_interval_search(intervals_, t, [](const auto & ival, double _t) { return ival.tau0 <=> _t; });
     if (it != intervals_.end()) { return std::distance(intervals_.begin(), it); }
     return 0;
   }
@@ -474,7 +444,7 @@ public:
     for (auto i = 0u; i < ival; ++i) { N_before += intervals_[i].K; }
 
     // initialize output variable
-    RetT ret = RetT::Zero(dof(*std::ranges::begin(r)));
+    RetT ret = RetT::Zero(std::ranges::begin(r)->size());
 
     utils::static_for<Kmax + 2 - Kmin>([&](auto i) {
       static constexpr auto K = Kmin + i;
@@ -485,18 +455,14 @@ public:
           const auto U                   = monomial_derivative<K>(u, p);       // 1 x K+1
           const auto W                   = U * B_ext_s;                        // 1 x K+1
 
-          for (const auto & [w, v] : zip(std::span(W[0].data(), k + 1), r | drop(N_before))) {
-            ret += w * v;
-          }
+          for (const auto & [w, v] : zip(std::span(W[0].data(), k + 1), r | drop(N_before))) { ret += w * v; }
         } else {
           static constexpr auto nw_s = lgr_nodes<K>();
           static constexpr auto B_s  = lagrange_basis<K - 1>(nw_s.first);  // K x K
           const auto U               = monomial_derivative<K - 1>(u, p);   // 1 x K
           const auto W               = U * B_s;                            // 1 x K
 
-          for (const auto & [w, v] : zip(std::span(W[0].data(), k), r | drop(N_before))) {
-            ret += w * v;
-          }
+          for (const auto & [w, v] : zip(std::span(W[0].data(), k), r | drop(N_before))) { ret += w * v; }
         }
       }
     });
@@ -522,5 +488,3 @@ template<typename T>
 concept MeshType = traits::is_specialization_of_sizet_v<std::decay_t<T>, Mesh>;
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__COLLOCATION__MESH_HPP_

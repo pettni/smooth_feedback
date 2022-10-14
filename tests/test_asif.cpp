@@ -24,7 +24,6 @@
 // SOFTWARE.
 
 #include <gtest/gtest.h>
-
 #include <smooth/feedback/asif.hpp>
 #include <smooth/se2.hpp>
 #include <smooth/so3.hpp>
@@ -47,9 +46,7 @@ TEST(Asif, Basic)
 
   const auto h = []<typename T>(T, const G<T> & g) -> Eigen::Matrix<T, Nh, 1> { return g.r2(); };
 
-  const auto bu = []<typename T>(T, const G<T> &) -> Eigen::Matrix<T, 2, 1> {
-    return Eigen::Matrix<T, 2, 1>(-0.1, 1);
-  };
+  const auto bu = []<typename T>(T, const G<T> &) -> Eigen::Matrix<T, 2, 1> { return Eigen::Matrix<T, 2, 1>(-0.1, 1); };
 
   smooth::feedback::ASIFProblem<smooth::SE2d, Eigen::Vector2d> pbm{
     .x0    = smooth::SE2d::Random(),

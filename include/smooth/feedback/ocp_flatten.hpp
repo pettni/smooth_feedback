@@ -1,30 +1,6 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__FLATTEN_OCP_HPP_
-#define SMOOTH__FEEDBACK__FLATTEN_OCP_HPP_
+#pragma once
 
 /**
  * @file
@@ -37,12 +13,11 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-
 #include <smooth/bundle.hpp>
 #include <smooth/diff.hpp>
 
 #include "ocp.hpp"
-#include "smooth/lie_group_sparse.hpp"
+#include "smooth/lie_sparse.hpp"
 #include "utils/sparse.hpp"
 
 namespace smooth::feedback {
@@ -81,8 +56,7 @@ static constexpr std::array<double, 23> kBn{
  * @brief Sparse matrices containing reordered rows of algebra generators.
  */
 template<LieGroup G>
-inline auto generators_sparse_reordered =
-  []() -> std::array<Eigen::SparseMatrix<double, Eigen::RowMajor>, Dof<G>> {
+inline auto generators_sparse_reordered = []() -> std::array<Eigen::SparseMatrix<double, Eigen::RowMajor>, Dof<G>> {
   std::array<Eigen::SparseMatrix<double, Eigen::RowMajor>, Dof<G>> ret;
   for (auto k = 0u; k < Dof<G>; ++k) {
     ret[k].resize(Dof<G>, Dof<G>);
@@ -100,9 +74,7 @@ inline Eigen::SparseMatrix<double> d_ad = []() -> Eigen::SparseMatrix<double> {
   Eigen::SparseMatrix<double> ret;
   ret.resize(Dof<G>, Dof<G> * Dof<G>);
   for (auto i = 0u; i < Dof<G>; ++i) {
-    for (auto j = 0u; j < Dof<G>; ++j) {
-      ret.col(j * Dof<G> + i) = smooth::generators_sparse<G>[i].row(j).transpose();
-    }
+    for (auto j = 0u; j < Dof<G>; ++j) { ret.col(j * Dof<G> + i) = smooth::generators_sparse<G>[i].row(j).transpose(); }
   }
   ret.makeCompressed();
   return ret;
@@ -188,8 +160,7 @@ private:
 
 public:
   template<typename A1, typename A2, typename A3>
-  FlatDyn(A1 && a1, A2 && a2, A3 && a3)
-      : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3))
+  FlatDyn(A1 && a1, A2 && a2, A3 && a3) : f(std::forward<A1>(a1)), xl(std::forward<A2>(a2)), ul(std::forward<A3>(a3))
   {}
 
   template<typename T>
@@ -207,8 +178,7 @@ public:
 
   // First derivative
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(double t, const E & e, const V & v) requires(
-    diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
+  jacobian(double t, const E & e, const V & v) requires(diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const double tdbl          = static_cast<double>(t);
     const auto [xlval, dxlval] = diff::dr<1>(xl, wrt(tdbl));
@@ -231,8 +201,7 @@ public:
     // Add d ( drexpinv ) * (f \circ (+) - dxl)
     for (auto i = 0u; i < d2expinv_e_.outerSize(); ++i) {
       for (Eigen::InnerIterator it(d2expinv_e_, i); it; ++it) {
-        J_.coeffRef(it.col() / Nx, 1 + (it.col() % Nx)) +=
-          (fval(it.row()) - dxlval(it.row())) * it.value();
+        J_.coeffRef(it.col() / Nx, 1 + (it.col() % Nx)) += (fval(it.row()) - dxlval(it.row())) * it.value();
       }
     }
     // Add d ( ad ) * dxl
@@ -249,9 +218,8 @@ public:
   // Second derivative
   //    \sum Bn (-1)^n / n! d2r (ad_a^n f)_aa - \sum Bn / n! d2r(ad_a^n dxl)_aa
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  hessian(double t, const E & e, const V & v) requires(
-    diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
-      diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
+  hessian(double t, const E & e, const V & v) requires(diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
+                                                         diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
     const double tdbl          = static_cast<double>(t);
     const auto [xlval, dxlval] = diff::dr<1>(xl, wrt(tdbl));
@@ -382,15 +350,13 @@ public:
   {}
 
   template<typename T>
-  Eigen::Vector<T, Nouts>
-  operator()(const T & t, const CastT<T, E> & e, const CastT<T, V> & v) const
+  Eigen::Vector<T, Nouts> operator()(const T & t, const CastT<T, E> & e, const CastT<T, V> & v) const
   {
     return f.template operator()<T>(t, rplus(xl(t), e), rplus(ul(t), v));
   }
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(double t, const E & e, const V & v) requires(
-    diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
+  jacobian(double t, const E & e, const V & v) requires(diff::detail::diffable_order1<F, std::tuple<double, X, U>>)
   {
     const auto & [xlval, dxlval] = diff::dr<1>(xl, wrt(t));
     const auto & [ulval, dulval] = diff::dr<1>(ul, wrt(t));
@@ -404,9 +370,8 @@ public:
   }
 
   std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  hessian(double t, const E & e, const V & v) requires(
-    diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
-      diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
+  hessian(double t, const E & e, const V & v) requires(diff::detail::diffable_order1<F, std::tuple<double, X, U>> &&
+                                                         diff::detail::diffable_order2<F, std::tuple<double, X, U>>)
   {
     const auto & [xlval, dxlval] = diff::dr<1>(xl, wrt(t));
     const auto & [ulval, dulval] = diff::dr<1>(ul, wrt(t));
@@ -488,8 +453,7 @@ public:
   {}
 
   template<typename T>
-  auto operator()(
-    const T & tf, const CastT<T, E> & e0, const CastT<T, E> & ef, const CastT<T, Q> & q) const
+  auto operator()(const T & tf, const CastT<T, E> & e0, const CastT<T, E> & ef, const CastT<T, Q> & q) const
   {
     return f.template operator()<T>(tf, rplus(xl(T(0.)), e0), rplus(xl(tf), ef), q);
   }
@@ -587,11 +551,13 @@ auto unflatten_ocpsol(const auto & flatsol, auto && xl_fun, auto && ul_fun)
 {
   using ocpsol_t = std::decay_t<decltype(flatsol)>;
 
-  auto u_unflat = [ul_fun = std::forward<decltype(ul_fun)>(ul_fun),
-                   usol   = flatsol.u](double t) -> U { return rplus(ul_fun(t), usol(t)); };
+  auto u_unflat = [ul_fun = std::forward<decltype(ul_fun)>(ul_fun), usol = flatsol.u](double t) -> U {
+    return rplus(ul_fun(t), usol(t));
+  };
 
-  auto x_unflat = [xl_fun = std::forward<decltype(xl_fun)>(xl_fun),
-                   xsol   = flatsol.x](double t) -> X { return rplus(xl_fun(t), xsol(t)); };
+  auto x_unflat = [xl_fun = std::forward<decltype(xl_fun)>(xl_fun), xsol = flatsol.x](double t) -> X {
+    return rplus(xl_fun(t), xsol(t));
+  };
 
   return OCPSolution<X, U, ocpsol_t::Nq, ocpsol_t::Ncr, ocpsol_t::Nce>{
     .t0         = flatsol.t0,
@@ -607,5 +573,3 @@ auto unflatten_ocpsol(const auto & flatsol, auto && xl_fun, auto && ul_fun)
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__FLATTEN_OCP_HPP_

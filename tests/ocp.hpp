@@ -66,16 +66,14 @@ struct TestOcpObjective
     return q.x();
   }
 
-  Eigen::SparseMatrix<double>
-  jacobian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
+  Eigen::SparseMatrix<double> jacobian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
   {
     Eigen::SparseMatrix<double> ret(1, Nouter);
     ret.coeffRef(0, q_B_outer) = 1;
     return ret;
   }
 
-  Eigen::SparseMatrix<double>
-  hessian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
+  Eigen::SparseMatrix<double> hessian(double, const X<double> &, const X<double> &, const Vec<double, 1> &) const
   {
     Eigen::SparseMatrix<double> ret(Nouter, Nouter);
     return ret;
@@ -107,10 +105,8 @@ struct TestOcpDyn
   Eigen::SparseMatrix<double> hessian(double, const X<double> & x, const U<double> &) const
   {
     Eigen::SparseMatrix<double> ret(Ninner, Nx * Ninner);
-    ret.coeffRef(x_B_inner + 0, 0 * Nx + x_B_inner + 2) =
-      0.1 * std::sin(x.so2().angle());  // d2f1 / dx dth
-    ret.coeffRef(x_B_inner + 1, 0 * Nx + x_B_inner + 2) =
-      0.1 * std::cos(x.so2().angle());  // d2f1 / dy dth
+    ret.coeffRef(x_B_inner + 0, 0 * Nx + x_B_inner + 2) = 0.1 * std::sin(x.so2().angle());  // d2f1 / dx dth
+    ret.coeffRef(x_B_inner + 1, 0 * Nx + x_B_inner + 2) = 0.1 * std::cos(x.so2().angle());  // d2f1 / dy dth
     return ret;
   }
 };
@@ -179,20 +175,16 @@ struct TestOcpCe
     return ret;
   }
 
-  Eigen::SparseMatrix<double>
-  jacobian(double, const X<double> & x0, const X<double> & xf, const Vec<double, 1> &) const
+  Eigen::SparseMatrix<double> jacobian(double, const X<double> & x0, const X<double> & xf, const Vec<double, 1> &) const
   {
     Eigen::SparseMatrix<double> ret(Nce, Nouter);
     ret.coeffRef(tf_B_outer, tf_B_outer) = 1;
-    smooth::feedback::block_add(
-      ret, x0_B_outer, x0_B_outer, smooth::dr_expinv<X<double>>(x0.log()));
-    smooth::feedback::block_add(
-      ret, xf_B_outer, xf_B_outer, smooth::dr_expinv<X<double>>(xf.log()));
+    smooth::feedback::block_add(ret, x0_B_outer, x0_B_outer, smooth::dr_expinv<X<double>>(x0.log()));
+    smooth::feedback::block_add(ret, xf_B_outer, xf_B_outer, smooth::dr_expinv<X<double>>(xf.log()));
     return ret;
   }
 
-  Eigen::SparseMatrix<double>
-  hessian(double, const X<double> & x0, const X<double> & xf, const Vec<double, 1> &) const
+  Eigen::SparseMatrix<double> hessian(double, const X<double> & x0, const X<double> & xf, const Vec<double, 1> &) const
   {
     Eigen::SparseMatrix<double> ret(Nouter, Nce * Nouter);
 
@@ -200,8 +192,7 @@ struct TestOcpCe
     const auto d2_logxf = smooth::d2r_rminus<X<double>>(xf.log());
 
     for (auto i = 0u; i < Nx; ++i) {
-      smooth::feedback::block_add(
-        ret, x0_B_outer, Nouter * (1 + i) + x0_B_outer, d2_logx0.block(0, i * Nx, Nx, Nx));
+      smooth::feedback::block_add(ret, x0_B_outer, Nouter * (1 + i) + x0_B_outer, d2_logx0.block(0, i * Nx, Nx, Nx));
 
       smooth::feedback::block_add(
         ret, xf_B_outer, Nouter * (1 + Nx + i) + xf_B_outer, d2_logxf.block(0, i * Nx, Nx, Nx));
@@ -211,8 +202,8 @@ struct TestOcpCe
   }
 };
 
-using OcpTest = smooth::feedback::
-  OCP<X<double>, U<double>, TestOcpObjective, TestOcpDyn, TestOcpIntegrand, TestOcpCr, TestOcpCe>;
+using OcpTest =
+  smooth::feedback::OCP<X<double>, U<double>, TestOcpObjective, TestOcpDyn, TestOcpIntegrand, TestOcpCr, TestOcpCe>;
 
 inline const OcpTest ocp_test{
   .theta = TestOcpObjective{},

@@ -23,9 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Core>
+#include <gtest/gtest.h>
 #include <smooth/compat/autodiff.hpp>
 
 #include "smooth/feedback/ocp_flatten.hpp"

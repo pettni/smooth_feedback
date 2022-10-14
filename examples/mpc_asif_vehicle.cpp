@@ -1,27 +1,6 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
+
+#include <chrono>
 
 #include <boost/numeric/odeint.hpp>
 #include <smooth/bundle.hpp>
@@ -30,8 +9,6 @@
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 #include <smooth/se3.hpp>
-
-#include <chrono>
 
 #ifdef ENABLE_PLOTTING
 #include <matplot/matplot.h>
@@ -123,9 +100,7 @@ int main()
   };
 
   // backup controller
-  auto bu = []<typename S>(S, const X<S> & x) -> U<S> {
-    return {0.2 * x.template part<1>().x(), -0.5};
-  };
+  auto bu = []<typename S>(S, const X<S> & x) -> U<S> { return {0.2 * x.template part<1>().x(), -0.5}; };
 
   const smooth::feedback::ManifoldBounds<Ud> ulim{
     .A = Eigen::Matrix2d{{1, 0}, {0, 1}},
@@ -163,10 +138,8 @@ int main()
   rclcpp::init(0, nullptr);
   auto node       = std::make_shared<rclcpp::Node>("se2_example");
   auto ses_client = node->create_client<gazebo_msgs::srv::SetEntityState>("/set_entity_state");
-  auto u_mpc_pub =
-    node->create_publisher<geometry_msgs::msg::Accel>("u_mpc", rclcpp::SystemDefaultsQoS{});
-  auto u_asif_pub =
-    node->create_publisher<geometry_msgs::msg::Accel>("u_asif", rclcpp::SystemDefaultsQoS{});
+  auto u_mpc_pub  = node->create_publisher<geometry_msgs::msg::Accel>("u_mpc", rclcpp::SystemDefaultsQoS{});
+  auto u_asif_pub = node->create_publisher<geometry_msgs::msg::Accel>("u_asif", rclcpp::SystemDefaultsQoS{});
 
   rclcpp::Rate rate(25ms);
 #endif
@@ -232,8 +205,7 @@ int main()
     rate.sleep();
 #endif
     // step dynamics
-    stepper.do_step(
-      ode, x, 0, std::chrono::duration_cast<std::chrono::duration<double>>(dt).count());
+    stepper.do_step(ode, x, 0, std::chrono::duration_cast<std::chrono::duration<double>>(dt).count());
   }
 
 #ifdef ENABLE_PLOTTING

@@ -1,30 +1,6 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__ASIF_FUNC_HPP_
-#define SMOOTH__FEEDBACK__ASIF_FUNC_HPP_
+#pragma once
 
 /**
  * @file
@@ -34,8 +10,8 @@
 #include <Eigen/Core>
 #include <boost/numeric/odeint.hpp>
 #include <smooth/compat/odeint.hpp>
+#include <smooth/concepts/lie_group.hpp>
 #include <smooth/diff.hpp>
-#include <smooth/lie_group.hpp>
 
 #include "common.hpp"
 #include "qp.hpp"
@@ -97,8 +73,7 @@ struct ASIFtoQPParams
  */
 template<LieGroup X, Manifold U>
   requires(Dof<X> > 0 && Dof<U> > 0)
-void asif_to_qp_allocate(
-  QuadraticProgram<-1, -1, double> & qp, std::size_t K, std::size_t nu_ineq, std::size_t nh)
+void asif_to_qp_allocate(QuadraticProgram<-1, -1, double> & qp, std::size_t K, std::size_t nu_ineq, std::size_t nh)
 {
   static constexpr int nx = Dof<X>;
   static constexpr int nu = Dof<U>;
@@ -164,25 +139,23 @@ void asif_to_qp_update(
   TangentMap<X> dx_dx0 = TangentMap<X>::Identity();
 
   // define ODEs for closed-loop dynamics and its sensitivity
-  const auto x_ode = [&f, &bu](const X & xx, Tangent<X> & dd, double tt) {
-    dd = f(xx, bu(tt, xx));
-  };
+  const auto x_ode = [&f, &bu](const X & xx, Tangent<X> & dd, double tt) { dd = f(xx, bu(tt, xx)); };
 
   const auto dx_dx0_ode = [&f, &bu, &x](const auto & S_v, auto & dS_dt_v, double tt) {
-    auto f_cl = [&]<typename T>(const CastT<T, X> & vx) { return f(vx, bu(T(tt), vx)); };
+    auto f_cl                   = [&]<typename T>(const CastT<T, X> & vx) { return f(vx, bu(T(tt), vx)); };
     const auto [fcl, dr_fcl_dx] = diff::dr<1, DT>(std::move(f_cl), wrt(x));
     dS_dt_v                     = (-ad<X>(fcl) + dr_fcl_dx) * S_v;
   };
 
   // value of dynamics at call time
-  const auto [f0, d_f0_du] = diff::dr<1, DT>(
-    [&]<typename T>(const CastT<T, U> & vu) { return f(cast<T>(x), vu); }, wrt(pbm.u_des));
+  const auto [f0, d_f0_du] =
+    diff::dr<1, DT>([&]<typename T>(const CastT<T, U> & vu) { return f(cast<T>(x), vu); }, wrt(pbm.u_des));
 
   // loop over constraint number
   for (auto k = 0u; k != prm.K; ++k) {
     // differentiate barrier function w.r.t. x
-    const auto [hval, dh_dtx] = diff::dr<1, DT>(
-      [&h]<typename T>(const T & vt, const CastT<T, X> & vx) { return h(vt, vx); }, wrt(t, x));
+    const auto [hval, dh_dtx] =
+      diff::dr<1, DT>([&h]<typename T>(const T & vt, const CastT<T, X> & vx) { return h(vt, vx); }, wrt(t, x));
 
     const Eigen::Matrix<double, nh, 1> dh_dt  = dh_dtx.template leftCols<1>();
     const Eigen::Matrix<double, nh, nx> dh_dx = dh_dtx.template rightCols<nx>();
@@ -265,8 +238,8 @@ void asif_to_qp_update(
  * @return QuadraticProgram modeling the ASIF filtering problem
  */
 template<LieGroup X, Manifold U, diff::Type DT = diff::Type::Default>
-QuadraticProgram<-1, -1, double> asif_to_qp(
-  const ASIFProblem<X, U> & pbm, const ASIFtoQPParams & prm, auto && f, auto && h, auto && bu)
+QuadraticProgram<-1, -1, double>
+asif_to_qp(const ASIFProblem<X, U> & pbm, const ASIFtoQPParams & prm, auto && f, auto && h, auto && bu)
 {
   static constexpr int nh = std::invoke_result_t<decltype(h), double, X>::SizeAtCompileTime;
 
@@ -278,15 +251,8 @@ QuadraticProgram<-1, -1, double> asif_to_qp(
   QuadraticProgram<-1, -1, double> qp;
   asif_to_qp_allocate<X, U>(qp, prm.K, nu_ineq, nh);
   asif_to_qp_update(
-    qp,
-    pbm,
-    prm,
-    std::forward<decltype(f)>(f),
-    std::forward<decltype(h)>(h),
-    std::forward<decltype(bu)>(bu));
+    qp, pbm, prm, std::forward<decltype(f)>(f), std::forward<decltype(h)>(h), std::forward<decltype(bu)>(bu));
   return qp;
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__INTERNAL__ASIF_FUNC_HPP_

@@ -1,43 +1,21 @@
-// smooth: Lie Theory for Robotics
-// https://github.com/pettni/smooth
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
 /**
  * @file Solve a double integrator optimal control problem as a quadratic program.
  */
 
-#include <smooth/feedback/ocp_to_qp.hpp>
-#include <smooth/feedback/qp_solver.hpp>
-
 #include <chrono>
 #include <iostream>
+
+#include <smooth/feedback/ocp_to_qp.hpp>
+#include <smooth/feedback/qp_solver.hpp>
 
 #include "ocp_doubleintegrator.hpp"
 
 #ifdef ENABLE_PLOTTING
-#include "common.hpp"
 #include <matplot/matplot.h>
+
+#include "common.hpp"
 #endif
 
 using namespace std::chrono;
@@ -58,8 +36,7 @@ int main()
 
   const auto t1 = high_resolution_clock::now();
 
-  const auto qpsol =
-    smooth::feedback::solve_qp(qp, smooth::feedback::QPSolverParams{.verbose = true});
+  const auto qpsol = smooth::feedback::solve_qp(qp, smooth::feedback::QPSolverParams{.verbose = true});
 
   const auto t2 = high_resolution_clock::now();
 
@@ -71,9 +48,8 @@ int main()
 #ifdef ENABLE_PLOTTING
   using namespace matplot;
 
-  const auto tt = linspace(0., ocpsol.tf, 500);
-  const auto tt_nodes =
-    r2v(mesh.all_nodes() | std::views::transform([&](double d) { return d * ocpsol.tf; }));
+  const auto tt         = linspace(0., ocpsol.tf, 500);
+  const auto tt_nodes   = r2v(mesh.all_nodes() | std::views::transform([&](double d) { return d * ocpsol.tf; }));
   const auto tt_weights = r2v(mesh.all_weights());
 
   figure();

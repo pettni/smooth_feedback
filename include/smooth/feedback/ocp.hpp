@@ -1,41 +1,17 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__OCP_HPP_
-#define SMOOTH__FEEDBACK__OCP_HPP_
+#pragma once
 
 /**
  * @file
  * @brief Optimal control problem definition.
  */
 
-#include <Eigen/Core>
-#include <smooth/diff.hpp>
-#include <smooth/lie_group.hpp>
-
 #include <iostream>
+
+#include <Eigen/Core>
+#include <smooth/concepts/lie_group.hpp>
+#include <smooth/diff.hpp>
 
 #include "traits.hpp"
 
@@ -88,8 +64,7 @@ struct OCP
   /// @brief Number of running constraints
   static constexpr int Ncr = std::invoke_result_t<CR, double, X, U>::SizeAtCompileTime;
   /// @brief Number of end constraints
-  static constexpr int Nce =
-    std::invoke_result_t<CE, double, X, X, Eigen::Matrix<double, Nq, 1>>::SizeAtCompileTime;
+  static constexpr int Nce = std::invoke_result_t<CE, double, X, X, Eigen::Matrix<double, Nq, 1>>::SizeAtCompileTime;
 
   /// @brief Solution type corresponding to this problem
   using Solution = OCPSolution<X, U, Nq, Ncr, Nce>;
@@ -129,8 +104,8 @@ concept OCPType = traits::is_specialization_of_v<std::decay_t<T>, OCP>;
 
 /// @brief Concept that is true for FlatOCP specializations
 template<typename T>
-concept FlatOCPType = OCPType<T> &&(
-  smooth::RnType<typename std::decay_t<T>::X> && smooth::RnType<typename std::decay_t<T>::U>);
+concept FlatOCPType =
+  OCPType<T> &&(smooth::RnType<typename std::decay_t<T>::X> && smooth::RnType<typename std::decay_t<T>::U>);
 
 /**
  * @brief Solution to OCP.
@@ -202,18 +177,10 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
   if (!diff::detail::diffable_order2<decltype(ocp.theta), std::tuple<double, X, X, Q>>) {
     std::cout << "no hessian for theta\n";
   }
-  if (!diff::detail::diffable_order1<decltype(ocp.f), std::tuple<double, X, U>>) {
-    std::cout << "no jacobian for f\n";
-  }
-  if (!diff::detail::diffable_order2<decltype(ocp.f), std::tuple<double, X, U>>) {
-    std::cout << "no hessian for f\n";
-  }
-  if (!diff::detail::diffable_order1<decltype(ocp.g), std::tuple<double, X, U>>) {
-    std::cout << "no jacobian for g\n";
-  }
-  if (!diff::detail::diffable_order2<decltype(ocp.g), std::tuple<double, X, U>>) {
-    std::cout << "no hessian for g\n";
-  }
+  if (!diff::detail::diffable_order1<decltype(ocp.f), std::tuple<double, X, U>>) { std::cout << "no jacobian for f\n"; }
+  if (!diff::detail::diffable_order2<decltype(ocp.f), std::tuple<double, X, U>>) { std::cout << "no hessian for f\n"; }
+  if (!diff::detail::diffable_order1<decltype(ocp.g), std::tuple<double, X, U>>) { std::cout << "no jacobian for g\n"; }
+  if (!diff::detail::diffable_order2<decltype(ocp.g), std::tuple<double, X, U>>) { std::cout << "no hessian for g\n"; }
   if (!diff::detail::diffable_order1<decltype(ocp.cr), std::tuple<double, X, U>>) {
     std::cout << "no jacobian for cr\n";
   }
@@ -265,8 +232,7 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
       };
     }
     if constexpr (diff::detail::diffable_order2<decltype(ocp.theta), std::tuple<double, X, X, Q>>) {
-      const auto [f_def, df_def, d2f_def] =
-        diff::dr<2, diff::Type::Analytic>(ocp.theta, wrt(tf, x0, xf, q));
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.theta, wrt(tf, x0, xf, q));
       const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.theta, wrt(tf, x0, xf, q));
 
       if (!cmp(d2f_def, d2f_num)) {
@@ -290,8 +256,7 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
       };
     }
     if constexpr (diff::detail::diffable_order2<decltype(ocp.ce), std::tuple<double, X, X, Q>>) {
-      const auto [f_def, df_def, d2f_def] =
-        diff::dr<2, diff::Type::Analytic>(ocp.ce, wrt(tf, x0, xf, q));
+      const auto [f_def, df_def, d2f_def] = diff::dr<2, diff::Type::Analytic>(ocp.ce, wrt(tf, x0, xf, q));
       const auto [f_num, df_num, d2f_num] = diff::dr<2, DT>(ocp.ce, wrt(tf, x0, xf, q));
 
       if (!cmp(d2f_def, d2f_num)) {
@@ -373,5 +338,3 @@ bool test_ocp_derivatives(OCPType auto & ocp, uint32_t num_trials = 1, double ep
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__OCP_HPP_

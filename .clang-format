@@ -6,6 +6,7 @@ IndentWidth: 2
 ContinuationIndentWidth: 2
 
 AlignAfterOpenBracket: AlwaysBreak
+# AlignArrayOfStructures: None
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: Left
@@ -46,12 +47,21 @@ EmptyLineBeforeAccessModifier: Always
 
 FixNamespaceComments: true
 
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:     '^<[a-z_]*>$'   # system headers
+    Priority:  1
+  - Regex:     '^<.*>'         # third-party headers
+    Priority:  2
+  - Regex:     '".*"'          # local headers
+    Priority:  3
+
 IndentCaseLabels: false
 IndentRequires: true
 
 InsertTrailingCommas: Wrapped
 
-ColumnLimit: 100
+ColumnLimit: 120
 
 SortUsingDeclarations: true
 SortIncludes: true

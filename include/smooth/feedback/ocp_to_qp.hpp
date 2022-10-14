@@ -1,30 +1,6 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__OCP_TO_QP_HPP_
-#define SMOOTH__FEEDBACK__OCP_TO_QP_HPP_
+#pragma once
 
 /**
  * @file
@@ -63,10 +39,7 @@ struct OcpToQpWorkmemory
  */
 template<diff::Type DT = diff::Type::Default>
 void ocp_to_qp_allocate(
-  QuadraticProgramSparse<double> & qp,
-  OcpToQpWorkmemory & work,
-  OCPType auto & ocp,
-  const MeshType auto & mesh)
+  QuadraticProgramSparse<double> & qp, OcpToQpWorkmemory & work, OCPType auto & ocp, const MeshType auto & mesh)
 {
   using ocp_t = typename std::decay_t<decltype(ocp)>;
 
@@ -109,8 +82,7 @@ void ocp_to_qp_allocate(
   Eigen::VectorXi A_pattern = Eigen::VectorXi::Zero(Ncon);
   for (auto ival = 0ul, I0 = 0ul; ival < mesh.N_ivals(); I0 += mesh.N_colloc_ival(ival), ++ival) {
     const auto Ki = mesh.N_colloc_ival(ival);  // number of nodes in interval
-    A_pattern.segment(dcon_B + I0 * Nx, Ki * Nx) +=
-      Eigen::VectorXi::Constant(Ki * Nx, Nx + Ki + Nu);
+    A_pattern.segment(dcon_B + I0 * Nx, Ki * Nx) += Eigen::VectorXi::Constant(Ki * Nx, Nx + Ki + Nu);
   }
   A_pattern.segment(crcon_B, crcon_L).setConstant(Nx + Nu);
   A_pattern.segment(cecon_B, cecon_L).setConstant(2 * Nx);
@@ -447,8 +419,8 @@ void ocp_to_qp_update(
  * @see qpsol_to_ocpsol()
  */
 template<diff::Type DT = diff::Type::Default>
-QuadraticProgramSparse<double> ocp_to_qp(
-  const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
+QuadraticProgramSparse<double>
+ocp_to_qp(const OCPType auto & ocp, const MeshType auto & mesh, double tf, auto && xl_fun, auto && ul_fun)
 {
   QuadraticProgramSparse<double> qp;
   detail::OcpToQpWorkmemory work;
@@ -506,23 +478,15 @@ auto qpsol_to_ocpsol(
   Eigen::MatrixXd Xmat = qpsol.primal.segment(xvar_B, xvar_L).reshaped(Nx, N + 1);
   Eigen::MatrixXd Umat = qpsol.primal.segment(uvar_B, uvar_L).reshaped(Nu, N);
 
-  auto xfun = [t0     = 0.,
-               tf     = tf,
-               mesh   = mesh,
-               Xmat   = std::move(Xmat),
-               xl_fun = std::forward<decltype(xl_fun)>(xl_fun)](double t) -> X {
-    const auto tngnt =
-      mesh.template eval<Eigen::Vector<double, Nx>>((t - t0) / (tf - t0), Xmat.colwise(), 0, true);
+  auto xfun = [t0 = 0., tf = tf, mesh = mesh, Xmat = std::move(Xmat), xl_fun = std::forward<decltype(xl_fun)>(xl_fun)](
+                double t) -> X {
+    const auto tngnt = mesh.template eval<Eigen::Vector<double, Nx>>((t - t0) / (tf - t0), Xmat.colwise(), 0, true);
     return rplus(xl_fun(t), tngnt);
   };
 
-  auto ufun = [t0     = 0.,
-               tf     = tf,
-               mesh   = mesh,
-               Umat   = std::move(Umat),
-               ul_fun = std::forward<decltype(ul_fun)>(ul_fun)](double t) -> U {
-    const auto tngnt =
-      mesh.template eval<Eigen::Vector<double, Nu>>((t - t0) / (tf - t0), Umat.colwise(), 0, false);
+  auto ufun = [t0 = 0., tf = tf, mesh = mesh, Umat = std::move(Umat), ul_fun = std::forward<decltype(ul_fun)>(ul_fun)](
+                double t) -> U {
+    const auto tngnt = mesh.template eval<Eigen::Vector<double, Nu>>((t - t0) / (tf - t0), Umat.colwise(), 0, false);
     return rplus(ul_fun(t), tngnt);
   };
 
@@ -535,5 +499,3 @@ auto qpsol_to_ocpsol(
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__OCP_TO_QP_HPP_

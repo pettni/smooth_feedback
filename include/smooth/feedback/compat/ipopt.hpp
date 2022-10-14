@@ -1,30 +1,6 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
-#define SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_
+#pragma once
 
 /**
  * @file
@@ -53,16 +29,12 @@ public:
   /**
    * @brief Ipopt wrapper for NLP (rvlaue version).
    */
-  inline IpoptNLP(Problem && nlp, bool use_hessian = false)
-      : nlp_(std::move(nlp)), use_hessian_(use_hessian)
-  {}
+  inline IpoptNLP(Problem && nlp, bool use_hessian = false) : nlp_(std::move(nlp)), use_hessian_(use_hessian) {}
 
   /**
    * @brief Ipopt wrapper for NLP (lvalue version).
    */
-  inline IpoptNLP(const Problem & nlp, bool use_hessian = false)
-      : nlp_(nlp), use_hessian_(use_hessian)
-  {}
+  inline IpoptNLP(const Problem & nlp, bool use_hessian = false) : nlp_(nlp), use_hessian_(use_hessian) {}
 
   /**
    * @brief Access solution.
@@ -106,12 +78,8 @@ public:
    * @brief IPOPT bounds overload
    */
   inline bool get_bounds_info(
-    Ipopt::Index n,
-    Ipopt::Number * x_l,
-    Ipopt::Number * x_u,
-    Ipopt::Index m,
-    Ipopt::Number * g_l,
-    Ipopt::Number * g_u) override
+    Ipopt::Index n, Ipopt::Number * x_l, Ipopt::Number * x_u, Ipopt::Index m, Ipopt::Number * g_l, Ipopt::Number * g_u)
+    override
   {
     Eigen::Map<Eigen::VectorXd>(x_l, n) = nlp_.xl().cwiseMax(Eigen::VectorXd::Constant(n, -2e19));
     Eigen::Map<Eigen::VectorXd>(x_u, n) = nlp_.xu().cwiseMin(Eigen::VectorXd::Constant(n, 2e19));
@@ -150,11 +118,8 @@ public:
   /**
    * @brief IPOPT method to define objective
    */
-  inline bool eval_f(
-    Ipopt::Index n,
-    const Ipopt::Number * x,
-    [[maybe_unused]] bool new_x,
-    Ipopt::Number & obj_value) override
+  inline bool
+  eval_f(Ipopt::Index n, const Ipopt::Number * x, [[maybe_unused]] bool new_x, Ipopt::Number & obj_value) override
   {
     obj_value = nlp_.f(Eigen::Map<const Eigen::VectorXd>(x, n));
     return true;
@@ -163,11 +128,8 @@ public:
   /**
    * @brief IPOPT method to define gradient of objective
    */
-  inline bool eval_grad_f(
-    Ipopt::Index n,
-    const Ipopt::Number * x,
-    [[maybe_unused]] bool new_x,
-    Ipopt::Number * grad_f) override
+  inline bool
+  eval_grad_f(Ipopt::Index n, const Ipopt::Number * x, [[maybe_unused]] bool new_x, Ipopt::Number * grad_f) override
   {
     const auto & df_dx = nlp_.df_dx(Eigen::Map<const Eigen::VectorXd>(x, n));
     for (auto i = 0; i < n; ++i) { grad_f[i] = df_dx.coeff(0, i); }
@@ -178,11 +140,7 @@ public:
    * @brief IPOPT method to define constraint function
    */
   inline bool eval_g(
-    Ipopt::Index n,
-    const Ipopt::Number * x,
-    [[maybe_unused]] bool new_x,
-    Ipopt::Index m,
-    Ipopt::Number * g) override
+    Ipopt::Index n, const Ipopt::Number * x, [[maybe_unused]] bool new_x, Ipopt::Index m, Ipopt::Number * g) override
   {
     Eigen::Map<Eigen::VectorXd>(g, m) = nlp_.g(Eigen::Map<const Eigen::VectorXd>(x, n));
     return true;
@@ -348,13 +306,11 @@ inline NLPSolution solve_nlp_ipopt(
   bool use_hessian = false;
   const auto n     = nlp.n();
 
-  auto it = std::find_if(opts_string.begin(), opts_string.end(), [](const auto & p) {
-    return p.first == "hessian_approximation";
-  });
+  auto it = std::find_if(
+    opts_string.begin(), opts_string.end(), [](const auto & p) { return p.first == "hessian_approximation"; });
   if (it != opts_string.end() && it->second == "exact") { use_hessian = true; }
 
-  Ipopt::SmartPtr<IpoptNLP<nlp_t>> ipopt_nlp =
-    new IpoptNLP<nlp_t>(std::forward<decltype(nlp)>(nlp), use_hessian);
+  Ipopt::SmartPtr<IpoptNLP<nlp_t>> ipopt_nlp   = new IpoptNLP<nlp_t>(std::forward<decltype(nlp)>(nlp), use_hessian);
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
 
   // silence welcome message
@@ -382,5 +338,3 @@ inline NLPSolution solve_nlp_ipopt(
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__COMPAT__IPOPT_HPP_

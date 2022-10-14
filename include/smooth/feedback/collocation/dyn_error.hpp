@@ -1,30 +1,6 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__COLLOCATION__DYN_ERROR_HPP_
-#define SMOOTH__FEEDBACK__COLLOCATION__DYN_ERROR_HPP_
+#pragma once
 
 /**
  * @file
@@ -49,11 +25,11 @@ namespace smooth::feedback {
  *
  * @return vector with relative errors for every interval in m
  */
-Eigen::VectorXd mesh_dyn_error(
-  auto && f, const MeshType auto & m, const double t0, const double tf, auto && xfun, auto && ufun)
+Eigen::VectorXd
+mesh_dyn_error(auto && f, const MeshType auto & m, const double t0, const double tf, auto && xfun, auto && ufun)
 {
   using smooth::utils::zip;
-  static constexpr auto Nx = Dof<std::invoke_result_t<decltype(xfun), double>>;
+  static constexpr auto Nx = std::invoke_result_t<decltype(xfun), double>::SizeAtCompileTime;
 
   static_assert(Nx > 0, "Static size required");
 
@@ -98,5 +74,3 @@ Eigen::VectorXd mesh_dyn_error(
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__COLLOCATION__DYN_ERROR_HPP_

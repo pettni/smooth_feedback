@@ -1,46 +1,22 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson, John B. Mains
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson, John B. Mains. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__QP_SOLVER_HPP_
-#define SMOOTH__FEEDBACK__QP_SOLVER_HPP_
+#pragma once
 
 /**
  * @file
  * @brief Quadratic Program solver.
  */
 
-#include <Eigen/Cholesky>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <Eigen/SparseCholesky>
-
 #include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <optional>
+
+#include <Eigen/Cholesky>
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <Eigen/SparseCholesky>
 
 #include "qp.hpp"
 #include "utils/sparse.hpp"
@@ -156,9 +132,7 @@ bool polish_qp(
   if constexpr (sparse) {
     // preallocate nonzeros
     Eigen::VectorXi nnz(n + nl + nu);
-    for (auto i = 0u; i != n; ++i) {
-      nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i];
-    }
+    for (auto i = 0u; i != n; ++i) { nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i]; }
     for (auto i = 0u; i != nl + nu; ++i) {
       nnz(n + i) = pbm.A.outerIndexPtr()[LU_idx(i) + 1] - pbm.A.outerIndexPtr()[LU_idx(i)];
     }
@@ -199,8 +173,7 @@ bool polish_qp(
     Hp.makeCompressed();
   } else {
     Hp.topLeftCorner(n, n) += Eigen::VectorX<Scalar>::Constant(n, prm.delta).asDiagonal();
-    Hp.bottomRightCorner(nl + nu, nl + nu) -=
-      Eigen::VectorX<Scalar>::Constant(nl + nu, prm.delta).asDiagonal();
+    Hp.bottomRightCorner(nl + nu, nl + nu) -= Eigen::VectorX<Scalar>::Constant(nl + nu, prm.delta).asDiagonal();
   }
 
   Eigen::VectorX<Scalar> h(n + nl + nu);
@@ -211,10 +184,7 @@ bool polish_qp(
   // ITERATIVE REFINEMENT
 
   // factorize Hp
-  std::conditional_t<
-    sparse,
-    Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>,
-    Eigen::LDLT<decltype(H), Eigen::Upper>>
+  std::conditional_t<sparse, Eigen::SimplicialLDLT<decltype(H), Eigen::Upper>, Eigen::LDLT<decltype(H), Eigen::Upper>>
     ldlt(Hp);
 
   if (ldlt.info()) { return false; }
@@ -280,12 +250,11 @@ class QPSolver
   static constexpr Eigen::Index K = (N == -1 || M == -1) ? Eigen::Index(-1) : N + M;
 
   // typedefs
-  using Rn = Eigen::Vector<Scalar, N>;
-  using Rm = Eigen::Vector<Scalar, M>;
-  using Rk = Eigen::Vector<Scalar, K>;
-  using Ht = std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, K, K>>;
-  using LDLTt = std::
-    conditional_t<sparse, Eigen::SimplicialLDLT<Ht, Eigen::Upper>, Eigen::LDLT<Ht, Eigen::Upper>>;
+  using Rn    = Eigen::Vector<Scalar, N>;
+  using Rm    = Eigen::Vector<Scalar, M>;
+  using Rk    = Eigen::Vector<Scalar, K>;
+  using Ht    = std::conditional_t<sparse, Eigen::SparseMatrix<Scalar>, Eigen::Matrix<Scalar, K, K>>;
+  using LDLTt = std::conditional_t<sparse, Eigen::SimplicialLDLT<Ht, Eigen::Upper>, Eigen::LDLT<Ht, Eigen::Upper>>;
 
   static inline const Scalar inf = std::numeric_limits<Scalar>::infinity();
 
@@ -358,12 +327,8 @@ public:
     H_.resize(k, k);
     if constexpr (sparse) {
       Eigen::VectorXi nnz(k);
-      for (auto i = 0u; i < n; ++i) {
-        nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1;
-      }
-      for (auto i = 0u; i < m; ++i) {
-        nnz(n + i) = pbm.A.outerIndexPtr()[i + 1] - pbm.A.outerIndexPtr()[i] + 1;
-      }
+      for (auto i = 0u; i < n; ++i) { nnz(i) = pbm.P.outerIndexPtr()[i + 1] - pbm.P.outerIndexPtr()[i] + 1; }
+      for (auto i = 0u; i < m; ++i) { nnz(n + i) = pbm.A.outerIndexPtr()[i + 1] - pbm.A.outerIndexPtr()[i] + 1; }
       H_.reserve(nnz);
     }
   }
@@ -371,9 +336,8 @@ public:
   /**
    * @brief Solve quadratic program.
    */
-  const QPSolution<M, N, Scalar> & solve(
-    const Pbm & pbm,
-    std::optional<std::reference_wrapper<const QPSolution<M, N, Scalar>>> warmstart = {})
+  const QPSolution<M, N, Scalar> &
+  solve(const Pbm & pbm, std::optional<std::reference_wrapper<const QPSolution<M, N, Scalar>>> warmstart = {})
   {
     // update problem scaling
     if (prm_.scaling) { scale(pbm); }
@@ -424,19 +388,15 @@ public:
           H_.coeffRef(it.col(), n + it.row()) = sy_(it.row()) * sx_(it.col()) * it.value();
         }
       }
-      for (auto row = 0u; row < m; ++row) {
-        H_.coeffRef(n + row, n + row) = Scalar(-1) / rho_(row);
-      }
+      for (auto row = 0u; row < m; ++row) { H_.coeffRef(n + row, n + row) = Scalar(-1) / rho_(row); }
 
       if (!H_.isCompressed()) { H_.makeCompressed(); }
     } else {
       H_.setZero();
 
       H_.template topLeftCorner<N, N>(n, n) = c_ * sx_.asDiagonal() * pbm.P * sx_.asDiagonal();
-      H_.template topLeftCorner<N, N>(n, n) +=
-        Eigen::Vector<Scalar, N>::Constant(n, sigma).asDiagonal();
-      H_.template topRightCorner<N, M>(n, m) =
-        (sy_.asDiagonal() * pbm.A * sx_.asDiagonal()).transpose();
+      H_.template topLeftCorner<N, N>(n, n) += Eigen::Vector<Scalar, N>::Constant(n, sigma).asDiagonal();
+      H_.template topRightCorner<N, M>(n, m)    = (sy_.asDiagonal() * pbm.A * sx_.asDiagonal()).transpose();
       H_.template bottomRightCorner<M, M>(m, m) = (-rho_).cwiseInverse().asDiagonal();
     }
 
@@ -508,8 +468,8 @@ public:
                  + alpha_comp * rho_.cwiseInverse().cwiseProduct(sol_.dual) + z_)
                   .cwiseMax(sy_.cwiseProduct(pbm.l))
                   .cwiseMin(sy_.cwiseProduct(pbm.u));
-      sol_.dual = alpha_comp * sol_.dual + alpha * p_.template segment<M>(n, m)
-                + rho_.cwiseProduct(z_) - rho_.cwiseProduct(z_next_);
+      sol_.dual = alpha_comp * sol_.dual + alpha * p_.template segment<M>(n, m) + rho_.cwiseProduct(z_)
+                - rho_.cwiseProduct(z_next_);
       std::swap(z_, z_next_);
 
       if (iter % prm_.stop_check_iter == 1) {
@@ -538,9 +498,7 @@ public:
 
         // check for timeout
         if (!ret_code) {
-          if (
-            prm_.max_time
-            && std::chrono::high_resolution_clock::now() > t0 + prm_.max_time.value()) {
+          if (prm_.max_time && std::chrono::high_resolution_clock::now() > t0 + prm_.max_time.value()) {
             ret_code = QPSolutionStatus::MaxTime;
           }
         }
@@ -614,9 +572,7 @@ protected:
     const Eigen::Index m = pbm.A.rows();
 
     // norm function
-    static const auto norm = [](auto && t) -> Scalar {
-      return t.template lpNorm<Eigen::Infinity>();
-    };
+    static const auto norm = [](auto && t) -> Scalar { return t.template lpNorm<Eigen::Infinity>(); };
 
     // OPTIMALITY
 
@@ -630,9 +586,7 @@ protected:
       Aty_.noalias()          = pbm.A.transpose() * y_us_;
       const Scalar dual_scale = std::max<Scalar>({norm(Px_), norm(pbm.q), norm(Aty_)});
       Px_ += pbm.q + Aty_;
-      if (norm(Px_) <= prm_.eps_abs + prm_.eps_rel * dual_scale) {
-        return QPSolutionStatus::Optimal;
-      }
+      if (norm(Px_) <= prm_.eps_abs + prm_.eps_rel * dual_scale) { return QPSolutionStatus::Optimal; }
     }
 
     // PRIMAL INFEASIBILITY
@@ -668,8 +622,8 @@ protected:
     const Scalar dx_norm = norm(dx_us_);
     Px_.noalias()        = pbm.P * dx_us_;
 
-    bool dual_infeasible = (norm(Px_) <= prm_.eps_dual_inf * dx_norm)
-                        && (pbm.q.dot(dx_us_) <= prm_.eps_dual_inf * dx_norm);
+    bool dual_infeasible =
+      (norm(Px_) <= prm_.eps_dual_inf * dx_norm) && (pbm.q.dot(dx_us_) <= prm_.eps_dual_inf * dx_norm);
     for (auto i = 0u; i != m && dual_infeasible; ++i) {
       if (pbm.u(i) == inf) {
         dual_infeasible &= (Ax_(i) >= -prm_.eps_dual_inf * dx_norm);
@@ -767,10 +721,8 @@ protected:
 
       sx_.applyOnTheLeft(sx_inc_.cwiseMax(1e-8).cwiseInverse().cwiseSqrt().asDiagonal());
       sy_.applyOnTheLeft(sy_inc_.cwiseMax(1e-8).cwiseInverse().cwiseSqrt().asDiagonal());
-    } while (
-      iter++ < 10
-      && std::max((sx_inc_.array() - 1).abs().maxCoeff(), (sy_inc_.array() - 1).abs().maxCoeff())
-           > 0.1);
+    } while (iter++ < 10
+             && std::max((sx_inc_.array() - 1).abs().maxCoeff(), (sy_inc_.array() - 1).abs().maxCoeff()) > 0.1);
   }
 
 private:
@@ -831,5 +783,3 @@ detail::qp_solution_t<Pbm> solve_qp(
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__QP_SOLVER_HPP_

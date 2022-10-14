@@ -24,7 +24,6 @@
 // SOFTWARE.
 
 #include <gtest/gtest.h>
-
 #include <smooth/feedback/qp.hpp>
 #include <smooth/feedback/qp_solver.hpp>
 
@@ -37,24 +36,19 @@ static constexpr smooth::feedback::QPSolverParams test_prm{
 
 TEST(QP, StaticProperties)
 {
-  static_assert(std::is_copy_assignable_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
-  static_assert(std::is_copy_constructible_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
-  static_assert(std::is_move_assignable_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
-  static_assert(std::is_move_constructible_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+  static_assert(std::is_copy_assignable_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+  static_assert(std::is_copy_constructible_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+  static_assert(std::is_move_assignable_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
+  static_assert(std::is_move_constructible_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgram<-1, -1>>>);
 
-  static_assert(std::is_copy_assignable_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
-  static_assert(std::is_copy_constructible_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
-  static_assert(std::is_move_assignable_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
-  static_assert(std::is_move_constructible_v<
-                smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
-
+  static_assert(
+    std::is_copy_assignable_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
+  static_assert(
+    std::is_copy_constructible_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
+  static_assert(
+    std::is_move_assignable_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
+  static_assert(
+    std::is_move_constructible_v<smooth::feedback::QPSolver<smooth::feedback::QuadraticProgramSparse<double>>>);
 }
 
 TEST(QP, BasicStatic)
@@ -251,8 +245,7 @@ TEST(QP, PortfolioOptimization)
 {
   smooth::feedback::QuadraticProgram<5, 3> problem;
 
-  problem.P << 0.018641, 0.00359853, 0.00130976, 0.00359853, 0.00643694, 0.00488727, 0.00130976,
-    0.00488727, 0.0686828;
+  problem.P << 0.018641, 0.00359853, 0.00130976, 0.00359853, 0.00643694, 0.00488727, 0.00130976, 0.00488727, 0.0686828;
   problem.q.setZero();
 
   problem.A.row(0) << 1, 1, 1;
@@ -283,8 +276,7 @@ TEST(QP, PortfolioOptimizationSparse)
   smooth::feedback::QuadraticProgramSparse problem;
 
   Eigen::Matrix<double, 3, 3> P_d;
-  P_d << 0.018641, 0.00359853, 0.00130976, 0.00359853, 0.00643694, 0.00488727, 0.00130976,
-    0.00488727, 0.0686828;
+  P_d << 0.018641, 0.00359853, 0.00130976, 0.00359853, 0.00643694, 0.00488727, 0.00130976, 0.00488727, 0.0686828;
 
   problem.P.resize(3, 3);
   problem.P = P_d.sparseView();

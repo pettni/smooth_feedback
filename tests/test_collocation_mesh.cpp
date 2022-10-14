@@ -23,11 +23,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
+#include <iostream>
 
 #include <Eigen/Core>
-
-#include <iostream>
+#include <gtest/gtest.h>
 
 #include "smooth/feedback/collocation/mesh.hpp"
 
@@ -107,13 +106,9 @@ TEST(CollocationMesh, DifferentiationIntegration)
 
     // specify function values on mesh
     Eigen::RowVectorXd xvals(N + 1);
-    for (const auto [i, tau] : smooth::utils::zip(std::views::iota(0u, N + 1), taus)) {
-      xvals(i) = x(tau);
-    }
+    for (const auto [i, tau] : smooth::utils::zip(std::views::iota(0u, N + 1), taus)) { xvals(i) = x(tau); }
     Eigen::RowVectorXd dxvals(N);
-    for (const auto [i, tau] : smooth::utils::zip(std::views::iota(0u, N), taus)) {
-      dxvals(i) = dx(tau);
-    }
+    for (const auto [i, tau] : smooth::utils::zip(std::views::iota(0u, N), taus)) { dxvals(i) = dx(tau); }
 
     // derivative and integral matrices
     const auto D = m.interval_diffmat(ival);
@@ -184,8 +179,7 @@ TEST(CollocationMesh, IntervalNodes)
     ASSERT_NEAR(d1 + 0.5, d2, 1e-9);
   }
 
-  for (const auto [w1, w2] :
-       smooth::utils::zip(mesh.interval_weights(0), mesh.interval_weights(1))) {
+  for (const auto [w1, w2] : smooth::utils::zip(mesh.interval_weights(0), mesh.interval_weights(1))) {
     ASSERT_NEAR(w1, w2, 1e-9);
   }
 
@@ -193,9 +187,7 @@ TEST(CollocationMesh, IntervalNodes)
 
   auto all_weights = mesh.all_weights();
 
-  for (const auto [d0, d1] : smooth::utils::zip(all_nodes, all_nodes | std::views::drop(1))) {
-    ASSERT_LE(d0, d1);
-  }
+  for (const auto [d0, d1] : smooth::utils::zip(all_nodes, all_nodes | std::views::drop(1))) { ASSERT_LE(d0, d1); }
 
   double sum = 0u;
   for (auto w : all_weights) { sum += w; }

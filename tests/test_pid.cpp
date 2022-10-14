@@ -23,13 +23,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
+#include <chrono>
 
+#include <gtest/gtest.h>
 #include <smooth/feedback/pid.hpp>
 #include <smooth/se2.hpp>
 #include <smooth/spline/fit.hpp>
-
-#include <chrono>
 
 using namespace std::chrono_literals;
 
@@ -73,10 +72,7 @@ TEST(PID, SetDesiredCurve)
     std::vector<double> tt{0, 1, 2, 3};
 
     std::vector<smooth::SE2d> gg{
-      smooth::SE2d::Random(),
-      smooth::SE2d::Random(),
-      smooth::SE2d::Random(),
-      smooth::SE2d::Random()};
+      smooth::SE2d::Random(), smooth::SE2d::Random(), smooth::SE2d::Random(), smooth::SE2d::Random()};
 
     auto c = smooth::fit_spline_cubic(tt, gg);
 

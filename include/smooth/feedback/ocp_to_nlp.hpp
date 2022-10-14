@@ -1,30 +1,6 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__OCP_TO_NLP_HPP_
-#define SMOOTH__FEEDBACK__OCP_TO_NLP_HPP_
+#pragma once
 
 /**
  * @file
@@ -32,7 +8,7 @@
  */
 
 #include <Eigen/Core>
-#include <smooth/lie_group.hpp>
+#include <smooth/concepts/lie_group.hpp>
 
 #include "collocation/mesh.hpp"
 #include "collocation/mesh_function.hpp"
@@ -463,8 +439,7 @@ auto ocp_to_nlp(FlatOCPType auto && ocp, MeshType auto && mesh)
 /**
  * @brief Convert nonlinear program solution to ocp solution
  */
-auto nlpsol_to_ocpsol(
-  const FlatOCPType auto & ocp, const MeshType auto & mesh, const NLPSolution & nlp_sol)
+auto nlpsol_to_ocpsol(const FlatOCPType auto & ocp, const MeshType auto & mesh, const NLPSolution & nlp_sol)
 {
   using ocp_t = std::decay_t<decltype(ocp)>;
 
@@ -492,10 +467,8 @@ auto nlpsol_to_ocpsol(
   Eigen::MatrixXd X(ocp.Nx, N + 1);
   X = nlp_sol.x.segment(xvar_B, xvar_L).reshaped(ocp.Nx, xvar_L / ocp.Nx);
 
-  auto xfun =
-    [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::Vector<double, Nx> {
-    return mesh.template eval<Eigen::Vector<double, Nx>>(
-      (t - t0) / (tf - t0), X.colwise(), 0, true);
+  auto xfun = [t0 = t0, tf = tf, mesh = mesh, X = std::move(X)](double t) -> Eigen::Vector<double, Nx> {
+    return mesh.template eval<Eigen::Vector<double, Nx>>((t - t0) / (tf - t0), X.colwise(), 0, true);
   };
 
   // for these we repeat last point since there are no values for endpoint
@@ -503,28 +476,22 @@ auto nlpsol_to_ocpsol(
   Eigen::MatrixXd U(ocp.Nu, N);
   U = nlp_sol.x.segment(uvar_B, uvar_L).reshaped(ocp.Nu, uvar_L / ocp.Nu);
 
-  auto ufun =
-    [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::Vector<double, Nu> {
-    return mesh.template eval<Eigen::Vector<double, Nu>>(
-      (t - t0) / (tf - t0), U.colwise(), 0, false);
+  auto ufun = [t0 = t0, tf = tf, mesh = mesh, U = std::move(U)](double t) -> Eigen::Vector<double, Nu> {
+    return mesh.template eval<Eigen::Vector<double, Nu>>((t - t0) / (tf - t0), U.colwise(), 0, false);
   };
 
   Eigen::MatrixXd Ldyn(ocp.Nx, N);
   Ldyn = nlp_sol.lambda.segment(dcon_B, dcon_L).reshaped(ocp.Nx, dcon_L / ocp.Nx);
 
-  auto ldfun =
-    [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](double t) -> Eigen::Vector<double, Nx> {
-    return mesh.template eval<Eigen::Vector<double, Nx>>(
-      (t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
+  auto ldfun = [t0 = t0, tf = tf, mesh = mesh, Ldyn = std::move(Ldyn)](double t) -> Eigen::Vector<double, Nx> {
+    return mesh.template eval<Eigen::Vector<double, Nx>>((t - t0) / (tf - t0), Ldyn.colwise(), 0, false);
   };
 
   Eigen::MatrixXd Lcr(ocp.Ncr, N);
   Lcr = nlp_sol.lambda.segment(crcon_B, crcon_L).reshaped(ocp.Ncr, crcon_L / ocp.Ncr);
 
-  auto lcrfun =
-    [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::Vector<double, Ncr> {
-    return mesh.template eval<Eigen::Vector<double, Ncr>>(
-      (t - t0) / (tf - t0), Lcr.colwise(), 0, false);
+  auto lcrfun = [t0 = t0, tf = tf, mesh = mesh, Lcr = std::move(Lcr)](double t) -> Eigen::Vector<double, Ncr> {
+    return mesh.template eval<Eigen::Vector<double, Ncr>>((t - t0) / (tf - t0), Lcr.colwise(), 0, false);
   };
 
   return OCPSolution<typename ocp_t::X, typename ocp_t::U, ocp_t::Nq, ocp_t::Ncr, ocp_t::Nce>{
@@ -545,8 +512,7 @@ auto nlpsol_to_ocpsol(
  *
  * @note Allocates memory for return type.
  */
-NLPSolution
-ocpsol_to_nlpsol(const FlatOCPType auto & ocp, const MeshType auto & mesh, const auto & ocpsol)
+NLPSolution ocpsol_to_nlpsol(const FlatOCPType auto & ocp, const MeshType auto & mesh, const auto & ocpsol)
 {
   const auto N = mesh.N_colloc();
 
@@ -588,5 +554,3 @@ ocpsol_to_nlpsol(const FlatOCPType auto & ocp, const MeshType auto & mesh, const
 }
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__OCP_TO_NLP_HPP_

@@ -23,9 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Core>
+#include <gtest/gtest.h>
 
 #include "smooth/feedback/compat/ipopt.hpp"
 #include "smooth/feedback/ocp_to_nlp.hpp"
@@ -34,10 +33,7 @@ template<typename T, std::size_t N>
 using Vec = Eigen::Vector<T, N>;
 
 /// @brief Objective function
-const auto theta =
-  []<typename T>(T, const Vec<T, 2> &, const Vec<T, 2> &, const Vec<T, 1> & q) -> T {
-  return q.x();
-};
+const auto theta = []<typename T>(T, const Vec<T, 2> &, const Vec<T, 2> &, const Vec<T, 1> & q) -> T { return q.x(); };
 
 /// @brief Dynamics
 const auto f = []<typename T>(T, const Vec<T, 2> & x, const Vec<T, 1> & u) -> Vec<T, 2> {
@@ -50,13 +46,10 @@ const auto g = []<typename T>(T, const Vec<T, 2> & x, const Vec<T, 1> & u) -> Ve
 };
 
 /// @brief Running constraints
-const auto cr = []<typename T>(T, const Vec<T, 2> &, const Vec<T, 1> & u) -> Vec<T, 1> {
-  return Vec<T, 1>{{u.x()}};
-};
+const auto cr = []<typename T>(T, const Vec<T, 2> &, const Vec<T, 1> & u) -> Vec<T, 1> { return Vec<T, 1>{{u.x()}}; };
 
 /// @brief End constraints
-const auto ce =
-  []<typename T>(T tf, const Vec<T, 2> & x0, const Vec<T, 2> & xf, const Vec<T, 1> &) -> Vec<T, 5> {
+const auto ce = []<typename T>(T tf, const Vec<T, 2> & x0, const Vec<T, 2> & xf, const Vec<T, 1> &) -> Vec<T, 5> {
   Vec<T, 5> ret(5);
   ret << tf, x0, xf;
   return ret;
@@ -70,25 +63,19 @@ const auto r2v = []<std::ranges::range R>(const R & r) {
 TEST(OcpIpopt, Solve)
 {
   // define optimal control problem
-  smooth::feedback::OCP<
-    Eigen::Vector2d,
-    Vec<double, 1>,
-    decltype(theta),
-    decltype(f),
-    decltype(g),
-    decltype(cr),
-    decltype(ce)>
-    ocp{
-      .theta = theta,
-      .f     = f,
-      .g     = g,
-      .cr    = cr,
-      .crl   = Vec<double, 1>{{-1}},
-      .cru   = Vec<double, 1>{{1}},
-      .ce    = ce,
-      .cel   = Vec<double, 5>{{3, 1, 1, 0, 0}},
-      .ceu   = Vec<double, 5>{{6, 1, 1, 0, 0}},
-    };
+  smooth::feedback::
+    OCP<Eigen::Vector2d, Vec<double, 1>, decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
+      ocp{
+        .theta = theta,
+        .f     = f,
+        .g     = g,
+        .cr    = cr,
+        .crl   = Vec<double, 1>{{-1}},
+        .cru   = Vec<double, 1>{{1}},
+        .ce    = ce,
+        .cel   = Vec<double, 5>{{3, 1, 1, 0, 0}},
+        .ceu   = Vec<double, 5>{{6, 1, 1, 0, 0}},
+      };
 
   // define mesh
   smooth::feedback::Mesh mesh;

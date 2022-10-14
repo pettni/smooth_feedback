@@ -23,9 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Core>
+#include <gtest/gtest.h>
 
 #include "smooth/feedback/ocp.hpp"
 #include "smooth/feedback/ocp_to_qp.hpp"
@@ -41,35 +40,28 @@ using Vec = Eigen::Vector<T, N>;
 
 TEST(OcpToQp, Basic)
 {
-  const auto theta = []<typename T>(T, X<T>, X<T> xf, Vec<T, 1> q) -> T {
-    return xf.squaredNorm() + 2 * q.sum();
-  };
+  const auto theta = []<typename T>(T, X<T>, X<T> xf, Vec<T, 1> q) -> T { return xf.squaredNorm() + 2 * q.sum(); };
 
-  const auto f = []<typename T>(T, X<T> x, U<T> u) -> smooth::Tangent<X<T>> {
-    return {x.y(), u.x()};
-  };
+  const auto f = []<typename T>(T, X<T> x, U<T> u) -> smooth::Tangent<X<T>> { return {x.y(), u.x()}; };
 
-  const auto g = []<typename T>(T, X<T>, U<T> u) -> Vec<T, 1> {
-    return Vec<T, 1>{{u.x() * u.x()}};
-  };
+  const auto g = []<typename T>(T, X<T>, U<T> u) -> Vec<T, 1> { return Vec<T, 1>{{u.x() * u.x()}}; };
 
   const auto cr = []<typename T>(T, X<T>, U<T> u) -> Vec<T, 1> { return Vec<T, 1>{{u.x()}}; };
 
   const auto ce = []<typename T>(T, X<T>, X<T> xf, Vec<T, 1>) -> Vec<T, 2> { return xf; };
 
-  smooth::feedback::
-    OCP<X<double>, U<double>, decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
-      ocp{
-        .theta = theta,
-        .f     = f,
-        .g     = g,
-        .cr    = cr,
-        .crl   = Eigen::VectorXd{{-1}},
-        .cru   = Eigen::VectorXd{{1}},
-        .ce    = ce,
-        .cel   = Eigen::Vector2d{-5, -5},
-        .ceu   = Eigen::Vector2d{5, 5},
-      };
+  smooth::feedback::OCP<X<double>, U<double>, decltype(theta), decltype(f), decltype(g), decltype(cr), decltype(ce)>
+    ocp{
+      .theta = theta,
+      .f     = f,
+      .g     = g,
+      .cr    = cr,
+      .crl   = Eigen::VectorXd{{-1}},
+      .cru   = Eigen::VectorXd{{1}},
+      .ce    = ce,
+      .cel   = Eigen::Vector2d{-5, -5},
+      .ceu   = Eigen::Vector2d{5, 5},
+    };
 
   smooth::feedback::Mesh<5, 5> mesh;
   mesh.refine_ph(0, 10);
@@ -95,9 +87,7 @@ TEST(OcpToQp, Basic)
   static constexpr double v0 = -0.3;
   static constexpr double u0 = 0.1;
 
-  const auto xtraj = [](double t) {
-    return X<double>{{x0 + v0 * t + u0 * t * t / 2, v0 + u0 * t}};
-  };
+  const auto xtraj = [](double t) { return X<double>{{x0 + v0 * t + u0 * t * t / 2, v0 + u0 * t}}; };
 
   Eigen::Matrix<double, 2, -1> Xvar(ocp.Nx, mesh.N_colloc() + 1);
   Eigen::Matrix<double, 1, -1> Uvar(ocp.Nu, mesh.N_colloc());

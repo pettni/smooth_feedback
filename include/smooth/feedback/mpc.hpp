@@ -1,35 +1,11 @@
-// smooth_feedback: Control theory on Lie groups
-// https://github.com/pettni/smooth_feedback
-//
-// Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-//
-// Copyright (c) 2021 Petter Nilsson
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Copyright (C) 2022 Petter Nilsson. MIT License.
 
-#ifndef SMOOTH__FEEDBACK__MPC_HPP_
-#define SMOOTH__FEEDBACK__MPC_HPP_
-
-#include <smooth/lie_group.hpp>
-#include <smooth/lie_group_sparse.hpp>
+#pragma once
 
 #include <memory>
+
+#include <smooth/concepts/lie_group.hpp>
+#include <smooth/lie_sparse.hpp>
 
 #include "ocp_to_qp.hpp"
 #include "qp_solver.hpp"
@@ -105,10 +81,7 @@ struct MPCObj
 
   // function f(t, x0, xf, q) = (1/2) xf' Q xf + q_0
   double operator()(
-    const double,
-    const X &,
-    [[maybe_unused]] const X & xf,
-    [[maybe_unused]] const Eigen::Vector<double, 1> & q) const
+    const double, const X &, [[maybe_unused]] const X & xf, [[maybe_unused]] const Eigen::Vector<double, 1> & q) const
   {
     assert(q(0) == 1.);
     assert(xf_des.isApprox(xf, 1e-4));
@@ -161,18 +134,14 @@ struct MPCDyn
   // functor members
   Tangent<X> operator()(const double t, const X & x, const U & u)
   {
-    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
-      f.set_time(time_trait<T>::plus(t0, t));
-    }
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) { f.set_time(time_trait<T>::plus(t0, t)); }
 
     return f(x, u);
   }
 
   Eigen::Matrix<double, Nx, 1 + Nx + Nu> jacobian(const double t, const X & x, const U & u)
   {
-    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
-      f.set_time(time_trait<T>::plus(t0, t));
-    }
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) { f.set_time(time_trait<T>::plus(t0, t)); }
 
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
 
@@ -212,10 +181,8 @@ struct MPCIntegrand
   // functor members
 
   // function f(x, t, u) = (1/2) * (x' Q x + u' R u)
-  Eigen::Vector<double, 1> operator()(
-    [[maybe_unused]] const double t_rel,
-    [[maybe_unused]] const X & x,
-    [[maybe_unused]] const U & u) const
+  Eigen::Vector<double, 1>
+  operator()([[maybe_unused]] const double t_rel, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u) const
   {
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
@@ -228,16 +195,16 @@ struct MPCIntegrand
     }
   }
 
-  Eigen::RowVector<double, 1 + Nx + Nu> jacobian(
-    [[maybe_unused]] const double t_rel, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
+  Eigen::RowVector<double, 1 + Nx + Nu>
+  jacobian([[maybe_unused]] const double t_rel, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
   {
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
     return Eigen::RowVector<double, 1 + Nx + Nu>::Zero();
   }
 
-  std::reference_wrapper<const Eigen::SparseMatrix<double>> hessian(
-    [[maybe_unused]] const double t_rel, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
+  std::reference_wrapper<const Eigen::SparseMatrix<double>>
+  hessian([[maybe_unused]] const double t_rel, [[maybe_unused]] const X & x, [[maybe_unused]] const U & u)
   {
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
@@ -280,19 +247,14 @@ struct MPCCR
   // functor members
   Eigen::Vector<double, Ncr> operator()(const double t, const X & x, const U & u)
   {
-    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
-      f.set_time(time_trait<T>::plus(t0, t));
-    }
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) { f.set_time(time_trait<T>::plus(t0, t)); }
 
     return f(x, u);
   }
 
-  std::reference_wrapper<const Eigen::SparseMatrix<double>>
-  jacobian(const double t, const X & x, const U & u)
+  std::reference_wrapper<const Eigen::SparseMatrix<double>> jacobian(const double t, const X & x, const U & u)
   {
-    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) {
-      f.set_time(time_trait<T>::plus(t0, t));
-    }
+    if constexpr (requires(F & fvar, T tvar) { fvar.set_time(tvar); }) { f.set_time(time_trait<T>::plus(t0, t)); }
 
     const auto & [fval, df] = diff::dr<1, DT>(f, smooth::wrt(x, u));
     block_write(jac, 0, 1, df);
@@ -323,8 +285,7 @@ struct MPCCE
   Eigen::SparseMatrix<double> jac{Nx, 1 + 2 * Nx + 1};
 
   // functor members
-  Tangent<X>
-  operator()(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &) const
+  Tangent<X> operator()(const double, const X & x0, const X &, const Eigen::Vector<double, 1> &) const
   {
     return rminus(x0, x0_fix);
   }
@@ -442,13 +403,9 @@ public:
    * constraints, so only those need to be updated.
    */
   inline MPC(
-    F && f,
-    CR && cr,
-    Eigen::Vector<double, Ncr> && crl,
-    Eigen::Vector<double, Ncr> && cru,
-    MPCParams && prm = {})
-      : xdes_{std::make_shared<detail::XDes<T, X>>()},
-        udes_{std::make_shared<detail::UDes<T, U>>()}, mesh_{(prm.K + Kmesh - 1) / Kmesh},
+    F && f, CR && cr, Eigen::Vector<double, Ncr> && crl, Eigen::Vector<double, Ncr> && cru, MPCParams && prm = {})
+      : xdes_{std::make_shared<detail::XDes<T, X>>()}, udes_{std::make_shared<detail::UDes<T, U>>()},
+        mesh_{(prm.K + Kmesh - 1) / Kmesh},
         ocp_{
           .theta = {},
           .f     = {.f = std::forward<F>(f)},
@@ -473,12 +430,7 @@ public:
     const Eigen::Vector<double, Ncr> & crl,
     const Eigen::Vector<double, Ncr> & cru,
     const MPCParams & prm = {})
-      : MPC(
-        F(f),
-        CR(cr),
-        Eigen::Vector<double, Ncr>(crl),
-        Eigen::Vector<double, Ncr>(cru),
-        MPCParams(prm))
+      : MPC(F(f), CR(cr), Eigen::Vector<double, Ncr>(crl), Eigen::Vector<double, Ncr>(cru), MPCParams(prm))
   {}
   /// @brief Default constructor
   inline MPC() = default;
@@ -542,17 +494,15 @@ public:
     if (u_traj.has_value()) {
       u_traj.value().get().resize(N);
       for (const auto & [i, tau] : zip(std::views::iota(0u, N), mesh_.all_nodes())) {
-        const double t_rel = prm_.tf * tau;
-        u_traj.value().get()[i] =
-          (*udes_)(t_rel) + sol.primal.template segment<Nu>(uvar_B + i * Nu);
+        const double t_rel      = prm_.tf * tau;
+        u_traj.value().get()[i] = (*udes_)(t_rel) + sol.primal.template segment<Nu>(uvar_B + i * Nu);
       }
     }
     if (x_traj.has_value()) {
       x_traj.value().get().resize(N + 1);
       for (const auto & [i, tau] : zip(std::views::iota(0u, N + 1), mesh_.all_nodes())) {
-        const double t_rel = prm_.tf * tau;
-        x_traj.value().get()[i] =
-          (*xdes_)(t_rel) + sol.primal.template segment<Nx>(xvar_B + i * Nx);
+        const double t_rel      = prm_.tf * tau;
+        x_traj.value().get()[i] = (*xdes_)(t_rel) + sol.primal.template segment<Nx>(xvar_B + i * Nx);
       }
     }
 
@@ -606,8 +556,7 @@ public:
   /**
    * @brief Set the desired state trajectory (absolute time, rvalue version)
    */
-  inline void
-  set_xdes(const std::function<X(T)> & x_des, const std::function<Tangent<X>(T)> & dx_des)
+  inline void set_xdes(const std::function<X(T)> & x_des, const std::function<Tangent<X>(T)> & dx_des)
   {
     set_xdes(std::function<X(T)>(x_des), std::function<Tangent<X>(T)>(dx_des));
   }
@@ -687,5 +636,3 @@ private:
 };
 
 }  // namespace smooth::feedback
-
-#endif  // SMOOTH__FEEDBACK__MPC_HPP_

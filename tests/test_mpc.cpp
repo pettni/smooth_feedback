@@ -24,7 +24,6 @@
 // SOFTWARE.
 
 #include <gtest/gtest.h>
-
 #include <smooth/feedback/mpc.hpp>
 #include <smooth/se2.hpp>
 
@@ -35,8 +34,7 @@ using U = Eigen::Vector2d;
 struct MyDynamics
 {
   template<typename S>
-  smooth::Tangent<smooth::CastT<S, X>>
-  operator()(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) const
+  smooth::Tangent<smooth::CastT<S, X>> operator()(const smooth::CastT<S, X> &, const smooth::CastT<S, U> & u) const
   {
     return smooth::Tangent<smooth::CastT<S, X>>(u(0), S(0), u(1));
   }
@@ -94,8 +92,7 @@ TEST(Mpc, Api)
   });
 
   mpc.set_udes([](T) -> U { return U::Ones(); });
-  mpc.set_xdes_rel(
-    []<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
+  mpc.set_xdes_rel([]<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
 
   // no warmstart
   auto [u1, code1] = mpc(2, x);
@@ -138,8 +135,7 @@ TEST(Mpc, Constructors)
   });
 
   mpc.set_udes([](T) -> U { return U::Ones(); });
-  mpc.set_xdes_rel(
-    []<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
+  mpc.set_xdes_rel([]<typename S>(S) -> smooth::CastT<S, X> { return smooth::CastT<S, X>::Identity(); });
 
   auto [u1, code1] = mpc(0, x);
 
