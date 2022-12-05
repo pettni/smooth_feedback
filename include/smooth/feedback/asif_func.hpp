@@ -13,6 +13,10 @@
 #include <smooth/concepts/lie_group.hpp>
 #include <smooth/diff.hpp>
 
+#include <algorithm>
+#include <limits>
+#include <utility>
+
 #include "common.hpp"
 #include "qp.hpp"
 

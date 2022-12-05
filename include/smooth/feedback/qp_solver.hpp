@@ -362,7 +362,7 @@ public:
       // set rho depending on constraint type
       if (pbm.l(i) == -inf && pbm.u(i) == inf) {
         rho_(i) = Scalar(1e-6);  // unbounded
-      } else if (sy_(i) * abs(pbm.l(i) - pbm.u(i)) < 1e-5) {
+      } else if (sy_(i) * std::fabs(pbm.l(i) - pbm.u(i)) < 1e-5) {
         rho_(i) = Scalar(1e3) * rho_bar;  // equality
       } else {
         rho_(i) = rho_bar;  // inequality
@@ -630,7 +630,7 @@ protected:
       } else if (pbm.l(i) == -inf) {
         dual_infeasible &= (Ax_(i) <= prm_.eps_dual_inf * dx_norm);
       } else {
-        dual_infeasible &= std::abs(Ax_(i)) < prm_.eps_dual_inf * dx_norm;
+        dual_infeasible &= std::fabs(Ax_(i)) < prm_.eps_dual_inf * dx_norm;
       }
     }
 
@@ -676,7 +676,7 @@ protected:
     // find "norm" of cost function
     for (auto i = 0u; i < pbm.P.outerSize(); ++i) {
       for (Eigen::InnerIterator it(pbm.P, i); it; ++it) {
-        sx_inc_(it.col()) = std::max(sx_inc_(it.col()), std::abs(it.value()));
+        sx_inc_(it.col()) = std::max(sx_inc_(it.col()), std::fabs(it.value()));
       }
     }
 
@@ -699,13 +699,13 @@ protected:
           // upper left block of H
           sx_inc_(it.col()) = std::max({
             sx_inc_(it.col()),
-            std::abs(c_ * sx_(it.row()) * sx_(it.col()) * it.value()),
+            std::fabs(c_ * sx_(it.row()) * sx_(it.col()) * it.value()),
           });
         }
       }
       for (auto k = 0u; k < pbm.A.outerSize(); ++k) {
         for (Eigen::InnerIterator it(pbm.A, k); it; ++it) {
-          const Scalar Aij  = std::abs(sy_(it.row()) * sx_(it.col()) * it.value());
+          const Scalar Aij  = std::fabs(sy_(it.row()) * sx_(it.col()) * it.value());
           sx_inc_(it.col()) = std::max(sx_inc_(it.col()), Aij);  // bottom left block of H
           sy_inc_(it.row()) = std::max(sy_inc_(it.row()), Aij);  // upper right block of H
         }
