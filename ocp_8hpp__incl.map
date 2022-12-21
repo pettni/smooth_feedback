@@ -1,9 +1,9 @@
 <map id="include/smooth/feedback/ocp.hpp" name="include/smooth/feedback/ocp.hpp">
-<area shape="rect" id="node1" title="Optimal control problem definition." alt="" coords="197,5,363,47"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,102,77,129"/>
-<area shape="rect" id="node3" title=" " alt="" coords="101,102,187,129"/>
-<area shape="rect" id="node4" title=" " alt="" coords="211,95,349,136"/>
-<area shape="rect" id="node5" title=" " alt="" coords="374,102,485,129"/>
-<area shape="rect" id="node6" href="$traits_8hpp_source.html" title=" " alt="" coords="509,102,584,129"/>
-<area shape="rect" id="node7" title=" " alt="" coords="505,184,588,211"/>
+<area shape="rect" id="node1" title="Optimal control problem definition." alt="" coords="197,5,363,45"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,101,77,126"/>
+<area shape="rect" id="node3" title=" " alt="" coords="101,101,187,126"/>
+<area shape="rect" id="node4" title=" " alt="" coords="211,93,349,133"/>
+<area shape="rect" id="node5" title=" " alt="" coords="374,101,485,126"/>
+<area shape="rect" id="node6" href="$traits_8hpp_source.html" title=" " alt="" coords="509,101,584,126"/>
+<area shape="rect" id="node7" title=" " alt="" coords="505,181,588,207"/>
 </map>

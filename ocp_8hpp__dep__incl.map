@@ -1,7 +1,7 @@
 <map id="include/smooth/feedback/ocp.hpp" name="include/smooth/feedback/ocp.hpp">
-<area shape="rect" id="node1" title="Optimal control problem definition." alt="" coords="196,5,363,47"/>
-<area shape="rect" id="node2" href="$ocp__flatten_8hpp.html" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="5,95,172,136"/>
-<area shape="rect" id="node3" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="196,95,363,136"/>
-<area shape="rect" id="node4" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="387,95,553,136"/>
-<area shape="rect" id="node5" href="$mpc_8hpp_source.html" title=" " alt="" coords="387,184,553,225"/>
+<area shape="rect" id="node1" title="Optimal control problem definition." alt="" coords="196,5,363,45"/>
+<area shape="rect" id="node2" href="$ocp__flatten_8hpp.html" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="5,93,172,133"/>
+<area shape="rect" id="node3" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="196,93,363,133"/>
+<area shape="rect" id="node4" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="387,93,553,133"/>
+<area shape="rect" id="node5" href="$mpc_8hpp_source.html" title=" " alt="" coords="387,181,553,221"/>
 </map>

@@ -1,13 +1,13 @@
 <map id="include/smooth/feedback/utils/sparse.hpp" name="include/smooth/feedback/utils/sparse.hpp">
-<area shape="rect" id="node1" title="Sparse matrix utilities." alt="" coords="256,5,423,47"/>
-<area shape="rect" id="node2" href="$mesh_8hpp.html" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="161,95,328,136"/>
-<area shape="rect" id="node4" href="$mesh__function_8hpp.html" title="Evaluate transform&#45;like functions and derivatives on collocation points." alt="" coords="5,184,207,225"/>
-<area shape="rect" id="node8" href="$ocp__flatten_8hpp.html" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="352,95,519,136"/>
-<area shape="rect" id="node9" href="$qp__solver_8hpp.html" title="Quadratic Program solver." alt="" coords="543,95,709,136"/>
-<area shape="rect" id="node3" href="$dyn__error_8hpp.html" title="Collocation dynamics constraints." alt="" coords="283,184,452,225"/>
-<area shape="rect" id="node5" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="344,273,511,315"/>
-<area shape="rect" id="node6" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="92,273,259,315"/>
-<area shape="rect" id="node7" href="$mpc_8hpp_source.html" title=" " alt="" coords="92,363,259,404"/>
-<area shape="rect" id="node10" href="$asif_8hpp_source.html" title=" " alt="" coords="536,184,703,225"/>
-<area shape="rect" id="node11" href="$osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="727,184,893,225"/>
+<area shape="rect" id="node1" title="Sparse matrix utilities." alt="" coords="256,5,423,45"/>
+<area shape="rect" id="node2" href="$mesh_8hpp.html" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="161,93,328,133"/>
+<area shape="rect" id="node4" href="$mesh__function_8hpp.html" title="Evaluate transform&#45;like functions and derivatives on collocation points." alt="" coords="5,181,207,221"/>
+<area shape="rect" id="node8" href="$ocp__flatten_8hpp.html" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="352,93,519,133"/>
+<area shape="rect" id="node9" href="$qp__solver_8hpp.html" title="Quadratic Program solver." alt="" coords="543,93,709,133"/>
+<area shape="rect" id="node3" href="$dyn__error_8hpp.html" title="Collocation dynamics constraints." alt="" coords="283,181,452,221"/>
+<area shape="rect" id="node5" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="344,269,511,309"/>
+<area shape="rect" id="node6" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="92,269,259,309"/>
+<area shape="rect" id="node7" href="$mpc_8hpp_source.html" title=" " alt="" coords="92,357,259,397"/>
+<area shape="rect" id="node10" href="$asif_8hpp_source.html" title=" " alt="" coords="536,181,703,221"/>
+<area shape="rect" id="node11" href="$osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="727,181,893,221"/>
 </map>

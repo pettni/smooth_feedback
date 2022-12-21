@@ -1,5 +1,5 @@
 <map id="include/smooth/feedback/qp_solver.hpp" name="include/smooth/feedback/qp_solver.hpp">
-<area shape="rect" id="node1" title="Quadratic Program solver." alt="" coords="100,5,267,47"/>
-<area shape="rect" id="node2" href="$asif_8hpp_source.html" title=" " alt="" coords="5,95,172,136"/>
-<area shape="rect" id="node3" href="$osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="196,95,363,136"/>
+<area shape="rect" id="node1" title="Quadratic Program solver." alt="" coords="100,5,267,45"/>
+<area shape="rect" id="node2" href="$asif_8hpp_source.html" title=" " alt="" coords="5,93,172,133"/>
+<area shape="rect" id="node3" href="$osqp_8hpp.html" title="Solve quadratiac programs with OSQP." alt="" coords="196,93,363,133"/>
 </map>

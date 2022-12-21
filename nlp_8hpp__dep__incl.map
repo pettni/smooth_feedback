@@ -1,5 +1,5 @@
 <map id="include/smooth/feedback/nlp.hpp" name="include/smooth/feedback/nlp.hpp">
-<area shape="rect" id="node1" title="Nonlinear program definition." alt="" coords="100,5,267,47"/>
-<area shape="rect" id="node2" href="$ipopt_8hpp.html" title="Solve nonlinear programs with Ipopt." alt="" coords="5,95,172,136"/>
-<area shape="rect" id="node3" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="196,95,363,136"/>
+<area shape="rect" id="node1" title="Nonlinear program definition." alt="" coords="100,5,267,45"/>
+<area shape="rect" id="node2" href="$ipopt_8hpp.html" title="Solve nonlinear programs with Ipopt." alt="" coords="5,93,172,133"/>
+<area shape="rect" id="node3" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="196,93,363,133"/>
 </map>

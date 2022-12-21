@@ -1,15 +1,15 @@
 <map id="include/smooth/feedback/qp_solver.hpp" name="include/smooth/feedback/qp_solver.hpp">
-<area shape="rect" id="node1" title="Quadratic Program solver." alt="" coords="379,5,546,47"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,95,67,121"/>
-<area shape="rect" id="node3" title=" " alt="" coords="91,95,157,121"/>
-<area shape="rect" id="node4" title=" " alt="" coords="181,95,253,121"/>
-<area shape="rect" id="node5" title=" " alt="" coords="277,95,331,121"/>
-<area shape="rect" id="node6" title=" " alt="" coords="336,169,403,196"/>
-<area shape="rect" id="node7" title=" " alt="" coords="731,95,842,121"/>
-<area shape="rect" id="node8" title=" " alt="" coords="645,169,739,196"/>
-<area shape="rect" id="node9" title=" " alt="" coords="520,169,619,196"/>
-<area shape="rect" id="node10" title=" " alt="" coords="867,95,1019,121"/>
-<area shape="rect" id="node11" href="$qp_8hpp.html" title="Quadratic Program definition." alt="" coords="595,95,655,121"/>
-<area shape="rect" id="node12" href="$sparse_8hpp.html" title="Sparse matrix utilities." alt="" coords="406,95,519,121"/>
-<area shape="rect" id="node13" title=" " alt="" coords="427,169,495,196"/>
+<area shape="rect" id="node1" title="Quadratic Program solver." alt="" coords="379,5,546,45"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,93,67,119"/>
+<area shape="rect" id="node3" title=" " alt="" coords="91,93,157,119"/>
+<area shape="rect" id="node4" title=" " alt="" coords="181,93,253,119"/>
+<area shape="rect" id="node5" title=" " alt="" coords="277,93,331,119"/>
+<area shape="rect" id="node6" title=" " alt="" coords="336,167,403,192"/>
+<area shape="rect" id="node7" title=" " alt="" coords="731,93,842,119"/>
+<area shape="rect" id="node8" title=" " alt="" coords="645,167,739,192"/>
+<area shape="rect" id="node9" title=" " alt="" coords="520,167,619,192"/>
+<area shape="rect" id="node10" title=" " alt="" coords="867,93,1019,119"/>
+<area shape="rect" id="node11" href="$qp_8hpp.html" title="Quadratic Program definition." alt="" coords="595,93,655,119"/>
+<area shape="rect" id="node12" href="$sparse_8hpp.html" title="Sparse matrix utilities." alt="" coords="406,93,519,119"/>
+<area shape="rect" id="node13" title=" " alt="" coords="427,167,495,192"/>
 </map>

@@ -1,16 +1,16 @@
 <map id="include/smooth/feedback/ocp_flatten.hpp" name="include/smooth/feedback/ocp_flatten.hpp">
-<area shape="rect" id="node1" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="479,5,646,47"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,177,91,203"/>
-<area shape="rect" id="node3" title=" " alt="" coords="608,177,707,203"/>
-<area shape="rect" id="node4" title=" " alt="" coords="739,95,869,121"/>
-<area shape="rect" id="node5" title=" " alt="" coords="115,177,226,203"/>
-<area shape="rect" id="node6" href="$ocp_8hpp.html" title="Optimal control problem definition." alt="" coords="317,95,384,121"/>
-<area shape="rect" id="node11" title=" " alt="" coords="893,95,1045,121"/>
-<area shape="rect" id="node12" href="$sparse_8hpp.html" title="Sparse matrix utilities." alt="" coords="601,95,714,121"/>
-<area shape="rect" id="node7" title=" " alt="" coords="251,177,323,203"/>
-<area shape="rect" id="node8" title=" " alt="" coords="347,169,485,211"/>
-<area shape="rect" id="node9" href="$traits_8hpp_source.html" title=" " alt="" coords="509,177,584,203"/>
-<area shape="rect" id="node10" title=" " alt="" coords="505,259,588,285"/>
-<area shape="rect" id="node13" title=" " alt="" coords="731,177,799,203"/>
-<area shape="rect" id="node14" title=" " alt="" coords="824,177,891,203"/>
+<area shape="rect" id="node1" title="Reformulate an optimal control problem on a Lie group as an optimal control problem in the tangent sp..." alt="" coords="479,5,646,45"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,174,91,199"/>
+<area shape="rect" id="node3" title=" " alt="" coords="608,174,707,199"/>
+<area shape="rect" id="node4" title=" " alt="" coords="739,93,869,119"/>
+<area shape="rect" id="node5" title=" " alt="" coords="115,174,226,199"/>
+<area shape="rect" id="node6" href="$ocp_8hpp.html" title="Optimal control problem definition." alt="" coords="317,93,384,119"/>
+<area shape="rect" id="node11" title=" " alt="" coords="893,93,1045,119"/>
+<area shape="rect" id="node12" href="$sparse_8hpp.html" title="Sparse matrix utilities." alt="" coords="601,93,714,119"/>
+<area shape="rect" id="node7" title=" " alt="" coords="251,174,323,199"/>
+<area shape="rect" id="node8" title=" " alt="" coords="347,167,485,207"/>
+<area shape="rect" id="node9" href="$traits_8hpp_source.html" title=" " alt="" coords="509,174,584,199"/>
+<area shape="rect" id="node10" title=" " alt="" coords="505,255,588,280"/>
+<area shape="rect" id="node13" title=" " alt="" coords="731,174,799,199"/>
+<area shape="rect" id="node14" title=" " alt="" coords="824,174,891,199"/>
 </map>

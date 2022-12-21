@@ -1,11 +1,11 @@
 <map id="include/smooth/feedback/compat/ipopt.hpp" name="include/smooth/feedback/compat/ipopt.hpp">
-<area shape="rect" id="node1" title="Solve nonlinear programs with Ipopt." alt="" coords="216,5,383,47"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,95,156,121"/>
-<area shape="rect" id="node3" title=" " alt="" coords="180,95,293,121"/>
-<area shape="rect" id="node4" title=" " alt="" coords="317,95,409,121"/>
-<area shape="rect" id="node5" href="$nlp_8hpp.html" title="Nonlinear program definition." alt="" coords="433,95,600,121"/>
-<area shape="rect" id="node6" title=" " alt="" coords="355,169,409,196"/>
-<area shape="rect" id="node7" title=" " alt="" coords="433,169,499,196"/>
-<area shape="rect" id="node8" title=" " alt="" coords="523,169,609,196"/>
-<area shape="rect" id="node9" title=" " alt="" coords="633,169,731,196"/>
+<area shape="rect" id="node1" title="Solve nonlinear programs with Ipopt." alt="" coords="216,5,383,45"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,93,156,119"/>
+<area shape="rect" id="node3" title=" " alt="" coords="180,93,293,119"/>
+<area shape="rect" id="node4" title=" " alt="" coords="317,93,409,119"/>
+<area shape="rect" id="node5" href="$nlp_8hpp.html" title="Nonlinear program definition." alt="" coords="433,93,600,119"/>
+<area shape="rect" id="node6" title=" " alt="" coords="355,167,409,192"/>
+<area shape="rect" id="node7" title=" " alt="" coords="433,167,499,192"/>
+<area shape="rect" id="node8" title=" " alt="" coords="523,167,609,192"/>
+<area shape="rect" id="node9" title=" " alt="" coords="633,167,731,192"/>
 </map>

@@ -1,8 +1,8 @@
 <map id="include/smooth/feedback/collocation/mesh.hpp" name="include/smooth/feedback/collocation/mesh.hpp">
-<area shape="rect" id="node1" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="199,5,365,47"/>
-<area shape="rect" id="node2" href="$dyn__error_8hpp.html" title="Collocation dynamics constraints." alt="" coords="5,95,175,136"/>
-<area shape="rect" id="node3" href="$mesh__function_8hpp.html" title="Evaluate transform&#45;like functions and derivatives on collocation points." alt="" coords="251,95,452,136"/>
-<area shape="rect" id="node4" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="172,184,339,225"/>
-<area shape="rect" id="node5" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="384,184,551,225"/>
-<area shape="rect" id="node6" href="$mpc_8hpp_source.html" title=" " alt="" coords="384,273,551,315"/>
+<area shape="rect" id="node1" title="Refinable Legendre&#45;Gauss&#45;Radau mesh of time interval [0, 1]." alt="" coords="199,5,365,45"/>
+<area shape="rect" id="node2" href="$dyn__error_8hpp.html" title="Collocation dynamics constraints." alt="" coords="5,93,175,133"/>
+<area shape="rect" id="node3" href="$mesh__function_8hpp.html" title="Evaluate transform&#45;like functions and derivatives on collocation points." alt="" coords="251,93,452,133"/>
+<area shape="rect" id="node4" href="$ocp__to__nlp_8hpp.html" title="Formulate optimal control problem as a nonlinear program." alt="" coords="172,181,339,221"/>
+<area shape="rect" id="node5" href="$ocp__to__qp_8hpp.html" title="Formulate optimal control problem as a quadratic program." alt="" coords="384,181,551,221"/>
+<area shape="rect" id="node6" href="$mpc_8hpp_source.html" title=" " alt="" coords="384,269,551,309"/>
 </map>
