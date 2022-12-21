@@ -235,8 +235,7 @@ auto sol = smooth::feedback::solve_qp(qp, prm);
 
 <!-- MARKDOWN LINKS AND IMAGES -->
 [doc-link]: https://pettni.github.io/smooth_feedback
-
-[ci-shield]: https://img.shields.io/github/workflow/status/pettni/smooth_feedback/build_and_test/master?style=flat-square
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/pettni/smooth_feedback/build_and_test.yml?style=flat-square
 [ci-link]: https://github.com/pettni/smooth_feedback/actions/workflows/build_and_test.yml
 
 [cov-shield]: https://img.shields.io/codecov/c/gh/pettni/smooth_feedback/master?style=flat-square
