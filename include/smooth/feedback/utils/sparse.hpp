@@ -37,8 +37,8 @@ inline void block_add(
   Eigen::Index row0,
   Eigen::Index col0,
   const Source & source,
-  double scale      = 1,
-  double upper_only = false)
+  double scale    = 1,
+  bool upper_only = false)
 {
   for (auto c = 0; c < source.outerSize(); ++c) {
     for (Eigen::InnerIterator it(source, c); it; ++it) {
@@ -72,8 +72,8 @@ inline void block_write(
   Eigen::Index row0,
   Eigen::Index col0,
   const Source & source,
-  double scale      = 1,
-  double upper_only = false)
+  double scale    = 1,
+  bool upper_only = false)
 {
   for (auto c = 0; c < source.outerSize(); ++c) {
     for (Eigen::InnerIterator it(source, c); it; ++it) {
