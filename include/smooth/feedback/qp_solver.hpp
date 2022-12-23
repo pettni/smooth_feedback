@@ -214,13 +214,15 @@ struct LDLTWrapper
 
   LDLTWrapper() = default;
   LDLTWrapper(const LDLTWrapper &) : first{true}, ldlt{} {}
-  LDLTWrapper(LDLTWrapper &&) : first{true}, ldlt{} {}
-  LDLTWrapper & operator=(const LDLTWrapper &)
+  LDLTWrapper(LDLTWrapper &&) noexcept : first{true}, ldlt{} {}
+  LDLTWrapper & operator=(const LDLTWrapper & rhs)
   {
+    if (this == &rhs) { return *this; }
+
     first = true;
     return *this;
   }
-  LDLTWrapper & operator=(LDLTWrapper &&)
+  LDLTWrapper & operator=(LDLTWrapper &&) noexcept
   {
     first = true;
     return *this;
@@ -276,11 +278,13 @@ public:
   /// @brief Default copy constructor
   QPSolver(const QPSolver &) = default;
   /// @brief Default move constructor
-  QPSolver(QPSolver &&) = default;
+  QPSolver(QPSolver &&) noexcept = default;
   /// @brief Default copy assignment
   QPSolver & operator=(const QPSolver &) = default;
   /// @brief Default move assignment
-  QPSolver & operator=(QPSolver &&) = default;
+  QPSolver & operator=(QPSolver &&) noexcept = default;
+  /// @brief Default destructor
+  ~QPSolver() = default;
 
   /**
    * @brief Access most recent QP solution.
