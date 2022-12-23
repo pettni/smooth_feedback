@@ -220,7 +220,7 @@ struct LDLTWrapper
     first = true;
     return *this;
   }
-  LDLTWrapper & operator=(LDLTWrapper &)
+  LDLTWrapper & operator=(LDLTWrapper &&)
   {
     first = true;
     return *this;
