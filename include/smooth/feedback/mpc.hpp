@@ -85,7 +85,7 @@ struct MPCObj
   {
     assert(q(0) == 1.);
     assert(xf_des.isApprox(xf, 1e-4));
-    if constexpr (false) {
+    if constexpr (false) { // Might be disabled because this does not get used in the QP matrices constructed in ocp_to_qp.hpp except for linearization at t0 and tf
       const auto e = rminus(xf, xf_des);
       return 0.5 * e.dot(Qtf * e) + q(0);
     } else {
@@ -186,7 +186,7 @@ struct MPCIntegrand
   {
     assert((*xdes)(t_rel).isApprox(x, 1e-4));
     assert((*udes)(t_rel).isApprox(u, 1e-4));
-    if constexpr (false) {
+    if constexpr (false) { // Might be disabled because this does not get used in the QP matrices constructed in ocp_to_qp.hpp except for linearization at t0 and tf
       const auto ex = rminus(x, (*xdes)(t_rel));
       const auto eu = rminus(u, (*udes)(t_rel));
       return Eigen::Vector<double, 1>{0.5 * ex.dot(Q * ex) + 0.5 * eu.dot(R * eu)};
@@ -403,13 +403,13 @@ public:
    * constraints, so only those need to be updated.
    */
   inline MPC(
-    F && f, CR && cr, Eigen::Vector<double, Ncr> && crl, Eigen::Vector<double, Ncr> && cru, MPCParams && prm = {})
+    F && f, CR && cr, Eigen::Vector<double, Ncr> && crl, Eigen::Vector<double, Ncr> && cru, MPCParams && prm = {}, MPCWeights<X, U> && wts = {})
       : xdes_{std::make_shared<detail::XDes<T, X>>()}, udes_{std::make_shared<detail::UDes<T, U>>()},
         mesh_{(prm.K + Kmesh - 1) / Kmesh},
         ocp_{
-          .theta = {},
+          .theta = {.Qtf = wts.Qtf},
           .f     = {.f = std::forward<F>(f)},
-          .g     = {.xdes = xdes_, .udes = udes_},
+          .g     = {.xdes = xdes_, .udes = udes_, .Q = wts.Q, .R = wts.R},
           .cr    = {.f = std::forward<CR>(cr)},
           .crl   = std::move(crl),
           .cru   = std::move(cru),
@@ -429,8 +429,9 @@ public:
     const CR & cr,
     const Eigen::Vector<double, Ncr> & crl,
     const Eigen::Vector<double, Ncr> & cru,
-    const MPCParams & prm = {})
-      : MPC(F(f), CR(cr), Eigen::Vector<double, Ncr>(crl), Eigen::Vector<double, Ncr>(cru), MPCParams(prm))
+    const MPCParams & prm = {},
+    const MPCWeights<X, U> & wts = {})
+      : MPC(F(f), CR(cr), Eigen::Vector<double, Ncr>(crl), Eigen::Vector<double, Ncr>(cru), MPCParams(prm), MPCWeights(wts))
   {}
   /// @brief Default constructor
   inline MPC() = default;
@@ -585,16 +586,6 @@ public:
     };
 
     set_xdes(std::move(x_des), std::move(dx_des));
-  }
-
-  /**
-   * @brief Update MPC weights
-   */
-  inline void set_weights(const MPCWeights<X, U> & weights)
-  {
-    ocp_.g.R       = weights.R;
-    ocp_.g.Q       = weights.Q;
-    ocp_.theta.Qtf = weights.Qtf;
   }
 
   /**
